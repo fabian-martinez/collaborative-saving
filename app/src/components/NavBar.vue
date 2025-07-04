@@ -18,7 +18,7 @@ async function signOut() {
     <div class="flex-none">
       <ul class="menu menu-horizontal px-1">
         <li v-if="userStore.role === 'admin'">
-          <router-link to="/admin/contributions">Admin</router-link>
+          <router-link to="/admin/meetings">Meetings</router-link>
         </li>
         <li><router-link to="/">My Account</router-link></li>
         <li>
