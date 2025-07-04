@@ -51,4 +51,118 @@ graph TD
 | **Backend**     | **Supabase**      | Solución todo-en-uno que nos provee base de datos, autenticación y APIs, acelerando el desarrollo.     |
 | **Base de Datos**| **PostgreSQL**    | Base de datos relacional potente, ideal para la estructura de datos del fondo. Gestionada por Supabase. |
 | **Hosting**     | **Vercel/Netlify**| Plataformas optimizadas para el despliegue de aplicaciones frontend modernas.                             |
+
+---
+
+## 💾 2. Diseño de la Base de Datos
+
+Para manejar la complejidad de las transacciones financieras del fondo (compras a crédito, pagos con acciones, transferencias, desembolsos múltiples), hemos optado por un **modelo de "Libro Contable" (Doble Entrada)**. Este enfoque proporciona máxima flexibilidad, trazabilidad y robustez.
+
+El núcleo del diseño se basa en dos tablas principales: `Operations` (que registra la intención del usuario) y `LedgerEntries` (que registra los movimientos contables detallados que esa operación provoca).
+
+### Diagrama Entidad-Relación (ERD) Final
+
+Este diagrama representa la estructura completa y final de la base de datos que se implementará en Supabase (PostgreSQL).
+
+```mermaid
+erDiagram
+    Members {
+        UUID id PK
+        String name
+    }
+
+    Operations {
+        UUID id PK
+        UUID member_id FK
+        TIMESTAMP date
+        String description
+    }
+
+    LedgerEntries {
+        UUID id PK
+        UUID operation_id FK
+        UUID member_id FK
+        String account_type
+        Decimal amount
+    }
+
+    %% --- Transaction Details ---
+    StockTrades {
+        UUID ledger_entry_id PK, FK
+        UUID stock_id FK
+        Integer quantity
+        Decimal stock_value_at_trade
+    }
+
+    LoanTransactionDetails {
+        UUID ledger_entry_id PK, FK
+        UUID loan_id FK
+        String type "'desembolso' o 'pago'"
+        Decimal principal_amount
+        Decimal interest_amount
+    }
+
+    %% --- Main Business Entities ---
+    Stocks {
+        UUID id PK
+        String type
+        Decimal current_value
+    }
+    
+    Loans {
+        UUID id PK
+        UUID member_id FK
+        Decimal approved_amount
+        Float interest_rate
+        String status "'activo' o 'pagado'"
+    }
+
+    Insurance {
+        UUID id PK
+        UUID member_id FK
+        Decimal total_coverage
+    }
+
+    %% --- Reporting & Auditing ---
+    MeetingReports {
+        UUID id PK
+        DATE date
+        String summary_data_json
+    }
+
+    StockValueHistory {
+        UUID id PK
+        UUID stock_id FK
+        DATE date
+        Decimal value
+    }
+    
+    FundAssets {
+        UUID id PK
+        String asset_type
+        Decimal total
+    }
+
+    AuditLog {
+        UUID id PK
+        TIMESTAMP timestamp
+        String action
+        String user_id
+    }
+
+    %% --- Relationships ---
+    Members ||--o{ Operations : "inicia"
+    Members ||--o{ LedgerEntries : "afecta_a"
+    Members ||--o{ Loans : "tiene"
+    Members ||--o{ Insurance : "tiene"
+
+    Operations ||--o{ LedgerEntries : "causa"
+    
+    LedgerEntries |o--|| StockTrades : "es_detallado_por"
+    LedgerEntries |o--|| LoanTransactionDetails : "es_detallado_por"
+
+    LoanTransactionDetails }o--|| Loans : "sobre_prestamo"
+    StockTrades }o--|| Stocks : "de_tipo"
+    
+    Stocks ||--o{ StockValueHistory : "tiene_historial"
 ```
