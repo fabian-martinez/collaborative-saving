@@ -39,15 +39,17 @@ async function updateProfile() {
     const { user } = props.session
 
     const updates = {
-      id: user.id,
       name: username.value,
       updated_at: new Date(),
     }
 
-    const { error } = await supabase.from('members').upsert(updates)
+    const { error } = await supabase
+      .from('members')
+      .update(updates)
+      .eq('id', user.id)
 
     if (error) throw error
-    alert('Profile updated!')
+    alert('Profile updated successfully!')
   } catch (error) {
     if (error instanceof Error) {
       alert(error.message)
