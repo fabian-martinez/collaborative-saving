@@ -92,10 +92,6 @@ onMounted(() => {
           </button>
         </div>
       </form>
-      <div class="divider"></div>
-      <button @click="signOut" class="btn btn-outline">
-        Sign Out
-      </button>
     </div>
   </div>
 </template> 
