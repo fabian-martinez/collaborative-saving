@@ -114,7 +114,10 @@ erDiagram
         UUID member_id FK
         Decimal approved_amount
         Float interest_rate
-        String status "'activo', 'pagado' o 'migrado'"
+        String status
+        Integer term_in_months
+        DATE issue_date
+        Decimal installment_amount
     }
 
     Insurance {
