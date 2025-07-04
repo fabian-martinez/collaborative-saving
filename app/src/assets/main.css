@@ -1,7 +1,14 @@
 @import "tailwindcss/preflight";
 @import "tailwindcss/utilities";
 
+@import "daisyui/dist/full.css";
+
 @import './base.css';
+
+html {
+  /* Apply the cupcake theme from daisyUI */
+  --theme: "cupcake";
+}
 
 #app {
   max-width: 1280px;
