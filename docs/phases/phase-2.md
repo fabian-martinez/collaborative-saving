@@ -56,19 +56,19 @@ graph TD
 
 ## 💾 2. Diseño de la Base de Datos
 
-Para manejar la complejidad de las transacciones financieras del fondo (compras a crédito, pagos con acciones, transferencias, desembolsos múltiples), hemos optado por un **modelo de "Libro Contable" (Doble Entrada)**. Este enfoque proporciona máxima flexibilidad, trazabilidad y robustez.
+Para manejar la complejidad de las transacciones financieras, hemos optado por un **modelo de "Libro Contable" normalizado**. Este enfoque proporciona máxima flexibilidad, trazabilidad y robustez. La decisión clave es que **no se almacenarán saldos ni totales precalculados**; en su lugar, todos los balances se calcularán al vuelo a partir de los registros de transacciones para garantizar la máxima integridad de los datos. La migración de datos existentes se manejará creando "asientos de apertura" o de "saldo inicial".
 
-El núcleo del diseño se basa en dos tablas principales: `Operations` (que registra la intención del usuario) y `LedgerEntries` (que registra los movimientos contables detallados que esa operación provoca).
+### Diagrama Entidad-Relación (ERD) Final Normalizado
 
-### Diagrama Entidad-Relación (ERD) Final
-
-Este diagrama representa la estructura completa y final de la base de datos que se implementará en Supabase (PostgreSQL).
+Este diagrama representa la estructura completa y final de la base de datos que se implementará.
 
 ```mermaid
 erDiagram
     Members {
         UUID id PK
         String name
+        String email
+        String identification_number
     }
 
     Operations {
@@ -97,7 +97,7 @@ erDiagram
     LoanTransactionDetails {
         UUID ledger_entry_id PK, FK
         UUID loan_id FK
-        String type "'desembolso' o 'pago'"
+        String type "'desembolso', 'pago' o 'saldo_inicial'"
         Decimal principal_amount
         Decimal interest_amount
     }
@@ -114,7 +114,7 @@ erDiagram
         UUID member_id FK
         Decimal approved_amount
         Float interest_rate
-        String status "'activo' o 'pagado'"
+        String status "'activo', 'pagado' o 'migrado'"
     }
 
     Insurance {
