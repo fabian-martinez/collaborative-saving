@@ -26,6 +26,11 @@ const router = createRouter({
       path: '/admin/meetings',
       name: 'admin-meetings',
       component: () => import('../views/admin/MeetingsView.vue')
+    },
+    {
+      path: '/admin/meetings/active',
+      name: 'admin-active-meeting',
+      component: () => import('../views/admin/ActiveMeetingView.vue')
     }
   ],
 })

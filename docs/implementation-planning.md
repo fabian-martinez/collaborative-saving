@@ -36,15 +36,20 @@ Desarrollar una aplicación accesible y fácil de usar que permita gestionar un 
 ## 🛠️ Fase 3: Desarrollo del MVP
 
 ### Objetivos:
-- Crear un producto mínimo viable con las funciones esenciales:
-  - Registro de aportes.
-  - Consulta de saldos y préstamos.
-  - Cálculo del valor de la acción.
+- Construir los componentes esenciales de la plataforma:
+  - **API del Backend (con NestJS):** Implementar los endpoints para las operaciones principales (transacciones, usuarios, etc.) y la lógica de negocio del libro contable.
+  - **Aplicación Frontend (con Vue.js):** Desarrollar la interfaz de usuario para interactuar con la API.
+- Funcionalidades clave del MVP:
+  - Registro y autenticación de socios.
+  - Registro de aportes obligatorios.
+  - Consulta de saldos individuales.
+  - Cálculo y visualización del valor de la acción.
 
 ### Entregables:
-- Aplicación funcional con interfaz básica.
-- Base de datos operativa con ejemplos reales.
-- Pruebas funcionales internas.
+- **API Backend** documentada y desplegada.
+- **Aplicación Frontend** funcional conectada al backend.
+- Base de datos operativa con datos de prueba.
+- Pruebas unitarias y de integración para la lógica de negocio crítica en el backend.
 
 ---
 
