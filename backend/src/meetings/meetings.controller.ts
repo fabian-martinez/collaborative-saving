@@ -18,7 +18,7 @@ import { MeetingsService, MemberDue } from './meetings.service';
 import { CreateMandatoryContributionDto } from './dto/create-mandatory-contribution.dto';
 import { UpdateMandatoryContributionDto } from './dto/update-mandatory-contribution.dto';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
-import { RecordTransactionsDto } from './dto/record-transactions.dto';
+import { SimplifiedRecordTransactionsDto } from './dto/simplified-record-transactions.dto';
 import { Meeting } from './entities/meeting.entity';
 import { MandatoryContribution } from './entities/mandatory-contribution.entity';
 import { MemberDueDto } from './dto/member-due.dto';
@@ -29,6 +29,17 @@ import { RevaluateAssetsResponseDto } from './dto/revaluate-assets-response.dto'
 export class MeetingsController {
   constructor(private readonly meetingsService: MeetingsService) {}
 
+  @Get()
+  @ApiOperation({ summary: 'Get all meetings' })
+  @ApiResponse({
+    status: 200,
+    description: 'A list of all meetings, ordered by date descending.',
+    type: [Meeting],
+  })
+  findAll() {
+    return this.meetingsService.findAll();
+  }
+
   @Post()
   @ApiOperation({ summary: 'Create a new meeting' })
   @ApiResponse({
@@ -38,6 +49,20 @@ export class MeetingsController {
   })
   create(@Body() createMeetingDto: CreateMeetingDto) {
     return this.meetingsService.create(createMeetingDto);
+  }
+
+  @Patch(':id/close')
+  @ApiOperation({ summary: 'Close a meeting' })
+  @ApiParam({ name: 'id', description: 'The ID of the meeting to close' })
+  @ApiResponse({
+    status: 200,
+    description: 'The meeting has been successfully closed.',
+    type: Meeting,
+  })
+  @ApiResponse({ status: 404, description: 'Meeting not found.' })
+  @ApiResponse({ status: 400, description: 'Meeting is already closed.' })
+  close(@Param('id') id: string) {
+    return this.meetingsService.close(id);
   }
 
   @Post(':id/revaluate-assets')
@@ -77,12 +102,14 @@ export class MeetingsController {
   @ApiOperation({
     summary: 'Record multiple transactions for a member in the active meeting',
   })
-  @ApiBody({ type: RecordTransactionsDto })
+  @ApiBody({ type: SimplifiedRecordTransactionsDto })
   @ApiResponse({
     status: 201,
     description: 'The transactions have been successfully recorded.',
   })
-  recordTransactions(@Body() recordTransactionsDto: RecordTransactionsDto) {
+  recordTransactions(
+    @Body() recordTransactionsDto: SimplifiedRecordTransactionsDto,
+  ) {
     return this.meetingsService.recordTransactions(recordTransactionsDto);
   }
 

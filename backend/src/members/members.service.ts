@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import { Member } from './entities/member.entity';
 import { CreateMemberDto } from './dto/create-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
@@ -30,11 +30,27 @@ export class MembersService {
   }
 
   async update(id: string, updateMemberDto: UpdateMemberDto): Promise<Member> {
-    await this.membersRepository.update(id, updateMemberDto);
-    return this.findOne(id);
+    const member = await this.membersRepository.preload({
+      id,
+      ...updateMemberDto,
+    });
+    if (!member) {
+      throw new NotFoundException(`Member #${id} not found`);
+    }
+    return this.membersRepository.save(member);
   }
 
   async remove(id: string): Promise<void> {
-    await this.membersRepository.delete(id);
+    const result = await this.membersRepository.softDelete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Member #${id} not found`);
+    }
+  }
+
+  findDeleted(): Promise<Member[]> {
+    return this.membersRepository.find({
+      withDeleted: true,
+      where: { deletedAt: Not(IsNull()) },
+    });
   }
 }

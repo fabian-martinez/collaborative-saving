@@ -65,9 +65,9 @@ graph TD
 
 Para manejar la complejidad de las transacciones financieras, hemos optado por un **modelo de "Libro Contable" normalizado**. Este enfoque proporciona máxima flexibilidad, trazabilidad y robustez. La decisión clave es que **no se almacenarán saldos ni totales precalculados**; en su lugar, todos los balances se calcularán al vuelo a partir de los registros de transacciones para garantizar la máxima integridad de los datos. La migración de datos existentes se manejará creando "asientos de apertura" o de "saldo inicial".
 
-### Diagrama Entidad-Relación (ERD) Final Normalizado
+### Diagrama Entidad-Relación (ERD) - Estado Actual en Producción
 
-Este diagrama representa la estructura completa y final de la base de datos que se implementará.
+Este diagrama representa la estructura actual de la base de datos en Supabase.
 
 ```mermaid
 erDiagram
@@ -76,6 +76,7 @@ erDiagram
         String name
         String email
         String identification_number
+        String role
     }
 
     Meetings {
@@ -96,117 +97,71 @@ erDiagram
     LedgerEntries {
         UUID id PK
         UUID operation_id FK
-        UUID member_id FK
         String account_type
         Decimal amount
     }
 
-    %% --- Transaction Details ---
-    StockTrades {
-        UUID ledger_entry_id PK, FK
-        UUID stock_id FK
-        Integer quantity
-        Decimal stock_value_at_trade
-    }
-
-    LoanTransactionDetails {
-        UUID ledger_entry_id PK, FK
-        UUID loan_id FK
-        String type "'desembolso', 'pago' o 'saldo_inicial'"
-        Decimal principal_amount
-        Decimal interest_amount
-    }
-
-    MandatoryContributionDetails {
-        UUID ledger_entry_id PK, FK
-        UUID contribution_type_id FK
-    }
-
-    %% --- Main Business Entities ---
     Stocks {
         UUID id PK
         String type
-        Decimal current_value
-    }
-    
-    Loans {
-        UUID id PK
-        UUID member_id FK
-        Decimal approved_amount
-        Float interest_rate
-        String status
-        Integer term_in_months
-        DATE issue_date
-        Decimal installment_amount
-    }
-
-    Insurance {
-        UUID id PK
-        UUID member_id FK
-        Decimal total_coverage
-    }
-
-    %% --- Reporting & Auditing ---
-    MeetingReports {
-        UUID id PK
-        DATE date
-        UUID meeting_id FK
-        String summary_data_json
+        Decimal value
+        Decimal monthly_contribution
     }
 
     StockValueHistory {
         UUID id PK
         UUID stock_id FK
-        DATE date
         Decimal value
+        TIMESTAMP date
     }
-    
-    mandatory_contributions {
-        UUID id PK
-        String asset_type
-        Decimal total
-    }
-
-    AuditLog {
-        UUID id PK
-        TIMESTAMP timestamp
-        String action
-        String user_id
-    }
-
-    %% --- Relationships ---
-    Members ||--o{ Operations : "inicia"
-    Members ||--o{ LedgerEntries : "afecta_a"
-    Members ||--o{ Loans : "tiene"
-    Members ||--o{ Insurance : "tiene"
-
-    Operations ||--o{ LedgerEntries : "causa"
-    Operations }o--|| Meetings : "pertenece_a"
-    Meetings ||--|{ MeetingReports : "genera"
-    
-    LedgerEntries |o--|| StockTrades : "es_detallado_por"
-    LedgerEntries |o--|| LoanTransactionDetails : "es_detallado_por"
-    LedgerEntries |o--|| MandatoryContributionDetails : "es_detallado_por"
-
-    LoanTransactionDetails }o--|| Loans : "sobre_prestamo"
-    StockTrades }o--|| Stocks : "de_tipo"
-    MandatoryContributionDetails }o--|| mandatory_contributions : "del_tipo"
-    
-    Stocks ||--o{ StockValueHistory : "tiene_historial"
 
     StockSubscriptions {
         UUID id PK
         UUID member_id FK
         UUID stock_id FK
+        Integer quantity
         DATE purchase_date
         String status
     }
 
-    StockSubscriptions }o--|| Members : "suscrito_por"
-    StockSubscriptions }o--|| Stocks : "de_la_accion"
-```
+    MandatoryContributions {
+        UUID id PK
+        String asset_type
+        Decimal total
+    }
 
-COMMENT ON TABLE public.mandatory_contributions IS 'Stores mandatory, recurring contribution types and amounts.';
+    Loans {
+        UUID id PK
+        UUID member_id FK
+        String loan_type
+        Decimal approved_amount
+        Decimal interest_rate
+        String status
+        DATE creation_date
+        Decimal outstanding_balance
+    }
+
+    LoanTransactionDetails {
+        UUID id PK
+        UUID loan_id FK
+        UUID operation_id FK
+        String transaction_type
+        Decimal amount
+        DATE transaction_date
+        String notes
+    }
+
+    %% --- Relationships ---
+    Members ||--o{ Operations : "inicia"
+    Members ||--o{ Loans : "tiene"
+    Members ||--o{ StockSubscriptions : "suscrito_a"
+    Meetings ||--o{ Operations : "contiene"
+    Operations ||--o{ LedgerEntries : "causa"
+    Operations ||--o{ LoanTransactionDetails : "detalla_en"
+    Stocks ||--o{ StockSubscriptions : "es_de_tipo"
+    Stocks ||--o{ StockValueHistory : "tiene_historial"
+    Loans ||--o{ LoanTransactionDetails : "tiene_transacciones"
+```
 
 ### 3. Visión General y Observaciones del Modelo
 

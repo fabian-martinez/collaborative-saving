@@ -5,10 +5,9 @@ import { AppModule } from '../src/app.module';
 import { EntityManager } from 'typeorm';
 import { Member } from '../src/members/entities/member.entity';
 import { Stock } from '../src/stocks/entities/stock.entity';
-import { Meeting } from '../src/meetings/entities/meeting.entity';
 import { CreateStockSubscriptionDto } from '../src/stock-subscriptions/dto/create-stock-subscription.dto';
 import { CreateLoanDto } from '../src/loans/dto/create-loan.dto';
-import { RecordTransactionsDto } from '../src/meetings/dto/record-transactions.dto';
+import { SimplifiedRecordTransactionsDto } from '../src/meetings/dto/simplified-record-transactions.dto';
 import { Operation } from '../src/operations/entities/operation.entity';
 import { Loan } from '../src/loans/entities/loan.entity';
 
@@ -18,7 +17,6 @@ describe('Business Use Case (e2e)', () => {
   let member1Id: string;
   let member2Id: string;
   let stock1Id: string;
-  let meetingId: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -104,11 +102,10 @@ describe('Business Use Case (e2e)', () => {
   describe('Phase 2: Record Meeting Transactions', () => {
     it('should setup prerequisites for member 1', async () => {
       // 1. Create a meeting
-      const meetingRes = await request(app.getHttpServer())
+      await request(app.getHttpServer())
         .post('/meetings')
         .send({ notes: 'Test Meeting' })
         .expect(201);
-      meetingId = (meetingRes.body as Meeting).id;
 
       // 2. Get Member 1 and a stock
       const members = await request(app.getHttpServer())
@@ -159,8 +156,7 @@ describe('Business Use Case (e2e)', () => {
       const initialBalance = loan.outstanding_balance;
 
       // 2. Define payments payload
-      const payload: RecordTransactionsDto = {
-        meetingId,
+      const payload: SimplifiedRecordTransactionsDto = {
         memberId: member1Id,
         payments: [
           {

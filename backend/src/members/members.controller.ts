@@ -41,6 +41,17 @@ export class MembersController {
     return this.membersService.findAll();
   }
 
+  @Get('deleted')
+  @ApiOperation({ summary: 'Get all deleted members' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return all deleted members.',
+    type: [Member],
+  })
+  findDeleted() {
+    return this.membersService.findDeleted();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a member by id' })
   @ApiParam({ name: 'id', description: 'The ID of the member' })
@@ -64,11 +75,11 @@ export class MembersController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete a member' })
+  @ApiOperation({ summary: 'Soft delete a member' })
   @ApiParam({ name: 'id', description: 'The ID of the member to delete' })
   @ApiResponse({
     status: 200,
-    description: 'The member has been successfully deleted.',
+    description: 'The member has been successfully soft-deleted.',
   })
   @ApiResponse({ status: 404, description: 'Member not found.' })
   remove(@Param('id') id: string) {

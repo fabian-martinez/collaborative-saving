@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import { Stock } from './entities/stock.entity';
 import { CreateStockDto } from './dto/create-stock.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
@@ -17,12 +17,26 @@ export class StocksService {
     return this.stocksRepository.save(stock);
   }
 
-  findAll(): Promise<Stock[]> {
-    return this.stocksRepository.find();
+  findAll(withDeleted = false): Promise<Stock[]> {
+    return this.stocksRepository.find({
+      withDeleted: withDeleted,
+    });
   }
 
-  async findOne(id: string): Promise<Stock> {
-    const stock = await this.stocksRepository.findOneBy({ id });
+  findOnlyDeleted(): Promise<Stock[]> {
+    return this.stocksRepository.find({
+      withDeleted: true,
+      where: {
+        deleted_at: Not(IsNull()),
+      },
+    });
+  }
+
+  async findOne(id: string, withDeleted = false): Promise<Stock> {
+    const stock = await this.stocksRepository.findOne({
+      where: { id },
+      withDeleted: withDeleted,
+    });
     if (!stock) {
       throw new NotFoundException(`Stock #${id} not found`);
     }
@@ -30,11 +44,27 @@ export class StocksService {
   }
 
   async update(id: string, updateStockDto: UpdateStockDto): Promise<Stock> {
-    await this.stocksRepository.update(id, updateStockDto);
-    return this.findOne(id);
+    const stock = await this.stocksRepository.preload({
+      id,
+      ...updateStockDto,
+    });
+    if (!stock) {
+      throw new NotFoundException(`Stock #${id} not found`);
+    }
+    return this.stocksRepository.save(stock);
   }
 
   async remove(id: string): Promise<void> {
-    await this.stocksRepository.delete(id);
+    const result = await this.stocksRepository.softDelete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Stock #${id} not found`);
+    }
+  }
+
+  async restore(id: string): Promise<void> {
+    const result = await this.stocksRepository.restore(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Stock #${id} not found`);
+    }
   }
 }

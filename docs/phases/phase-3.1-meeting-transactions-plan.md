@@ -2,7 +2,7 @@
 
 Este documento desglosa el plan para refactorizar y construir la lógica de negocio principal de la aplicación, centrada en el concepto de "reuniones".
 
-**Estado actual:** Flujos 1, 2 y 3 completados.
+**Estado actual:** Todos los flujos iniciales (1-6) han sido implementados. Pendiente implementar la gestión de catálogos.
 
 ---
 
@@ -26,7 +26,7 @@ Se ha creado la interfaz para que el administrador controle el ciclo de vida de 
 
 ---
 
-### Flujo 3: Lógica de Negocio para Pagos Precalculados (🟡 Pendiente de Refactorización)
+### Flujo 3: Lógica de Negocio para Pagos Precalculados (✅ Completado)
 La lógica para calcular las obligaciones de un socio se implementó inicialmente en la base de datos. Ahora debe migrarse al backend de NestJS para centralizar las reglas de negocio.
 
 -   **3.1. Definir Reglas de Negocio:**
@@ -65,4 +65,45 @@ Se creará un endpoint en la API de NestJS para registrar de forma atómica toda
         -   **Proceso:**
             1.  Crear una única `operation` para el socio en esa reunión.
             2.  Iterar sobre los pagos recibidos y generar todos los asientos contables (`ledger_entries`) necesarios (débitos y créditos correspondientes para cada tipo de pago).
-    -   **Entregable:** Un endpoint robusto, transaccional y con pruebas unitarias que garantice la integridad del libro contable. 
+    -   **Entregable:** Un endpoint robusto, transaccional y con pruebas unitarias que garantice la integridad del libro contable.
+
+---
+
+### Flujo 6: Administración de Socios del Fondo (✅ Completado)
+Se creará la interfaz de administración para gestionar el ciclo de vida de los socios.
+
+-   **6.1. Crear Vista "Admin: Socios" (Frontend):** (✅ Completado)
+    -   **Ruta:** `/admin/members`
+    -   **Descripción:** Una página para listar, crear y, eventualmente, editar/eliminar socios.
+
+-   **6.2. Implementar Listado de Socios:** (✅ Completado)
+    -   **Lógica Frontend:** Al cargar la vista, llamar al endpoint `GET /members` para obtener y mostrar la lista de todos los socios en una tabla.
+
+-   **6.3. Implementar Creación de Nuevos Socios:** (✅ Completado)
+    -   **Lógica Frontend:** Añadir un formulario o modal en la vista para capturar los datos de un nuevo socio (nombre, email, etc.). Al enviarlo, se llamará al endpoint `POST /members` y se actualizará la lista.
+
+---
+
+### Flujo 7: Administración del Catálogo de Acciones (Admin)
+Se creará una interfaz para que el administrador gestione los tipos de acciones que el fondo puede emitir.
+
+-   **7.1. Crear Vista "Admin: Acciones" (Frontend):**
+    -   **Ruta:** `/admin/stocks`
+    -   **Descripción:** Una página para listar, crear, editar y eliminar los tipos de acciones disponibles en el fondo (ej: "Acción Grande", "Bono Navideño").
+    -   **Lógica Frontend:** Se conectará a los endpoints CRUD del backend para gestionar las acciones.
+
+-   **7.2. Implementar CRUD para Acciones:**
+    -   **Lógica Backend:** Utilizar los endpoints existentes en `StocksController` (`GET /stocks`, `POST /stocks`, `PATCH /stocks/:id`, `DELETE /stocks/:id`).
+
+---
+
+### Flujo 8: Administración de Contribuciones Obligatorias (Admin)
+Se creará una interfaz para que el administrador defina y gestione los aportes que todos los socios deben realizar periódicamente.
+
+-   **8.1. Crear Vista "Admin: Contribuciones" (Frontend):**
+    -   **Ruta:** `/admin/contributions`
+    -   **Descripción:** Una página para listar, crear, editar y eliminar los tipos de aportes obligatorios (ej: "Aporte Administrativo").
+    -   **Lógica Frontend:** Se conectará a los endpoints CRUD del backend.
+
+-   **8.2. Implementar CRUD para Contribuciones:**
+    -   **Lógica Backend:** Utilizar los endpoints existentes en `MeetingsController` (`GET /meetings/mandatory-contributions`, `POST /meetings/mandatory-contributions`, etc.). 

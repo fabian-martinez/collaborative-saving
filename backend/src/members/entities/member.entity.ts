@@ -1,5 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  DeleteDateColumn,
+} from 'typeorm';
 
 @Entity({ name: 'members' })
 export class Member {
@@ -30,4 +35,7 @@ export class Member {
   })
   @Column({ type: 'text', unique: true, name: 'identification_number' })
   identificationNumber: string;
+
+  @DeleteDateColumn({ name: 'deleted_at' })
+  deletedAt: Date;
 }

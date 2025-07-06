@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  OneToMany,
+  DeleteDateColumn,
+} from 'typeorm';
 import { StockValueHistory } from './stock-value-history.entity';
 
 @Entity({ name: 'stocks' })
@@ -35,4 +41,11 @@ export class Stock {
   @ApiProperty({ type: () => [StockValueHistory] })
   @OneToMany(() => StockValueHistory, (history) => history.stock)
   value_history: StockValueHistory[];
+
+  @DeleteDateColumn({
+    type: 'timestamp with time zone',
+    nullable: true,
+    name: 'deleted_at',
+  })
+  deleted_at: Date | null;
 }

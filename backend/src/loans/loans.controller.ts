@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param } from '@nestjs/common';
 import { LoansService } from './loans.service';
 import { CreateLoanDto } from './dto/create-loan.dto';
 import { UpdateLoanDto } from './dto/update-loan.dto';
@@ -61,17 +53,5 @@ export class LoansController {
   @ApiResponse({ status: 404, description: 'Loan not found.' })
   update(@Param('id') id: string, @Body() updateLoanDto: UpdateLoanDto) {
     return this.loansService.update(id, updateLoanDto);
-  }
-
-  @Delete(':id')
-  @ApiOperation({ summary: 'Delete a loan' })
-  @ApiParam({ name: 'id', description: 'The ID of the loan to delete' })
-  @ApiResponse({
-    status: 200,
-    description: 'The loan has been successfully deleted.',
-  })
-  @ApiResponse({ status: 404, description: 'Loan not found.' })
-  remove(@Param('id') id: string) {
-    return this.loansService.remove(id);
   }
 }

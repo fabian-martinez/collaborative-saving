@@ -10,7 +10,7 @@ import { CreateMandatoryContributionDto } from './dto/create-mandatory-contribut
 import { MandatoryContribution } from './entities/mandatory-contribution.entity';
 import { UpdateMandatoryContributionDto } from './dto/update-mandatory-contribution.dto';
 import { StockSubscriptionsService } from '../stock-subscriptions/stock-subscriptions.service';
-import { RecordTransactionsDto } from './dto/record-transactions.dto';
+import { SimplifiedRecordTransactionsDto } from './dto/simplified-record-transactions.dto';
 import { Operation } from '../operations/entities/operation.entity';
 import { LedgerEntry } from '../ledger-entries/entities/ledger-entry.entity';
 import {
@@ -47,6 +47,14 @@ export class MeetingsService {
     private readonly loansService: LoansService,
     private readonly dataSource: DataSource,
   ) {}
+
+  findAll(): Promise<Meeting[]> {
+    return this.meetingRepository.find({
+      order: {
+        date: 'DESC',
+      },
+    });
+  }
 
   async getMemberDues(memberId: string): Promise<MemberDue[]> {
     const dues: MemberDue[] = [];
@@ -156,9 +164,18 @@ export class MeetingsService {
   }
 
   async recordTransactions(
-    recordTransactionsDto: RecordTransactionsDto,
+    recordTransactionsDto: SimplifiedRecordTransactionsDto,
   ): Promise<Operation> {
-    const { meetingId, memberId, payments } = recordTransactionsDto;
+    const { memberId, payments } = recordTransactionsDto;
+
+    const activeMeeting = await this.meetingRepository.findOne({
+      where: { status: 'active' },
+    });
+
+    if (!activeMeeting) {
+      throw new NotFoundException('No active meeting found.');
+    }
+    const meetingId = activeMeeting.id;
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -261,6 +278,21 @@ export class MeetingsService {
 
   create(createMeetingDto: CreateMeetingDto): Promise<Meeting> {
     const meeting = this.meetingRepository.create(createMeetingDto);
+    return this.meetingRepository.save(meeting);
+  }
+
+  async close(id: string): Promise<Meeting> {
+    const meeting = await this.meetingRepository.findOneBy({ id });
+
+    if (!meeting) {
+      throw new NotFoundException(`Meeting with ID "${id}" not found.`);
+    }
+
+    if (meeting.status === 'closed') {
+      throw new BadRequestException('This meeting is already closed.');
+    }
+
+    meeting.status = 'closed';
     return this.meetingRepository.save(meeting);
   }
 

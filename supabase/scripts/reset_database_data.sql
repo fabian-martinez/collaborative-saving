@@ -19,7 +19,10 @@ TRUNCATE TABLE
   public.stock_subscriptions,
   public.operations,
   public.ledger_entries,
-  public.meetings
+  public.meetings,
+  public.loans,
+  public.loan_transaction_details,
+  public.stock_value_history
 RESTART IDENTITY CASCADE;
 
 -- Reactiva los triggers.
