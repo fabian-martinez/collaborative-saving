@@ -14,7 +14,7 @@ export const useActiveMeetingStore = defineStore('active-meeting', () => {
 
   async function fetchActiveMeeting() {
     try {
-      const meeting = await meetingsService.getActiveMeeting()
+      const meeting = await meetingsService.findActive()
       if (meeting) {
         meetingId.value = meeting.id
       } else {
@@ -28,7 +28,7 @@ export const useActiveMeetingStore = defineStore('active-meeting', () => {
 
   async function startNewMeeting(): Promise<Meeting | undefined> {
     try {
-      const newMeeting = await meetingsService.startNewMeeting()
+      const newMeeting = await meetingsService.create({ date: new Date().toISOString() })
       meetingId.value = newMeeting.id
       currentStep.value = 1
       return newMeeting
@@ -44,6 +44,14 @@ export const useActiveMeetingStore = defineStore('active-meeting', () => {
 
   function setMeetingId(id: string) {
     meetingId.value = id
+  }
+
+  function setTotalCollection(amount: number) {
+    totalCollection.value = amount
+  }
+
+  function setTotalInterest(amount: number) {
+    totalInterest.value = amount
   }
 
   function $reset() {
@@ -68,6 +76,8 @@ export const useActiveMeetingStore = defineStore('active-meeting', () => {
     startNewMeeting,
     $reset,
     updateBalance,
+    setTotalCollection,
+    setTotalInterest,
     totalCollection,
     totalInterest,
   }

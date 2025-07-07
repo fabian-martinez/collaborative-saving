@@ -32,6 +32,14 @@ export class LedgerEntry {
   account_type: string;
 
   @ApiProperty({
+    description: 'A human-readable description for the entry',
+    example: 'Pago de cuota de préstamo',
+    nullable: true,
+  })
+  @Column({ type: 'text', nullable: true })
+  description: string;
+
+  @ApiProperty({
     description:
       'The amount of the entry. Positive for debits, negative for credits.',
     example: 150.75,

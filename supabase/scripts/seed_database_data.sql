@@ -31,7 +31,7 @@ INSERT INTO public.stocks (id, type, value, monthly_contribution) VALUES
 ('f47ac10b-58cc-4372-a567-0e02b2c3d482', 'Bono Navideño', 100.00, 10.00);
 
 -- Insertar contribuciones obligatorias
-INSERT INTO public.mandatory_contributions (asset_type, total) VALUES
+INSERT INTO public.mandatory_contributions (asset_type, value) VALUES
 ('Cuota de Administración', 5.00),
 ('Fondo para Actividades Sociales', 2.00);
 
@@ -59,41 +59,90 @@ INSERT INTO public.stock_subscriptions (member_id, stock_id, quantity) VALUES
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'f47ac10b-58cc-4372-a567-0e02b2c3d482', 5),
 -- Beatriz tiene 3 acciones pequeñas
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', 'f47ac10b-58cc-4372-a567-0e02b2c3d481', 3);
--- David no tiene acciones aún
+-- David no tenía acciones, se le asignará un préstamo.
 
 -- Crear una reunión activa y una cerrada
 INSERT INTO public.meetings (id, date, status) VALUES
 ('c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c31', NOW() - INTERVAL '1 month', 'closed'),
 ('c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c32', NOW(), 'active');
 
--- Crear un préstamo activo para un socio (Carlos)
+-- Crear préstamos activos para socios
 INSERT INTO public.loans (id, member_id, loan_type, approved_amount, interest_rate, status, monthly_payment_amount) VALUES
-('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b21', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'corriente', 2000.00, 0.05, 'active', 150.00);
+-- Préstamo para Carlos
+('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b21', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'corriente', 2000.00, 0.05, 'active', 150.00),
+-- Préstamo para David para que tenga obligaciones
+('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b22', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14', 'agil', 500.00, 0.08, 'active', 50.00);
 
--- Operación para el desembolso del préstamo de Carlos en la reunión pasada
-INSERT INTO public.operations (id, member_id, meeting_id, description) VALUES
-('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d42', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c31', 'Desembolso de Préstamo Corriente');
 
--- Añadir transacciones para simular el estado del préstamo de Carlos
--- Desembolso inicial (asociado a la operación de la reunión)
+-- Operaciones de la REUNIÓN CERRADA
+-- ---------------------------------
+-- Desembolso del préstamo de Carlos en la reunión pasada
+INSERT INTO public.operations (id, member_id, meeting_id, description, type) VALUES
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d42', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c31', 'Desembolso Préstamo Corriente a Carlos', 'LOAN_DISBURSEMENT');
+
+-- Pago mensual de Ana en la reunión pasada
+INSERT INTO public.operations (id, member_id, meeting_id, description, type) VALUES
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d51', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c31', 'Pago mensual Ana', 'MONTHLY_PAYMENT');
+
+-- Pago mensual de Beatriz en la reunión pasada
+INSERT INTO public.operations (id, member_id, meeting_id, description, type) VALUES
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d52', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', 'c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c31', 'Pago mensual Beatriz', 'MONTHLY_PAYMENT');
+
+-- Pago mensual de David en la reunión pasada
+INSERT INTO public.operations (id, member_id, meeting_id, description, type) VALUES
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d53', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14', 'c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c31', 'Pago mensual David', 'MONTHLY_PAYMENT');
+
+
+-- Asientos Contables de la REUNIÓN CERRADA
+-- ------------------------------------------
+-- Asientos para el desembolso del préstamo de Carlos
+INSERT INTO public.ledger_entries(operation_id, account_type, amount) VALUES
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d42', 'CASH', -2000.00), -- Sale de caja
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d42', 'LOANS_RECEIVABLE', 2000.00); -- Aumenta la cuenta por cobrar
+
+-- Asientos para el pago de Ana (2 Acciones Grandes + Cuotas)
+INSERT INTO public.ledger_entries(operation_id, account_type, amount) VALUES
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d51', 'CASH', 207.00), -- (2*100) + 5 + 2
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d51', 'STOCK_CAPITAL', -200.00),
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d51', 'MANDATORY_CONTRIBUTION_INCOME', -7.00);
+
+-- Asientos para el pago de Beatriz (3 Acciones Pequeñas + Cuotas)
+INSERT INTO public.ledger_entries(operation_id, account_type, amount) VALUES
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d51', 'CASH', 82.00), -- (3*25) + 5 + 2
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d51', 'STOCK_CAPITAL', -75.00),
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d51', 'MANDATORY_CONTRIBUTION_INCOME', -7.00);
+
+-- Asientos para el pago de David (Solo Cuotas)
+INSERT INTO public.ledger_entries(operation_id, account_type, amount) VALUES
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d51', 'CASH', 7.00), -- 5 + 2
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d51', 'MANDATORY_CONTRIBUTION_INCOME', -7.00);
+
+
+-- Operaciones de la REUNIÓN ACTIVA
+-- ---------------------------------
+-- Simular una operación de pago por parte de Beatriz (esto podría eliminarse o mantenerse para pruebas)
+INSERT INTO public.operations (id, member_id, meeting_id, description, type) VALUES
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d41', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', 'c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c32', 'Pago de cuotas en reunión activa', 'MONTHLY_PAYMENT');
+
+-- Asientos contables para la operación de Beatriz en reunión activa
+INSERT INTO public.ledger_entries(operation_id, account_type, amount) VALUES
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d41', 'CASH', 82.00), -- (3*25) + 5 + 2
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d41', 'MANDATORY_CONTRIBUTION_INCOME', -7.00),
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d41', 'STOCK_CAPITAL', -75.00);
+
+
+-- Historial y Estado Actual
+-- ---------------------------
+-- Transacciones del préstamo de Carlos
 INSERT INTO public.loan_transaction_details (loan_id, operation_id, transaction_type, amount) VALUES
 ('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b21', 'd1eebc99-9c0b-4ef8-bb6d-6bb9bd380d42', 'desembolso', 2000.00);
--- Abono a capital para llegar al saldo de 1500 (sin reunión asociada)
-INSERT INTO public.loan_transaction_details (loan_id, transaction_type, amount) VALUES
-('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b21', 'abono_capital', 500.00);
 
--- Simular una operación de pago en la reunión activa por parte de Beatriz
-INSERT INTO public.operations (id, member_id, meeting_id, description) VALUES
-('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d41', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', 'c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c32', 'Pago de cuotas en reunión');
+-- Transacciones del préstamo de David (solo desembolso)
+INSERT INTO public.operations (id, member_id, meeting_id, description, type) VALUES
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d43', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14', 'c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c31', 'Desembolso Préstamo Ágil a David', 'LOAN_DISBURSEMENT');
+INSERT INTO public.loan_transaction_details (loan_id, operation_id, transaction_type, amount) VALUES
+('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b22', 'd1eebc99-9c0b-4ef8-bb6d-6bb9bd380d43', 'desembolso', 500.00);
 
--- Asientos contables para la operación de Beatriz
-INSERT INTO public.ledger_entries(operation_id, account_type, amount) VALUES
--- Débito a la caja/banco por el total recibido
-('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d41', 'cash_assets', 82.00), -- 75 (acciones) + 5 (admin) + 2 (social)
--- Crédito a la cuenta de aportes obligatorios de Beatriz
-('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d41', 'mandatory_contributions_beatriz', -7.00),
--- Crédito a la cuenta de capital en acciones de Beatriz
-('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d41', 'stock_capital_beatriz', -75.00); -- 3 acciones pequeñas * 25
 
 -- ----------------------------------------------------------------
 -- ▤ Confirmation

@@ -1,28 +1,43 @@
 import { api } from '@/services/api';
-import type { Meeting, MemberDue, SimplifiedRecordTransactions } from '../types';
+import type {
+  Meeting,
+  MemberDue,
+  SimplifiedRecordTransactions,
+} from '../types';
+import type { Operation } from '@/features/operations/types';
 
-export const meetingsService = {
-  getMeetings: (): Promise<Meeting[]> => {
-    return api.get<Meeting[]>('/meetings');
-  },
+class MeetingsService {
+  // Methods related to meetings list and creation
+  findAll(): Promise<Meeting[]> {
+    return api.get('/meetings');
+  }
 
-  getActiveMeeting: (): Promise<Meeting | null> => {
-    return api.get<Meeting | null>('/meetings/active');
-  },
+  findActive(): Promise<Meeting | null> {
+    return api.get('/meetings/active');
+  }
 
-  startNewMeeting: (): Promise<Meeting> => {
-    return api.post<Meeting>('/meetings', {});
-  },
+  create(date: { date: string }): Promise<Meeting> {
+    return api.post('/meetings', date);
+  }
 
-  closeMeeting: (meetingId: string): Promise<void> => {
-    return api.patch<void>(`/meetings/${meetingId}/close`, {});
-  },
+  close(id: string): Promise<Meeting> {
+    return api.patch(`/meetings/${id}/close`, {});
+  }
 
-  getMemberDues: (memberId: string): Promise<MemberDue[]> => {
-    return api.get<MemberDue[]>(`/meetings/active/member-dues/${memberId}`);
-  },
+  // Methods related to active meeting collections
+  getMemberDues(memberId: string): Promise<MemberDue[]> {
+    return api.get(`/meetings/active/member-dues/${memberId}`);
+  }
 
-  recordPayments: (payload: SimplifiedRecordTransactions): Promise<void> => {
-    return api.post<void>('/meetings/active/record-payments', payload);
-  },
-}; 
+  recordMonthlyPayment(
+    payload: SimplifiedRecordTransactions,
+  ): Promise<void> {
+    return api.post('/meetings/active/record-monthly-payment', payload);
+  }
+
+  getMonthlyPayments(meetingId: string): Promise<Operation[]> {
+    return api.get(`/meetings/${meetingId}/monthly-payments`);
+  }
+}
+
+export const meetingsService = new MeetingsService(); 

@@ -14,6 +14,7 @@ export const STOCK_CAPITAL_ACCOUNT = 'STOCK_CAPITAL'; // Capital aportado por lo
 // --- INGRESOS ---
 // Representan las ganancias del fondo.
 export const INTEREST_INCOME_ACCOUNT = 'INTEREST_INCOME'; // Ganancias generadas por los intereses de los préstamos.
+export const FEE_INCOME_ACCOUNT = 'FEE_INCOME'; // Ingresos por multas u otras tarifas.
 export const MANDATORY_CONTRIBUTION_INCOME_ACCOUNT =
   'MANDATORY_CONTRIBUTION_INCOME'; // Ingresos por las cuotas obligatorias de los socios.
 

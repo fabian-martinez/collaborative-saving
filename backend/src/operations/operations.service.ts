@@ -1,5 +1,9 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
+import { DataSource, FindManyOptions } from 'typeorm';
 import { BuyStockDto } from './dto/buy-stock.dto';
 import { StocksService } from '../stocks/stocks.service';
 import { StockSubscriptionsService } from '../stock-subscriptions/stock-subscriptions.service';
@@ -20,6 +24,21 @@ export class OperationsService {
     private readonly stockSubscriptionsService: StockSubscriptionsService,
     private readonly loansService: LoansService,
   ) {}
+
+  async findOne(id: string): Promise<Operation> {
+    const operation = await this.dataSource.manager
+      .getRepository(Operation)
+      .findOne({
+        where: { id },
+        relations: ['member', 'ledger_entries'],
+      });
+
+    if (!operation) {
+      throw new NotFoundException(`Operation with ID "${id}" not found.`);
+    }
+
+    return operation;
+  }
 
   async buyStock(buyStockDto: BuyStockDto) {
     const { memberId, stockId, quantity, cashAmount, loanDetails } =
@@ -50,6 +69,7 @@ export class OperationsService {
       const operation = queryRunner.manager.create(Operation, {
         member_id: memberId,
         description: `Compra de ${quantity} x ${stock.type} por socio ${memberId}`,
+        type: 'STOCK_PURCHASE',
       });
       await queryRunner.manager.save(operation);
       const operation_id = operation.id;
@@ -127,5 +147,17 @@ export class OperationsService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async findAll(params: { meetingId?: string }) {
+    const queryOptions: FindManyOptions<Operation> = {
+      relations: ['ledger_entries'],
+    };
+
+    if (params.meetingId) {
+      queryOptions.where = { meeting_id: params.meetingId };
+    }
+
+    return this.dataSource.manager.getRepository(Operation).find(queryOptions);
   }
 }

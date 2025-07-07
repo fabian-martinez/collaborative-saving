@@ -20,6 +20,7 @@ export interface MemberDue {
 
 export interface Payment {
   type: 'mandatory_contribution' | 'stock_fee' | 'loan_payment' | 'fee';
+  description: string;
   amount: number;
   referenceId?: string;
 }
@@ -28,3 +29,7 @@ export interface SimplifiedRecordTransactions {
   memberId: string;
   payments: Payment[];
 }
+
+export type OperationType =
+  | 'LOAN_DISBURSEMENT'
+  | 'MONTHLY_PAYMENT';

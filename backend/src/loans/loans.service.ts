@@ -104,6 +104,7 @@ export class LoansService {
         member_id: createLoanDto.member_id,
         meeting_id: null,
         description: `Loan disbursement for member ${createLoanDto.member_id}`,
+        type: 'LOAN_DISBURSEMENT',
       });
       await runner.manager.save(operation);
 

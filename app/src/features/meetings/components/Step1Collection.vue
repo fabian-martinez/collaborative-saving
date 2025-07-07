@@ -34,6 +34,27 @@
             </a>
           </li>
         </ul>
+        <div class="mt-4 p-4 bg-base-200 rounded-box space-y-4">
+            <div>
+                <div class="text-center">
+                    <div class="text-sm font-light text-base-content/70 uppercase">Total Aportes Recaudados</div>
+                    <div class="text-3xl font-bold text-primary">{{ totalCollected.toFixed(2) }}</div>
+                </div>
+            </div>
+            
+            <div class="border-t border-base-300/50"></div>
+
+            <div>
+                <h4 class="font-semibold text-center text-base-content/80 mb-2">Pagos Registrados</h4>
+                <div v-if="completedPayments.length > 0" class="space-y-2">
+                    <div v-for="(payment, index) in completedPayments" :key="index" class="flex justify-between items-center bg-base-100/50 p-2 rounded-md text-sm">
+                        <span class="font-medium">{{ payment.memberName }}</span>
+                        <span class="font-mono text-success font-bold">+{{ payment.amount.toFixed(2) }}</span>
+                    </div>
+                </div>
+                <p v-else class="text-base-content/60 italic text-sm text-center">Sin pagos aún.</p>
+            </div>
+        </div>
       </div>
 
       <!-- Payment Form -->
@@ -45,9 +66,32 @@
           <span>{{ duesError }}</span>
         </div>
         <div v-else-if="!selectedMember" class="flex items-center justify-center h-full text-gray-500">
-          <p>Seleccione un socio para ver sus deudas y registrar un pago.</p>
+          <p class="text-center">Seleccione un socio para ver sus deudas o detalles de pago.</p>
         </div>
         
+        <!-- Operation Details View -->
+        <div v-else-if="viewedOperations" class="bg-base-100 p-6 rounded-2xl shadow-lg font-sans">
+           <div class="text-center mb-6">
+             <h2 class="text-2xl font-bold">Detalle del Pago</h2>
+              <p class="text-lg text-base-content/80">{{ selectedMember.name }}</p>
+            </div>
+            <div class="space-y-4">
+              <OperationDetails 
+                v-for="op in viewedOperations" 
+                :key="op.id"
+                :operation="op"
+              />
+               <div class="mt-8 pt-4 border-t-2 border-dashed border-base-300/50 text-right">
+                <div class="flex items-baseline text-2xl font-bold">
+                    <span class="flex-shrink-0">Total Pagado:</span>
+                    <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
+                    <span class="flex-shrink-0 text-primary font-mono">{{ viewedTotal.toFixed(2) }}</span>
+                </div>
+            </div>
+            </div>
+        </div>
+        
+        <!-- Payment Form View -->
         <div v-else class="bg-base-100 p-6 rounded-2xl shadow-lg font-sans">
           <div class="text-center mb-6">
              <h2 class="text-2xl font-bold">Recibo de Pago</h2>
@@ -148,10 +192,8 @@
     </div>
     
     <div class="mt-8 pt-4 border-t">
-        <h3 class="text-lg font-bold">Estado del Recaudo</h3>
-        <p>Aquí irá un resumen de los pagos recibidos en esta reunión.</p>
         <div class="text-right mt-4">
-            <button class="btn btn-success" @click="$emit('completed')">Finalizar Recaudo</button>
+            <button class="btn btn-success" @click="$emit('completed')">Finalizar Solicitud de Aportes</button>
         </div>
     </div>
   </div>
@@ -163,18 +205,24 @@ import { membersService } from '@/features/members/services/membersService';
 import { meetingsService } from '@/features/meetings/services/meetings';
 import type { Member } from '@/features/members/types';
 import type { MemberDue, Payment } from '../types';
+import type { Operation } from '@/features/operations/types';
 import { useActiveMeetingStore } from '../stores/activeMeeting';
 import EditLoanPaymentModal from './EditLoanPaymentModal.vue';
 import EditFineModal from './EditFineModal.vue';
+import OperationDetails from '@/features/operations/components/operationDetails.vue';
 
 const activeMeetingStore = useActiveMeetingStore();
-const emit = defineEmits(['completed']);
+const emit = defineEmits(['completed', 'update:totalCollected', 'update:totalInterest']);
 
 const members = ref<Member[]>([]);
 const selectedMember = ref<Member | null>(null);
 const memberDues = ref<MemberDue[]>([]);
 const payments = ref<Payment[]>([]);
 const paidMemberIds = ref<string[]>([]);
+const totalCollected = ref(0);
+const completedPayments = ref<{ memberName: string, amount: number }[]>([]);
+const paidMemberOperations = ref<Map<string, Operation[]>>(new Map());
+const viewedOperations = ref<Operation[] | null>(null);
 
 const isMembersLoading = ref(false);
 const isDuesLoading = ref(false);
@@ -193,6 +241,10 @@ const editingFineIndex = ref<number | null>(null);
 const editingLoanDue = computed(() => {
     if(editingLoanIndex.value === null) return null;
     return indexedDues.value.find(due => due.originalIndex === editingLoanIndex.value) || null;
+});
+
+const viewedTotal = computed(() => {
+    return viewedOperations.value?.reduce((sum, op) => sum + (op.total_debit || 0), 0) || 0;
 });
 
 const indexedDues = computed(() => 
@@ -222,6 +274,7 @@ function handleFineUpdate(data: { description: string, amount: number }) {
         memberDues.value[index].description = data.description;
         memberDues.value[index].amount = data.amount;
         payments.value[index].amount = data.amount;
+        payments.value[index].description = data.description;
     } else {
         // Adding new fine
         const fineDue: MemberDue = {
@@ -233,6 +286,7 @@ function handleFineUpdate(data: { description: string, amount: number }) {
 
         const finePayment: Payment = {
             type: 'fee',
+            description: data.description,
             amount: data.amount,
         };
         payments.value.push(finePayment);
@@ -274,16 +328,67 @@ function editPayment(index: number) {
 }
 
 onMounted(async () => {
+  isMembersLoading.value = true;
+  membersError.value = null;
   try {
-    isMembersLoading.value = true;
-    membersError.value = null;
     members.value = await membersService.getMembers();
+    await fetchMeetingPayments(activeMeetingStore.meetingId || '');
   } catch (err: any) {
     membersError.value = err.message || 'Error al cargar los socios.';
   } finally {
     isMembersLoading.value = false;
   }
 });
+
+async function fetchMeetingPayments(meetingId: string) {
+  try {
+    if (!meetingId) {
+      console.error('No meeting ID found');
+      return;
+    }
+    const operations = await meetingsService.getMonthlyPayments(meetingId);
+    const operationMap = new Map<string, Operation[]>();
+    let total = 0;
+    let totalInterest = 0;
+    const paymentsList: { memberName: string; amount: number }[] = [];
+
+    for (const op of operations) {
+      if (!operationMap.has(op.member_id)) {
+        operationMap.set(op.member_id, []);
+      }
+      operationMap.get(op.member_id)!.push(op);
+
+      if (op.ledger_entries) {
+        for (const entry of op.ledger_entries) {
+          if (entry.account_type === 'INTEREST_INCOME') {
+            totalInterest += Number(entry.amount) || 0;
+          }
+        }
+      }
+    }
+    
+    paidMemberOperations.value = operationMap;
+    paidMemberIds.value = Array.from(operationMap.keys());
+    
+    // Recalculate totals and paid list
+    for(const [memberId, ops] of operationMap.entries()) {
+        const member = members.value.find(m => m.id === memberId);
+        if(member) {
+            console.log(ops);
+            const amount = ops.reduce((sum, op) => sum + ( op.total_debit || 0), 0);
+            total += amount;
+            paymentsList.push({ memberName: member.name, amount });
+        }
+    }
+    totalCollected.value = total;
+    completedPayments.value = paymentsList;
+    emit('update:totalCollected', totalCollected.value);
+    emit('update:totalInterest', -totalInterest);
+
+  } catch (error) {
+    console.error("Error fetching meeting payments", error);
+  }
+}
 
 const isMemberPaid = (memberId: string) => paidMemberIds.value.includes(memberId);
 
@@ -294,14 +399,16 @@ function addFine() {
 }
 
 async function selectMember(member: Member) {
-  if (isMemberPaid(member.id)) {
-    return;
-  }
-
   selectedMember.value = member;
+  viewedOperations.value = null;
   memberDues.value = [];
   payments.value = [];
   duesError.value = null;
+  
+  if (isMemberPaid(member.id)) {
+    viewedOperations.value = paidMemberOperations.value.get(member.id) || [];
+    return;
+  }
   
   try {
     isDuesLoading.value = true;
@@ -312,6 +419,7 @@ async function selectMember(member: Member) {
     // Initialize payment payload from dues
     payments.value = dues.map(due => ({
       type: due.type,
+      description: due.description,
       amount: due.amount,
       referenceId: due.referenceId,
     }));
@@ -334,21 +442,41 @@ async function handleRecordTransaction() {
     alert('No hay un socio seleccionado o datos de pago.');
     return;
   }
+
+  const processedPayments = payments.value.map((payment, index) => {
+    const due = memberDues.value[index];
+    if (!due) return payment;
+
+    let description = payment.description;
+
+    if (due.type === 'stock_fee' && due.stockQuantity && due.monthlyContribution) {
+      description = `${due.stockQuantity} uds. x ${due.monthlyContribution.toFixed(2)} c/u`;
+    } else if (due.type === 'loan_payment' && due.details) {
+      const interest = due.details.interest || 0;
+      const principal = payment.amount - interest;
+      description = `Abono Capital: ${principal.toFixed(2)}, Intereses: ${interest.toFixed(2)}`;
+    }
+
+    return {
+      ...payment,
+      description: description,
+    };
+  });
   
   const payload: { memberId: string, payments: Payment[] } = {
     memberId: selectedMember.value.id,
-    payments: payments.value,
+    payments: processedPayments,
   };
 
   try {
     isSubmitting.value = true;
     submissionError.value = null;
-    await meetingsService.recordPayments(payload as any);
+    console.log(payload);
+    await meetingsService.recordMonthlyPayment(payload as any);
     
-    // Update store
-    activeMeetingStore.updateBalance(totalToPay.value, totalInterest.value);
+    // Refresh payments state
+    await fetchMeetingPayments(activeMeetingStore.meetingId || '');
 
-    paidMemberIds.value.push(selectedMember.value.id);
     alert(`Pago de ${totalToPay.value.toFixed(2)} registrado para ${selectedMember.value.name}.`);
     
     // Reset for next member

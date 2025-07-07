@@ -13,6 +13,7 @@ export const PaymentType = [
   'mandatory_contribution',
   'stock_fee',
   'loan_payment',
+  'fee',
 ] as const;
 
 export class CreateTransactionPaymentDto {

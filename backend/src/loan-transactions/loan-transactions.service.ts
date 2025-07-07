@@ -9,7 +9,10 @@ import { CreateLoanTransactionDto } from './dto/create-loan-transaction.dto';
 import { UpdateLoanTransactionDto } from './dto/update-loan-transaction.dto';
 import { LoanTransactionDetail } from '../loans/entities/loan-transaction-detail.entity';
 import { LoansService } from '../loans/loans.service';
-import { Operation } from '../operations/entities/operation.entity';
+import {
+  Operation,
+  OperationTypeEnum,
+} from '../operations/entities/operation.entity';
 import { LedgerEntry } from '../ledger-entries/entities/ledger-entry.entity';
 import {
   CASH_ACCOUNT,
@@ -40,6 +43,17 @@ export class LoanTransactionsService {
       const loan = await this.loansService.findOne(loan_id);
       const member_id = loan.member_id;
 
+      let operationType: OperationTypeEnum | null = null;
+      switch (transaction_type) {
+        case 'desembolso':
+          operationType = 'LOAN_DISBURSEMENT';
+          break;
+        case 'abono_capital':
+        case 'pago_interes':
+          operationType = 'LOAN_PAYMENT';
+          break;
+      }
+
       // 1. Create Operation
       const operation = queryRunner.manager.create(Operation, {
         member_id,
@@ -47,6 +61,7 @@ export class LoanTransactionsService {
         description:
           notes ||
           `Transacción de ${transaction_type} para el crédito ${loan_id}`,
+        type: operationType,
       });
       await queryRunner.manager.save(operation);
       const operation_id = operation.id;

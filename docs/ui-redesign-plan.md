@@ -174,13 +174,16 @@ const routes = [
 3.  [ ] **Fase 3: Módulo Financiero**
     - [x] Crear la vista de historial de reuniones (`MeetingsView.vue`).
     - [x] Implementar la vista de reunión activa (`ActiveMeetingView.vue`) con un flujo de pasos (Stepper).
-        - La vista guiará al usuario a través de 4 etapas: Recaudo, Revalorización, Nuevas Operaciones y Desembolsos.
-        - Se crearán componentes dedicados para cada etapa (e.g., `Step1Collection.vue`, `Step2Revaluation.vue`, etc.).
-        - Se utilizará un store de Pinia (`activeMeeting.ts`) para gestionar el estado de la reunión activa a través de los pasos.
-    - [ ] Implementar la vista de recaudo de fondos (`Step1Collection.vue`).
+        - [x] La vista guiará al usuario a través de 4 etapas: Recaudo, Revalorización, Nuevas Operaciones y Desembolsos.
+        - [x] Se mostrará un resumen financiero en la parte superior, incluyendo "Recaudo Total", "Intereses Generados" y un nuevo indicador de "Efectivo Disponible". Este último se actualizará dinámicamente a lo largo de los pasos de la reunión para reflejar el dinero real en caja.
+        - [x] Se crearán componentes dedicados para cada etapa (e.g., `Step1Collection.vue`, `Step2Revaluation.vue`, etc.).
+        - [x] Se utilizará un store de Pinia (`activeMeeting.ts`) para gestionar el estado de la reunión activa a través de los pasos.
+    - [X] Implementar la vista de recaudo de fondos (`Step1Collection.vue`).
       - [x] Implementar la visualización de las deudas por pagar de los socios.
       - [x] Implementar la edición abono a capital y incluir multa.
-      - [ ] Implementar el pago de las obligaciones de los socios.
+      - [x] Implementar el pago de las obligaciones de los socios.
+      - [x] Implementar resumen del pago de las obligaciones de los socios.
+      - [x] Limitar a un pago por socio por reunión.
     - [ ] Implementar la vista de revalorización de activos (`Step2Revaluation.vue`).
       - [ ] Implementar la visualización de los activos revalorizados.
       - [ ] Implementar la confirmación de los activos revalorizados.

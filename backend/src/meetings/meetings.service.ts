@@ -5,19 +5,24 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, MoreThan, Repository } from 'typeorm';
+import { DataSource, MoreThan, QueryRunner, Repository } from 'typeorm';
 import { CreateMandatoryContributionDto } from './dto/create-mandatory-contribution.dto';
 import { MandatoryContribution } from './entities/mandatory-contribution.entity';
 import { UpdateMandatoryContributionDto } from './dto/update-mandatory-contribution.dto';
 import { StockSubscriptionsService } from '../stock-subscriptions/stock-subscriptions.service';
 import { SimplifiedRecordTransactionsDto } from './dto/simplified-record-transactions.dto';
-import { Operation } from '../operations/entities/operation.entity';
+import {
+  Operation,
+  OperationTypeEnum,
+} from '../operations/entities/operation.entity';
 import { LedgerEntry } from '../ledger-entries/entities/ledger-entry.entity';
 import {
   CASH_ACCOUNT,
+  FEE_INCOME_ACCOUNT,
   INTEREST_INCOME_ACCOUNT,
   LOANS_RECEIVABLE_ACCOUNT,
   MANDATORY_CONTRIBUTION_INCOME_ACCOUNT,
+  PENDING_CLASSIFICATION_ACCOUNT,
   STOCK_CAPITAL_ACCOUNT,
 } from '../common/constants/account-types';
 import { LoansService } from '../loans/loans.service';
@@ -213,6 +218,16 @@ export class MeetingsService {
     return dues;
   }
 
+  async findMonthlyPaymentsByMeeting(meetingId: string): Promise<Operation[]> {
+    return this.dataSource.manager.getRepository(Operation).find({
+      where: {
+        meeting_id: meetingId,
+        type: 'MONTHLY_PAYMENT',
+      },
+      relations: ['member', 'ledger_entries'],
+    });
+  }
+
   async revaluateAssets(meetingId: string): Promise<{
     revaluationRate: number;
     newStockValues: { type: string; value: number }[];
@@ -285,7 +300,7 @@ export class MeetingsService {
     }
   }
 
-  async recordMemberPayments(
+  async recordMonthlyPayment(
     recordTransactionsDto: SimplifiedRecordTransactionsDto,
   ): Promise<Operation> {
     const { memberId, payments } = recordTransactionsDto;
@@ -297,110 +312,43 @@ export class MeetingsService {
     if (!activeMeeting) {
       throw new NotFoundException('No active meeting found.');
     }
-    const meetingId = activeMeeting.id;
+
+    const existingPayment = await this.dataSource.manager
+      .getRepository(Operation)
+      .findOne({
+        where: {
+          member_id: memberId,
+          meeting_id: activeMeeting.id,
+          type: 'MONTHLY_PAYMENT',
+        },
+      });
+
+    if (existingPayment) {
+      throw new BadRequestException(
+        'El socio ya ha realizado su pago mensual en esta reunión.',
+      );
+    }
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // 1. Create a single master operation
-      const operation = queryRunner.manager.create(Operation, {
-        meeting_id: meetingId,
-        member_id: memberId,
-        description: `Registro de transacciones para el socio ${memberId} en la reunión ${meetingId}.`,
-      });
-      await queryRunner.manager.save(operation);
+      const operation = await this._createOperationForMember(
+        queryRunner,
+        activeMeeting.id,
+        memberId,
+        'MONTHLY_PAYMENT',
+      );
 
-      // 2. Process payments and create ledger entries
       const ledgerEntries: LedgerEntry[] = [];
       for (const payment of payments) {
-        // --- DEBIT (always to cash for now) ---
-        ledgerEntries.push(
-          queryRunner.manager.create(LedgerEntry, {
-            operation_id: operation.id,
-            account_type: CASH_ACCOUNT,
-            amount: payment.amount,
-          }),
+        const entries = await this._processPayment(
+          queryRunner,
+          operation,
+          payment,
         );
-
-        // --- CREDIT (logic depends on payment type) ---
-        switch (payment.type) {
-          case 'mandatory_contribution': {
-            ledgerEntries.push(
-              queryRunner.manager.create(LedgerEntry, {
-                operation_id: operation.id,
-                account_type: MANDATORY_CONTRIBUTION_INCOME_ACCOUNT,
-                amount: -payment.amount,
-              }),
-            );
-            break;
-          }
-          case 'stock_fee': {
-            ledgerEntries.push(
-              queryRunner.manager.create(LedgerEntry, {
-                operation_id: operation.id,
-                account_type: STOCK_CAPITAL_ACCOUNT,
-                amount: -payment.amount,
-              }),
-            );
-            break;
-          }
-          case 'loan_payment': {
-            if (!payment.referenceId) {
-              throw new BadRequestException(
-                'Loan payment must include a referenceId.',
-              );
-            }
-            const loan = await this.loansService.findOne(payment.referenceId);
-            const interestDue = loan.outstanding_balance * loan.interest_rate;
-            const interestPaid = Math.min(payment.amount, interestDue);
-            const principalPaid = payment.amount - interestPaid;
-
-            if (interestPaid > 0) {
-              ledgerEntries.push(
-                queryRunner.manager.create(LedgerEntry, {
-                  operation_id: operation.id,
-                  account_type: INTEREST_INCOME_ACCOUNT,
-                  amount: -interestPaid,
-                }),
-              );
-              // Create a loan transaction detail for the interest payment
-              const interestTransaction = queryRunner.manager.create(
-                LoanTransactionDetail,
-                {
-                  loan_id: loan.id,
-                  operation_id: operation.id,
-                  transaction_type: 'pago_interes',
-                  amount: interestPaid,
-                },
-              );
-              await queryRunner.manager.save(interestTransaction);
-            }
-
-            if (principalPaid > 0) {
-              ledgerEntries.push(
-                queryRunner.manager.create(LedgerEntry, {
-                  operation_id: operation.id,
-                  account_type: LOANS_RECEIVABLE_ACCOUNT,
-                  amount: -principalPaid,
-                }),
-              );
-              // Create a loan transaction detail for the principal payment
-              const principalTransaction = queryRunner.manager.create(
-                LoanTransactionDetail,
-                {
-                  loan_id: loan.id,
-                  operation_id: operation.id,
-                  transaction_type: 'abono_capital',
-                  amount: principalPaid,
-                },
-              );
-              await queryRunner.manager.save(principalTransaction);
-            }
-            break;
-          }
-        }
+        ledgerEntries.push(...entries);
       }
       await queryRunner.manager.save(ledgerEntries);
 
@@ -409,11 +357,195 @@ export class MeetingsService {
     } catch (err: unknown) {
       await queryRunner.rollbackTransaction();
       this.logger.error('Error recording transaction', err);
-      // Re-throw the original error to be handled by NestJS default exception layer
       throw err;
     } finally {
       await queryRunner.release();
     }
+  }
+
+  private async _createOperationForMember(
+    queryRunner: QueryRunner,
+    meetingId: string,
+    memberId: string,
+    type: OperationTypeEnum | null,
+  ): Promise<Operation> {
+    const operation = queryRunner.manager.create(Operation, {
+      meeting_id: meetingId,
+      member_id: memberId,
+      description: `Registro de transacciones para el socio ${memberId} en la reunión ${meetingId}.`,
+      type,
+    });
+    await queryRunner.manager.save(operation);
+    return operation;
+  }
+
+  private async _processPayment(
+    queryRunner: QueryRunner,
+    operation: Operation,
+    payment: MemberDue,
+  ): Promise<LedgerEntry[]> {
+    const ledgerEntries: LedgerEntry[] = [];
+
+    ledgerEntries.push(
+      queryRunner.manager.create(LedgerEntry, {
+        operation_id: operation.id,
+        account_type: CASH_ACCOUNT,
+        amount: payment.amount,
+        description: `Entrada de efectivo para: ${payment.description}`,
+      }),
+    );
+
+    switch (payment.type) {
+      case 'mandatory_contribution':
+        ledgerEntries.push(
+          ...this._processMandatoryContribution(
+            queryRunner,
+            operation,
+            payment,
+          ),
+        );
+        break;
+      case 'stock_fee':
+        ledgerEntries.push(
+          ...this._processStockFee(queryRunner, operation, payment),
+        );
+        break;
+      case 'loan_payment': {
+        const loanEntries = await this._processLoanPayment(
+          queryRunner,
+          operation,
+          payment,
+        );
+        ledgerEntries.push(...loanEntries);
+        break;
+      }
+      case 'fee':
+        ledgerEntries.push(
+          ...this._processFee(queryRunner, operation, payment),
+        );
+        break;
+      default:
+        this.logger.warn(
+          `Unhandled payment type received. Using pending classification account.`,
+        );
+        ledgerEntries.push(
+          queryRunner.manager.create(LedgerEntry, {
+            operation_id: operation.id,
+            account_type: PENDING_CLASSIFICATION_ACCOUNT,
+            amount: -payment.amount,
+            description: `Clasificación pendiente para: ${payment.description}`,
+          }),
+        );
+        break;
+    }
+
+    return ledgerEntries;
+  }
+
+  private _processMandatoryContribution(
+    queryRunner: QueryRunner,
+    operation: Operation,
+    payment: MemberDue,
+  ): LedgerEntry[] {
+    return [
+      queryRunner.manager.create(LedgerEntry, {
+        operation_id: operation.id,
+        account_type: MANDATORY_CONTRIBUTION_INCOME_ACCOUNT,
+        amount: -payment.amount,
+        description: payment.description,
+      }),
+    ];
+  }
+
+  private _processStockFee(
+    queryRunner: QueryRunner,
+    operation: Operation,
+    payment: MemberDue,
+  ): LedgerEntry[] {
+    return [
+      queryRunner.manager.create(LedgerEntry, {
+        operation_id: operation.id,
+        account_type: STOCK_CAPITAL_ACCOUNT,
+        amount: -payment.amount,
+        description: payment.description,
+      }),
+    ];
+  }
+
+  private async _processLoanPayment(
+    queryRunner: QueryRunner,
+    operation: Operation,
+    payment: MemberDue,
+  ): Promise<LedgerEntry[]> {
+    if (!payment.referenceId) {
+      throw new BadRequestException('Loan payment must include a referenceId.');
+    }
+
+    const loan = await this.loansService.findOne(payment.referenceId);
+    const interestDue = loan.outstanding_balance * loan.interest_rate;
+    const interestPaid = Math.min(payment.amount, interestDue);
+    const principalPaid = payment.amount - interestPaid;
+
+    const ledgerEntries: LedgerEntry[] = [];
+
+    if (interestPaid > 0) {
+      ledgerEntries.push(
+        queryRunner.manager.create(LedgerEntry, {
+          operation_id: operation.id,
+          account_type: INTEREST_INCOME_ACCOUNT,
+          amount: -interestPaid,
+          description: `Pago de interés para: ${payment.description}`,
+        }),
+      );
+      const interestTransaction = queryRunner.manager.create(
+        LoanTransactionDetail,
+        {
+          loan_id: loan.id,
+          operation_id: operation.id,
+          transaction_type: 'pago_interes',
+          amount: interestPaid,
+        },
+      );
+      await queryRunner.manager.save(interestTransaction);
+    }
+
+    if (principalPaid > 0) {
+      ledgerEntries.push(
+        queryRunner.manager.create(LedgerEntry, {
+          operation_id: operation.id,
+          account_type: LOANS_RECEIVABLE_ACCOUNT,
+          amount: -principalPaid,
+          description: `Abono a capital para: ${payment.description}`,
+        }),
+      );
+      const principalTransaction = queryRunner.manager.create(
+        LoanTransactionDetail,
+        {
+          loan_id: loan.id,
+          operation_id: operation.id,
+          transaction_type: 'abono_capital',
+          amount: principalPaid,
+        },
+      );
+      await queryRunner.manager.save(principalTransaction);
+    }
+
+    return ledgerEntries;
+  }
+
+  private _processFee(
+    queryRunner: QueryRunner,
+    operation: Operation,
+    payment: MemberDue,
+  ): LedgerEntry[] {
+    return [
+      queryRunner.manager.create(LedgerEntry, {
+        operation_id: operation.id,
+        account_type: FEE_INCOME_ACCOUNT,
+        amount: -payment.amount,
+        description: payment.description,
+      }),
+    ];
   }
 
   async create(createMeetingDto: CreateMeetingDto): Promise<Meeting> {

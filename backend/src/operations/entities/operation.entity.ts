@@ -6,10 +6,23 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
+  AfterLoad,
 } from 'typeorm';
 import { Member } from '../../members/entities/member.entity';
 import { Meeting } from '../../meetings/entities/meeting.entity';
 import { LedgerEntry } from '../../ledger-entries/entities/ledger-entry.entity';
+
+export const OperationType = [
+  'MANDATORY_CONTRIBUTION',
+  'STOCK_FEE',
+  'LOAN_PAYMENT',
+  'FEE',
+  'STOCK_PURCHASE',
+  'LOAN_DISBURSEMENT',
+  'MONTHLY_PAYMENT',
+] as const;
+
+export type OperationTypeEnum = (typeof OperationType)[number];
 
 @Entity({ name: 'operations' })
 export class Operation {
@@ -34,6 +47,18 @@ export class Operation {
   })
   @Column({ type: 'uuid', nullable: true })
   meeting_id: string | null;
+
+  @ApiProperty({
+    description: 'The type of the operation',
+    example: 'MONTHLY_PAYMENT',
+    enum: OperationType,
+    nullable: true,
+  })
+  @Column({
+    type: 'text',
+    nullable: true,
+  })
+  type: OperationTypeEnum | null;
 
   @ApiProperty({
     description: 'The timestamp when the operation occurred',
@@ -66,4 +91,31 @@ export class Operation {
   @ApiProperty({ type: () => [LedgerEntry] })
   @OneToMany(() => LedgerEntry, (ledgerEntry) => ledgerEntry.operation)
   ledger_entries: LedgerEntry[];
+
+  @ApiProperty({
+    description: 'The total debit amount for the operation',
+    example: 100.0,
+  })
+  total_debit: number;
+
+  @ApiProperty({
+    description: 'The total credit amount for the operation',
+    example: 100.0,
+  })
+  total_credit: number;
+
+  @AfterLoad()
+  calculateTotals() {
+    if (this.ledger_entries) {
+      this.total_debit = this.ledger_entries
+        .filter((e) => e.amount > 0)
+        .reduce((sum, e) => sum + Number(e.amount), 0);
+      this.total_credit = this.ledger_entries
+        .filter((e) => e.amount < 0)
+        .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
+    } else {
+      this.total_debit = 0;
+      this.total_credit = 0;
+    }
+  }
 }

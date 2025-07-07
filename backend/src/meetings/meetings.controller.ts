@@ -23,6 +23,7 @@ import { Meeting } from './entities/meeting.entity';
 import { MandatoryContribution } from './entities/mandatory-contribution.entity';
 import { RevaluateAssetsResponseDto } from './dto/revaluate-assets-response.dto';
 import { MemberDue } from './meetings.service';
+import { Operation } from '../operations/entities/operation.entity';
 
 @ApiTags('meetings')
 @Controller('meetings')
@@ -89,6 +90,19 @@ export class MeetingsController {
     return this.meetingsService.revaluateAssets(id);
   }
 
+  @Get(':id/monthly-payments')
+  @ApiOperation({ summary: 'Get all monthly payments for a meeting' })
+  @ApiParam({ name: 'id', description: 'The ID of the meeting' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'A list of all monthly payment operations for the meeting, including member details.',
+    type: [Operation],
+  })
+  findMonthlyPaymentsByMeeting(@Param('id') id: string) {
+    return this.meetingsService.findMonthlyPaymentsByMeeting(id);
+  }
+
   @Get('active/member-dues/:memberId')
   @ApiOperation({ summary: 'Get all dues for a member for the active meeting' })
   @ApiResponse({
@@ -103,19 +117,19 @@ export class MeetingsController {
     return this.meetingsService.getMemberDuesForActiveMeeting(memberId);
   }
 
-  @Post('active/record-payments')
+  @Post('active/record-monthly-payment')
   @ApiOperation({
-    summary: 'Record multiple payments from a member in the active meeting',
+    summary: 'Record monthly payments from a member in the active meeting',
   })
   @ApiBody({ type: SimplifiedRecordTransactionsDto })
   @ApiResponse({
     status: 201,
     description: 'The payments have been successfully recorded.',
   })
-  recordMemberPayments(
+  recordMonthlyPayment(
     @Body() recordTransactionsDto: SimplifiedRecordTransactionsDto,
   ) {
-    return this.meetingsService.recordMemberPayments(recordTransactionsDto);
+    return this.meetingsService.recordMonthlyPayment(recordTransactionsDto);
   }
 
   // CRUD for Mandatory Contributions
