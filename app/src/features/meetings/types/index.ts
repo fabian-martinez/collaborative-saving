@@ -4,15 +4,27 @@ export interface Meeting {
   status: 'active' | 'closed';
 }
 
-export const PaymentType = [
-  'mandatory_contribution',
-  'stock_fee',
-  'loan_payment',
-] as const;
-
-export interface Payment {
-  type: (typeof PaymentType)[number];
+export interface MemberDue {
+  type: 'mandatory_contribution' | 'stock_fee' | 'loan_payment' | 'fee';
   description: string;
   amount: number;
   referenceId?: string;
-} 
+  details?: {
+    interest: number;
+    principal: number;
+    outstanding_balance: number;
+  };
+  monthlyContribution?: number;
+  stockQuantity?: number;
+}
+
+export interface Payment {
+  type: 'mandatory_contribution' | 'stock_fee' | 'loan_payment' | 'fee';
+  amount: number;
+  referenceId?: string;
+}
+
+export interface SimplifiedRecordTransactions {
+  memberId: string;
+  payments: Payment[];
+}

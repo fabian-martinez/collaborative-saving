@@ -19,9 +19,9 @@ export class MandatoryContribution {
   asset_type: string;
 
   @ApiProperty({
-    description: 'The total amount required for this contribution type',
+    description: 'The required amount for this contribution type',
     example: 100,
   })
   @Column({ type: 'numeric' })
-  total: number;
+  value: number;
 }

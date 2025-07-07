@@ -10,6 +10,7 @@ import { CreateLoanDto } from '../src/loans/dto/create-loan.dto';
 import { SimplifiedRecordTransactionsDto } from '../src/meetings/dto/simplified-record-transactions.dto';
 import { Operation } from '../src/operations/entities/operation.entity';
 import { Loan } from '../src/loans/entities/loan.entity';
+import { Meeting } from '../src/meetings/entities/meeting.entity';
 
 describe('Business Use Case (e2e)', () => {
   let app: INestApplication;
@@ -204,6 +205,45 @@ describe('Business Use Case (e2e)', () => {
       });
       // (contrib: 2) + (stock: 2) + (loan: 3) = 7 entries
       expect(operation!.ledger_entries).toHaveLength(7);
+    });
+  });
+
+  describe('Meeting Management Rules', () => {
+    it('should enforce a single active meeting', async () => {
+      // 1. Verify a meeting is already active from the previous test suite,
+      //    and trying to create another one fails.
+      await request(app.getHttpServer())
+        .post('/meetings')
+        .send({ notes: 'This should fail' })
+        .expect(400)
+        .then((res) => {
+          expect((res.body as { message: string }).message).toContain(
+            'An active meeting already exists',
+          );
+        });
+
+      // 2. Find and close the currently active meeting.
+      const meetingsRes = await request(app.getHttpServer())
+        .get('/meetings')
+        .expect(200);
+      const activeMeeting = (meetingsRes.body as Meeting[]).find(
+        (m) => m.status === 'active',
+      );
+      expect(activeMeeting).toBeDefined();
+
+      if (activeMeeting) {
+        await request(app.getHttpServer())
+          .patch(`/meetings/${activeMeeting.id}/close`)
+          .expect(200);
+      }
+
+      // 3. Verify that a new meeting can now be created.
+      const newMeetingRes = await request(app.getHttpServer())
+        .post('/meetings')
+        .send({ notes: 'This should succeed' })
+        .expect(201);
+      const newMeetingId = (newMeetingRes.body as Meeting).id;
+      expect(newMeetingId).toBeDefined();
     });
   });
 });

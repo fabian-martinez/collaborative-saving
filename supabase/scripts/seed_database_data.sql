@@ -61,14 +61,26 @@ INSERT INTO public.stock_subscriptions (member_id, stock_id, quantity) VALUES
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', 'f47ac10b-58cc-4372-a567-0e02b2c3d481', 3);
 -- David no tiene acciones aún
 
--- Crear un préstamo activo para un socio (Carlos)
-INSERT INTO public.loans (id, member_id, loan_type, approved_amount, interest_rate, status, outstanding_balance) VALUES
-('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b21', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'corriente', 2000.00, 0.05, 'active', 1500.00);
-
 -- Crear una reunión activa y una cerrada
 INSERT INTO public.meetings (id, date, status) VALUES
 ('c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c31', NOW() - INTERVAL '1 month', 'closed'),
 ('c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c32', NOW(), 'active');
+
+-- Crear un préstamo activo para un socio (Carlos)
+INSERT INTO public.loans (id, member_id, loan_type, approved_amount, interest_rate, status, monthly_payment_amount) VALUES
+('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b21', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'corriente', 2000.00, 0.05, 'active', 150.00);
+
+-- Operación para el desembolso del préstamo de Carlos en la reunión pasada
+INSERT INTO public.operations (id, member_id, meeting_id, description) VALUES
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d42', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c31', 'Desembolso de Préstamo Corriente');
+
+-- Añadir transacciones para simular el estado del préstamo de Carlos
+-- Desembolso inicial (asociado a la operación de la reunión)
+INSERT INTO public.loan_transaction_details (loan_id, operation_id, transaction_type, amount) VALUES
+('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b21', 'd1eebc99-9c0b-4ef8-bb6d-6bb9bd380d42', 'desembolso', 2000.00);
+-- Abono a capital para llegar al saldo de 1500 (sin reunión asociada)
+INSERT INTO public.loan_transaction_details (loan_id, transaction_type, amount) VALUES
+('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b21', 'abono_capital', 500.00);
 
 -- Simular una operación de pago en la reunión activa por parte de Beatriz
 INSERT INTO public.operations (id, member_id, meeting_id, description) VALUES

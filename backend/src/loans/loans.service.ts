@@ -8,6 +8,7 @@ import { DataSource, Repository, QueryRunner } from 'typeorm';
 import { CreateLoanDto } from './dto/create-loan.dto';
 import { UpdateLoanDto } from './dto/update-loan.dto';
 import { Loan } from './entities/loan.entity';
+import { LoanTransactionDetail } from './entities/loan-transaction-detail.entity';
 import { StockSubscriptionsService } from '../stock-subscriptions/stock-subscriptions.service';
 import { Operation } from '../operations/entities/operation.entity';
 import { LedgerEntry } from '../ledger-entries/entities/ledger-entry.entity';
@@ -22,9 +23,47 @@ export class LoansService {
   constructor(
     @InjectRepository(Loan)
     private readonly loanRepository: Repository<Loan>,
+    @InjectRepository(LoanTransactionDetail)
+    private readonly loanTransactionDetailRepository: Repository<LoanTransactionDetail>,
     private readonly stockSubscriptionsService: StockSubscriptionsService,
     private readonly dataSource: DataSource,
   ) {}
+
+  private async calculateOutstandingBalance(
+    loanId: string,
+    runner?: QueryRunner,
+  ): Promise<number> {
+    const manager = runner ? runner.manager : this.dataSource.manager;
+
+    const transactions = await manager.find(LoanTransactionDetail, {
+      where: { loan_id: loanId },
+    });
+
+    return transactions.reduce((balance, t) => {
+      if (t.transaction_type === 'desembolso') {
+        return balance + Number(t.amount);
+      }
+      if (t.transaction_type === 'abono_capital') {
+        return balance - Number(t.amount);
+      }
+      return balance;
+    }, 0);
+  }
+
+  private async populateLoansWithBalance(
+    loans: Loan[],
+    runner?: QueryRunner,
+  ): Promise<Loan[]> {
+    await Promise.all(
+      loans.map(async (loan) => {
+        loan.outstanding_balance = await this.calculateOutstandingBalance(
+          loan.id,
+          runner,
+        );
+      }),
+    );
+    return loans;
+  }
 
   async create(
     createLoanDto: CreateLoanDto,
@@ -63,32 +102,35 @@ export class LoansService {
       // 2. Create Operation
       const operation = runner.manager.create(Operation, {
         member_id: createLoanDto.member_id,
-        // Loans are not tied to a specific meeting
         meeting_id: null,
         description: `Loan disbursement for member ${createLoanDto.member_id}`,
       });
       await runner.manager.save(operation);
 
       // 3. Create Loan entity
-      const loan = runner.manager.create(Loan, {
-        ...createLoanDto,
-        outstanding_balance:
-          createLoanDto.outstanding_balance ?? createLoanDto.approved_amount,
-        operation_id: operation.id,
-      });
-      await runner.manager.save(loan);
+      const loanEntity = runner.manager.create(Loan, createLoanDto);
+      const loan = await runner.manager.save(loanEntity);
 
-      // 4. Create Ledger Entries (Double-entry)
+      // 4. Create disbursement transaction
+      const disbursement = runner.manager.create(LoanTransactionDetail, {
+        loan_id: loan.id,
+        operation_id: operation.id,
+        transaction_type: 'desembolso',
+        amount: createLoanDto.approved_amount,
+      });
+      await runner.manager.save(disbursement);
+
+      // 5. Create Ledger Entries
       const debitEntry = runner.manager.create(LedgerEntry, {
         operation_id: operation.id,
         account_type: LOANS_RECEIVABLE_ACCOUNT,
-        amount: createLoanDto.approved_amount, // Debit
+        amount: createLoanDto.approved_amount,
       });
 
       const creditEntry = runner.manager.create(LedgerEntry, {
         operation_id: operation.id,
         account_type: CASH_ACCOUNT,
-        amount: -createLoanDto.approved_amount, // Credit
+        amount: -createLoanDto.approved_amount,
       });
 
       await runner.manager.save([debitEntry, creditEntry]);
@@ -96,6 +138,7 @@ export class LoansService {
       if (!isTransactionManaged) {
         await runner.commitTransaction();
       }
+
       return loan;
     } catch (err) {
       if (!isTransactionManaged) {
@@ -109,8 +152,19 @@ export class LoansService {
     }
   }
 
-  findAll(): Promise<Loan[]> {
-    return this.loanRepository.find();
+  async findAll(): Promise<Loan[]> {
+    const loans = await this.loanRepository.find();
+    return this.populateLoansWithBalance(loans);
+  }
+
+  async findActiveByMember(memberId: string): Promise<Loan[]> {
+    const loans = await this.loanRepository.find({
+      where: {
+        member_id: memberId,
+        status: 'active',
+      },
+    });
+    return this.populateLoansWithBalance(loans);
   }
 
   async findOne(id: string): Promise<Loan> {
@@ -118,7 +172,8 @@ export class LoansService {
     if (!loan) {
       throw new NotFoundException(`Loan with ID "${id}" not found`);
     }
-    return loan;
+    const [populatedLoan] = await this.populateLoansWithBalance([loan]);
+    return populatedLoan;
   }
 
   async update(id: string, updateLoanDto: UpdateLoanDto): Promise<Loan> {
@@ -129,7 +184,9 @@ export class LoansService {
     if (!loan) {
       throw new NotFoundException(`Loan with ID "${id}" not found`);
     }
-    return this.loanRepository.save(loan);
+    const savedLoan = await this.loanRepository.save(loan);
+    const [populatedLoan] = await this.populateLoansWithBalance([savedLoan]);
+    return populatedLoan;
   }
 
   async remove(id: string): Promise<void> {

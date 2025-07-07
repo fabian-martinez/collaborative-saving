@@ -1,9 +1,13 @@
 import { api } from '@/services/api';
-import type { Meeting, Payment } from '../types';
+import type { Meeting, MemberDue, SimplifiedRecordTransactions } from '../types';
 
 export const meetingsService = {
   getMeetings: (): Promise<Meeting[]> => {
     return api.get<Meeting[]>('/meetings');
+  },
+
+  getActiveMeeting: (): Promise<Meeting | null> => {
+    return api.get<Meeting | null>('/meetings/active');
   },
 
   startNewMeeting: (): Promise<Meeting> => {
@@ -14,14 +18,11 @@ export const meetingsService = {
     return api.patch<void>(`/meetings/${meetingId}/close`, {});
   },
 
-  getActiveMeetingMemberDues: (memberId: string): Promise<Payment[]> => {
-    return api.get<Payment[]>(`/meetings/active/member-dues/${memberId}`);
+  getMemberDues: (memberId: string): Promise<MemberDue[]> => {
+    return api.get<MemberDue[]>(`/meetings/active/member-dues/${memberId}`);
   },
 
-  recordMeetingTransactions: (payload: {
-    memberId: string;
-    payments: Payment[];
-  }): Promise<void> => {
-    return api.post<void>('/meetings/active/record-transactions', payload);
+  recordPayments: (payload: SimplifiedRecordTransactions): Promise<void> => {
+    return api.post<void>('/meetings/active/record-payments', payload);
   },
 }; 

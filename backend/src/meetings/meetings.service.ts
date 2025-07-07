@@ -21,17 +21,27 @@ import {
   STOCK_CAPITAL_ACCOUNT,
 } from '../common/constants/account-types';
 import { LoansService } from '../loans/loans.service';
-import { Loan } from '../loans/entities/loan.entity';
 import { Meeting } from './entities/meeting.entity';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
 import { Stock } from '../stocks/entities/stock.entity';
 import { StockValueHistory } from '../stocks/entities/stock-value-history.entity';
 import { StockSubscription } from '../stock-subscriptions/entities/stock-subscription.entity';
+import { LoanTransactionDetail } from '../loans/entities/loan-transaction-detail.entity';
+import { Member } from '../members/entities/member.entity';
+import { Loan } from '../loans/entities/loan.entity';
 
 export interface MemberDue {
-  type: 'mandatory_contribution' | 'stock_fee';
+  type: 'mandatory_contribution' | 'stock_fee' | 'loan_payment' | 'fee';
   description: string;
   amount: number;
+  referenceId?: string;
+  details?: {
+    interest: number;
+    principal: number;
+    outstanding_balance: number;
+  };
+  monthlyContribution?: number;
+  stockQuantity?: number;
 }
 
 @Injectable()
@@ -56,20 +66,26 @@ export class MeetingsService {
     });
   }
 
+  async findActive(): Promise<Meeting | null> {
+    return this.meetingRepository.findOne({
+      where: { status: 'active' },
+    });
+  }
+
   async getMemberDues(memberId: string): Promise<MemberDue[]> {
     const dues: MemberDue[] = [];
 
     // 1. Mandatory fund contributions
     const mandatoryContributions =
       await this.mandatoryContributionRepository.find({
-        where: { total: MoreThan(0) },
+        where: { value: MoreThan(0) },
       });
 
     for (const contribution of mandatoryContributions) {
       dues.push({
         type: 'mandatory_contribution',
         description: contribution.asset_type,
-        amount: contribution.total,
+        amount: Number(contribution.value),
       });
     }
 
@@ -84,6 +100,112 @@ export class MeetingsService {
           description: `Cuota de acción: ${subscription.stock.type}`,
           amount:
             subscription.quantity * subscription.stock.monthly_contribution,
+        });
+      }
+    }
+
+    // 3. Active loan payments
+    const activeLoans = await this.loansService.findActiveByMember(memberId);
+
+    for (const loan of activeLoans) {
+      const interestDue = loan.outstanding_balance * loan.interest_rate;
+      const principalDue = Number(loan.monthly_payment_amount);
+
+      dues.push({
+        type: 'loan_payment',
+        description: `Cuota préstamo ${loan.loan_type}`,
+        amount: Number(loan.monthly_payment_amount),
+        referenceId: loan.id,
+        details: {
+          interest: interestDue,
+          principal: principalDue,
+          outstanding_balance: loan.outstanding_balance - principalDue,
+        },
+      });
+    }
+
+    return dues;
+  }
+
+  async getMemberDuesForActiveMeeting(memberId: string): Promise<MemberDue[]> {
+    const activeMeeting = await this.findActive();
+    if (!activeMeeting) {
+      throw new NotFoundException('No active meeting found.');
+    }
+
+    const member = await this.dataSource.manager.findOne(Member, {
+      where: { id: memberId },
+    });
+    if (!member) {
+      throw new NotFoundException(`Member with ID ${memberId} not found.`);
+    }
+
+    const dues: MemberDue[] = [];
+
+    // --- Aportes y cuotas fijas ---
+    const mandatoryContributions =
+      await this.mandatoryContributionRepository.find({
+        where: { value: MoreThan(0) },
+      });
+
+    for (const contribution of mandatoryContributions) {
+      dues.push({
+        type: 'mandatory_contribution',
+        description: contribution.asset_type,
+        amount: Number(contribution.value),
+      });
+    }
+
+    // --- Cuotas de acciones suscritas ---
+    const subscriptions = await this.dataSource.manager.find(
+      StockSubscription,
+      {
+        where: { member_id: memberId },
+        relations: ['stock'],
+      },
+    );
+
+    for (const subscription of subscriptions) {
+      const dueAmount =
+        subscription.quantity * Number(subscription.stock.monthly_contribution);
+      if (dueAmount > 0) {
+        dues.push({
+          type: 'stock_fee',
+          description: `Cuota de acción: ${subscription.stock.type}`,
+          amount: dueAmount,
+          referenceId: subscription.stock.id,
+          monthlyContribution: Number(subscription.stock.monthly_contribution),
+          stockQuantity: subscription.quantity,
+        });
+      }
+    }
+
+    // --- Cuotas de préstamos activos ---
+    const loans = await this.dataSource.manager.find(Loan, {
+      where: { member_id: memberId, status: 'active' },
+      relations: ['transactions'],
+    });
+
+    for (const loan of loans) {
+      if (
+        loan.outstanding_balance > 0 &&
+        loan.payment_status_this_month !== 'PAID'
+      ) {
+        const interestComponent =
+          Number(loan.outstanding_balance) * Number(loan.interest_rate);
+        const principalComponent = Number(loan.monthly_payment_amount);
+        const totalPaymentDue = principalComponent + interestComponent;
+
+        dues.push({
+          type: 'loan_payment',
+          description: `Cuota préstamo: ${loan.loan_type}`,
+          amount: totalPaymentDue,
+          referenceId: loan.id,
+          details: {
+            interest: interestComponent,
+            principal: principalComponent,
+            outstanding_balance: Number(loan.outstanding_balance),
+          },
         });
       }
     }
@@ -163,7 +285,7 @@ export class MeetingsService {
     }
   }
 
-  async recordTransactions(
+  async recordMemberPayments(
     recordTransactionsDto: SimplifiedRecordTransactionsDto,
   ): Promise<Operation> {
     const { memberId, payments } = recordTransactionsDto;
@@ -243,6 +365,17 @@ export class MeetingsService {
                   amount: -interestPaid,
                 }),
               );
+              // Create a loan transaction detail for the interest payment
+              const interestTransaction = queryRunner.manager.create(
+                LoanTransactionDetail,
+                {
+                  loan_id: loan.id,
+                  operation_id: operation.id,
+                  transaction_type: 'pago_interes',
+                  amount: interestPaid,
+                },
+              );
+              await queryRunner.manager.save(interestTransaction);
             }
 
             if (principalPaid > 0) {
@@ -253,10 +386,17 @@ export class MeetingsService {
                   amount: -principalPaid,
                 }),
               );
-              // Update loan balance
-              await queryRunner.manager.update(Loan, loan.id, {
-                outstanding_balance: loan.outstanding_balance - principalPaid,
-              });
+              // Create a loan transaction detail for the principal payment
+              const principalTransaction = queryRunner.manager.create(
+                LoanTransactionDetail,
+                {
+                  loan_id: loan.id,
+                  operation_id: operation.id,
+                  transaction_type: 'abono_capital',
+                  amount: principalPaid,
+                },
+              );
+              await queryRunner.manager.save(principalTransaction);
             }
             break;
           }
@@ -276,7 +416,17 @@ export class MeetingsService {
     }
   }
 
-  create(createMeetingDto: CreateMeetingDto): Promise<Meeting> {
+  async create(createMeetingDto: CreateMeetingDto): Promise<Meeting> {
+    const activeMeeting = await this.meetingRepository.findOne({
+      where: { status: 'active' },
+    });
+
+    if (activeMeeting) {
+      throw new BadRequestException(
+        'An active meeting already exists. Please close it before creating a new one.',
+      );
+    }
+
     const meeting = this.meetingRepository.create(createMeetingDto);
     return this.meetingRepository.save(meeting);
   }

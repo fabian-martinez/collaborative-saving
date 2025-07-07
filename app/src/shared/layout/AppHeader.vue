@@ -1,17 +1,33 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useActiveMeetingStore } from '@/features/meetings/stores/activeMeeting'
+import { storeToRefs } from 'pinia'
 
 const route = useRoute()
+const router = useRouter()
 const pageTitle = computed(() => route.meta.title || 'Dashboard')
 
-// Placeholder for meeting status
-const isMeetingActive = ref(false)
+const activeMeetingStore = useActiveMeetingStore()
+const { isMeetingActive } = storeToRefs(activeMeetingStore)
 
-function startNewMeeting() {
-  // Logic to start a new meeting
-  console.log('Iniciando nueva reunión...')
-  isMeetingActive.value = true
+onMounted(() => {
+  activeMeetingStore.fetchActiveMeeting()
+})
+
+async function startNewMeeting() {
+  try {
+    const newMeeting = await activeMeetingStore.startNewMeeting()
+    if (newMeeting) {
+      router.push({ name: 'active-meeting' })
+    }
+  } catch (error) {
+    console.error('Error al iniciar la reunión:', error)
+  }
+}
+
+function goToActiveMeeting() {
+  router.push({ name: 'active-meeting' })
 }
 </script>
 
@@ -26,7 +42,7 @@ function startNewMeeting() {
       <div class="flex items-center gap-4">
         <div v-if="isMeetingActive" class="flex items-center gap-2">
           <span class="badge badge-error animate-pulse">Reunión Activa</span>
-          <button class="btn btn-primary btn-sm">Ir a la Reunión</button>
+          <button @click="goToActiveMeeting" class="btn btn-primary btn-sm">Ir a la Reunión</button>
         </div>
         <div v-else>
           <button @click="startNewMeeting" class="btn btn-primary">Iniciar Nueva Reunión</button>

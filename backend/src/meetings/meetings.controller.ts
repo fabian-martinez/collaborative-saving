@@ -14,15 +14,15 @@ import {
   ApiParam,
   ApiBody,
 } from '@nestjs/swagger';
-import { MeetingsService, MemberDue } from './meetings.service';
+import { MeetingsService } from './meetings.service';
 import { CreateMandatoryContributionDto } from './dto/create-mandatory-contribution.dto';
 import { UpdateMandatoryContributionDto } from './dto/update-mandatory-contribution.dto';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
 import { SimplifiedRecordTransactionsDto } from './dto/simplified-record-transactions.dto';
 import { Meeting } from './entities/meeting.entity';
 import { MandatoryContribution } from './entities/mandatory-contribution.entity';
-import { MemberDueDto } from './dto/member-due.dto';
 import { RevaluateAssetsResponseDto } from './dto/revaluate-assets-response.dto';
+import { MemberDue } from './meetings.service';
 
 @ApiTags('meetings')
 @Controller('meetings')
@@ -38,6 +38,17 @@ export class MeetingsController {
   })
   findAll() {
     return this.meetingsService.findAll();
+  }
+
+  @Get('active')
+  @ApiOperation({ summary: 'Get the active meeting' })
+  @ApiResponse({
+    status: 200,
+    description: 'The active meeting, if any.',
+    type: Meeting,
+  })
+  findActive() {
+    return this.meetingsService.findActive();
   }
 
   @Post()
@@ -79,38 +90,32 @@ export class MeetingsController {
   }
 
   @Get('active/member-dues/:memberId')
-  @ApiOperation({
-    summary: "Get a member's outstanding dues for the active meeting",
-  })
-  @ApiParam({ name: 'memberId', description: 'The ID of the member' })
+  @ApiOperation({ summary: 'Get all dues for a member for the active meeting' })
   @ApiResponse({
     status: 200,
-    description: "A list of the member's dues.",
-    type: [MemberDueDto],
+    description:
+      'Returns a flat list of the member dues. Each due object contains type, description, amount, and optional referenceId and details.',
+    type: [Object],
   })
-  @ApiResponse({
-    status: 404,
-    description: 'Active meeting or member not found.',
-  })
-  async getMemberDues(
+  getMemberDuesForActiveMeeting(
     @Param('memberId') memberId: string,
   ): Promise<MemberDue[]> {
-    return this.meetingsService.getMemberDues(memberId);
+    return this.meetingsService.getMemberDuesForActiveMeeting(memberId);
   }
 
-  @Post('active/record-transactions')
+  @Post('active/record-payments')
   @ApiOperation({
-    summary: 'Record multiple transactions for a member in the active meeting',
+    summary: 'Record multiple payments from a member in the active meeting',
   })
   @ApiBody({ type: SimplifiedRecordTransactionsDto })
   @ApiResponse({
     status: 201,
-    description: 'The transactions have been successfully recorded.',
+    description: 'The payments have been successfully recorded.',
   })
-  recordTransactions(
+  recordMemberPayments(
     @Body() recordTransactionsDto: SimplifiedRecordTransactionsDto,
   ) {
-    return this.meetingsService.recordTransactions(recordTransactionsDto);
+    return this.meetingsService.recordMemberPayments(recordTransactionsDto);
   }
 
   // CRUD for Mandatory Contributions

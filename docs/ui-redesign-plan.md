@@ -172,8 +172,21 @@ const routes = [
     - [x] Crear la vista de detalle de acción (`StockDetailView.vue`).
 
 3.  [ ] **Fase 3: Módulo Financiero**
-    - [ ] Desarrollar el historial de reuniones (`MeetingsHistoryView.vue`).
-    - [ ] Re-diseñar la vista de reunión activa para que sea más intuitiva.
+    - [x] Crear la vista de historial de reuniones (`MeetingsView.vue`).
+    - [x] Implementar la vista de reunión activa (`ActiveMeetingView.vue`) con un flujo de pasos (Stepper).
+        - La vista guiará al usuario a través de 4 etapas: Recaudo, Revalorización, Nuevas Operaciones y Desembolsos.
+        - Se crearán componentes dedicados para cada etapa (e.g., `Step1Collection.vue`, `Step2Revaluation.vue`, etc.).
+        - Se utilizará un store de Pinia (`activeMeeting.ts`) para gestionar el estado de la reunión activa a través de los pasos.
+    - [ ] Implementar la vista de recaudo de fondos (`Step1Collection.vue`).
+      - [x] Implementar la visualización de las deudas por pagar de los socios.
+      - [x] Implementar la edición abono a capital y incluir multa.
+      - [ ] Implementar el pago de las obligaciones de los socios.
+    - [ ] Implementar la vista de revalorización de activos (`Step2Revaluation.vue`).
+      - [ ] Implementar la visualización de los activos revalorizados.
+      - [ ] Implementar la confirmación de los activos revalorizados.
+    - [ ] Implementar la vista de nuevas operaciones (`Step3NewOperations.vue`).
+    - [ ] Implementar la vista de desembolsos (`Step4Disbursements.vue`).
+    - [x] Crear la vista de detalle de reunión (`MeetingDetailView.vue`) como un resumen de solo lectura para reuniones completadas.
     - [ ] Implementar la vista de préstamos (`LoansListView.vue`).
     - [ ] Crear la vista del libro contable (`LedgerView.vue`) con filtros avanzados.
 
@@ -181,4 +194,21 @@ const routes = [
     - [ ] Desarrollar las vistas de `FundInfoView`, `DocumentsView` y `SettingsView`.
     - [ ] Realizar una revisión completa de la responsividad en dispositivos móviles.
     - [ ] Realizar pruebas de accesibilidad (navegación por teclado, contraste de colores).
-    - [ ] Refinar la experiencia de usuario basándose en feedback inicial. 
+    - [ ] Refinar la experiencia de usuario basándose en feedback inicial.
+
+## 6. Plan de Implementación de Validación de Recaudo Único
+
+Para asegurar que un socio solo pueda realizar su contribución obligatoria una vez por reunión, se deben implementar cambios tanto en el backend como en el frontend.
+
+### Backend (API - NestJS)
+
+1.  **Modificar `MeetingsService`:** En el archivo `backend/src/meetings/meetings.service.ts`, dentro del método `recordTransactions`.
+2.  **Añadir Lógica de Validación:** Antes de procesar y guardar las transacciones, se debe verificar si ya existe una contribución para el `memberId` en la reunión activa (`meetingId`).
+3.  **Consulta de Verificación:** Realizar una consulta a la base de datos para buscar un `LedgerEntry` con la cuenta `MANDATORY_CONTRIBUTION_INCOME_ACCOUNT` que esté asociado a una `Operation` del socio en la reunión actual.
+4.  **Manejo de Duplicados:** Si la consulta encuentra un registro, el servicio debe lanzar una excepción `BadRequestException` (HTTP 400) con un mensaje claro, por ejemplo: "El socio ya ha realizado la contribución obligatoria para esta reunión."
+
+### Frontend (UI - Vue.js)
+
+1.  **Manejo de Errores:** El componente encargado de realizar el pago (probablemente en `app/src/features/meetings/views/`) debe ser capaz de capturar y manejar el error 400 que la API devolverá en caso de un pago duplicado.
+2.  **Notificación al Usuario:** Al recibir este error, la interfaz debe mostrar un mensaje informativo y amigable al usuario (ej: "Este socio ya ha realizado el pago de la cuota obligatoria.").
+3.  **Prevención Visual:** Después de que un socio realice un pago de forma exitosa, la interfaz debería deshabilitar el botón de pago o proveer una indicación visual clara (ej: un checkmark o un texto "Pagado") para evitar que el usuario intente registrar el pago nuevamente en la misma sesión. 

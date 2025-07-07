@@ -18,6 +18,9 @@ drop table if exists "public"."ledger_entries" cascade;
 drop table if exists "public"."stocks" cascade;
 drop table if exists "public"."stock_subscriptions" cascade;
 drop table if exists "public"."mandatory_contributions" cascade;
+drop table if exists "public"."loans" cascade;
+drop table if exists "public"."loan_transaction_details" cascade;
+drop table if exists "public"."stock_value_history" cascade;
 drop type if exists "public"."member_due" cascade;
 
 
@@ -101,10 +104,10 @@ create table public.loans (
     member_id uuid not null references public.members(id) on delete cascade,
     loan_type text not null check (loan_type in ('corriente', 'agil')),
     approved_amount numeric not null,
+    monthly_payment_amount numeric not null,
     interest_rate numeric not null,
     status text default 'pending' not null,
-    creation_date date default current_date not null,
-    outstanding_balance numeric not null
+    creation_date date default current_date not null
 );
 comment on table public.loans is 'Stores information about loans granted to members.';
 

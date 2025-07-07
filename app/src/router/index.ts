@@ -44,9 +44,15 @@ const router = createRouter({
     // --- Grupo: Financiera ---
     {
       path: '/meetings',
-      name: 'meetings-history',
+      name: 'meetings',
       component: () => import('@/features/meetings/views/MeetingsView.vue'),
       meta: { title: 'Historial de Reuniones' },
+    },
+    {
+      path: '/meetings/:id',
+      name: 'meeting-details',
+      component: () => import('@/features/meetings/views/MeetingDetailView.vue'),
+      meta: { title: 'Detalle de la Reunión' },
     },
     {
       path: '/meetings/active',
