@@ -185,8 +185,12 @@ const routes = [
       - [x] Implementar resumen del pago de las obligaciones de los socios.
       - [x] Limitar a un pago por socio por reunión.
     - [ ] Implementar la vista de revalorización de activos (`Step2Revaluation.vue`).
-      - [ ] Implementar la visualización de los activos revalorizados.
-      - [ ] Implementar la confirmación de los activos revalorizados.
+      - [ ] **Backend**: Crear endpoint `POST /meetings/active/revaluate-assets`.
+      - [ ] **Backend**: Implementar la lógica de cálculo de revalorización en `MeetingsService` dentro de una transacción de base de datos.
+      - [ ] **Backend**: La lógica debe actualizar `stocks`, registrar en `stock_value_history` y crear los asientos en `ledger_entries`.
+      - [ ] **Frontend**: Añadir botón en `Step2Revaluation.vue` para iniciar el proceso.
+      - [ ] **Frontend**: Llamar al nuevo endpoint y manejar estados de carga y error.
+      - [ ] **Frontend**: Mostrar un resumen con los resultados (nuevos valores de acciones) al recibir la respuesta.
     - [ ] Implementar la vista de nuevas operaciones (`Step3NewOperations.vue`).
     - [ ] Implementar la vista de desembolsos (`Step4Disbursements.vue`).
     - [x] Crear la vista de detalle de reunión (`MeetingDetailView.vue`) como un resumen de solo lectura para reuniones completadas.
