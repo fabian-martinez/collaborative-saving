@@ -5,7 +5,7 @@ export interface Meeting {
 }
 
 export interface MemberDue {
-  type: 'mandatory_contribution' | 'stock_fee' | 'loan_payment' | 'fee';
+  type: 'mandatory_contribution' | 'stock_fee' | 'loan_payment' | 'fee' | 'insurance';
   description: string;
   amount: number;
   referenceId?: string;
@@ -19,7 +19,7 @@ export interface MemberDue {
 }
 
 export interface Payment {
-  type: 'mandatory_contribution' | 'stock_fee' | 'loan_payment' | 'fee';
+  type: 'mandatory_contribution' | 'stock_fee' | 'loan_payment' | 'fee' | 'insurance';
   description: string;
   amount: number;
   referenceId?: string;

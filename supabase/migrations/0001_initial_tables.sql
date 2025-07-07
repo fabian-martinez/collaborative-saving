@@ -55,6 +55,7 @@ create table public.operations (
     member_id uuid references public.members(id) on delete set null,
     meeting_id uuid references public.meetings(id) on delete cascade,
     date timestamp with time zone default now() not null,
+    type text not null,
     description text
 );
 comment on table public.operations is 'Represents a single, high-level financial event.';
@@ -68,6 +69,19 @@ create table public.stocks (
     deleted_at timestamp with time zone
 );
 comment on table public.stocks is 'Defines the types of stocks available in the fund.';
+
+-- Stores information about loans granted to members.
+create table public.loans (
+    id uuid default extensions.uuid_generate_v4() primary key,
+    member_id uuid not null references public.members(id) on delete cascade,
+    loan_type text not null check (loan_type in ('corriente', 'agil')),
+    approved_amount numeric not null,
+    monthly_payment_amount numeric not null,
+    interest_rate numeric not null,
+    status text default 'pending' not null,
+    creation_date date default current_date not null
+);
+comment on table public.loans is 'Stores information about loans granted to members.';
 
 -- Stores the historical value of each stock after revaluation.
 create table public.stock_value_history (
@@ -86,30 +100,19 @@ create table public.stock_subscriptions (
     quantity int default 1 not null,
     purchase_date date default now() not null,
     status text default 'active' not null check (status in ('active', 'inactive')),
+    financing_loan_id uuid null references public.loans(id) on delete set null,
     unique(member_id, stock_id)
 );
 comment on table public.stock_subscriptions is 'Tracks which members are subscribed to which stocks.';
+comment on column public.stock_subscriptions.financing_loan_id is 'ID del préstamo utilizado para financiar esta subscripción de acción, si aplica.';
 
 -- Defines mandatory, recurring contributions for the fund.
 create table public.mandatory_contributions (
     id uuid default extensions.uuid_generate_v4() primary key,
     asset_type text not null unique,
-    total numeric(10, 2) not null
+    value numeric(10, 2) not null
 );
 comment on table public.mandatory_contributions is 'Defines mandatory, recurring contributions for the fund.';
-
--- Stores information about loans granted to members.
-create table public.loans (
-    id uuid default extensions.uuid_generate_v4() primary key,
-    member_id uuid not null references public.members(id) on delete cascade,
-    loan_type text not null check (loan_type in ('corriente', 'agil')),
-    approved_amount numeric not null,
-    monthly_payment_amount numeric not null,
-    interest_rate numeric not null,
-    status text default 'pending' not null,
-    creation_date date default current_date not null
-);
-comment on table public.loans is 'Stores information about loans granted to members.';
 
 -- Details of transactions related to a specific loan.
 create table public.loan_transaction_details (
@@ -129,6 +132,7 @@ create table public.ledger_entries (
     operation_id uuid references public.operations(id) on delete cascade not null,
     account_type text not null,
     amount numeric(10, 2) not null,
+    description text,
     created_at timestamp with time zone default now() not null
 );
 comment on table public.ledger_entries is 'Stores the atomic double-entry accounting records.';

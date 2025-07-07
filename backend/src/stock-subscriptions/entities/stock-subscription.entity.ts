@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Stock } from '../../stocks/entities/stock.entity';
 import { Member } from '../../members/entities/member.entity';
+import { Loan } from '../../loans/entities/loan.entity';
 
 @Entity({ name: 'stock_subscriptions' })
 export class StockSubscription {
@@ -54,6 +55,14 @@ export class StockSubscription {
   @Column({ type: 'integer', default: 1 })
   quantity: number;
 
+  @ApiProperty({
+    description: 'The ID of the loan that financed this subscription, if any',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    nullable: true,
+  })
+  @Column({ type: 'uuid', name: 'financing_loan_id', nullable: true })
+  financing_loan_id: string | null;
+
   // Relationships
   @ApiProperty({ type: () => Member })
   @ManyToOne(() => Member)
@@ -64,4 +73,9 @@ export class StockSubscription {
   @ManyToOne(() => Stock)
   @JoinColumn({ name: 'stock_id' })
   stock: Stock;
+
+  @ApiProperty({ type: () => Loan, nullable: true })
+  @ManyToOne(() => Loan)
+  @JoinColumn({ name: 'financing_loan_id' })
+  financing_loan: Loan;
 }

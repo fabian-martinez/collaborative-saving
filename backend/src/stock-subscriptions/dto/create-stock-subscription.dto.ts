@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsPositive, IsUUID } from 'class-validator';
+import { IsInt, IsOptional, IsPositive, IsUUID } from 'class-validator';
 
 export class CreateStockSubscriptionDto {
   @ApiProperty({
@@ -23,4 +23,14 @@ export class CreateStockSubscriptionDto {
   @IsInt()
   @IsPositive()
   quantity: number;
+
+  @ApiProperty({
+    description: 'The ID of the loan that financed this subscription, if any',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    nullable: true,
+    required: false,
+  })
+  @IsUUID()
+  @IsOptional()
+  financing_loan_id?: string | null;
 }

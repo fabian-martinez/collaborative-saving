@@ -15,6 +15,7 @@ import {
   LOANS_RECEIVABLE_ACCOUNT,
 } from '../common/constants/account-types';
 import { LedgerEntry } from '../ledger-entries/entities/ledger-entry.entity';
+import { Loan } from '../loans/entities/loan.entity';
 
 @Injectable()
 export class OperationsService {
@@ -75,34 +76,10 @@ export class OperationsService {
       const operation_id = operation.id;
       const ledgerEntries: LedgerEntry[] = [];
 
-      // 3. Update Stock Subscription
-      await this.stockSubscriptionsService.create(
-        { member_id: memberId, stock_id: stockId, quantity },
-        queryRunner,
-      );
-      // Ledger for stock purchase
-      ledgerEntries.push(
-        queryRunner.manager.create(LedgerEntry, {
-          operation_id,
-          account_type: STOCK_CAPITAL_ACCOUNT,
-          amount: totalValue, // Debito a capital social (aumento de valor)
-        }),
-      );
-
-      // 4. Handle Cash Payment
-      if (cashAmount > 0) {
-        ledgerEntries.push(
-          queryRunner.manager.create(LedgerEntry, {
-            operation_id,
-            account_type: CASH_ACCOUNT,
-            amount: cashAmount, // Debito a caja (aumento)
-          }),
-        );
-      }
-
-      // 5. Create Loan if financed
+      // 3. Create Loan if financed
+      let newLoan: Loan | null = null;
       if (financedAmount > 0 && loanDetails) {
-        await this.loansService.create(
+        newLoan = await this.loansService.create(
           {
             member_id: memberId,
             approved_amount: financedAmount,
@@ -113,24 +90,53 @@ export class OperationsService {
           },
           queryRunner,
         );
-        // Ledger for loan receivable
+      }
+
+      // 4. Update Stock Subscription
+      await this.stockSubscriptionsService.create(
+        {
+          member_id: memberId,
+          stock_id: stockId,
+          quantity,
+          financing_loan_id: newLoan ? newLoan.id : null,
+        },
+        queryRunner,
+      );
+
+      // Corrected Double-Entry Logic:
+      // When a stock is purchased, the fund's capital increases. This is a CREDIT to STOCK_CAPITAL.
+      // This is paid for by either cash on hand (DEBIT to CASH) or by creating a loan receivable (DEBIT to LOANS_RECEIVABLE).
+
+      // Credit entry for the increase in stock capital
+      ledgerEntries.push(
+        queryRunner.manager.create(LedgerEntry, {
+          operation_id,
+          account_type: STOCK_CAPITAL_ACCOUNT,
+          amount: -totalValue, // Credit to Stock Capital
+        }),
+      );
+
+      // Debit entry for the cash received
+      if (cashAmount > 0) {
         ledgerEntries.push(
           queryRunner.manager.create(LedgerEntry, {
             operation_id,
-            account_type: LOANS_RECEIVABLE_ACCOUNT,
-            amount: financedAmount, // Debito a cartera de prestamos (aumento)
+            account_type: CASH_ACCOUNT,
+            amount: cashAmount, // Debit to Cash
           }),
         );
       }
 
-      // Balance the transaction
-      // The sum of credits must equal the debit to STOCK_CAPITAL_ACCOUNT
-      const totalCredits = cashAmount + financedAmount;
-      if (totalValue !== totalCredits) {
-        // This should not happen with current logic, but it's a good safeguard
-        throw new Error('Debit and Credit accounts do not balance.');
+      // Debit entry for the loan receivable created
+      if (newLoan) {
+        ledgerEntries.push(
+          queryRunner.manager.create(LedgerEntry, {
+            operation_id,
+            account_type: LOANS_RECEIVABLE_ACCOUNT,
+            amount: financedAmount, // Debit to Loans Receivable
+          }),
+        );
       }
-      // This entry is implicitly created by the sum of cash and loan entries
 
       // 6. Save Ledger Entries
       await queryRunner.manager.save(ledgerEntries);

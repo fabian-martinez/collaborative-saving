@@ -24,6 +24,7 @@ import {
   MANDATORY_CONTRIBUTION_INCOME_ACCOUNT,
   PENDING_CLASSIFICATION_ACCOUNT,
   STOCK_CAPITAL_ACCOUNT,
+  INSURANCE_INCOME_ACCOUNT,
 } from '../common/constants/account-types';
 import { LoansService } from '../loans/loans.service';
 import { Meeting } from './entities/meeting.entity';
@@ -36,7 +37,12 @@ import { Member } from '../members/entities/member.entity';
 import { Loan } from '../loans/entities/loan.entity';
 
 export interface MemberDue {
-  type: 'mandatory_contribution' | 'stock_fee' | 'loan_payment' | 'fee';
+  type:
+    | 'mandatory_contribution'
+    | 'stock_fee'
+    | 'loan_payment'
+    | 'fee'
+    | 'insurance';
   description: string;
   amount: number;
   referenceId?: string;
@@ -166,7 +172,7 @@ export class MeetingsService {
       StockSubscription,
       {
         where: { member_id: memberId },
-        relations: ['stock'],
+        relations: ['stock', 'financing_loan'],
       },
     );
 
@@ -213,6 +219,35 @@ export class MeetingsService {
           },
         });
       }
+    }
+
+    // --- Cálculo del seguro de deuda ---
+    const totalDebt = loans.reduce(
+      (sum, loan) => sum + Number(loan.outstanding_balance),
+      0,
+    );
+
+    let totalSavings = 0;
+    for (const sub of subscriptions) {
+      if (!sub.financing_loan_id || sub.financing_loan?.status !== 'active') {
+        totalSavings += sub.quantity * Number(sub.stock.value);
+      }
+    }
+
+    const insuranceBase = totalSavings - totalDebt;
+    if (insuranceBase > 0) {
+      const insuranceAmount = insuranceBase * 0.001;
+      dues.push({
+        type: 'insurance',
+        description: 'Seguro de deuda',
+        amount: insuranceAmount,
+      });
+    } else {
+      dues.push({
+        type: 'insurance',
+        description: 'Seguro de deuda',
+        amount: 0,
+      });
     }
 
     return dues;
@@ -369,10 +404,16 @@ export class MeetingsService {
     memberId: string,
     type: OperationTypeEnum | null,
   ): Promise<Operation> {
+    const member = await this.dataSource.manager.findOne(Member, {
+      where: { id: memberId },
+    });
+    const meeting = await this.dataSource.manager.findOne(Meeting, {
+      where: { id: meetingId },
+    });
     const operation = queryRunner.manager.create(Operation, {
       meeting_id: meetingId,
       member_id: memberId,
-      description: `Registro de transacciones para el socio ${memberId} en la reunión ${meetingId}.`,
+      description: `Registro de transacciones para el socio ${member?.name} en la reunión ${meeting?.date.toLocaleDateString()}.`,
       type,
     });
     await queryRunner.manager.save(operation);
@@ -422,6 +463,11 @@ export class MeetingsService {
       case 'fee':
         ledgerEntries.push(
           ...this._processFee(queryRunner, operation, payment),
+        );
+        break;
+      case 'insurance':
+        ledgerEntries.push(
+          ...this._processInsurance(queryRunner, operation, payment),
         );
         break;
       default:
@@ -542,6 +588,21 @@ export class MeetingsService {
       queryRunner.manager.create(LedgerEntry, {
         operation_id: operation.id,
         account_type: FEE_INCOME_ACCOUNT,
+        amount: -payment.amount,
+        description: payment.description,
+      }),
+    ];
+  }
+
+  private _processInsurance(
+    queryRunner: QueryRunner,
+    operation: Operation,
+    payment: MemberDue,
+  ): LedgerEntry[] {
+    return [
+      queryRunner.manager.create(LedgerEntry, {
+        operation_id: operation.id,
+        account_type: INSURANCE_INCOME_ACCOUNT,
         amount: -payment.amount,
         description: payment.description,
       }),

@@ -46,32 +46,33 @@ INSERT INTO public.members (id, name, email, identification_number, role) VALUES
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14', 'David Rodríguez', 'david.rodriguez@email.com', '123456784', 'member');
 
 
--- ----------------------------------------------------------------
--- ▤ Historical & State Data
--- ----------------------------------------------------------------
-
--- Suscripciones de acciones de los socios
-INSERT INTO public.stock_subscriptions (member_id, stock_id, quantity) VALUES
--- Ana (Admin) tiene 2 acciones grandes
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 2),
--- Carlos tiene 1 acción mediana y 5 bonos navideños
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'f47ac10b-58cc-4372-a567-0e02b2c3d480', 1),
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'f47ac10b-58cc-4372-a567-0e02b2c3d482', 5),
--- Beatriz tiene 3 acciones pequeñas
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', 'f47ac10b-58cc-4372-a567-0e02b2c3d481', 3);
--- David no tenía acciones, se le asignará un préstamo.
-
--- Crear una reunión activa y una cerrada
-INSERT INTO public.meetings (id, date, status) VALUES
-('c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c31', NOW() - INTERVAL '1 month', 'closed'),
-('c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c32', NOW(), 'active');
-
 -- Crear préstamos activos para socios
 INSERT INTO public.loans (id, member_id, loan_type, approved_amount, interest_rate, status, monthly_payment_amount) VALUES
 -- Préstamo para Carlos
 ('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b21', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'corriente', 2000.00, 0.05, 'active', 150.00),
 -- Préstamo para David para que tenga obligaciones
 ('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b22', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14', 'agil', 500.00, 0.08, 'active', 50.00);
+
+-- ----------------------------------------------------------------
+-- ▤ Historical & State Data
+-- ----------------------------------------------------------------
+
+-- Suscripciones de acciones de los socios
+INSERT INTO public.stock_subscriptions (member_id, stock_id, quantity, financing_loan_id) VALUES
+-- Ana (Admin) tiene 2 acciones grandes
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 2, NULL),
+-- Carlos tiene 1 acción mediana y 5 bonos navideños
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'f47ac10b-58cc-4372-a567-0e02b2c3d480', 1, NULL),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'f47ac10b-58cc-4372-a567-0e02b2c3d482', 5, NULL),
+-- Beatriz tiene 3 acciones pequeñas
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', 'f47ac10b-58cc-4372-a567-0e02b2c3d481', 3, NULL),
+-- David tiene 1 acción mediana comprada con el préstamo 'agil'
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14', 'f47ac10b-58cc-4372-a567-0e02b2c3d480', 1, 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b22');
+
+-- Crear una reunión activa y una cerrada
+INSERT INTO public.meetings (id, date, status) VALUES
+('c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c31', NOW() - INTERVAL '1 month', 'closed'),
+('c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c32', NOW(), 'active');
 
 
 -- Operaciones de la REUNIÓN CERRADA

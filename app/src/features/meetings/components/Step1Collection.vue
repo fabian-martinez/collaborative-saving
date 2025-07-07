@@ -256,7 +256,12 @@ const stockDues = computed(() =>
 );
 
 const otherDues = computed(() =>
-  indexedDues.value.filter(due => due.type === 'mandatory_contribution' || due.type === 'fee')
+  indexedDues.value.filter(
+    due =>
+      (due.type === 'mandatory_contribution' ||
+        due.type === 'fee' ||
+        due.type === 'insurance') && due.amount > 0,
+  )
 );
 
 const loanDues = computed(() =>
