@@ -183,6 +183,7 @@ const routes = [
       - [x] Implementar la edición abono a capital y incluir multa.
       - [x] Implementar el pago de las obligaciones de los socios.
       - [x] Implementar resumen del pago de las obligaciones de los socios.
+      - [x] Implementar el pago de seguro de deuda.
       - [x] Limitar a un pago por socio por reunión.
     - [ ] Implementar la vista de revalorización de activos (`Step2Revaluation.vue`).
       - [ ] **Backend**: Crear endpoint `POST /meetings/active/revaluate-assets`.
@@ -219,3 +220,15 @@ Para asegurar que un socio solo pueda realizar su contribución obligatoria una 
 1.  **Manejo de Errores:** El componente encargado de realizar el pago (probablemente en `app/src/features/meetings/views/`) debe ser capaz de capturar y manejar el error 400 que la API devolverá en caso de un pago duplicado.
 2.  **Notificación al Usuario:** Al recibir este error, la interfaz debe mostrar un mensaje informativo y amigable al usuario (ej: "Este socio ya ha realizado el pago de la cuota obligatoria.").
 3.  **Prevención Visual:** Después de que un socio realice un pago de forma exitosa, la interfaz debería deshabilitar el botón de pago o proveer una indicación visual clara (ej: un checkmark o un texto "Pagado") para evitar que el usuario intente registrar el pago nuevamente en la misma sesión. 
+
+**Identifique que el detalle de las acciones le falta el tipo de accion
+Y que como el interes queda en un registro parte es mejor mencionar el credito del que se pago el interes en el detallle, al igual que en el abono a capital.**
+
+
+
+
+
+
+
+
+

@@ -473,11 +473,11 @@ async function handleRecordTransaction() {
     let description = payment.description;
 
     if (due.type === 'stock_fee' && due.stockQuantity && due.monthlyContribution) {
-      description = `${due.stockQuantity} uds. x ${due.monthlyContribution.toFixed(2)} c/u`;
+      description = `${due.description}, ${due.stockQuantity} uds. x ${due.monthlyContribution.toFixed(2)} c/u`;
     } else if (due.type === 'loan_payment' && due.details) {
       const interest = due.details.interest || 0;
       const principal = payment.amount - interest;
-      description = `Abono Capital: ${principal.toFixed(2)}, Intereses: ${interest.toFixed(2)}`;
+      description = `${due.description}, Abono Capital: ${principal.toFixed(2)}, Intereses: ${interest.toFixed(2)}`;
     }
 
     return [{
