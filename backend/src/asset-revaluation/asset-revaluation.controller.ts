@@ -14,7 +14,6 @@ export class AssetRevaluationController {
   getRevaluationPreview(
     @Param('meetingId') meetingId: string,
   ): Promise<RevaluationPreviewResult> {
-    // This will be implemented in the service later
     return this.assetRevaluationService.getRevaluationPreview(meetingId);
   }
 
