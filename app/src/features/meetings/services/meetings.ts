@@ -26,7 +26,7 @@ class MeetingsService {
 
   // Methods related to active meeting collections
   getMemberDues(memberId: string): Promise<MemberDue[]> {
-    return api.get(`/meetings/active/member-dues/${memberId}`);
+    return api.get(`/dues/active-meeting/member/${memberId}`);
   }
 
   recordMonthlyPayment(

@@ -448,9 +448,13 @@ async function handleRecordTransaction() {
     return;
   }
 
-  const processedPayments = payments.value.map((payment, index) => {
+  const processedPayments = payments.value.flatMap((payment, index) => {
+    if (Number(payment.amount || 0) === 0) {
+      return [];
+    }
+
     const due = memberDues.value[index];
-    if (!due) return payment;
+    if (!due) return [payment];
 
     let description = payment.description;
 
@@ -462,10 +466,10 @@ async function handleRecordTransaction() {
       description = `Abono Capital: ${principal.toFixed(2)}, Intereses: ${interest.toFixed(2)}`;
     }
 
-    return {
+    return [{
       ...payment,
       description: description,
-    };
+    }];
   });
   
   const payload: { memberId: string, payments: Payment[] } = {

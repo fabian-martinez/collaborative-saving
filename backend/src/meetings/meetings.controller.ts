@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -15,20 +7,20 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { MeetingsService } from './meetings.service';
-import { CreateMandatoryContributionDto } from './dto/create-mandatory-contribution.dto';
-import { UpdateMandatoryContributionDto } from './dto/update-mandatory-contribution.dto';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
 import { SimplifiedRecordTransactionsDto } from './dto/simplified-record-transactions.dto';
 import { Meeting } from './entities/meeting.entity';
-import { MandatoryContribution } from './entities/mandatory-contribution.entity';
 import { RevaluateAssetsResponseDto } from './dto/revaluate-assets-response.dto';
-import { MemberDue } from './meetings.service';
 import { Operation } from '../operations/entities/operation.entity';
+import { AssetRevaluationService } from '../asset-revaluation/asset-revaluation.service';
 
 @ApiTags('meetings')
 @Controller('meetings')
 export class MeetingsController {
-  constructor(private readonly meetingsService: MeetingsService) {}
+  constructor(
+    private readonly meetingsService: MeetingsService,
+    private readonly assetRevaluationService: AssetRevaluationService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all meetings' })
@@ -87,7 +79,7 @@ export class MeetingsController {
   })
   @ApiResponse({ status: 404, description: 'Meeting not found.' })
   revaluateAssets(@Param('id') id: string) {
-    return this.meetingsService.revaluateAssets(id);
+    return this.assetRevaluationService.revaluateAssets(id);
   }
 
   @Get(':id/monthly-payments')
@@ -103,20 +95,6 @@ export class MeetingsController {
     return this.meetingsService.findMonthlyPaymentsByMeeting(id);
   }
 
-  @Get('active/member-dues/:memberId')
-  @ApiOperation({ summary: 'Get all dues for a member for the active meeting' })
-  @ApiResponse({
-    status: 200,
-    description:
-      'Returns a flat list of the member dues. Each due object contains type, description, amount, and optional referenceId and details.',
-    type: [Object],
-  })
-  getMemberDuesForActiveMeeting(
-    @Param('memberId') memberId: string,
-  ): Promise<MemberDue[]> {
-    return this.meetingsService.getMemberDuesForActiveMeeting(memberId);
-  }
-
   @Post('active/record-monthly-payment')
   @ApiOperation({
     summary: 'Record monthly payments from a member in the active meeting',
@@ -130,80 +108,5 @@ export class MeetingsController {
     @Body() recordTransactionsDto: SimplifiedRecordTransactionsDto,
   ) {
     return this.meetingsService.recordMonthlyPayment(recordTransactionsDto);
-  }
-
-  // CRUD for Mandatory Contributions
-  @Post('mandatory-contributions')
-  @ApiOperation({ summary: 'Create a new mandatory contribution type' })
-  @ApiResponse({
-    status: 201,
-    description: 'The mandatory contribution has been successfully created.',
-    type: MandatoryContribution,
-  })
-  createMandatoryContribution(
-    @Body() createDto: CreateMandatoryContributionDto,
-  ) {
-    return this.meetingsService.createMandatoryContribution(createDto);
-  }
-
-  @Get('mandatory-contributions')
-  @ApiOperation({ summary: 'Get all mandatory contribution types' })
-  @ApiResponse({
-    status: 200,
-    description: 'A list of all mandatory contributions.',
-    type: [MandatoryContribution],
-  })
-  findAllMandatoryContributions() {
-    return this.meetingsService.findAllMandatoryContributions();
-  }
-
-  @Get('mandatory-contributions/:id')
-  @ApiOperation({ summary: 'Get a mandatory contribution type by id' })
-  @ApiParam({ name: 'id', description: 'The ID of the mandatory contribution' })
-  @ApiResponse({
-    status: 200,
-    description: 'The mandatory contribution.',
-    type: MandatoryContribution,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Mandatory contribution not found.',
-  })
-  findOneMandatoryContribution(@Param('id') id: string) {
-    return this.meetingsService.findOneMandatoryContribution(id);
-  }
-
-  @Patch('mandatory-contributions/:id')
-  @ApiOperation({ summary: 'Update a mandatory contribution type' })
-  @ApiParam({ name: 'id', description: 'The ID of the mandatory contribution' })
-  @ApiResponse({
-    status: 200,
-    description: 'The mandatory contribution has been successfully updated.',
-    type: MandatoryContribution,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Mandatory contribution not found.',
-  })
-  updateMandatoryContribution(
-    @Param('id') id: string,
-    @Body() updateDto: UpdateMandatoryContributionDto,
-  ) {
-    return this.meetingsService.updateMandatoryContribution(id, updateDto);
-  }
-
-  @Delete('mandatory-contributions/:id')
-  @ApiOperation({ summary: 'Delete a mandatory contribution type' })
-  @ApiParam({ name: 'id', description: 'The ID of the mandatory contribution' })
-  @ApiResponse({
-    status: 200,
-    description: 'The mandatory contribution has been successfully deleted.',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Mandatory contribution not found.',
-  })
-  removeMandatoryContribution(@Param('id') id: string) {
-    return this.meetingsService.removeMandatoryContribution(id);
   }
 }

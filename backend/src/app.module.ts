@@ -11,6 +11,9 @@ import { LoansModule } from './loans/loans.module';
 import { LoanTransactionsModule } from './loan-transactions/loan-transactions.module';
 import { OperationsModule } from './operations/operations.module';
 import { LedgerEntriesModule } from './ledger-entries/ledger-entries.module';
+import { MandatoryContributionsModule } from './mandatory-contributions/mandatory-contributions.module';
+import { AssetRevaluationModule } from './asset-revaluation/asset-revaluation.module';
+import { DuesModule } from './dues/dues.module';
 
 @Module({
   imports: [
@@ -31,6 +34,9 @@ import { LedgerEntriesModule } from './ledger-entries/ledger-entries.module';
     LoanTransactionsModule,
     OperationsModule,
     LedgerEntriesModule,
+    MandatoryContributionsModule,
+    AssetRevaluationModule,
+    DuesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

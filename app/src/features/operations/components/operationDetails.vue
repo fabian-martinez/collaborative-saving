@@ -50,6 +50,7 @@ const accountNames: Record<string, string> = {
   STOCK_CAPITAL: 'Capital Social (Acciones)',
   INTEREST_INCOME: 'Ingresos por Intereses',
   FEE_INCOME: 'Ingresos por Multas',
+  INSURANCE_INCOME: 'Ingresos por Seguro',
   MANDATORY_CONTRIBUTION_INCOME: 'Aportes Obligatorios',
   PENDING_CLASSIFICATION: 'Pendiente de Clasificar',
   MONTHLY_PAYMENT: 'Cuota Mensual',

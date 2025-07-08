@@ -14,6 +14,7 @@ export const PaymentType = [
   'stock_fee',
   'loan_payment',
   'fee',
+  'insurance',
 ] as const;
 
 export class CreateTransactionPaymentDto {
