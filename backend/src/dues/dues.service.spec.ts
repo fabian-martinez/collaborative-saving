@@ -12,6 +12,7 @@ describe('DuesService', () => {
   let service: DuesService;
   let dataSource: jest.Mocked<DataSource>;
   let mandatoryContributionsService: jest.Mocked<MandatoryContributionsService>;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let stockSubscriptionsService: jest.Mocked<StockSubscriptionsService>;
   let loansService: jest.Mocked<LoansService>;
   let membersService: jest.Mocked<MembersService>;
