@@ -26,18 +26,23 @@ Esta tarea será disparada desde el frontend al comenzar el **Paso 2: Revaloriza
 ### Flujo Técnico
 
 1.  **Disparador (Frontend)**: En el componente `Step2Revaluation.vue`, un usuario con los permisos adecuados hará clic en un botón ("Calcular Revalorización").
-2.  **Llamada al API**: El frontend enviará una petición a un nuevo endpoint del backend, propuesto como `POST /meetings/active/revaluate-assets`.
+2.  **Llamada al API**: El frontend enviará una petición a un nuevo endpoint del backend, propuesto como `POST /meetings/:meetingId/revaluation` (implementado en `AssetRevaluationController`).
 3.  **Lógica de Negocio (Backend)**:
     a.  **Transacción Atómica**: Toda la lógica se ejecutará dentro de una transacción de base de datos para garantizar la integridad. Si cualquier paso falla, se revertirán todos los cambios (`ROLLBACK`).
-    b.  **Cálculo de Ganancias**:
-        *   Se calculan los **intereses totales** generados desde la última revalorización.
-        *   Se calcula y se aparta el **incremento de las acciones "bono"** (ej. `valor_total_bonos * 0.02`).
-    c.  **Distribución de Remanente**:
-        *   El interés remanente (`intereses_totales - incremento_bono`) se usa para calcular la tasa de apreciación del resto de las acciones (`tasa = remanente / valor_total_acciones_regulares`).
-    d.  **Actualización de Datos**:
+    b.  **Cálculo y Aislamiento de Intereses**:
+        *   Se identifican los préstamos de tipo "ágil", cuya finalidad es cubrir el rendimiento de las acciones garantizadas.
+        *   Se calculan los **intereses generados por préstamos ágiles** (`intereses_agiles`) a partir de las transacciones de la reunión actual.
+        *   Se calculan los **intereses generados por el resto de los préstamos** (`intereses_normales`).
+    c.  **Cobertura de Acciones Garantizadas ("Bono")**:
+        *   Se calcula el **rendimiento requerido** por las acciones garantizadas (`rendimiento_requerido = valor_total_bonos * tasa_garantizada`).
+        *   **Si `intereses_agiles >= rendimiento_requerido`**: Las acciones garantizadas reciben su `rendimiento_requerido` completo. El sobrante (`intereses_agiles - rendimiento_requerido`) se suma a los `intereses_normales`.
+        *   **Si `intereses_agiles < rendimiento_requerido`**: Las acciones garantizadas solo crecen en la cuantía de los `intereses_agiles`. La diferencia representa un costo de oportunidad asumido por estas acciones y no afecta al resto.
+    d.  **Distribución de Remanente a Acciones Regulares**:
+        *   El bote de `intereses_normales` (que puede incluir el sobrante de los ágiles) se utiliza para calcular la tasa de apreciación del resto de las acciones (`tasa = intereses_normales_totales / valor_total_acciones_regulares`).
+    e.  **Actualización de Datos**:
         *   Se actualiza el `value` en la tabla `stocks` para cada tipo de acción.
         *   Se insertan registros en `stock_value_history` para mantener un histórico de la evolución del valor.
-    e.  **Registro Contable**: Se crean los asientos contables correspondientes en `ledger_entries` (ver detalle abajo).
+    f.  **Registro Contable**: Se crean los asientos contables correspondientes en `ledger_entries` (ver detalle abajo).
 4.  **Respuesta (Backend -> Frontend)**: El API devolverá un resumen del resultado (nuevos valores, tasas aplicadas), que el frontend mostrará al usuario para su confirmación.
 
 ### Registro Contable (Partida Doble)
