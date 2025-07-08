@@ -1,14 +1,27 @@
-import { Controller, Param, Post } from '@nestjs/common';
-import { AssetRevaluationService } from './asset-revaluation.service';
+import { Controller, Get, Param, Post } from '@nestjs/common';
+import {
+  AssetRevaluationService,
+  RevaluationPreviewResult,
+} from './asset-revaluation.service';
 
-@Controller('asset-revaluation')
+@Controller('meetings/:meetingId/revaluation')
 export class AssetRevaluationController {
   constructor(
     private readonly assetRevaluationService: AssetRevaluationService,
   ) {}
 
-  @Post('meetings/:meetingId')
-  revaluateAssets(@Param('meetingId') meetingId: string) {
-    return this.assetRevaluationService.revaluateAssets(meetingId);
+  @Get('preview')
+  getRevaluationPreview(
+    @Param('meetingId') meetingId: string,
+  ): Promise<RevaluationPreviewResult> {
+    // This will be implemented in the service later
+    return this.assetRevaluationService.getRevaluationPreview(meetingId);
+  }
+
+  @Post()
+  executeRevaluation(
+    @Param('meetingId') meetingId: string,
+  ): Promise<RevaluationPreviewResult> {
+    return this.assetRevaluationService.executeRevaluation(meetingId);
   }
 }

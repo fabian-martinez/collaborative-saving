@@ -20,6 +20,7 @@ export const OperationType = [
   'STOCK_PURCHASE',
   'LOAN_DISBURSEMENT',
   'MONTHLY_PAYMENT',
+  'ASSET_REVALUATION',
 ] as const;
 
 export type OperationTypeEnum = (typeof OperationType)[number];
@@ -37,7 +38,7 @@ export class Operation {
     description: 'The ID of the member performing the operation',
     example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
   })
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', nullable: true })
   member_id: string;
 
   @ApiProperty({
@@ -77,6 +78,14 @@ export class Operation {
   })
   @Column({ type: 'text', nullable: true })
   description: string;
+
+  @ApiProperty({
+    description: 'The total amount of the operation, if applicable',
+    example: 5200.0,
+    nullable: true,
+  })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  amount: number;
 
   // Relationships
   @ApiProperty({ type: () => Member })

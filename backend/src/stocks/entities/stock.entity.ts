@@ -38,6 +38,29 @@ export class Stock {
   @Column({ type: 'numeric' })
   monthly_contribution: number;
 
+  @ApiProperty({
+    description: 'Flag to indicate if the stock has a guaranteed yield',
+    example: true,
+    default: false,
+  })
+  @Column({ type: 'boolean', default: false, name: 'is_guaranteed' })
+  is_guaranteed: boolean;
+
+  @ApiProperty({
+    description:
+      'The guaranteed yield for the stock, if applicable (e.g., 0.02 for 2%)',
+    example: 0.02,
+    nullable: true,
+  })
+  @Column({
+    type: 'decimal',
+    precision: 5,
+    scale: 4,
+    nullable: true,
+    name: 'guaranteed_yield',
+  })
+  guaranteed_yield: number | null;
+
   @ApiProperty({ type: () => [StockValueHistory] })
   @OneToMany(() => StockValueHistory, (history) => history.stock)
   value_history: StockValueHistory[];
