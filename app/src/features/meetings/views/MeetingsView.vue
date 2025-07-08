@@ -13,7 +13,7 @@ const hasActiveMeeting = computed(() => !!activeMeeting.value)
 async function getMeetings() {
   try {
     loading.value = true
-    const data = await meetingsService.getMeetings()
+    const data = await meetingsService.findAll()
     meetings.value = data
   } catch (err) {
     console.error('Error fetching meetings:', err)
@@ -30,7 +30,7 @@ async function startNewMeeting() {
 
   try {
     loading.value = true
-    await meetingsService.startNewMeeting()
+    await meetingsService.create({ date: new Date().toISOString() })
     alert('New meeting started successfully!')
     await getMeetings() // Refresh the list
   } catch (err) {

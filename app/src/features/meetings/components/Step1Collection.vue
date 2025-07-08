@@ -301,11 +301,13 @@ function handleFineUpdate(data: { description: string, amount: number }) {
     editingFineData.value = null;
 }
 
-function handleLoanPaymentUpdate(newAmount: number) {
+async function handleLoanPaymentUpdate(newAmount: number) {
     if(editingLoanIndex.value !== null) {
         payments.value[editingLoanIndex.value].amount = newAmount;
     }
     isLoanModalOpen.value = false;
+
+    await recalculateInsurance();
     editingLoanIndex.value = null;
 }
 
@@ -314,6 +316,7 @@ function deletePayment(index: number) {
         memberDues.value.splice(index, 1);
         payments.value.splice(index, 1);
     }
+    isFineModalOpen.value = true;
 }
 
 function editPayment(index: number) {
@@ -418,7 +421,18 @@ async function selectMember(member: Member) {
   try {
     isDuesLoading.value = true;
     const dues = await meetingsService.getMemberDues(member.id);
-    console.log(dues);
+    
+    // Fetch and add insurance
+    const capitalPayment = dues.filter(due => due.type === 'loan_payment').reduce((sum, due) => sum + (due.details?.principal || 0), 0);
+    const { insuranceAmount } = await meetingsService.calculateInsurance(member.id, capitalPayment);
+    if (insuranceAmount > 0) {
+      dues.push({
+        type: 'insurance',
+        description: 'Seguro de deuda',
+        amount: insuranceAmount,
+      });
+    }
+
     memberDues.value = dues;
     
     // Initialize payment payload from dues
@@ -498,6 +512,49 @@ async function handleRecordTransaction() {
     alert(`Error: ${submissionError.value}`);
   } finally {
     isSubmitting.value = false;
+  }
+}
+
+async function recalculateInsurance() {
+  if (!selectedMember.value) return;
+
+  let totalCapitalPayment = 0;
+  payments.value.forEach((payment, index) => {
+    const due = memberDues.value[index];
+    if (due && due.type === 'loan_payment' && due.details) {
+      const capitalPortion = payment.amount - due.details.interest;
+      totalCapitalPayment += capitalPortion > 0 ? capitalPortion : 0;
+    }
+  });
+
+  try {
+    const { insuranceAmount } = await meetingsService.calculateInsurance(
+      selectedMember.value.id,
+      totalCapitalPayment,
+    );
+
+    const insuranceDueIndex = memberDues.value.findIndex(
+      (d) => d.type === 'insurance',
+    );
+
+    if (insuranceDueIndex !== -1) {
+      memberDues.value[insuranceDueIndex].amount = insuranceAmount;
+      payments.value[insuranceDueIndex].amount = insuranceAmount;
+    } else if (insuranceAmount > 0) {
+      const insuranceDue: MemberDue = {
+        type: 'insurance',
+        description: 'Seguro de deuda',
+        amount: insuranceAmount,
+      };
+      memberDues.value.push(insuranceDue);
+      payments.value.push({
+        type: 'insurance',
+        description: 'Seguro de deuda',
+        amount: insuranceAmount,
+      });
+    }
+  } catch (error) {
+    console.error('Error recalculating insurance:', error);
   }
 }
 </script>

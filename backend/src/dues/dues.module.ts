@@ -5,6 +5,7 @@ import { MeetingsModule } from '../meetings/meetings.module';
 import { MandatoryContributionsModule } from '../mandatory-contributions/mandatory-contributions.module';
 import { StockSubscriptionsModule } from '../stock-subscriptions/stock-subscriptions.module';
 import { LoansModule } from '../loans/loans.module';
+import { MembersModule } from '../members/members.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { LoansModule } from '../loans/loans.module';
     MandatoryContributionsModule,
     StockSubscriptionsModule,
     LoansModule,
+    MembersModule,
   ],
   providers: [DuesService],
   controllers: [DuesController],

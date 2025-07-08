@@ -29,6 +29,13 @@ class MeetingsService {
     return api.get(`/dues/active-meeting/member/${memberId}`);
   }
 
+  calculateInsurance(memberId: string, capitalPayment?: number): Promise<{ insuranceAmount: number }> {
+    if (capitalPayment !== undefined) {
+      return api.get(`/dues/calculate-insurance/${memberId}?capitalPayment=${capitalPayment}`);
+    }
+    return api.get(`/dues/calculate-insurance/${memberId}`);
+  }
+
   recordMonthlyPayment(
     payload: SimplifiedRecordTransactions,
   ): Promise<void> {

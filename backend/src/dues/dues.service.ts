@@ -5,14 +5,15 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { Member } from '../members/entities/member.entity';
-import { StockSubscription } from '../stock-subscriptions/entities/stock-subscription.entity';
-import { Loan } from '../loans/entities/loan.entity';
 import { MeetingsService } from '../meetings/meetings.service';
 import { MemberDue } from './entities/member-due.entity';
 import { MandatoryContributionsService } from '../mandatory-contributions/mandatory-contributions.service';
 import { StockSubscriptionsService } from '../stock-subscriptions/stock-subscriptions.service';
 import { LoansService } from '../loans/loans.service';
+import { MandatoryContribution } from '../mandatory-contributions/entities/mandatory-contribution.entity';
+import { StockSubscription } from '../stock-subscriptions/entities/stock-subscription.entity';
+import { Loan } from '../loans/entities/loan.entity';
+import { MembersService } from '../members/members.service';
 
 @Injectable()
 export class DuesService {
@@ -21,63 +22,25 @@ export class DuesService {
     private readonly mandatoryContributionsService: MandatoryContributionsService,
     private readonly stockSubscriptionsService: StockSubscriptionsService,
     private readonly loansService: LoansService,
+    private readonly membersService: MembersService,
     @Inject(forwardRef(() => MeetingsService))
     private readonly meetingsService: MeetingsService,
   ) {}
 
   async getMemberDues(memberId: string): Promise<MemberDue[]> {
-    const dues: MemberDue[] = [];
-
-    // 1. Mandatory fund contributions
     const mandatoryContributions =
       await this.mandatoryContributionsService.findAll();
-
-    for (const contribution of mandatoryContributions) {
-      if (contribution.value > 0) {
-        dues.push({
-          type: 'mandatory_contribution',
-          description: contribution.asset_type,
-          amount: Number(contribution.value),
-        });
-      }
-    }
-
-    // 2. Subscribed stock fees
     const activeSubscriptions =
       await this.stockSubscriptionsService.findActiveByMember(memberId);
-
-    for (const subscription of activeSubscriptions) {
-      if (subscription.stock && subscription.stock.monthly_contribution > 0) {
-        dues.push({
-          type: 'stock_fee',
-          description: `Cuota de acción: ${subscription.stock.type}`,
-          amount:
-            subscription.quantity * subscription.stock.monthly_contribution,
-        });
-      }
-    }
-
-    // 3. Active loan payments
     const activeLoans = await this.loansService.findActiveByMember(memberId);
 
-    for (const loan of activeLoans) {
-      const interestDue = loan.outstanding_balance * loan.interest_rate;
-      const principalDue = Number(loan.monthly_payment_amount);
+    const mandatoryDues = this.calculateMandatoryContributionDues(
+      mandatoryContributions,
+    );
+    const stockDues = this.calculateStockFeeDues(activeSubscriptions);
+    const loanDues = this.calculateLoanPaymentDues(activeLoans);
 
-      dues.push({
-        type: 'loan_payment',
-        description: `Cuota préstamo ${loan.loan_type}`,
-        amount: Number(loan.monthly_payment_amount),
-        referenceId: loan.id,
-        details: {
-          interest: interestDue,
-          principal: principalDue,
-          outstanding_balance: loan.outstanding_balance - principalDue,
-        },
-      });
-    }
-
-    return dues;
+    return [...mandatoryDues, ...stockDues, ...loanDues];
   }
 
   async getMemberDuesForActiveMeeting(memberId: string): Promise<MemberDue[]> {
@@ -86,30 +49,88 @@ export class DuesService {
       throw new NotFoundException('No active meeting found.');
     }
 
-    const member = await this.dataSource.manager.findOne(Member, {
-      where: { id: memberId },
-    });
+    const member = await this.membersService.findOne(memberId);
     if (!member) {
       throw new NotFoundException(`Member with ID ${memberId} not found.`);
     }
 
-    const dues: MemberDue[] = [];
-
-    // --- Aportes y cuotas fijas ---
     const mandatoryContributions =
       await this.mandatoryContributionsService.findAll();
+    const subscriptions = await this.dataSource.manager.find(
+      StockSubscription,
+      {
+        where: { member_id: memberId },
+        relations: ['stock', 'financing_loan'],
+      },
+    );
+    const activeLoans = await this.loansService.findActiveByMember(memberId);
 
-    for (const contribution of mandatoryContributions) {
-      if (contribution.value > 0) {
-        dues.push({
-          type: 'mandatory_contribution',
-          description: contribution.asset_type,
-          amount: Number(contribution.value),
-        });
-      }
-    }
+    const mandatoryDues = this.calculateMandatoryContributionDues(
+      mandatoryContributions,
+    );
+    const stockDues = this.calculateStockFeeDues(subscriptions);
 
-    // --- Cuotas de acciones suscritas ---
+    const unpaidLoans = activeLoans.filter(
+      (loan) => loan.payment_status_this_month !== 'PAID',
+    );
+    const loanDues = this.calculateLoanPaymentDues(unpaidLoans);
+
+    return [...mandatoryDues, ...stockDues, ...loanDues];
+  }
+
+  private calculateMandatoryContributionDues(
+    contributions: MandatoryContribution[],
+  ): MemberDue[] {
+    return contributions
+      .filter((contribution) => contribution.value > 0)
+      .map((contribution) => ({
+        type: 'mandatory_contribution',
+        description: contribution.asset_type,
+        amount: Number(contribution.value),
+      }));
+  }
+
+  private calculateStockFeeDues(
+    subscriptions: StockSubscription[],
+  ): MemberDue[] {
+    return subscriptions
+      .filter((sub) => sub.stock && Number(sub.stock.monthly_contribution) > 0)
+      .map((sub) => ({
+        type: 'stock_fee',
+        description: `Cuota de acción: ${sub.stock.type}`,
+        amount: sub.quantity * Number(sub.stock.monthly_contribution),
+        referenceId: sub.stock.id,
+        monthlyContribution: Number(sub.stock.monthly_contribution),
+        stockQuantity: sub.quantity,
+      }));
+  }
+
+  private calculateLoanPaymentDues(loans: Loan[]): MemberDue[] {
+    return loans
+      .filter((loan) => loan.outstanding_balance > 0)
+      .map((loan) => {
+        const principalComponent = Number(loan.monthly_payment_amount);
+        const interestComponent =
+          Number(loan.outstanding_balance) * Number(loan.interest_rate);
+
+        return {
+          type: 'loan_payment',
+          description: `Cuota préstamo: ${loan.loan_type}`,
+          amount: principalComponent + interestComponent,
+          referenceId: loan.id,
+          details: {
+            interest: interestComponent,
+            principal: principalComponent,
+            outstanding_balance: Number(loan.outstanding_balance),
+          },
+        };
+      });
+  }
+
+  async calculateInsurance(
+    memberId: string,
+    capitalPayment = 0,
+  ): Promise<{ insuranceAmount: number }> {
     const subscriptions = await this.dataSource.manager.find(
       StockSubscription,
       {
@@ -118,80 +139,32 @@ export class DuesService {
       },
     );
 
-    for (const subscription of subscriptions) {
-      const dueAmount =
-        subscription.quantity * Number(subscription.stock.monthly_contribution);
-      if (dueAmount > 0) {
-        dues.push({
-          type: 'stock_fee',
-          description: `Cuota de acción: ${subscription.stock.type}`,
-          amount: dueAmount,
-          referenceId: subscription.stock.id,
-          monthlyContribution: Number(subscription.stock.monthly_contribution),
-          stockQuantity: subscription.quantity,
-        });
-      }
-    }
+    const loans = await this.loansService.findActiveByMember(memberId);
 
-    // --- Cuotas de préstamos activos ---
-    const loans = await this.dataSource.manager.find(Loan, {
-      where: { member_id: memberId, status: 'active' },
-      relations: ['transactions'],
-    });
-
-    for (const loan of loans) {
-      if (
-        loan.outstanding_balance > 0 &&
-        loan.payment_status_this_month !== 'PAID'
-      ) {
-        const interestComponent =
-          Number(loan.outstanding_balance) * Number(loan.interest_rate);
-        const principalComponent = Number(loan.monthly_payment_amount);
-        const totalPaymentDue = principalComponent + interestComponent;
-
-        dues.push({
-          type: 'loan_payment',
-          description: `Cuota préstamo: ${loan.loan_type}`,
-          amount: totalPaymentDue,
-          referenceId: loan.id,
-          details: {
-            interest: interestComponent,
-            principal: principalComponent,
-            outstanding_balance: Number(loan.outstanding_balance),
-          },
-        });
-      }
-    }
-
-    // --- Cálculo del seguro de deuda ---
-    const totalDebt = loans.reduce(
-      (sum, loan) => sum + Number(loan.outstanding_balance),
-      0,
+    const financingLoanIds = new Set(
+      subscriptions
+        .filter(
+          (sub) =>
+            sub.financing_loan_id && sub.financing_loan?.status === 'active',
+        )
+        .map((sub) => sub.financing_loan_id),
     );
 
-    let totalSavings = 0;
-    for (const sub of subscriptions) {
+    const totalDebt = loans
+      .filter((loan) => !financingLoanIds.has(loan.id))
+      .reduce((sum, loan) => sum + Number(loan.outstanding_balance), 0);
+
+    const totalSavings = subscriptions.reduce((sum, sub) => {
       if (!sub.financing_loan_id || sub.financing_loan?.status !== 'active') {
-        totalSavings += sub.quantity * Number(sub.stock.value);
+        return sum + sub.quantity * Number(sub.stock.value);
       }
-    }
+      return sum;
+    }, 0);
 
-    const insuranceBase = totalSavings - totalDebt;
-    if (insuranceBase > 0) {
-      const insuranceAmount = insuranceBase * 0.001;
-      dues.push({
-        type: 'insurance',
-        description: 'Seguro de deuda',
-        amount: insuranceAmount,
-      });
-    } else {
-      dues.push({
-        type: 'insurance',
-        description: 'Seguro de deuda',
-        amount: 0,
-      });
-    }
+    const adjustedDebt = totalDebt - capitalPayment;
+    const insuranceBase = adjustedDebt - totalSavings;
+    const insuranceAmount = insuranceBase > 0 ? insuranceBase * 0.001 : 0;
 
-    return dues;
+    return { insuranceAmount };
   }
 }
