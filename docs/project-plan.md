@@ -107,44 +107,60 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
 -   **Frontend**:
     -   [ ] `Step2Revaluation.vue`: Añadir botón para iniciar el proceso de revalorización.
     -   [ ] Llamar al endpoint del backend y manejar los estados de carga/error.
-    -   [ ] Al recibir la respuesta, mostrar un resumen claro con los nuevos valores de las acciones.
+    -   [ ] Al recibir la respuesta, mostrar un resumen claro con los nuevos valores de las acciones y el superávit o déficit generado.
 -   **Backend**:
     -   [x] `POST /asset-revaluation/:meetingId`: Crear el endpoint para ejecutar la revalorización.
-    -   [ ] **Refinar**: Ejecutar toda la lógica dentro de una **transacción atómica** para garantizar la integridad de los datos (BEGIN/COMMIT/ROLLBACK).
-    -   [ ] Modificar `AssetRevaluationService` para separar intereses de "préstamos ágiles" y "préstamos normales".
-    -   [ ] Implementar la lógica de cobertura donde los intereses de "préstamos ágiles" cubren el rendimiento de acciones garantizadas.
-    -   [ ] Calcular y aplicar correctamente el costo de oportunidad (déficit) o el sobrante de los intereses.
-    -   [ ] Distribuir los intereses restantes entre las acciones no garantizadas.
-    -   [ ] La lógica debe actualizar `stocks` y registrar en `stock_value_history`.
-    -   [ ] **Refinar**: Generar los asientos contables de partida doble en `ledger_entries` usando las cuentas `INVERSIONES_EN_ACCIONES` (Débito) y `SUPERAVIT_POR_REVALUACION` (Crédito).
+    -   [ ] **Detalle de Tareas de Implementación**:
+        -   [ ] Envolver toda la lógica de `AssetRevaluationService` en una **transacción de base de datos** para asegurar la atomicidad (ej. usando `@Transactional()` de TypeORM o similar).
+        -   [ ] Modificar la consulta de intereses para obtener por separado los generados por "préstamos ágiles" y "préstamos normales".
+        -   [ ] Implementar la lógica de cobertura: los intereses de "préstamos ágiles" deben cubrir el rendimiento esperado de las acciones de tipo "Garantizada".
+        -   [ ] Calcular el déficit (costo de oportunidad) si los intereses no son suficientes, o el sobrante si exceden la cobertura.
+        -   [ ] Distribuir los intereses restantes (o el déficit) de forma ponderada entre las acciones no garantizadas ("Normales").
+        -   [ ] Por cada tipo de acción cuyo valor cambie, actualizar su `current_value` en la tabla `stocks` y crear un nuevo registro en `stock_value_history`.
+        -   [ ] Generar los asientos contables de partida doble en `ledger_entries` para reflejar la revalorización total, usando las cuentas `INVERSIONES_EN_ACCIONES` (Débito por el aumento de valor) y `SUPERAVIT_POR_REVALUACION` (Crédito).
 -   **Testing**:
-    -   [ ] **Backend**: Crear pruebas unitarias exhaustivas para `AssetRevaluationService`, cubriendo todos los escenarios (con y sin déficit).
+    -   [ ] **Backend**: Crear pruebas unitarias exhaustivas para `AssetRevaluationService`, cubriendo:
+        -   [ ] Escenario con superávit (intereses cubren y sobran).
+        -   [ ] Escenario con déficit (intereses no alcanzan a cubrir).
+        -   [ ] Escenario exacto (intereses cubren justo lo necesario).
 
 #### 4.4. Paso 3: Nuevas Operaciones
 
 -   **Frontend**:
-    -   [ ] `Step3Operations.vue`: Implementar la interfaz para solicitar nuevos préstamos o comprar acciones.
+    -   [ ] `Step3Operations.vue`: Implementar formularios para solicitar nuevos préstamos o comprar acciones.
+    -   [ ] Validar las solicitudes en la UI (ej. que no se pida más del efectivo disponible).
 -   **Backend**:
-    -   [ ] Implementar los endpoints correspondientes para registrar estas nuevas operaciones.
+    -   [ ] **Detalle de Tareas de Implementación**:
+        -   [ ] Crear DTOs específicos: `RequestLoanDto` y `BuyStockDto`.
+        -   [ ] Implementar endpoint `POST /meetings/:id/operations/loans` que cree un nuevo préstamo con estado `PENDING_DISBURSEMENT`.
+        -   [ ] Implementar endpoint `POST /meetings/:id/operations/stocks` que cree una nueva suscripción de acciones para el socio.
+        -   [ ] Realizar validaciones de negocio: el socio debe tener capacidad de endeudamiento, el fondo debe tener liquidez, etc.
 -   **Testing**:
-    -   [ ] **Backend**: Añadir pruebas para los servicios de creación de préstamos y compra de acciones.
+    -   [ ] **Backend**: Añadir pruebas para los servicios de creación de préstamos y compra de acciones durante la reunión.
 
 #### 4.5. Paso 4: Desembolsos
 
 -   **Frontend**:
-    -   [ ] `Step4Disbursements.vue`: Mostrar un resumen de los desembolsos a realizar (préstamos aprobados).
+    -   [ ] `Step4Disbursements.vue`: Mostrar un resumen de los desembolsos a realizar y un botón para finalizar la reunión.
 -   **Backend**:
-    -   [ ] Implementar endpoint para marcar la reunión como completada y registrar los desembolsos.
+    -   [ ] **Detalle de Tareas de Implementación**:
+        -   [ ] Implementar endpoint `POST /meetings/:id/complete` para cerrar la reunión.
+        -   [ ] El servicio debe cambiar el estado de la reunión a `COMPLETED`.
+        -   [ ] Actualizar el estado de los préstamos de `PENDING_DISBURSEMENT` a `ACTIVE`.
+        -   [ ] Generar los asientos contables en `ledger_entries` para la salida de efectivo por los desembolsos de préstamos.
 -   **Testing**:
     -   [ ] **Backend**: Añadir pruebas para el proceso de cierre y desembolso de la reunión.
 
 ### Módulo 5: Gestión de Préstamos (Pendiente)
 
 -   **Frontend**:
-    -   [ ] `LoansListView.vue`: Crear vista para listar todos los préstamos con su estado.
-    -   [ ] `LoanDetailView.vue`: Vista para ver el detalle de un préstamo, incluyendo su historial de pagos.
+    -   [ ] `LoansListView.vue`: Crear vista para listar todos los préstamos con filtros por estado y socio.
+    -   [ ] `LoanDetailView.vue`: Vista para ver el detalle de un préstamo, su tabla de amortización y el historial de pagos.
 -   **Backend**:
-    -   [ ] Implementar CRUD completo para `Loan`.
+    -   [ ] **Detalle de Tareas de Implementación**:
+        -   [ ] Implementar `GET /loans` con filtrado y paginación.
+        -   [ ] Implementar `GET /loans/:id` que devuelva el detalle completo.
+        -   [ ] Implementar `PATCH /loans/:id` para ajustes administrativos (ej. condonar intereses, reestructurar).
 -   **Testing**:
     -   [ ] **Backend**: Añadir pruebas unitarias para `LoansService`.
     -   [ ] **Frontend**: Añadir pruebas para las vistas de lista y detalle de préstamos.
@@ -152,48 +168,57 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
 ### Módulo 6: Libro Contable (Pendiente)
 
 -   **Frontend**:
-    -   [ ] `LedgerView.vue`: Desarrollar una tabla completa con todas las transacciones del fondo.
-    -   [ ] Implementar filtros avanzados por fecha, tipo de transacción y socio.
+    -   [ ] `LedgerView.vue`: Desarrollar una tabla completa con todas las transacciones, con paginación.
+    -   [ ] Implementar filtros por rango de fechas, tipo de cuenta, socio y tipo de transacción.
 -   **Backend**:
-    -   [ ] Implementar endpoint para consultar `ledger_entries` con opciones de filtrado.
+    -   [ ] **Detalle de Tareas de Implementación**:
+        -   [ ] Implementar `GET /ledger-entries` con parámetros de consulta para `startDate`, `endDate`, `accountId`, `memberId`.
+        -   [ ] Optimizar la consulta para manejar grandes volúmenes de datos de forma eficiente.
 -   **Testing**:
     -   [ ] **Backend**: Añadir pruebas para la consulta y filtrado de asientos contables.
 
 ### Módulo 7: Administración (Pendiente)
 
 -   **Frontend**:
-    -   [ ] `SettingsView.vue`: Formularios para editar parámetros globales (tasa de interés, valor de acción, etc.).
-    -   [ ] `FundInfoView.vue`, `DocumentsView.vue`: Desarrollar vistas administrativas.
+    -   [ ] `SettingsView.vue`: Formularios para editar parámetros globales del fondo.
+    -   [ ] `FundInfoView.vue`, `DocumentsView.vue`: Desarrollar las vistas administrativas estáticas.
 -   **Backend**:
-    -   [ ] Implementar endpoints para gestionar la configuración global del fondo.
+    -   [ ] **Detalle de Tareas de Implementación**:
+        -   [ ] Crear una entidad `Configuration` para almacenar parámetros clave-valor.
+        -   [ ] Implementar endpoints `GET /configuration` y `PATCH /configuration` para gestionar los ajustes.
 -   **Testing**:
     -   [ ] **Backend**: Añadir pruebas para el guardado y recuperación de la configuración.
 
 ### Módulo 8: Revisiones Finales (Pendiente)
 
 -   **Otras Tareas**:
-    -   [ ] Realizar una revisión completa de la responsividad en dispositivos móviles.
-    -   [ ] Realizar pruebas de accesibilidad (navegación por teclado, contraste de colores).
-    -   [ ] Refinar la experiencia de usuario basándose en feedback.
+    -   [ ] Realizar una revisión completa de la responsividad en tablets y móviles.
+    -   [ ] Realizar pruebas de accesibilidad con herramientas como Lighthouse y navegación por teclado.
+    -   [ ] Crear una sesión de "User Acceptance Testing" (UAT) con usuarios finales para obtener feedback.
 
 ### Módulo 9: Validación de Caso de Uso (Pendiente)
 
 -   **Otras Tareas**:
-    -   [ ] **Prueba de Aceptación**: Ejecutar y validar el escenario de negocio completo descrito en `docs/business-use-case-scenario.md` para asegurar que todos los cálculos, transacciones y cambios de estado se comportan como se espera de principio a fin.
+    -   [ ] **Prueba de Aceptación End-to-End**:
+        -   [ ] **Paso 1**: Seguir el documento `docs/business-use-case-scenario.md` y ejecutar cada paso manualmente en la aplicación.
+        -   [ ] **Paso 2**: En cada paso (recaudo, revalorización, etc.), verificar que los saldos, estados y resúmenes en la UI coincidan con los cálculos del escenario.
+        -   [ ] **Paso 3**: Al final del ciclo, comprobar que los balances de los socios y los estados financieros del fondo son los correctos.
 
 ### Módulo 10: Despliegue a Producción y Estrategia a Futuro (Pendiente)
 
 #### 10.1. Estrategia de Entornos y Autenticación
 
 -   **Backend/DevOps**:
-    -   [ ] Definir y documentar la estrategia de entornos (Desarrollo Local vs. Producción en Supabase).
-    -   [ ] Crear scripts o un `docker-compose.yml` para levantar una instancia de PostgreSQL local para facilitar el desarrollo.
+    -   [ ] Crear un `docker-compose.yml` que defina los servicios `postgres` y `backend`, permitiendo levantar el entorno local con un solo comando.
 -   **Backend**:
-    -   [ ] Implementar un sistema de autenticación robusto (ej. JWT) para proteger los endpoints.
-    -   [ ] Definir e implementar un sistema de roles y permisos (ej. `admin`, `tesorero`, `socio`).
+    -   [ ] **Detalle de Tareas de Implementación - Autenticación**:
+        -   [ ] Integrar `passport.js` con `passport-jwt` para manejar la autenticación por token.
+        -   [ ] Crear endpoints `/auth/login`, `/auth/register` (opcional) y `/auth/profile`.
+        -   [ ] Implementar un sistema de roles (`admin`, `member`) en la entidad `User`.
+        -   [ ] Crear un `RolesGuard` personalizado para proteger endpoints específicos según el rol del usuario.
 -   **Frontend**:
-    -   [ ] Implementar el flujo de login/logout en la UI.
-    -   [ ] Crear guardias de ruta (`route guards`) para restringir el acceso a vistas basado en el rol del usuario.
+    -   [ ] Implementar el formulario de login y el almacenamiento seguro del token (ej. en una cookie httpOnly).
+    -   [ ] Crear guardias de ruta (`route guards`) en Vue Router para proteger vistas.
 
 #### 10.2. Plan de Despliegue (Opción Cloud)
 
@@ -203,12 +228,36 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
     -   [ ] Configurar un pipeline de CI/CD (ej. GitHub Actions) para el despliegue automático del frontend a **Firebase Hosting**.
     -   [ ] Documentar el proceso de despliegue y mantenimiento del backend en la plataforma elegida.
 
-#### 10.3. Investigación de Alternativa (Opción Local-First)
+#### 10.3. Estrategia Futura: Opción Local-First
 
--   **Investigación**:
-    -   [ ] Investigar arquitecturas y stacks tecnológicos para una versión "offline-first" o "local-first" de la aplicación (ej. Electron, Tauri para el empaquetado; SQLite, PouchDB para la base de datos local).
-    -   [ ] Evaluar la viabilidad, ventajas y desventajas (ej. sincronización de datos, mantenimiento) de una versión local en comparación con el modelo cloud.
-    -   [ ] Crear un **ADR (Architecture Decision Record)** que resuma los hallazgos y la decisión final sobre la estrategia a largo plazo.
+-   **Estrategia**:
+    -   [x] Se ha diseñado un plan detallado para una versión "offline-first" o "local-first" de la aplicación, que puede ser consultada como una posible evolución futura del proyecto. Ver `docs/run-local-plan.md` para más detalles.
+    -   [ ] **ADR (Architecture Decision Record)**: Cuando se decida proceder con esta versión, se creará un ADR que formalice la decisión y el plan de migración.
+
+### Módulo 11: Preparación para Open Source (Pendiente)
+
+Este módulo se enfoca en las tareas necesarias para que el proyecto pueda ser liberado como código abierto en el futuro, facilitando que otras comunidades puedan adoptarlo y contribuir.
+
+#### 11.1. Documentación para la Comunidad
+
+-   **Otras Tareas**:
+    -   [ ] Crear un `README.md` de alto nivel en la raíz del proyecto que explique la misión del proyecto, cómo empezar y la estructura general.
+    -   [ ] Redactar una guía para contribuidores (`CONTRIBUTING.md`) con instrucciones sobre cómo configurar el entorno de desarrollo, el flujo de trabajo para proponer cambios (pull requests) y los estándares de código.
+    -   [ ] Añadir un Código de Conducta (`CODE_OF_CONDUCT.md`) para fomentar una comunidad colaborativa y respetuosa.
+    -   [ ] Investigar y decidir una licencia de software de código abierto (ej. MIT, AGPL, etc.) y añadir el archivo `LICENSE` al repositorio.
+
+#### 11.2. Facilidad de Configuración y Despliegue
+
+-   **DevOps**:
+    -   [ ] Asegurar que todas las claves (API, base de datos, JWT) se gestionen a través de variables de entorno.
+    -   [ ] Crear y documentar un archivo `.env.example` para el backend y el frontend.
+    -   [ ] Refinar el `docker-compose.yml` para que sea parametrizable y fácil de usar por nuevos contribuidores.
+
+#### 11.3. Calidad del Código y Automatización
+
+-   **Testing**:
+    -   [ ] Establecer un objetivo de cobertura de pruebas (ej. >80%) para el código del backend, garantizando la fiabilidad.
+    -   [ ] Configurar el pipeline de CI (GitHub Actions) para que ejecute automáticamente las pruebas y el linter en cada `pull request` para mantener la calidad del código.
 
 
 
