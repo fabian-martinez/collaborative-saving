@@ -160,18 +160,32 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
 #### 4.4. Paso 3: Nuevas Operaciones
 
 -   **Frontend**:
-    -   [ ] `Step3Operations.vue`: Implementar formularios para solicitar nuevos préstamos o comprar acciones.
-    -   [ ] Validar las solicitudes en la UI (ej. que no se pida más del efectivo disponible).
+    -   [x] `Step3Operations.vue`: Implementar el flujo completo para la compra de acciones durante la reunión.
+        -   [x] Permitir seleccionar un miembro existente o registrar un nuevo miembro en el mismo flujo (el alta de miembro se registra como operación de la reunión).
+        -   [x] Mostrar todos los tipos de acción disponibles, con el valor actualizado tras la revalorización (Paso 2) y acceso al histórico de valores.
+        -   [x] Formulario para ingresar la cantidad de acciones (solo números enteros) y el método de pago: efectivo, crédito o mixto (con soporte para decimales).
+        -   [x] Si la compra es a crédito (total o parcial), calcular y mostrar el interés fijo (2%) y registrar el crédito asociado.
+        -   [x] Validar que la suma de efectivo y crédito coincida con el total de la compra.
+        -   [x] Al registrar una compra, agregarla a un resumen temporal (recibo), permitiendo editar o anular compras antes de avanzar al siguiente paso.
+        -   [x] Si el usuario avanza y luego regresa, mostrar las compras ya hechas y permitir agregar nuevas o modificar existentes.
+        -   [x] Actualizar en tiempo real el efectivo disponible en la reunión con las compras en efectivo.
+        -   [x] El resumen de compras solo es visible para el administrador.
+        -   [x] Feedback claro de éxito/error y loaders durante las operaciones.
+        -   [x] Etiqueta visual "Pendiente" para miembros con compras en proceso no confirmadas.
 -   **Backend**:
     -   [ ] **Detalle de Tareas de Implementación**:
-        -   [ ] Crear DTOs específicos: `RequestLoanDto` y `BuyStockDto`.
-        -   [ ] Implementar endpoint `POST /meetings/:id/operations/loans` que cree un nuevo préstamo con estado `PENDING_DISBURSEMENT`.
-        -   [ ] **Refactorizar `LoansService` para que la creación de préstamos y desembolsos iniciales siempre requiera un `meeting_id` de una reunión activa.**
-        -   [ ] Implementar endpoint `POST /meetings/:id/operations/stocks` que cree una nueva suscripción de acciones para el socio.
-        -   [ ] **Refactorizar `OperationsService.buyStock` para que la compra de acciones se realice dentro del contexto de una reunión activa, asociando la operación a un `meeting_id`.**
-        -   [ ] Realizar validaciones de negocio: el socio debe tener capacidad de endeudamiento, el fondo debe tener liquidez, etc.
+        -   [ ] Endpoint para registrar la compra de acciones durante la reunión: `POST /meetings/:id/operations/stocks`
+            -   [ ] Permitir incluir datos de un nuevo miembro en la misma petición (alta y compra en una sola operación atómica).
+            -   [ ] Validar que la cantidad de acciones sea un número entero positivo.
+            -   [ ] Registrar la operación y actualizar la suscripción de acciones del socio.
+            -   [ ] Si la compra es a crédito (total o parcial), crear el crédito asociado con interés fijo del 2% (sin plazo/cuota mínima).
+            -   [ ] Registrar los asientos contables correspondientes (compra de acciones y, si aplica, creación del crédito).
+            -   [ ] Actualizar el efectivo disponible en la reunión con los pagos en efectivo.
+        -   [ ] Endpoint para editar o anular compras antes de finalizar la reunión.
+        -   [ ] Endpoint para consultar el resumen de compras realizadas en la reunión actual, agrupadas por socio.
 -   **Testing**:
-    -   [ ] **Backend**: Añadir pruebas para los servicios de creación de préstamos y compra de acciones durante la reunión.
+    -   [ ] **Backend**: Añadir pruebas para la lógica de compra de acciones, registro de nuevos miembros y generación de créditos asociados.
+    -   [ ] **Frontend**: Añadir pruebas de componentes para el flujo de compra, edición y anulación de operaciones en `Step3Operations.vue`.
 
 #### 4.5. Paso 4: Desembolsos
 
