@@ -17,7 +17,7 @@
           <div>
             <div class="text-center">
               <div class="text-sm font-light text-base-content/70 uppercase">Total Acciones Compradas</div>
-              <div class="text-3xl font-bold text-primary">{{ totalStocksRegistered }}</div>
+              <div class="text-3xl font-bold text-primary">{{ totalCashRegistered }}</div>
             </div>
           </div>
           <div class="text-center">
@@ -117,7 +117,11 @@
                 </div>
               </div>
               <div class="text-right mt-4">
-                <button class="btn btn-success btn-lg" @click="confirmLocalOperation">Confirmar compra</button>
+                <button class="btn btn-success btn-lg" @click="confirmLocalOperation" :disabled="isRegistering">
+                  <span v-if="isRegistering" class="loading loading-spinner loading-xs mr-2"></span>
+                  <span v-if="!isRegistering">Confirmar compra</span>
+                  <span v-else>Registrando...</span>
+                </button>
               </div>
             </div>
           </div>
@@ -149,6 +153,8 @@ import { meetingsService } from '../services/meetings'
 import EditBuyStockModal from './EditBuyStockModal.vue'
 import type { Stock, StocksForPurchase } from '@/features/stocks/types'
 import { stocksService } from '@/features/stocks/services/stocksService';
+import type { Operation } from '@/features/operations/types'
+import { operationsService } from '@/features/operations/services/operationsService'
 
 // Datos mockeados para stocks (mantener por ahora)
 // const stocks = ref([
@@ -158,46 +164,57 @@ import { stocksService } from '@/features/stocks/services/stocksService';
 
 type LocalLine = StocksForPurchase & { id: string, creditAmount: number }
 const stocks = ref<Stock[]>([])
-const registeredPurchases = ref<any[]>([
-  // Mock: operaciones ya "registradas" en el backend
-  {
-    id: 'op1',
-    member_id: '1',
-    type: 'buy_stock',
-    description: 'Compra de 3 acciones Garantizadas',
-    total_debit: 316.5,
-    stockId: 'Acción Garantizada',
-    quantity: 3,
-    cash: 316.5,
-    credit: 0,
-    date: '2024-08-01',
-    ledger_entries: [
-      { account_type: 'INVERSIONES_EN_ACCIONES', amount: 316.5 }
-    ]
-  },
-  {
-    id: 'op2',
-    member_id: '2',
-    type: 'buy_stock',
-    description: 'Compra de 2 acciones Normales',
-    total_debit: 196.4,
-    stockId: 'Acción Normal',
-    quantity: 2,
-    cash: 100,
-    credit: 96.4,
-    date: '2024-08-01',
-    ledger_entries: [
-      { account_type: 'INVERSIONES_EN_ACCIONES', amount: 196.4 }
-    ]
-  }
-])
+const registeredPurchases = ref<Operation[]>([])
+// const registeredPurchases = ref<any[]>([
+//   // Mock: operaciones ya "registradas" en el backend
+//   {
+//     id: 'op1',
+//     member_id: '1',
+//     type: 'buy_stock',
+//     description: 'Compra de 3 acciones Garantizadas',
+//     total_debit: 316.5,
+//     stockId: 'Acción Garantizada',
+//     quantity: 3,
+//     cash: 316.5,
+//     credit: 0,
+//     date: '2024-08-01',
+//     ledger_entries: [
+//       { account_type: 'INVERSIONES_EN_ACCIONES', amount: 316.5 }
+//     ]
+//   },
+//   {
+//     id: 'op2',
+//     member_id: '2',
+//     type: 'buy_stock',
+//     description: 'Compra de 2 acciones Normales',
+//     total_debit: 196.4,
+//     stockId: 'Acción Normal',
+//     quantity: 2,
+//     cash: 100,
+//     credit: 96.4,
+//     date: '2024-08-01',
+//     ledger_entries: [
+//       { account_type: 'INVERSIONES_EN_ACCIONES', amount: 196.4 }
+//     ]
+//   }
+// ])
 
 const activeMeetingStore = useActiveMeetingStore()
 
 onMounted(async () => {
   await activeMeetingStore.fetchMembers()
   stocks.value = await stocksService.getStocks()
+  registeredPurchases.value = await getRegisteredPurchases()
 })
+
+async function getRegisteredPurchases() {
+  return (await operationsService.getOperations(
+    {
+      meetingId: activeMeetingStore.meetingId || '',
+      accountType: 'STOCK_PURCHASE',
+    }
+  )).data
+}
 
 // Estado de la UI de la compra de acciones
 const selectedMember = ref<any | null>(null)
@@ -224,8 +241,7 @@ const form = ref({
   creditAmount: 0,
 })
 
-const totalStocksRegistered = computed(() => registeredPurchases.value.reduce((sum, p) => sum + (p.quantity || 0), 0))
-const totalCashRegistered = computed(() => registeredPurchases.value.reduce((sum, p) => sum + (p.cash || 0), 0))
+const totalCashRegistered = computed(() => registeredPurchases.value.reduce((sum, p) => sum + p.total_debit, 0))
 
 function memberRegisteredPurchases(memberId: string) {
   return registeredPurchases.value.filter(p => p.member_id === memberId)
@@ -249,14 +265,15 @@ function removeLine(idx: number) {
   resetForm()
 }
 
+const isRegistering = ref(false)
 async function confirmLocalOperation() {
   if (localLines.value.length === 0) return
   if (!activeMeetingStore.meetingId) {
     alert('No hay reunión activa.');
     return
   }
+  isRegistering.value = true
   const meetingId = activeMeetingStore.meetingId
-  // Para socio existente, registrar cada línea como una compra
   try {
     for (const line of localLines.value) {
       await meetingsService.buyStocks(meetingId, {
@@ -269,9 +286,12 @@ async function confirmLocalOperation() {
     }
     localLines.value = []
     resetForm()
+    registeredPurchases.value = await getRegisteredPurchases()
     alert('Compra(s) registrada(s) exitosamente.')
   } catch (e) {
     alert('Error al registrar la(s) compra(s).')
+  } finally {
+    isRegistering.value = false
   }
 }
 
