@@ -12,6 +12,7 @@ import { SimplifiedRecordTransactionsDto } from './dto/simplified-record-transac
 import { Meeting } from './entities/meeting.entity';
 import { Operation } from '../operations/entities/operation.entity';
 import { AssetRevaluationService } from '../asset-revaluation/asset-revaluation.service';
+import { BuyStockForMemberDto } from '../stocks/dto/buy-stock-for-member.dto';
 
 @ApiTags('meetings')
 @Controller('meetings')
@@ -94,5 +95,16 @@ export class MeetingsController {
     @Body() recordTransactionsDto: SimplifiedRecordTransactionsDto,
   ) {
     return this.meetingsService.recordMonthlyPayment(recordTransactionsDto);
+  }
+
+  @Post(':meetingId/buy/stocks')
+  @ApiOperation({
+    summary: 'Compra de acciones para un socio existente en la reunión',
+  })
+  buyStocksForMember(
+    @Param('meetingId') meetingId: string,
+    @Body() dto: BuyStockForMemberDto,
+  ) {
+    return this.meetingsService.buyStocksForMember(meetingId, dto);
   }
 }

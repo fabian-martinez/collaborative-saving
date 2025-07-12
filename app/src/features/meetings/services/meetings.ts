@@ -5,6 +5,7 @@ import type {
   SimplifiedRecordTransactions,
 } from '../types';
 import type { Operation } from '@/features/operations/types';
+import type { StocksForPurchase } from '@/features/stocks/types';
 
 class MeetingsService {
   // Methods related to meetings list and creation
@@ -44,6 +45,14 @@ class MeetingsService {
 
   getMonthlyPayments(meetingId: string): Promise<Operation[]> {
     return api.get(`/meetings/${meetingId}/monthly-payments`);
+  }
+
+  /**
+   * Compra de acciones para un socio existente
+   */
+  buyStocks(meetingId: string, payload: StocksForPurchase): Promise<any> {
+    console.log('payload', payload)
+    return api.post(`/meetings/${meetingId}/buy/stocks`, payload);
   }
 }
 

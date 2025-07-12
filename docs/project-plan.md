@@ -200,6 +200,40 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
 -   **Testing**:
     -   [ ] **Backend**: Añadir pruebas para el proceso de cierre y desembolso de la reunión.
 
+#### 4.6. Registro y gestión del paso actual de la reunión (`step`)
+
+-   **Backend**:
+    -   [ ] Agregar el campo `step` en la entidad `Meeting` y crear la migración correspondiente (valores posibles: `recaudacion`, `revalorizacion`, `compra_acciones`, `modificacion_acciones`, `desembolsos`).
+    -   [ ] Actualizar los DTOs (`create-meeting.dto.ts`, `update-meeting.dto.ts`) para incluir el campo `step` y validar los valores permitidos.
+    -   [ ] Modificar el servicio y controlador de reuniones para soportar la actualización del campo `step`.
+    -   [ ] Crear un endpoint específico para cambiar el `step` de una reunión (`PATCH /meetings/:id/step`).
+    -   [ ] Actualizar los scripts de seed/reset para incluir el campo `step` con valor por defecto y ejemplos de los nuevos steps.
+-   **Frontend**:
+    -   [ ] Refactorizar los componentes de steps de la reunión para reflejar el nuevo flujo:
+        -   [ ] Renombrar `Step3Operations.vue` a `Step3BuyStocks.vue` (Buy Stocks).
+        -   [ ] Crear `Step4StockModification.vue` para el nuevo step de modificación/intercambio/cruce de acciones (Stock Modification).
+        -   [ ] Renombrar `Step4Disbursements.vue` a `Step5Disbursements.vue` (Disbursements and Closing).
+        -   [ ] Actualizar la navegación y el stepper en la vista principal de la reunión para reflejar el nuevo orden y nombres de los pasos (`Step1Collection.vue`, `Step2Revaluation.vue`, `Step3BuyStocks.vue`, `Step4StockModification.vue`, `Step5Disbursements.vue`).
+    -   [ ] Actualizar el servicio de API para soportar el cambio de `step`.
+    -   [ ] Actualizar el store de reunión activa y la navegación para soportar el nuevo flujo.
+    -   [ ] Validar reglas de negocio para avanzar entre pasos.
+-   **Testing**:
+    -   [ ] Añadir pruebas unitarias y de integración para la funcionalidad de cambio de `step` en backend y frontend.
+
+#### 4.7. Step de Modificación de Acciones (`modificacion_acciones`)
+
+-   **Backend**:
+    -   [ ] Implementar endpoints y lógica para el nuevo step `modificacion_acciones`:
+        -   [ ] Registrar modificaciones/intercambios de acciones entre miembros.
+        -   [ ] Permitir cruzar acciones con créditos (incluyendo lógica contable).
+-   **Frontend**:
+    -   [ ] Actualizar el servicio de API para soportar los nuevos endpoints de modificación de acciones.
+    -   [ ] Crear la vista/componente para el step `modificacion_acciones`:
+        -   [ ] Formulario para seleccionar miembros, acciones a intercambiar o cruzar con créditos.
+        -   [ ] Resumen y confirmación de modificaciones.
+-   **Testing**:
+    -   [ ] Añadir pruebas unitarias y de integración para la lógica de modificación de acciones en backend y frontend.
+
 ### Módulo 5: Gestión de Préstamos (Pendiente)
 
 -   **Frontend**:

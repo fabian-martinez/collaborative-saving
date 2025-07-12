@@ -17,6 +17,8 @@ import { DefaultPaymentStrategy } from './strategies/default-payment.strategy';
 import { MandatoryContributionsModule } from '../mandatory-contributions/mandatory-contributions.module';
 import { AssetRevaluationModule } from '../asset-revaluation/asset-revaluation.module';
 import { DuesModule } from '../dues/dues.module';
+import { MembersModule } from '../members/members.module';
+import { StocksModule } from '../stocks/stocks.module';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { DuesModule } from '../dues/dues.module';
     MandatoryContributionsModule,
     AssetRevaluationModule,
     forwardRef(() => DuesModule),
+    MembersModule,
+    StocksModule,
   ],
   providers: [
     MeetingsService,

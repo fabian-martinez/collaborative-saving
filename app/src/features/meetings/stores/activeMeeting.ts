@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { meetingsService } from '../services/meetings'
+import { membersService } from '@/features/members/services/membersService'
 import type { Meeting } from '../types'
+import type { Member } from '@/features/members/types'
 
 export const useActiveMeetingStore = defineStore('active-meeting', () => {
   const currentStep = ref(1)
@@ -9,6 +11,9 @@ export const useActiveMeetingStore = defineStore('active-meeting', () => {
   const isMeetingActive = computed(() => !!meetingId.value)
   const totalCollection = ref(0)
   const totalInterest = ref(0)
+  const members = ref<Member[]>([])
+  const isMembersLoading = ref(false)
+  const membersError = ref<string | null>(null)
 
   // TODO: Add state for collected funds, revaluation results, etc.
 
@@ -23,6 +28,18 @@ export const useActiveMeetingStore = defineStore('active-meeting', () => {
     } catch (error) {
       console.error('No active meeting found on server', error)
       meetingId.value = null
+    }
+  }
+
+  async function fetchMembers() {
+    isMembersLoading.value = true
+    membersError.value = null
+    try {
+      members.value = await membersService.getMembers()
+    } catch (err: any) {
+      membersError.value = err.message || 'Error al cargar los socios.'
+    } finally {
+      isMembersLoading.value = false
     }
   }
 
@@ -59,6 +76,9 @@ export const useActiveMeetingStore = defineStore('active-meeting', () => {
     meetingId.value = null
     totalCollection.value = 0
     totalInterest.value = 0
+    members.value = []
+    isMembersLoading.value = false
+    membersError.value = null
   }
 
   function updateBalance(collection: number, interest: number) {
@@ -70,9 +90,13 @@ export const useActiveMeetingStore = defineStore('active-meeting', () => {
     currentStep,
     meetingId,
     isMeetingActive,
+    members,
+    isMembersLoading,
+    membersError,
     goToStep,
     setMeetingId,
     fetchActiveMeeting,
+    fetchMembers,
     startNewMeeting,
     $reset,
     updateBalance,

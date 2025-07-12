@@ -15,6 +15,7 @@ import { LedgerEntry } from '../ledger-entries/entities/ledger-entry.entity';
 import {
   CASH_ACCOUNT,
   LOANS_RECEIVABLE_ACCOUNT,
+  MEMBER_EQUITY_ACCOUNT,
 } from '../common/constants/account-types';
 import { StockSubscription } from '../stock-subscriptions/entities/stock-subscription.entity';
 
@@ -80,30 +81,41 @@ export class LoansService {
     }
 
     try {
-      // 1. Validate member's capital
-      const memberSubscriptions = await (isTransactionManaged
-        ? runner.manager.find(StockSubscription, {
-            where: { member_id: createLoanDto.member_id },
-            relations: { stock: true },
-          })
-        : this.stockSubscriptionsService.findByMember(createLoanDto.member_id));
+      // 1. Validate member's capital (only for non-'accion' loans)
+      if (createLoanDto.loan_type !== 'accion') {
+        const memberSubscriptions = await (isTransactionManaged
+          ? runner.manager.find(StockSubscription, {
+              where: { member_id: createLoanDto.member_id },
+              relations: { stock: true },
+            })
+          : this.stockSubscriptionsService.findByMember(
+              createLoanDto.member_id,
+            ));
 
-      const totalCapital = memberSubscriptions.reduce(
-        (sum, s) => sum + s.quantity * Number(s.stock.value),
-        0,
-      );
-
-      if (createLoanDto.approved_amount > totalCapital) {
-        throw new BadRequestException(
-          `Requested loan amount (${createLoanDto.approved_amount}) exceeds member's total capital (${totalCapital}).`,
+        const totalCapital = memberSubscriptions.reduce(
+          (sum, s) => sum + s.quantity * Number(s.stock.value),
+          0,
         );
+
+        if (createLoanDto.approved_amount > totalCapital) {
+          throw new BadRequestException(
+            `Requested loan amount (${createLoanDto.approved_amount}) exceeds member's total capital (${totalCapital}).`,
+          );
+        }
       }
 
       // 2. Create Operation
+      const operationDescription =
+        createLoanDto.loan_type === 'accion'
+          ? `Stock-based loan disbursement for member ${
+              createLoanDto.member_id
+            }`
+          : `Loan disbursement for member ${createLoanDto.member_id}`;
+
       const operation = runner.manager.create(Operation, {
         member_id: createLoanDto.member_id,
-        meeting_id: '00000000-0000-0000-0000-000000000000',
-        description: `Loan disbursement for member ${createLoanDto.member_id}`,
+        meeting_id: createLoanDto.meeting_id,
+        description: operationDescription,
         type: 'LOAN_DISBURSEMENT',
       });
       await runner.manager.save(operation);
@@ -121,22 +133,43 @@ export class LoansService {
       });
       await runner.manager.save(disbursement);
 
-      // 5. Create Ledger Entries
-      const debitEntry = runner.manager.create(LedgerEntry, {
-        operation_id: operation.id,
-        account_type: LOANS_RECEIVABLE_ACCOUNT,
-        amount: createLoanDto.approved_amount,
-        loan_id: loanEntity.id,
-      });
+      // 5. Create Ledger Entries (different logic for 'accion' loans)
+      if (createLoanDto.loan_type === 'accion') {
+        // For stock-based loans, we don't affect CASH account
+        // Instead, we create a debit to loans receivable and credit to member's equity/capital
+        const debitEntry = runner.manager.create(LedgerEntry, {
+          operation_id: operation.id,
+          account_type: LOANS_RECEIVABLE_ACCOUNT,
+          amount: createLoanDto.approved_amount,
+          loan_id: loanEntity.id,
+        });
 
-      const creditEntry = runner.manager.create(LedgerEntry, {
-        operation_id: operation.id,
-        account_type: CASH_ACCOUNT,
-        amount: -createLoanDto.approved_amount,
-        loan_id: loanEntity.id,
-      });
+        const creditEntry = runner.manager.create(LedgerEntry, {
+          operation_id: operation.id,
+          account_type: MEMBER_EQUITY_ACCOUNT, // Using member equity instead of CASH
+          amount: -createLoanDto.approved_amount,
+          loan_id: loanEntity.id,
+        });
 
-      await runner.manager.save([debitEntry, creditEntry]);
+        await runner.manager.save([debitEntry, creditEntry]);
+      } else {
+        // Original logic for regular loans
+        const debitEntry = runner.manager.create(LedgerEntry, {
+          operation_id: operation.id,
+          account_type: LOANS_RECEIVABLE_ACCOUNT,
+          amount: createLoanDto.approved_amount,
+          loan_id: loanEntity.id,
+        });
+
+        const creditEntry = runner.manager.create(LedgerEntry, {
+          operation_id: operation.id,
+          account_type: CASH_ACCOUNT,
+          amount: -createLoanDto.approved_amount,
+          loan_id: loanEntity.id,
+        });
+
+        await runner.manager.save([debitEntry, creditEntry]);
+      }
 
       if (!isTransactionManaged) {
         await runner.commitTransaction();

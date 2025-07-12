@@ -19,13 +19,21 @@ export class CreateLoanDto {
   member_id: string;
 
   @ApiProperty({
+    description: 'The ID of the member requesting the loan',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  meeting_id: string;
+
+  @ApiProperty({
     description: 'The type of loan',
     example: 'corriente',
     enum: ['corriente', 'agil'],
   })
   @IsString()
   @IsNotEmpty()
-  @IsIn(['corriente', 'agil'])
+  @IsIn(['corriente', 'agil', 'accion'])
   loan_type: string;
 
   @ApiProperty({
@@ -35,6 +43,14 @@ export class CreateLoanDto {
   @IsNumber()
   @IsPositive()
   approved_amount: number;
+
+  @ApiProperty({
+    description: 'The monthly payment amount for the loan',
+    example: 250.0,
+  })
+  @IsNumber()
+  @IsPositive()
+  monthly_payment_amount: number;
 
   @ApiProperty({
     description:

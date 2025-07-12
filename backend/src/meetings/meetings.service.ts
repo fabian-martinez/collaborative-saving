@@ -14,14 +14,14 @@ import {
 } from '../operations/entities/operation.entity';
 import { LedgerEntry } from '../ledger-entries/entities/ledger-entry.entity';
 import { CASH_ACCOUNT } from '../common/constants/account-types';
-import { LoansService } from '../loans/loans.service';
 import { Meeting } from './entities/meeting.entity';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
 import { Member } from '../members/entities/member.entity';
 import { PaymentStrategyFactory } from './strategies/payment-strategy.factory';
-import { MandatoryContributionsService } from '../mandatory-contributions/mandatory-contributions.service';
-import { DuesService } from '../dues/dues.service';
 import { MemberDue } from '../dues/entities/member-due.entity';
+import { BuyStockForMemberDto } from '../stocks/dto/buy-stock-for-member.dto';
+import { StocksService } from '../stocks/stocks.service';
+import { LoansService } from '../loans/loans.service';
 
 @Injectable()
 export class MeetingsService {
@@ -31,11 +31,10 @@ export class MeetingsService {
     @InjectRepository(Meeting)
     private readonly meetingRepository: Repository<Meeting>,
     private readonly stockSubscriptionsService: StockSubscriptionsService,
-    private readonly loansService: LoansService,
     private readonly dataSource: DataSource,
     private readonly paymentStrategyFactory: PaymentStrategyFactory,
-    private readonly mandatoryContributionsService: MandatoryContributionsService,
-    private readonly duesService: DuesService,
+    private readonly stocksService: StocksService,
+    private readonly loansService: LoansService,
   ) {}
 
   findAll(): Promise<Meeting[]> {
@@ -204,5 +203,14 @@ export class MeetingsService {
 
     meeting.status = 'closed';
     return this.meetingRepository.save(meeting);
+  }
+
+  async buyStocksForMember(meetingId: string, dto: BuyStockForMemberDto) {
+    // 1. Validar que la reunión existe y está activa
+    const meeting = await this.meetingRepository.findOneBy({ id: meetingId });
+    if (!meeting || meeting.status !== 'active') {
+      throw new BadRequestException('La reunión no existe o no está activa.');
+    }
+    return this.stocksService.purchaseForMember(meetingId, dto);
   }
 }

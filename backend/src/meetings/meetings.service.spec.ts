@@ -77,6 +77,7 @@ describe('MeetingsService', () => {
         type: 'mandatory_contribution',
         amount: 1500,
         description: 'Aporte obligatorio del mes',
+        referenceId: 'test-reference-id',
       },
     ];
     const payload = {

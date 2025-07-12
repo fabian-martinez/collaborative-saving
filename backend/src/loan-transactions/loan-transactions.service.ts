@@ -61,7 +61,7 @@ export class LoanTransactionsService {
       // 1. Crear Operación
       const operation = queryRunner.manager.create(Operation, {
         member_id: member_id,
-        meeting_id: '00000000-0000-0000-0000-000000000000', // Las transacciones de préstamos son independientes de reuniones
+        meeting_id: member_id, // Las transacciones de préstamos son independientes de reuniones
         description:
           notes ||
           `Transacción de ${transaction_type} para el crédito ${loan_id}`,

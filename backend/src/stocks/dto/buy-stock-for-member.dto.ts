@@ -12,47 +12,43 @@ import { Type } from 'class-transformer';
 
 class LoanDetailsDto {
   @ApiProperty({
-    description: 'The interest rate for the new loan (e.g., 0.02 for 2%)',
-    example: 0.01,
+    description: 'Tasa de interés para el nuevo crédito (ej: 0.02 para 2%)',
+    example: 0.02,
   })
   @IsNumber()
   @IsPositive()
   interest_rate: number;
 
   @ApiProperty({
-    description: 'The type of loan',
+    description: 'Tipo de crédito',
     example: 'corriente',
     enum: ['corriente', 'agil'],
   })
-  @IsEnum(['corriente', 'agil'])
-  loan_type: 'corriente' | 'agil';
+  @IsEnum(['corriente', 'agil', 'accion'])
+  loan_type: 'corriente' | 'agil' | 'accion';
 }
 
-export class BuyStockDto {
-  @ApiProperty({ description: "The member's ID", example: '...' })
+export class BuyStockForMemberDto {
+  @ApiProperty({ description: 'ID del socio que compra', example: '...' })
   @IsUUID()
   memberId: string;
 
-  @ApiProperty({ description: "The stock's ID to purchase", example: '...' })
+  @ApiProperty({ description: 'ID de la acción a comprar', example: '...' })
   @IsUUID()
   stockId: string;
 
-  @ApiProperty({ description: 'The quantity of stock to purchase' })
+  @ApiProperty({ description: 'Cantidad de acciones a comprar' })
   @IsNumber()
   @IsPositive()
   quantity: number;
 
-  @ApiProperty({
-    description: 'The amount paid in cash towards the purchase',
-    example: 1000,
-  })
+  @ApiProperty({ description: 'Monto pagado en efectivo', example: 1000 })
   @IsNumber()
   @Min(0)
   cashAmount: number;
 
   @ApiPropertyOptional({
-    description:
-      'Details for the loan if part of the purchase is financed. Required if cashAmount is less than the total purchase value.',
+    description: 'Detalles del crédito si parte de la compra es financiada.',
   })
   @IsOptional()
   @ValidateNested()

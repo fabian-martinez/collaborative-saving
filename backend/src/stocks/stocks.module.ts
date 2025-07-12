@@ -4,9 +4,20 @@ import { StocksController } from './stocks.controller';
 import { StocksService } from './stocks.service';
 import { Stock } from './entities/stock.entity';
 import { StockValueHistory } from './entities/stock-value-history.entity';
+import { OperationsModule } from '../operations/operations.module';
+import { LoansModule } from '../loans/loans.module';
+import { StockSubscriptionsModule } from '../stock-subscriptions/stock-subscriptions.module';
+import { StockSubscription } from '../stock-subscriptions/entities/stock-subscription.entity';
+import { MembersModule } from '../members/members.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Stock, StockValueHistory])],
+  imports: [
+    TypeOrmModule.forFeature([Stock, StockValueHistory, StockSubscription]),
+    OperationsModule,
+    LoansModule,
+    StockSubscriptionsModule,
+    MembersModule,
+  ],
   controllers: [StocksController],
   providers: [StocksService],
   exports: [StocksService],

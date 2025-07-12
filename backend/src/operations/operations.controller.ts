@@ -1,7 +1,6 @@
-import { Controller, Post, Body, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { OperationsService } from './operations.service';
-import { BuyStockDto } from './dto/buy-stock.dto';
 import { Operation } from './entities/operation.entity';
 
 @ApiTags('operations')
@@ -10,7 +9,7 @@ export class OperationsController {
   constructor(private readonly operationsService: OperationsService) {}
 
   @Get()
-  findAll(@Query('meetingId') meetingId?: string) {
+  async findAll(@Query('meetingId') meetingId?: string): Promise<Operation[]> {
     return this.operationsService.findAll({ meetingId });
   }
 
@@ -25,11 +24,5 @@ export class OperationsController {
   @ApiResponse({ status: 404, description: 'Operation not found.' })
   findOne(@Param('id') id: string) {
     return this.operationsService.findOne(id);
-  }
-
-  @Post('buy-stock')
-  @ApiOperation({ summary: 'Execute a complex stock purchase operation' })
-  buyStock(@Body() buyStockDto: BuyStockDto) {
-    return this.operationsService.buyStock(buyStockDto);
   }
 }

@@ -2,20 +2,20 @@
   <div>
     <h2 class="text-xl font-bold mb-4">Paso 1: Recaudo de Fondos</h2>
 
-    <div v-if="isMembersLoading" class="flex justify-center items-center">
+    <div v-if="activeMeetingStore.isMembersLoading" class="flex justify-center items-center">
       <span class="loading loading-spinner loading-lg"></span>
     </div>
 
-    <div v-if="membersError" class="alert alert-error">
-      <span>{{ membersError }}</span>
+    <div v-if="activeMeetingStore.membersError" class="alert alert-error">
+      <span>{{ activeMeetingStore.membersError }}</span>
     </div>
 
-    <div v-if="!isMembersLoading && !membersError" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div v-if="!activeMeetingStore.isMembersLoading && !activeMeetingStore.membersError" class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <!-- Members List -->
       <div class="md:col-span-1">
         <h3 class="text-lg font-semibold mb-2">Socios</h3>
         <ul class="menu bg-base-200 w-full rounded-box">
-          <li v-for="member in members" :key="member.id" @click="selectMember(member)" :class="{'disabled': isMemberPaid(member.id)}">
+          <li v-for="member in activeMeetingStore.members" :key="member.id" @click="selectMember(member)" :class="{'disabled': isMemberPaid(member.id)}">
             <a :class="[ 'transition', selectedMember && selectedMember.id === member.id ? 'bg-primary/20 font-bold text-primary' : 'hover:bg-base-300/40' ]">
               {{ member.name }}
               <span v-if="isMemberPaid(member.id)" class="badge badge-success badge-sm">Pagado</span>
@@ -92,7 +92,6 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { membersService } from '@/features/members/services/membersService';
 import { meetingsService } from '@/features/meetings/services/meetings';
 import type { Member } from '@/features/members/types';
 import type { MemberDue, Payment } from '../types';
@@ -106,7 +105,6 @@ import PaymentForm from './PaymentForm.vue';
 const activeMeetingStore = useActiveMeetingStore();
 const emit = defineEmits(['completed', 'update:totalCollected', 'update:totalInterest']);
 
-const members = ref<Member[]>([]);
 const selectedMember = ref<Member | null>(null);
 const memberDues = ref<MemberDue[]>([]);
 const payments = ref<Payment[]>([]);
@@ -116,10 +114,8 @@ const completedPayments = ref<{ memberName: string, amount: number }[]>([]);
 const paidMemberOperations = ref<Map<string, Operation[]>>(new Map());
 const viewedOperations = ref<Operation[] | null>(null);
 
-const isMembersLoading = ref(false);
 const isDuesLoading = ref(false);
 const isSubmitting = ref(false);
-const membersError = ref<string | null>(null);
 const duesError = ref<string | null>(null);
 const submissionError = ref<string | null>(null);
 
@@ -144,16 +140,8 @@ const indexedDues = computed(() =>
 );
 
 onMounted(async () => {
-  isMembersLoading.value = true;
-  membersError.value = null;
-  try {
-    members.value = await membersService.getMembers();
-    await fetchMeetingPayments(activeMeetingStore.meetingId || '');
-  } catch (err: any) {
-    membersError.value = err.message || 'Error al cargar los socios.';
-  } finally {
-    isMembersLoading.value = false;
-  }
+  await activeMeetingStore.fetchMembers();
+  await fetchMeetingPayments(activeMeetingStore.meetingId || '');
 });
 
 async function fetchMeetingPayments(meetingId: string) {
@@ -188,7 +176,7 @@ async function fetchMeetingPayments(meetingId: string) {
     
     // Recalculate totals and paid list
     for(const [memberId, ops] of operationMap.entries()) {
-        const member = members.value.find(m => m.id === memberId);
+        const member = activeMeetingStore.members.find(m => m.id === memberId);
         if(member) {
             const amount = ops.reduce((sum, op) => sum + ( op.total_debit || 0), 0);
             total += amount;

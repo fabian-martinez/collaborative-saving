@@ -14,6 +14,7 @@ import { MandatoryContribution } from '../mandatory-contributions/entities/manda
 import { StockSubscription } from '../stock-subscriptions/entities/stock-subscription.entity';
 import { Loan } from '../loans/entities/loan.entity';
 import { MembersService } from '../members/members.service';
+import { Stock } from 'src/stocks/entities/stock.entity';
 
 @Injectable()
 export class DuesService {
@@ -94,16 +95,36 @@ export class DuesService {
   private calculateStockFeeDues(
     subscriptions: StockSubscription[],
   ): MemberDue[] {
-    return subscriptions
-      .filter((sub) => sub.stock && Number(sub.stock.monthly_contribution) > 0)
-      .map((sub) => ({
-        type: 'stock_fee',
-        description: `Cuota de acción: ${sub.stock.type}`,
-        amount: sub.quantity * Number(sub.stock.monthly_contribution),
-        referenceId: sub.stock.id,
-        monthlyContribution: Number(sub.stock.monthly_contribution),
-        stockQuantity: sub.quantity,
-      }));
+    // Agrupar subscripciones por stock.id
+    const grouped = subscriptions.reduce(
+      (acc, sub) => {
+        if (sub.stock && Number(sub.stock.monthly_contribution) > 0) {
+          const stockId = sub.stock.id;
+          if (!acc[stockId]) {
+            acc[stockId] = {
+              stock: sub.stock,
+              quantity: 0,
+              monthlyContribution: Number(sub.stock.monthly_contribution),
+            };
+          }
+          acc[stockId].quantity += sub.quantity;
+        }
+        return acc;
+      },
+      {} as Record<
+        string,
+        { stock: Stock; quantity: number; monthlyContribution: number }
+      >,
+    );
+
+    return Object.values(grouped).map((group) => ({
+      type: 'stock_fee',
+      description: `Cuota de acción: ${group.stock.type}`,
+      amount: group.quantity * group.monthlyContribution,
+      referenceId: group.stock.id,
+      monthlyContribution: group.monthlyContribution,
+      stockQuantity: group.quantity,
+    }));
   }
 
   private calculateLoanPaymentDues(loans: Loan[]): MemberDue[] {

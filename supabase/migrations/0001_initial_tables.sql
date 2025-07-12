@@ -76,7 +76,7 @@ comment on table public.stocks is 'Defines the types of stocks available in the 
 create table public.loans (
     id uuid default extensions.uuid_generate_v4() primary key,
     member_id uuid not null references public.members(id) on delete cascade,
-    loan_type text not null check (loan_type in ('corriente', 'agil')),
+    loan_type text not null check (loan_type in ('corriente', 'agil', 'accion')),
     approved_amount numeric(10, 2) not null,
     monthly_payment_amount numeric(10, 2) not null,
     interest_rate numeric(4, 4) not null,
