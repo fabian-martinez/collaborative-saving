@@ -16,7 +16,7 @@
         <h3 class="text-lg font-semibold mb-2">Socios</h3>
         <ul class="menu bg-base-200 w-full rounded-box">
           <li v-for="member in members" :key="member.id" @click="selectMember(member)" :class="{'disabled': isMemberPaid(member.id)}">
-            <a :class="{ 'active': selectedMember && selectedMember.id === member.id }">
+            <a :class="[ 'transition', selectedMember && selectedMember.id === member.id ? 'bg-primary/20 font-bold text-primary' : 'hover:bg-base-300/40' ]">
               {{ member.name }}
               <span v-if="isMemberPaid(member.id)" class="badge badge-success badge-sm">Pagado</span>
             </a>
