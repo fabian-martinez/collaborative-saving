@@ -66,6 +66,8 @@ create table public.stocks (
     type text not null unique,
     value numeric(10, 2) not null,
     monthly_contribution numeric(10, 2) default 0 not null,
+    is_guaranteed boolean default false not null,
+    guaranteed_yield numeric(5, 4),
     deleted_at timestamp with time zone
 );
 comment on table public.stocks is 'Defines the types of stocks available in the fund.';
@@ -75,9 +77,9 @@ create table public.loans (
     id uuid default extensions.uuid_generate_v4() primary key,
     member_id uuid not null references public.members(id) on delete cascade,
     loan_type text not null check (loan_type in ('corriente', 'agil')),
-    approved_amount numeric not null,
-    monthly_payment_amount numeric not null,
-    interest_rate numeric not null,
+    approved_amount numeric(10, 2) not null,
+    monthly_payment_amount numeric(10, 2) not null,
+    interest_rate numeric(4, 4) not null,
     status text default 'pending' not null,
     creation_date date default current_date not null
 );
@@ -87,8 +89,13 @@ comment on table public.loans is 'Stores information about loans granted to memb
 create table public.stock_value_history (
     id uuid default extensions.uuid_generate_v4() primary key,
     stock_id uuid not null references public.stocks(id) on delete cascade,
-    value numeric not null,
-    date timestamp with time zone default now() not null
+    operation_id uuid not null references public.operations(id) on delete cascade,
+    previous_value numeric(10, 2) not null,
+    growth_from_contributions numeric(10, 4) not null,
+    growth_from_interest numeric(10, 4) not null,
+    total_growth_per_share numeric(10, 4) not null,
+    new_value numeric(10, 2) not null,
+    created_at timestamp with time zone default now() not null
 );
 comment on table public.stock_value_history is 'Stores the historical value of each stock after revaluation.';
 
@@ -120,7 +127,7 @@ create table public.loan_transaction_details (
     loan_id uuid not null references public.loans(id) on delete cascade,
     operation_id uuid references public.operations(id) on delete set null,
     transaction_type text not null check (transaction_type in ('desembolso', 'abono_capital', 'pago_interes')),
-    amount numeric not null,
+    amount numeric(10, 2) not null,
     transaction_date date default current_date not null,
     notes text
 );
@@ -133,9 +140,18 @@ create table public.ledger_entries (
     account_type text not null,
     amount numeric(10, 2) not null,
     description text,
-    created_at timestamp with time zone default now() not null
+    created_at timestamp with time zone default now() not null,
+    -- Affected entity fields for traceability
+    loan_id uuid references public.loans(id) on delete set null,
+    stock_id uuid references public.stocks(id) on delete set null,
+    mandatory_contribution_id uuid references public.mandatory_contributions(id) on delete set null,
+    stock_subscription_id uuid references public.stock_subscriptions(id) on delete set null
 );
 comment on table public.ledger_entries is 'Stores the atomic double-entry accounting records.';
+comment on column public.ledger_entries.loan_id is 'Reference to the affected loan, if applicable.';
+comment on column public.ledger_entries.stock_id is 'Reference to the affected stock, if applicable.';
+comment on column public.ledger_entries.mandatory_contribution_id is 'Reference to the affected mandatory contribution, if applicable.';
+comment on column public.ledger_entries.stock_subscription_id is 'Reference to the affected stock subscription, if applicable.';
 
 -- ----------------------------------------------------------------
 -- ▤ Custom Types

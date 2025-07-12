@@ -45,6 +45,10 @@ Esta tarea será disparada desde el frontend al comenzar el **Paso 2: Revaloriza
     f.  **Registro Contable**: Se crean los asientos contables correspondientes en `ledger_entries` (ver detalle abajo).
 4.  **Respuesta (Backend -> Frontend)**: El API devolverá un resumen del resultado (nuevos valores, tasas aplicadas), que el frontend mostrará al usuario para su confirmación.
 
+### Nota sobre aportes y revalorización
+
+> **Importante:** Solo los abonos por acción (los aportes de los socios por sus acciones cada reunión) influyen en el crecimiento del valor de la acción durante la revalorización. Los aportes obligatorios (contribuciones obligatorias) NO deben ser incluidos en el cálculo de la revalorización de activos, ya que su destino es distinto y no incrementan el valor de las acciones.
+
 ### Registro Contable (Partida Doble)
 
 La revalorización representa un aumento en el valor de los activos del fondo, lo cual es una ganancia de patrimonio. Se registrará con dos asientos en `ledger_entries` para mantener el balance contable.

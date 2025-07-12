@@ -27,10 +27,12 @@ export interface RevaluationDetail {
   stock_id: string;
   type: string;
   is_guaranteed: boolean;
+  total_shares: number;
   previous_value: number;
   growth_from_contributions: number;
   growth_from_interest: number;
   total_growth_per_share: number;
+  estimated_growth_from_contributions: number;
   new_value: number;
 }
 
@@ -39,6 +41,11 @@ export interface RevaluationPreviewResult {
   total_interest: number;
   total_to_distribute: number;
   details: RevaluationDetail[];
+  total_mandatory_contributions: number;
+  mandatory_contributions_by_type?: Array<{
+    total: number;
+    mandatory_contribution_id: string;
+  }>;
 }
 
 @Injectable()
@@ -51,7 +58,7 @@ export class AssetRevaluationService {
     private readonly meetingRepository: Repository<Meeting>,
   ) {}
 
-  async getRevaluationPreview(
+  private async _calculateRevaluationData(
     meetingId: string,
   ): Promise<RevaluationPreviewResult> {
     const meeting = await this.meetingRepository.findOneBy({ id: meetingId });
@@ -69,88 +76,314 @@ export class AssetRevaluationService {
       )
       .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
 
-    const totalContributions = ledgerEntries
-      .filter((e) =>
-        [MANDATORY_CONTRIBUTION_INCOME_ACCOUNT, STOCK_CAPITAL_ACCOUNT].includes(
-          e.account_type,
-        ),
-      )
+    // Separar aportes por acción y aportes obligatorios
+    const totalStockContributions = ledgerEntries
+      .filter((e) => e.account_type === STOCK_CAPITAL_ACCOUNT)
+      .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
+
+    const totalMandatoryContributions = ledgerEntries
+      .filter((e) => e.account_type === MANDATORY_CONTRIBUTION_INCOME_ACCOUNT)
       .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
 
     const stocks = await this.dataSource.manager.find(Stock);
     const subscriptions = await this.dataSource.manager.find(StockSubscription);
 
     const details: RevaluationDetail[] = [];
-    let interestAvailableToDistribute = totalInterest;
+    let interestAvailableForDistribution = totalInterest;
 
     // 1. Calculate growth for guaranteed stocks
     const guaranteedStocks = stocks.filter((s) => s.is_guaranteed);
+    let totalRequiredGuaranteedGrowth = 0;
+    const guaranteedStockDetails: (RevaluationDetail & {
+      required_growth: number;
+    })[] = [];
 
     for (const stock of guaranteedStocks) {
-      const growthFromInterest =
+      const totalShares = subscriptions
+        .filter((sub) => sub.stock_id === stock.id)
+        .reduce((sum, sub) => sum + sub.quantity, 0);
+
+      if (totalShares === 0) continue;
+
+      const requiredGrowthPerShare =
         Number(stock.value) * Number(stock.guaranteed_yield);
-      interestAvailableToDistribute -= growthFromInterest;
+      totalRequiredGuaranteedGrowth += requiredGrowthPerShare * totalShares;
 
-      const newValue = Number(stock.value) + growthFromInterest;
-
-      details.push({
+      guaranteedStockDetails.push({
         stock_id: stock.id,
         type: stock.type,
         is_guaranteed: true,
+        total_shares: totalShares,
         previous_value: Number(stock.value),
-        growth_from_contributions: 0, // Guaranteed stocks don't grow from contributions
-        growth_from_interest: growthFromInterest,
-        total_growth_per_share: growthFromInterest,
-        new_value: newValue,
+        required_growth: requiredGrowthPerShare,
+        growth_from_contributions: 0,
+        estimated_growth_from_contributions: stock.monthly_contribution,
+        growth_from_interest: 0, // Calculated below
+        total_growth_per_share: 0, // Calculated below
+        new_value: 0, // Calculated below
       });
     }
 
+    // Distribute available interest to guaranteed stocks
+    const growthForGuaranteedStocks = Math.min(
+      interestAvailableForDistribution,
+      totalRequiredGuaranteedGrowth,
+    );
+    interestAvailableForDistribution -= growthForGuaranteedStocks;
+
+    const guaranteedGrowthRatio =
+      totalRequiredGuaranteedGrowth > 0
+        ? growthForGuaranteedStocks / totalRequiredGuaranteedGrowth
+        : 0;
+
+    for (const detail of guaranteedStockDetails) {
+      const actualGrowth = detail.required_growth * guaranteedGrowthRatio;
+      detail.growth_from_interest = actualGrowth;
+      detail.total_growth_per_share = actualGrowth;
+      detail.new_value = detail.previous_value + actualGrowth;
+      details.push(detail);
+    }
+
     // 2. Distribute remaining growth among non-guaranteed stocks
+    const gainsForRegularStocks =
+      interestAvailableForDistribution + totalStockContributions;
     const regularStocks = stocks.filter((s) => !s.is_guaranteed);
+
     const totalValueOfRegularStocks = regularStocks.reduce((sum, stock) => {
-      const totalQuantityForStock = subscriptions
+      const totalShares = subscriptions
         .filter((sub) => sub.stock_id === stock.id)
         .reduce((qtySum, sub) => qtySum + sub.quantity, 0);
-      return sum + Number(stock.value) * totalQuantityForStock;
+      return sum + Number(stock.value) * totalShares;
     }, 0);
 
-    if (totalValueOfRegularStocks > 0) {
-      const interestRate =
-        interestAvailableToDistribute / totalValueOfRegularStocks;
+    const regularGrowthRate =
+      totalValueOfRegularStocks > 0
+        ? gainsForRegularStocks / totalValueOfRegularStocks
+        : 0;
 
-      for (const stock of regularStocks) {
-        const growthFromInterest = Number(stock.value) * interestRate;
-        const growthFromContributions =
-          Number(stock.value) + Number(stock.monthly_contribution);
-        const totalGrowth = growthFromInterest + growthFromContributions;
-        const newValue = Number(stock.value) + totalGrowth;
+    const interestProportion =
+      gainsForRegularStocks > 0
+        ? interestAvailableForDistribution / gainsForRegularStocks
+        : 0;
 
+    for (const stock of regularStocks) {
+      const totalShares = subscriptions
+        .filter((sub) => sub.stock_id === stock.id)
+        .reduce((sum, sub) => sum + sub.quantity, 0);
+      if (totalShares === 0) continue;
+      const totalGrowthPerShare = Number(stock.value) * regularGrowthRate;
+      const growthFromInterest = totalGrowthPerShare * interestProportion;
+      const growthFromContributions = ledgerEntries
+        .filter(
+          (e) =>
+            e.account_type === STOCK_CAPITAL_ACCOUNT && e.stock_id === stock.id,
+        )
+        .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
+      const estimatedGrowthFromContributions = stock.monthly_contribution;
+      details.push({
+        stock_id: stock.id,
+        type: stock.type,
+        is_guaranteed: false,
+        total_shares: totalShares,
+        previous_value: Number(stock.value),
+        growth_from_contributions: growthFromContributions / totalShares,
+        growth_from_interest: growthFromInterest,
+        total_growth_per_share: totalGrowthPerShare,
+        estimated_growth_from_contributions: estimatedGrowthFromContributions,
+        new_value: Number(stock.value) + Number(totalGrowthPerShare),
+      });
+    }
+
+    // Agrupar aportes obligatorios por tipo
+    const mandatoryContributionMap: Record<
+      string,
+      { total: number; mandatory_contribution_id: string }
+    > = {};
+    ledgerEntries
+      .filter(
+        (e) =>
+          e.account_type === MANDATORY_CONTRIBUTION_INCOME_ACCOUNT &&
+          typeof e.mandatory_contribution_id === 'string' &&
+          e.mandatory_contribution_id,
+      )
+      .forEach((e) => {
+        const id = e.mandatory_contribution_id as string;
+        if (!mandatoryContributionMap[id]) {
+          mandatoryContributionMap[id] = {
+            total: 0,
+            mandatory_contribution_id: id,
+          };
+        }
+        mandatoryContributionMap[id].total += Math.abs(Number(e.amount));
+      });
+    const mandatoryContributionsByType = Object.values(
+      mandatoryContributionMap,
+    );
+
+    return {
+      total_contributions: totalStockContributions,
+      total_interest: totalInterest,
+      total_to_distribute: totalStockContributions + totalInterest,
+      details: details.sort((a, b) => a.type.localeCompare(b.type)),
+      total_mandatory_contributions: totalMandatoryContributions,
+      mandatory_contributions_by_type: mandatoryContributionsByType,
+    };
+  }
+
+  private async _getExecutedRevaluationData(
+    meetingId: string,
+    operationId: string,
+  ): Promise<RevaluationPreviewResult> {
+    // Obtener el historial de revaluación ejecutada
+    const stockHistories = await this.dataSource.manager.find(
+      StockValueHistory,
+      {
+        where: { operation_id: operationId },
+        relations: ['stock'],
+      },
+    );
+
+    // Obtener los asientos contables de la revaluación
+    const ledgerEntries = await this.dataSource.manager.find(LedgerEntry, {
+      where: { operation_id: operationId },
+    });
+
+    // Reconstruir los detalles de la revaluación ejecutada
+    const details: RevaluationDetail[] = [];
+    const stocks = await this.dataSource.manager.find(Stock);
+    const subscriptions = await this.dataSource.manager.find(StockSubscription);
+
+    for (const history of stockHistories) {
+      const stock = stocks.find((s) => s.id === history.stock_id);
+      const totalShares = subscriptions
+        .filter((sub) => sub.stock_id === history.stock_id)
+        .reduce((sum, sub) => sum + sub.quantity, 0);
+
+      if (stock) {
         details.push({
-          stock_id: stock.id,
+          stock_id: history.stock_id,
           type: stock.type,
-          is_guaranteed: false,
-          previous_value: Number(stock.value),
-          growth_from_contributions: growthFromContributions,
-          growth_from_interest: growthFromInterest,
-          total_growth_per_share: totalGrowth,
-          new_value: newValue,
+          is_guaranteed: stock.is_guaranteed,
+          total_shares: totalShares,
+          previous_value: Number(history.previous_value),
+          growth_from_contributions: Number(history.growth_from_contributions),
+          growth_from_interest: Number(history.growth_from_interest),
+          total_growth_per_share: Number(history.total_growth_per_share),
+          estimated_growth_from_contributions: stock.monthly_contribution,
+          new_value: Number(history.new_value),
         });
       }
     }
+
+    // Calcular totales desde los asientos contables
+    const totalContributions = ledgerEntries
+      .filter((e) => e.account_type === STOCK_CAPITAL_ACCOUNT)
+      .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
+
+    const totalInterest = ledgerEntries
+      .filter((e) =>
+        [INTEREST_INCOME_ACCOUNT, FEE_INCOME_ACCOUNT].includes(e.account_type),
+      )
+      .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
+
+    const totalMandatoryContributions = ledgerEntries
+      .filter((e) => e.account_type === MANDATORY_CONTRIBUTION_INCOME_ACCOUNT)
+      .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
+
+    // Agrupar aportes obligatorios por tipo
+    const mandatoryContributionMap: Record<
+      string,
+      { total: number; mandatory_contribution_id: string }
+    > = {};
+    ledgerEntries
+      .filter(
+        (e) =>
+          e.account_type === MANDATORY_CONTRIBUTION_INCOME_ACCOUNT &&
+          e.mandatory_contribution_id,
+      )
+      .forEach((e) => {
+        const id = e.mandatory_contribution_id as string;
+        if (!mandatoryContributionMap[id]) {
+          mandatoryContributionMap[id] = {
+            total: 0,
+            mandatory_contribution_id: id,
+          };
+        }
+        mandatoryContributionMap[id].total += Math.abs(Number(e.amount));
+      });
 
     return {
       total_contributions: totalContributions,
       total_interest: totalInterest,
       total_to_distribute: totalContributions + totalInterest,
-      details,
+      details: details.sort((a, b) => a.type.localeCompare(b.type)),
+      total_mandatory_contributions: totalMandatoryContributions,
+      mandatory_contributions_by_type: Object.values(mandatoryContributionMap),
     };
+  }
+
+  async getRevaluationPreview(
+    meetingId: string,
+  ): Promise<RevaluationPreviewResult> {
+    // Verificar si ya existe una revaluación ejecutada para esta reunión
+    const existingRevaluation = await this.dataSource.manager.findOne(
+      Operation,
+      {
+        where: {
+          meeting_id: meetingId,
+          type: 'ASSET_REVALUATION',
+        },
+      },
+    );
+
+    if (existingRevaluation) {
+      // Si ya existe, devolver los datos de la revaluación ejecutada
+      return this._getExecutedRevaluationData(
+        meetingId,
+        existingRevaluation.id,
+      );
+    }
+
+    // Si no existe, calcular la nueva revaluación
+    return this._calculateRevaluationData(meetingId);
+  }
+
+  async isRevaluationExecuted(meetingId: string): Promise<boolean> {
+    const existingRevaluation = await this.dataSource.manager.findOne(
+      Operation,
+      {
+        where: {
+          meeting_id: meetingId,
+          type: 'ASSET_REVALUATION',
+        },
+      },
+    );
+
+    return !!existingRevaluation;
   }
 
   async executeRevaluation(
     meetingId: string,
   ): Promise<RevaluationPreviewResult> {
-    const preview = await this.getRevaluationPreview(meetingId);
-    const { total_contributions, total_interest, details } = preview;
+    // Verificar si ya existe una revaluación para esta reunión
+    const existingRevaluation = await this.dataSource.manager.findOne(
+      Operation,
+      {
+        where: {
+          meeting_id: meetingId,
+          type: 'ASSET_REVALUATION',
+        },
+      },
+    );
+
+    if (existingRevaluation) {
+      throw new BadRequestException(
+        'Ya se ha ejecutado la revaluación de activos para esta reunión',
+      );
+    }
+
+    const preview = await this._calculateRevaluationData(meetingId);
+    const { details } = preview;
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -165,7 +398,6 @@ export class AssetRevaluationService {
       const revaluationOperation = queryRunner.manager.create(Operation, {
         meeting_id: meetingId,
         type: 'ASSET_REVALUATION',
-        amount: preview.total_to_distribute,
         date: meeting.date,
         description: `Revaluación de activos para la reunión del ${meeting.date.toLocaleDateString()}`,
       });
@@ -192,40 +424,73 @@ export class AssetRevaluationService {
       // 3. Create Ledger Entries for the revaluation, split by source
       const ledgerEntries: LedgerEntry[] = [];
 
-      // Entries for contributions
-      if (total_contributions > 0) {
-        ledgerEntries.push(
-          queryRunner.manager.create(LedgerEntry, {
-            operation_id: revaluationOperation.id,
-            account_type: INVESTMENT_IN_STOCKS_ACCOUNT,
-            amount: total_contributions,
-            description: 'Aumento de valor por aportes de capital.',
-          }),
-          queryRunner.manager.create(LedgerEntry, {
-            operation_id: revaluationOperation.id,
-            account_type: REVALUATION_SURPLUS_ACCOUNT,
-            amount: -total_contributions,
-            description: 'Contrapartida por aportes de capital.',
-          }),
-        );
+      // Asientos por cada tipo de acción revalorizada
+      for (const detail of details) {
+        // Por aportes de capital
+        if (detail.growth_from_contributions > 0) {
+          ledgerEntries.push(
+            queryRunner.manager.create(LedgerEntry, {
+              operation_id: revaluationOperation.id,
+              account_type: INVESTMENT_IN_STOCKS_ACCOUNT,
+              amount: detail.growth_from_contributions * detail.total_shares,
+              description: `Aumento de valor por aportes de capital en acción ${detail.type}`,
+              stock_id: detail.stock_id,
+            }),
+            queryRunner.manager.create(LedgerEntry, {
+              operation_id: revaluationOperation.id,
+              account_type: REVALUATION_SURPLUS_ACCOUNT,
+              amount: -detail.growth_from_contributions * detail.total_shares,
+              description: `Contrapartida por aportes de capital en acción ${detail.type}`,
+              stock_id: detail.stock_id,
+            }),
+          );
+        }
+        // Por intereses
+        if (detail.growth_from_interest > 0) {
+          ledgerEntries.push(
+            queryRunner.manager.create(LedgerEntry, {
+              operation_id: revaluationOperation.id,
+              account_type: INVESTMENT_IN_STOCKS_ACCOUNT,
+              amount: detail.growth_from_interest * detail.total_shares,
+              description: `Aumento de valor por intereses en acción ${detail.type}`,
+              stock_id: detail.stock_id,
+            }),
+            queryRunner.manager.create(LedgerEntry, {
+              operation_id: revaluationOperation.id,
+              account_type: REVALUATION_SURPLUS_ACCOUNT,
+              amount: -detail.growth_from_interest * detail.total_shares,
+              description: `Contrapartida por intereses en acción ${detail.type}`,
+              stock_id: detail.stock_id,
+            }),
+          );
+        }
       }
 
-      // Entries for interest
-      if (total_interest > 0) {
-        ledgerEntries.push(
-          queryRunner.manager.create(LedgerEntry, {
-            operation_id: revaluationOperation.id,
-            account_type: INVESTMENT_IN_STOCKS_ACCOUNT,
-            amount: total_interest,
-            description: 'Aumento de valor por rendimiento de intereses.',
-          }),
-          queryRunner.manager.create(LedgerEntry, {
-            operation_id: revaluationOperation.id,
-            account_type: REVALUATION_SURPLUS_ACCOUNT,
-            amount: -total_interest,
-            description: 'Contrapartida por rendimiento de intereses.',
-          }),
-        );
+      // Asientos para aportes obligatorios (revalorización de aportes obligatorios)
+      if (
+        preview.mandatory_contributions_by_type &&
+        preview.mandatory_contributions_by_type.length > 0
+      ) {
+        for (const m of preview.mandatory_contributions_by_type) {
+          ledgerEntries.push(
+            queryRunner.manager.create(LedgerEntry, {
+              operation_id: revaluationOperation.id,
+              account_type: MANDATORY_CONTRIBUTION_INCOME_ACCOUNT,
+              amount: m.total,
+              mandatory_contribution_id: m.mandatory_contribution_id,
+              description:
+                'Revalorización de aportes obligatorios (no afecta acciones)',
+            }),
+            queryRunner.manager.create(LedgerEntry, {
+              operation_id: revaluationOperation.id,
+              account_type: REVALUATION_SURPLUS_ACCOUNT,
+              amount: -m.total,
+              mandatory_contribution_id: m.mandatory_contribution_id,
+              description:
+                'Contrapartida de revalorización de aportes obligatorios',
+            }),
+          );
+        }
       }
 
       await queryRunner.manager.save(ledgerEntries);

@@ -43,7 +43,7 @@ export class LoanTransactionsService {
       const loan = await this.loansService.findOne(loan_id);
       const member_id = loan.member_id;
 
-      let operationType: OperationTypeEnum | null = null;
+      let operationType: OperationTypeEnum = 'UNDEFINED';
       switch (transaction_type) {
         case 'desembolso':
           operationType = 'LOAN_DISBURSEMENT';
@@ -52,12 +52,16 @@ export class LoanTransactionsService {
         case 'pago_interes':
           operationType = 'LOAN_PAYMENT';
           break;
+        default:
+          throw new BadRequestException(
+            `Tipo de transacción inválido: ${transaction_type}`,
+          );
       }
 
-      // 1. Create Operation
+      // 1. Crear Operación
       const operation = queryRunner.manager.create(Operation, {
-        member_id,
-        meeting_id: null, // Loan transactions are independent of meetings
+        member_id: member_id,
+        meeting_id: '00000000-0000-0000-0000-000000000000', // Las transacciones de préstamos son independientes de reuniones
         description:
           notes ||
           `Transacción de ${transaction_type} para el crédito ${loan_id}`,
@@ -123,7 +127,7 @@ export class LoanTransactionsService {
 
         default:
           throw new BadRequestException(
-            `Tipo de transacción inválido: ${transaction_type}`,
+            `Tipo de transacción inválido: ${String(transaction_type)}`,
           );
       }
 

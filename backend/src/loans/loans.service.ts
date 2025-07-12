@@ -102,7 +102,7 @@ export class LoansService {
       // 2. Create Operation
       const operation = runner.manager.create(Operation, {
         member_id: createLoanDto.member_id,
-        meeting_id: null,
+        meeting_id: '00000000-0000-0000-0000-000000000000',
         description: `Loan disbursement for member ${createLoanDto.member_id}`,
         type: 'LOAN_DISBURSEMENT',
       });
@@ -126,12 +126,14 @@ export class LoansService {
         operation_id: operation.id,
         account_type: LOANS_RECEIVABLE_ACCOUNT,
         amount: createLoanDto.approved_amount,
+        loan_id: loanEntity.id,
       });
 
       const creditEntry = runner.manager.create(LedgerEntry, {
         operation_id: operation.id,
         account_type: CASH_ACCOUNT,
         amount: -createLoanDto.approved_amount,
+        loan_id: loanEntity.id,
       });
 
       await runner.manager.save([debitEntry, creditEntry]);

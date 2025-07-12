@@ -21,6 +21,7 @@ export const OperationType = [
   'LOAN_DISBURSEMENT',
   'MONTHLY_PAYMENT',
   'ASSET_REVALUATION',
+  'UNDEFINED',
 ] as const;
 
 export type OperationTypeEnum = (typeof OperationType)[number];
@@ -42,24 +43,21 @@ export class Operation {
   member_id: string;
 
   @ApiProperty({
-    description: 'The ID of the meeting this operation is part of (if any)',
+    description: 'The ID of the meeting this operation is part of',
     example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-    nullable: true,
   })
-  @Column({ type: 'uuid', nullable: true })
-  meeting_id: string | null;
+  @Column({ type: 'uuid' })
+  meeting_id: string;
 
   @ApiProperty({
     description: 'The type of the operation',
     example: 'MONTHLY_PAYMENT',
     enum: OperationType,
-    nullable: true,
   })
   @Column({
     type: 'text',
-    nullable: true,
   })
-  type: OperationTypeEnum | null;
+  type: OperationTypeEnum;
 
   @ApiProperty({
     description: 'The timestamp when the operation occurred',
@@ -78,15 +76,6 @@ export class Operation {
   })
   @Column({ type: 'text', nullable: true })
   description: string;
-
-  @ApiProperty({
-    description: 'The total amount of the operation, if applicable',
-    example: 5200.0,
-    nullable: true,
-  })
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
-  amount: number;
-
   // Relationships
   @ApiProperty({ type: () => Member })
   @ManyToOne(() => Member)
@@ -95,7 +84,7 @@ export class Operation {
 
   @ManyToOne(() => Meeting)
   @JoinColumn({ name: 'meeting_id' })
-  meeting: Meeting | null;
+  meeting: Meeting;
 
   @ApiProperty({ type: () => [LedgerEntry] })
   @OneToMany(() => LedgerEntry, (ledgerEntry) => ledgerEntry.operation)

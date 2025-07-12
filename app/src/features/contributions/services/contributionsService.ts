@@ -1,7 +1,7 @@
 import { api } from '@/services/api';
 import type { MandatoryContribution } from '../types';
 
-const ENDPOINT_URL = '/meetings/mandatory-contributions';
+const ENDPOINT_URL = '/mandatory-contributions';
 
 // Helper to ensure numeric fields are numbers, as the backend sends them as strings.
 const transformContribution = (

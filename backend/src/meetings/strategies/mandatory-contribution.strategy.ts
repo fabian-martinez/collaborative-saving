@@ -19,6 +19,7 @@ export class MandatoryContributionStrategy implements PaymentStrategy {
         account_type: MANDATORY_CONTRIBUTION_INCOME_ACCOUNT,
         amount: -payment.amount,
         description: payment.description,
+        mandatory_contribution_id: payment.referenceId || undefined,
       }),
     ];
   }

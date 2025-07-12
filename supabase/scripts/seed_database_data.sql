@@ -24,11 +24,11 @@ RESTART IDENTITY CASCADE;
 -- ▤ Catalog Data
 -- ----------------------------------------------------------------
 -- Insertar tipos de acciones
-INSERT INTO public.stocks (id, type, value, monthly_contribution) VALUES
-('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'Acción Grande', 1000.00, 100.00),
-('f47ac10b-58cc-4372-a567-0e02b2c3d480', 'Acción Mediana', 500.00, 50.00),
-('f47ac10b-58cc-4372-a567-0e02b2c3d481', 'Acción Pequeña', 250.00, 25.00),
-('f47ac10b-58cc-4372-a567-0e02b2c3d482', 'Bono Navideño', 100.00, 10.00);
+INSERT INTO public.stocks (id, type, value, monthly_contribution, is_guaranteed, guaranteed_yield) VALUES
+('f47ac10b-58cc-4372-a567-0e02b2c3d478', 'Acción Preferencial', 1000.00, 100.00, true, 0.02), -- Acción con rendimiento garantizado del 2%
+('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'Acción Grande', 1000.00, 100.00, false, null),
+('f47ac10b-58cc-4372-a567-0e02b2c3d480', 'Acción Mediana', 500.00, 50.00, false, null),
+('f47ac10b-58cc-4372-a567-0e02b2c3d481', 'Acción Pequeña', 250.00, 25.00, false, null);
 
 -- Insertar contribuciones obligatorias
 INSERT INTO public.mandatory_contributions (asset_type, value) VALUES
@@ -61,9 +61,9 @@ INSERT INTO public.loans (id, member_id, loan_type, approved_amount, interest_ra
 INSERT INTO public.stock_subscriptions (member_id, stock_id, quantity, financing_loan_id) VALUES
 -- Ana (Admin) tiene 2 acciones grandes
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 2, NULL),
--- Carlos tiene 1 acción mediana y 5 bonos navideños
+-- Carlos tiene 1 acción mediana y 1 preferencial
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'f47ac10b-58cc-4372-a567-0e02b2c3d480', 1, NULL),
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'f47ac10b-58cc-4372-a567-0e02b2c3d482', 5, NULL),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'f47ac10b-58cc-4372-a567-0e02b2c3d478', 1, NULL),
 -- Beatriz tiene 3 acciones pequeñas
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', 'f47ac10b-58cc-4372-a567-0e02b2c3d481', 3, NULL),
 -- David tiene 1 acción mediana comprada con el préstamo 'agil'
@@ -97,26 +97,26 @@ INSERT INTO public.operations (id, member_id, meeting_id, description, type) VAL
 -- Asientos Contables de la REUNIÓN CERRADA
 -- ------------------------------------------
 -- Asientos para el desembolso del préstamo de Carlos
-INSERT INTO public.ledger_entries(operation_id, account_type, amount) VALUES
-('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d42', 'CASH', -2000.00), -- Sale de caja
-('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d42', 'LOANS_RECEIVABLE', 2000.00); -- Aumenta la cuenta por cobrar
+INSERT INTO public.ledger_entries(operation_id, account_type, amount, loan_id, description) VALUES
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d42', 'CASH', -2000.00, 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b21', 'Salida de efectivo por desembolso de préstamo a Carlos'), -- Sale de caja
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d42', 'LOANS_RECEIVABLE', 2000.00, 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b21', 'Aumento de cuenta por cobrar por préstamo a Carlos'); -- Aumenta la cuenta por cobrar
 
 -- Asientos para el pago de Ana (2 Acciones Grandes + Cuotas)
-INSERT INTO public.ledger_entries(operation_id, account_type, amount) VALUES
-('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d51', 'CASH', 207.00), -- (2*100) + 5 + 2
-('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d51', 'STOCK_CAPITAL', -200.00),
-('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d51', 'MANDATORY_CONTRIBUTION_INCOME', -7.00);
+INSERT INTO public.ledger_entries(operation_id, account_type, amount, stock_id, description) VALUES
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d51', 'CASH', 207.00, NULL, 'Ingreso de efectivo por pago mensual de Ana'), -- (2*100) + 5 + 2
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d51', 'STOCK_CAPITAL', -200.00, 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'Aporte de capital por acciones grandes de Ana'),
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d51', 'MANDATORY_CONTRIBUTION_INCOME', -7.00, NULL, 'Ingreso por contribuciones obligatorias de Ana');
 
 -- Asientos para el pago de Beatriz (3 Acciones Pequeñas + Cuotas)
-INSERT INTO public.ledger_entries(operation_id, account_type, amount) VALUES
-('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d51', 'CASH', 82.00), -- (3*25) + 5 + 2
-('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d51', 'STOCK_CAPITAL', -75.00),
-('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d51', 'MANDATORY_CONTRIBUTION_INCOME', -7.00);
+INSERT INTO public.ledger_entries(operation_id, account_type, amount, stock_id, description) VALUES
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d52', 'CASH', 82.00, NULL, 'Ingreso de efectivo por pago mensual de Beatriz'), -- (3*25) + 5 + 2
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d52', 'STOCK_CAPITAL', -75.00, 'f47ac10b-58cc-4372-a567-0e02b2c3d481', 'Aporte de capital por acciones pequeñas de Beatriz'),
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d52', 'MANDATORY_CONTRIBUTION_INCOME', -7.00, NULL, 'Ingreso por contribuciones obligatorias de Beatriz');
 
 -- Asientos para el pago de David (Solo Cuotas)
-INSERT INTO public.ledger_entries(operation_id, account_type, amount) VALUES
-('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d51', 'CASH', 7.00), -- 5 + 2
-('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d51', 'MANDATORY_CONTRIBUTION_INCOME', -7.00);
+INSERT INTO public.ledger_entries(operation_id, account_type, amount, description) VALUES
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d53', 'CASH', 7.00, 'Ingreso de efectivo por pago mensual de David'), -- 5 + 2
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d53', 'MANDATORY_CONTRIBUTION_INCOME', -7.00, 'Ingreso por contribuciones obligatorias de David');
 
 
 -- Operaciones de la REUNIÓN ACTIVA
@@ -126,10 +126,10 @@ INSERT INTO public.operations (id, member_id, meeting_id, description, type) VAL
 ('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d41', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', 'c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c32', 'Pago de cuotas en reunión activa', 'MONTHLY_PAYMENT');
 
 -- Asientos contables para la operación de Beatriz en reunión activa
-INSERT INTO public.ledger_entries(operation_id, account_type, amount) VALUES
-('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d41', 'CASH', 82.00), -- (3*25) + 5 + 2
-('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d41', 'MANDATORY_CONTRIBUTION_INCOME', -7.00),
-('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d41', 'STOCK_CAPITAL', -75.00);
+INSERT INTO public.ledger_entries(operation_id, account_type, amount, stock_id, description) VALUES
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d41', 'CASH', 82.00, NULL, 'Ingreso de efectivo por pago mensual de Beatriz en reunión activa'), -- (3*25) + 5 + 2
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d41', 'MANDATORY_CONTRIBUTION_INCOME', -7.00, NULL, 'Ingreso por contribuciones obligatorias de Beatriz en reunión activa'),
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d41', 'STOCK_CAPITAL', -75.00, 'f47ac10b-58cc-4372-a567-0e02b2c3d481', 'Aporte de capital por acciones pequeñas de Beatriz en reunión activa');
 
 
 -- Historial y Estado Actual
@@ -143,6 +143,11 @@ INSERT INTO public.operations (id, member_id, meeting_id, description, type) VAL
 ('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d43', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14', 'c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c31', 'Desembolso Préstamo Ágil a David', 'LOAN_DISBURSEMENT');
 INSERT INTO public.loan_transaction_details (loan_id, operation_id, transaction_type, amount) VALUES
 ('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b22', 'd1eebc99-9c0b-4ef8-bb6d-6bb9bd380d43', 'desembolso', 500.00);
+
+-- Asientos contables para el desembolso del préstamo de David
+INSERT INTO public.ledger_entries(operation_id, account_type, amount, loan_id, description) VALUES
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d43', 'CASH', -500.00, 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b22', 'Salida de efectivo por desembolso de préstamo ágil a David'),
+('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d43', 'LOANS_RECEIVABLE', 500.00, 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b22', 'Aumento de cuenta por cobrar por préstamo ágil a David');
 
 
 -- ----------------------------------------------------------------

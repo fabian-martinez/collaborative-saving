@@ -34,6 +34,34 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
 
 ## 4. Plan de Implementación por Módulos
 
+### Módulo 0: Refactor de Asientos Contables (Completado Parcial)
+
+**Objetivo**: Mejorar la trazabilidad y auditabilidad del sistema incluyendo la entidad afectada en cada asiento contable.
+
+-   **Backend**:
+    -   [x] **Decisión de Arquitectura**: Se ha decidido implementar la **Opción A (Campos Específicos)** para incluir las entidades afectadas en cada asiento contable.
+    -   [x] **Migración de Base de Datos**: Actualizar el script `supabase/migrations/0001_initial_tables.sql` para incluir los nuevos campos opcionales en la tabla `ledger_entries`:
+        -   `member_id` (UUID, nullable): Referencia al socio afectado
+        -   `loan_id` (UUID, nullable): Referencia al préstamo afectado
+        -   `stock_id` (UUID, nullable): Referencia a la acción afectada
+        -   `mandatory_contribution_id` (UUID, nullable): Referencia a la contribución obligatoria
+        -   `stock_subscription_id` (UUID, nullable): Referencia a la suscripción de acción
+    -   [x] **Actualización de Entidad**: Modificar `LedgerEntry` para incluir las nuevas propiedades y relaciones opcionales.
+    -   [x] **Refactorización de Servicios**: Actualizar los servicios que crean asientos contables para incluir las entidades afectadas:
+        -   [x] `MeetingsService` (pagos de socios)
+        -   [x] `AssetRevaluationService` (revalorización de acciones)
+        -   [x] `LoansService` (desembolsos y pagos de préstamos)
+        -   [ ] `OperationsService` (compra de acciones)
+    -   [x] **Datos de Ejemplo**: Actualizar `supabase/scripts/seed_database_data.sql` para incluir las entidades afectadas en los asientos contables existentes.
+
+> **Nota:** La trazabilidad de entidades afectadas en los asientos contables ya está implementada para los servicios principales del sistema. Solo queda pendiente la compra de acciones en `OperationsService`.
+
+**Beneficios Esperados**:
+- **Trazabilidad Completa**: Cada asiento contable tendrá un vínculo directo con la entidad que lo origina
+- **Auditoría Granular**: Posibilidad de generar reportes detallados por socio, préstamo, acción, etc.
+- **Reconciliación Automática**: Verificación automática de que los saldos contables coincidan con los saldos reales
+- **Reportes Especializados**: Estados de cuenta individuales, historiales de préstamos, evolución de acciones
+
 ### Módulo 1: Estructura y Layout Base (Completado)
 
 -   **Frontend**:
@@ -105,19 +133,24 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
 #### 4.3. Paso 2: Revalorización de Activos
 
 -   **Frontend**:
-    -   [ ] `Step2Revaluation.vue`: Añadir botón para iniciar el proceso de revalorización.
-    -   [ ] Llamar al endpoint del backend y manejar los estados de carga/error.
-    -   [ ] Al recibir la respuesta, mostrar un resumen claro con los nuevos valores de las acciones y el superávit o déficit generado.
+    -   [x] `Step2Revaluation.vue`: Al entrar a este paso, llamar automáticamente al endpoint de previsualización (`GET .../revaluation/preview`).
+    -   [x] Mostrar un resumen detallado con los resultados de la previsualización:
+        -   Total de intereses y contribuciones a distribuir.
+        -   Tabla con el valor anterior, el crecimiento desglosado y el nuevo valor para cada tipo de acción.
+    -   [x] Añadir un botón claro y visible para "Confirmar y Ejecutar Revalorización".
+    -   [x] Al hacer clic, llamar al endpoint de ejecución (`POST .../revaluation`) y manejar los estados de carga/éxito/error.
+
 -   **Backend**:
-    -   [x] `POST /asset-revaluation/:meetingId`: Crear el endpoint para ejecutar la revalorización.
+    -   [x] `GET /asset-revaluation/:meetingId/preview`: Crear endpoint que calcula la revalorización sin persistir cambios.
+    -   [x] `POST /asset-revaluation/:meetingId`: Crear el endpoint para ejecutar y persistir la revalorización.
     -   [ ] **Detalle de Tareas de Implementación**:
-        -   [ ] Envolver toda la lógica de `AssetRevaluationService` en una **transacción de base de datos** para asegurar la atomicidad (ej. usando `@Transactional()` de TypeORM o similar).
-        -   [ ] Modificar la consulta de intereses para obtener por separado los generados por "préstamos ágiles" y "préstamos normales".
-        -   [ ] Implementar la lógica de cobertura: los intereses de "préstamos ágiles" deben cubrir el rendimiento esperado de las acciones de tipo "Garantizada".
-        -   [ ] Calcular el déficit (costo de oportunidad) si los intereses no son suficientes, o el sobrante si exceden la cobertura.
-        -   [ ] Distribuir los intereses restantes (o el déficit) de forma ponderada entre las acciones no garantizadas ("Normales").
-        -   [ ] Por cada tipo de acción cuyo valor cambie, actualizar su `current_value` en la tabla `stocks` y crear un nuevo registro en `stock_value_history`.
-        -   [ ] Generar los asientos contables de partida doble en `ledger_entries` para reflejar la revalorización total, usando las cuentas `INVERSIONES_EN_ACCIONES` (Débito por el aumento de valor) y `SUPERAVIT_POR_REVALUACION` (Crédito).
+        -   [x] Envolver la lógica de `executeRevaluation` en una **transacción de base de datos** para asegurar la atomicidad.
+        -   [x] Modificar la consulta de intereses para obtener por separado los generados por "préstamos ágiles" y "préstamos normales".
+        -   [x] Implementar la lógica de cobertura: los intereses de "préstamos ágiles" deben cubrir el rendimiento esperado de las acciones de tipo "Garantizada".
+        -   [x] Calcular el déficit (costo de oportunidad) si los intereses no son suficientes, o el sobrante si exceden la cobertura.
+        -   [x] Distribuir los intereses restantes (o el déficit) de forma ponderada entre las acciones no garantizadas ("Normales").
+        -   [x] Por cada tipo de acción cuyo valor cambie, actualizar su `current_value` en la tabla `stocks` y crear un nuevo registro en `stock_value_history`.
+        -   [x] Generar los asientos contables de partida doble en `ledger_entries` para reflejar la revalorización total, usando las cuentas `INVERSIONES_EN_ACCIONES` (Débito por el aumento de valor) y `SUPERAVIT_POR_REVALUACION` (Crédito).
 -   **Testing**:
     -   [ ] **Backend**: Crear pruebas unitarias exhaustivas para `AssetRevaluationService`, cubriendo:
         -   [ ] Escenario con superávit (intereses cubren y sobran).
@@ -133,7 +166,9 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
     -   [ ] **Detalle de Tareas de Implementación**:
         -   [ ] Crear DTOs específicos: `RequestLoanDto` y `BuyStockDto`.
         -   [ ] Implementar endpoint `POST /meetings/:id/operations/loans` que cree un nuevo préstamo con estado `PENDING_DISBURSEMENT`.
+        -   [ ] **Refactorizar `LoansService` para que la creación de préstamos y desembolsos iniciales siempre requiera un `meeting_id` de una reunión activa.**
         -   [ ] Implementar endpoint `POST /meetings/:id/operations/stocks` que cree una nueva suscripción de acciones para el socio.
+        -   [ ] **Refactorizar `OperationsService.buyStock` para que la compra de acciones se realice dentro del contexto de una reunión activa, asociando la operación a un `meeting_id`.**
         -   [ ] Realizar validaciones de negocio: el socio debe tener capacidad de endeudamiento, el fondo debe tener liquidez, etc.
 -   **Testing**:
     -   [ ] **Backend**: Añadir pruebas para los servicios de creación de préstamos y compra de acciones durante la reunión.
@@ -161,6 +196,7 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
         -   [ ] Implementar `GET /loans` con filtrado y paginación.
         -   [ ] Implementar `GET /loans/:id` que devuelva el detalle completo.
         -   [ ] Implementar `PATCH /loans/:id` para ajustes administrativos (ej. condonar intereses, reestructurar).
+        -   [ ] **Refactorizar `LoanTransactionsService` para que todas las transacciones de préstamos (abonos, pagos de interés, etc.) se asocien a una reunión activa.**
 -   **Testing**:
     -   [ ] **Backend**: Añadir pruebas unitarias para `LoansService`.
     -   [ ] **Frontend**: Añadir pruebas para las vistas de lista y detalle de préstamos.

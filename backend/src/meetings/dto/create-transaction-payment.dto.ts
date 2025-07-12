@@ -51,5 +51,5 @@ export class CreateTransactionPaymentDto {
   })
   @IsUUID()
   @IsOptional()
-  referenceId?: string;
+  referenceId: string;
 }

@@ -36,6 +36,14 @@ export class Member {
   @Column({ type: 'text', unique: true, name: 'identification_number' })
   identificationNumber: string;
 
+  @ApiProperty({
+    description: "The member's role",
+    example: 'member',
+    default: 'member',
+  })
+  @Column({ type: 'text', default: 'member', nullable: false })
+  role: string;
+
   @DeleteDateColumn({ name: 'deleted_at' })
   deletedAt: Date;
 }

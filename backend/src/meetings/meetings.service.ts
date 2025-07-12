@@ -131,6 +131,9 @@ export class MeetingsService {
     memberId: string,
     type: OperationTypeEnum | null,
   ): Promise<Operation> {
+    if (!type) {
+      throw new BadRequestException('Tipo de operación no válido.');
+    }
     const member = await this.dataSource.manager.findOne(Member, {
       where: { id: memberId },
     });
@@ -153,7 +156,6 @@ export class MeetingsService {
     payment: MemberDue,
   ): Promise<LedgerEntry[]> {
     const ledgerEntries: LedgerEntry[] = [];
-
     ledgerEntries.push(
       queryRunner.manager.create(LedgerEntry, {
         operation_id: operation.id,

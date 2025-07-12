@@ -17,6 +17,15 @@ export class AssetRevaluationController {
     return this.assetRevaluationService.getRevaluationPreview(meetingId);
   }
 
+  @Get('status')
+  async getRevaluationStatus(
+    @Param('meetingId') meetingId: string,
+  ): Promise<{ executed: boolean }> {
+    const executed =
+      await this.assetRevaluationService.isRevaluationExecuted(meetingId);
+    return { executed };
+  }
+
   @Post()
   executeRevaluation(
     @Param('meetingId') meetingId: string,

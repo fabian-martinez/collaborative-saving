@@ -87,6 +87,7 @@ export class DuesService {
         type: 'mandatory_contribution',
         description: contribution.asset_type,
         amount: Number(contribution.value),
+        referenceId: contribution.id,
       }));
   }
 

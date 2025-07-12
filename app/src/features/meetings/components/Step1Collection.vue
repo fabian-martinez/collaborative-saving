@@ -190,7 +190,6 @@ async function fetchMeetingPayments(meetingId: string) {
     for(const [memberId, ops] of operationMap.entries()) {
         const member = members.value.find(m => m.id === memberId);
         if(member) {
-            console.log(ops);
             const amount = ops.reduce((sum, op) => sum + ( op.total_debit || 0), 0);
             total += amount;
             paymentsList.push({ memberName: member.name, amount });

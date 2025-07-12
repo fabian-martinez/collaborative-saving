@@ -19,6 +19,7 @@ export class StockFeeStrategy implements PaymentStrategy {
         account_type: STOCK_CAPITAL_ACCOUNT,
         amount: -payment.amount,
         description: payment.description,
+        stock_id: payment.referenceId || undefined,
       }),
     ];
   }

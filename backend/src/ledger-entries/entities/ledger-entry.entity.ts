@@ -7,6 +7,10 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Operation } from '../../operations/entities/operation.entity';
+import { Loan } from '../../loans/entities/loan.entity';
+import { Stock } from '../../stocks/entities/stock.entity';
+import { MandatoryContribution } from '../../mandatory-contributions/entities/mandatory-contribution.entity';
+import { StockSubscription } from '../../stock-subscriptions/entities/stock-subscription.entity';
 
 @Entity({ name: 'ledger_entries' })
 export class LedgerEntry {
@@ -61,4 +65,31 @@ export class LedgerEntry {
   @ManyToOne(() => Operation, (operation) => operation.ledger_entries)
   @JoinColumn({ name: 'operation_id' })
   operation: Operation;
+  // Entidad afectada: préstamo
+  @Column({ type: 'uuid', nullable: true })
+  loan_id?: string;
+  @ManyToOne(() => Loan, { nullable: true })
+  @JoinColumn({ name: 'loan_id' })
+  loan?: Loan;
+
+  // Entidad afectada: acción
+  @Column({ type: 'uuid', nullable: true })
+  stock_id?: string;
+  @ManyToOne(() => Stock, { nullable: true })
+  @JoinColumn({ name: 'stock_id' })
+  stock?: Stock;
+
+  // Entidad afectada: contribución obligatoria
+  @Column({ type: 'uuid', nullable: true })
+  mandatory_contribution_id?: string;
+  @ManyToOne(() => MandatoryContribution, { nullable: true })
+  @JoinColumn({ name: 'mandatory_contribution_id' })
+  mandatory_contribution?: MandatoryContribution;
+
+  // Entidad afectada: suscripción de acción
+  @Column({ type: 'uuid', nullable: true })
+  stock_subscription_id?: string;
+  @ManyToOne(() => StockSubscription, { nullable: true })
+  @JoinColumn({ name: 'stock_subscription_id' })
+  stock_subscription?: StockSubscription;
 }

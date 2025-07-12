@@ -38,6 +38,8 @@ export class LoanPaymentStrategy implements PaymentStrategy {
           account_type: INTEREST_INCOME_ACCOUNT,
           amount: -interestPaid,
           description: payment.description,
+          member_id: operation.member_id,
+          loan_id: loan.id,
         }),
       );
       const interestTransaction = queryRunner.manager.create(
@@ -59,6 +61,7 @@ export class LoanPaymentStrategy implements PaymentStrategy {
           account_type: LOANS_RECEIVABLE_ACCOUNT,
           amount: -principalPaid,
           description: payment.description,
+          loan_id: loan.id,
         }),
       );
       const principalTransaction = queryRunner.manager.create(
