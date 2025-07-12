@@ -169,15 +169,17 @@ export class StocksService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
+      const stock = await this.findOne(stockId);
+
       const operation = queryRunner.manager.create(Operation, {
         member_id: memberId,
         meeting_id: meetingId,
-        description: `Compra de ${quantity} acciones en reunión ${meetingId}`,
+        description: `Compra de ${quantity} acciones de ${stock.type}`,
         type: 'STOCK_PURCHASE',
       });
+
       await queryRunner.manager.save(operation);
 
-      const stock = await this.findOne(stockId);
       const stockSubscriptions =
         await this.getStockSubscriptionByMemberAndStock({
           stockId,

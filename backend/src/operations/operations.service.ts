@@ -3,6 +3,7 @@ import { DataSource } from 'typeorm';
 import { StockSubscriptionsService } from '../stock-subscriptions/stock-subscriptions.service';
 import { LoansService } from '../loans/loans.service';
 import { Operation } from './entities/operation.entity';
+import { FindOperationsDto } from './dto/find-operations.dto';
 
 @Injectable()
 export class OperationsService {
@@ -27,11 +28,41 @@ export class OperationsService {
     return operation;
   }
 
-  async findAll(params: { meetingId?: string }): Promise<Operation[]> {
-    const where = params.meetingId ? { meeting: { id: params.meetingId } } : {};
-    return this.dataSource.manager.getRepository(Operation).find({
-      where,
-      relations: ['member', 'ledger_entries'],
-    });
+  async findAll(
+    params: FindOperationsDto,
+  ): Promise<{ data: Operation[]; total: number }> {
+    const repo = this.dataSource.manager.getRepository(Operation);
+    const qb = repo
+      .createQueryBuilder('operation')
+      .leftJoinAndSelect('operation.member', 'member')
+      .leftJoinAndSelect('operation.ledger_entries', 'ledger_entries');
+
+    if (params.meetingId) {
+      qb.andWhere('operation.meeting_id = :meetingId', {
+        meetingId: params.meetingId,
+      });
+    }
+    if (params.memberId) {
+      qb.andWhere('operation.member_id = :memberId', {
+        memberId: params.memberId,
+      });
+    }
+    if (params.operationType) {
+      qb.andWhere('operation.type = :type', { type: params.operationType });
+    }
+    if (params.dateFrom) {
+      qb.andWhere('operation.date >= :dateFrom', { dateFrom: params.dateFrom });
+    }
+    if (params.dateTo) {
+      qb.andWhere('operation.date <= :dateTo', { dateTo: params.dateTo });
+    }
+
+    const page = params.page || 1;
+    const limit = params.limit || 20;
+    qb.skip((page - 1) * limit).take(limit);
+    qb.orderBy('operation.date', 'DESC');
+
+    const [data, total] = await qb.getManyAndCount();
+    return { data, total };
   }
 }

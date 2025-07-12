@@ -78,7 +78,11 @@ const availableCash = ref(0)
 async function fetchOperations() {
   if (activeMeetingStore.meetingId) {
     try {
-      operations.value = await operationsService.getOperations(activeMeetingStore.meetingId)
+      operations.value = await (
+        await operationsService.getOperations({
+          meetingId: activeMeetingStore.meetingId,
+        }
+      )).data
       calculateAvailableCash()
     } catch (error) {
       console.error("Error fetching operations for cash calculation:", error)
