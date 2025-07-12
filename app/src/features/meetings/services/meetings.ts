@@ -6,6 +6,7 @@ import type {
 } from '../types';
 import type { Operation } from '@/features/operations/types';
 import type { StocksForPurchase } from '@/features/stocks/types';
+import { operationsService } from '@/features/operations/services/operationsService';
 
 class MeetingsService {
   // Methods related to meetings list and creation
@@ -53,6 +54,16 @@ class MeetingsService {
   buyStocks(meetingId: string, payload: StocksForPurchase): Promise<any> {
     console.log('payload', payload)
     return api.post(`/meetings/${meetingId}/buy/stocks`, payload);
+  }
+
+  /**
+   * Obtiene todas las operaciones de compra de acciones de una reunión
+   */
+  async getStockPurchaseOperations(meetingId: string) {
+    return operationsService.getOperations({
+      meetingId,
+      operationType: 'STOCK_PURCHASE',
+    });
   }
 }
 

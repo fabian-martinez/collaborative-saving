@@ -22,31 +22,7 @@ import {
   INVESTMENT_IN_STOCKS_ACCOUNT,
   REVALUATION_SURPLUS_ACCOUNT,
 } from '../common/constants/account-types';
-
-export interface RevaluationDetail {
-  stock_id: string;
-  type: string;
-  is_guaranteed: boolean;
-  total_shares: number;
-  previous_value: number;
-  growth_from_contributions: number;
-  growth_from_interest: number;
-  total_growth_per_share: number;
-  estimated_growth_from_contributions: number;
-  new_value: number;
-}
-
-export interface RevaluationPreviewResult {
-  total_contributions: number;
-  total_interest: number;
-  total_to_distribute: number;
-  details: RevaluationDetail[];
-  total_mandatory_contributions: number;
-  mandatory_contributions_by_type?: Array<{
-    total: number;
-    mandatory_contribution_id: string;
-  }>;
-}
+import { RevaluationDetail, RevaluationPreviewResult } from './types';
 
 @Injectable()
 export class AssetRevaluationService {
@@ -231,8 +207,8 @@ export class AssetRevaluationService {
   }
 
   private async _getExecutedRevaluationData(
-    meetingId: string,
     operationId: string,
+    meetingId: string,
   ): Promise<RevaluationPreviewResult> {
     // Obtener el historial de revaluación ejecutada
     const stockHistories = await this.dataSource.manager.find(
@@ -242,11 +218,6 @@ export class AssetRevaluationService {
         relations: ['stock'],
       },
     );
-
-    // Obtener los asientos contables de la revaluación
-    const ledgerEntries = await this.dataSource.manager.find(LedgerEntry, {
-      where: { operation_id: operationId },
-    });
 
     // Reconstruir los detalles de la revaluación ejecutada
     const details: RevaluationDetail[] = [];
@@ -275,18 +246,26 @@ export class AssetRevaluationService {
       }
     }
 
+    // Get all edgers for the meeting
+    const meetingLedgerEntries = await this.dataSource.manager.find(
+      LedgerEntry,
+      {
+        where: { operation: { meeting_id: meetingId } },
+      },
+    );
+
     // Calcular totales desde los asientos contables
-    const totalContributions = ledgerEntries
+    const totalContributions = meetingLedgerEntries
       .filter((e) => e.account_type === STOCK_CAPITAL_ACCOUNT)
       .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
 
-    const totalInterest = ledgerEntries
+    const totalInterest = meetingLedgerEntries
       .filter((e) =>
         [INTEREST_INCOME_ACCOUNT, FEE_INCOME_ACCOUNT].includes(e.account_type),
       )
       .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
 
-    const totalMandatoryContributions = ledgerEntries
+    const totalMandatoryContributions = meetingLedgerEntries
       .filter((e) => e.account_type === MANDATORY_CONTRIBUTION_INCOME_ACCOUNT)
       .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
 
@@ -295,7 +274,7 @@ export class AssetRevaluationService {
       string,
       { total: number; mandatory_contribution_id: string }
     > = {};
-    ledgerEntries
+    meetingLedgerEntries
       .filter(
         (e) =>
           e.account_type === MANDATORY_CONTRIBUTION_INCOME_ACCOUNT &&
@@ -339,8 +318,8 @@ export class AssetRevaluationService {
     if (existingRevaluation) {
       // Si ya existe, devolver los datos de la revaluación ejecutada
       return this._getExecutedRevaluationData(
-        meetingId,
         existingRevaluation.id,
+        meetingId,
       );
     }
 

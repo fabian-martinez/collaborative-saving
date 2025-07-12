@@ -180,11 +180,6 @@ export class StocksService {
 
       await queryRunner.manager.save(operation);
 
-      const stockSubscriptions =
-        await this.getStockSubscriptionByMemberAndStock({
-          stockId,
-          memberId,
-        });
       const totalValue = stock.value * quantity;
       const financedAmount = totalValue - cashAmount;
       let newLoan: Loan | null = null;
@@ -213,43 +208,23 @@ export class StocksService {
           queryRunner,
         );
       }
-      let updatedExistingSubscription = false;
-      let updatedSubscription: StockSubscription | null = null;
-      // Buscar subscripción existente sin préstamo
-      const existingSubscription =
-        await this.stockSubscriptionsRepository.findOne({
-          where: {
-            member_id: memberId,
-            stock_id: stockId,
-            financing_loan_id: IsNull(),
-          },
-        });
-      if (existingSubscription) {
-        // Actualizar la cantidad sumando la nueva
-        existingSubscription.quantity += quantity;
-        updatedSubscription =
-          await this.stockSubscriptionsRepository.save(existingSubscription);
-        updatedExistingSubscription = true;
-      } else {
-        await this.stockSubscriptionsService.create(
-          {
-            member_id: memberId,
-            stock_id: stockId,
-            quantity,
-            financing_loan_id: newLoan ? newLoan.id : null,
-          },
-          queryRunner,
-        );
-      }
+
+      const stockSubscription = await this.stockSubscriptionsService.create(
+        {
+          member_id: memberId,
+          stock_id: stockId,
+          quantity,
+          financing_loan_id: newLoan ? newLoan.id : null,
+        },
+        queryRunner,
+      );
       // Asientos contables
       const ledgerEntries: LedgerEntry[] = [];
       ledgerEntries.push(
         queryRunner.manager.create(LedgerEntry, {
           operation_id: operation.id,
           stock_id: stockId,
-          stock_subscription_id: updatedSubscription
-            ? updatedSubscription.id
-            : stockSubscriptions[0]?.id,
+          stock_subscription_id: stockSubscription.id,
           account_type: STOCK_CAPITAL_ACCOUNT,
           amount: -totalValue,
         }),
@@ -276,9 +251,7 @@ export class StocksService {
       await queryRunner.manager.save(ledgerEntries);
       await queryRunner.commitTransaction();
       return {
-        message: updatedExistingSubscription
-          ? 'Subscripción existente actualizada: se sumó la cantidad a la subscripción previa.'
-          : 'Compra de acciones registrada exitosamente.',
+        message: 'Compra de acciones registrada exitosamente.',
         operationId: operation.id,
         memberId,
       };

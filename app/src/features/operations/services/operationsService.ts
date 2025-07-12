@@ -11,7 +11,7 @@ class OperationsService {
     return api.get(`/operations/${id}`);
   }
 
-  async getOperations(filter?: {meetingId?: string, memberId?: string, accountType?: string }): Promise<PaginatedOperationsResponse> {
+  async getOperations(filter?: {meetingId?: string, memberId?: string, operationType?: string }): Promise<PaginatedOperationsResponse> {
     let params = new URLSearchParams()
     if (filter?.meetingId) {
       params.append('meetingId', filter.meetingId)
@@ -19,8 +19,8 @@ class OperationsService {
     if (filter?.memberId) {
       params.append('memberId', filter.memberId)
     }
-    if (filter?.accountType) {
-      params.append('operationType', filter.accountType)
+    if (filter?.operationType) {
+      params.append('operationType', filter.operationType)
     }
     try {
       return await api.get<PaginatedOperationsResponse>(`/operations?${params.toString()}`);

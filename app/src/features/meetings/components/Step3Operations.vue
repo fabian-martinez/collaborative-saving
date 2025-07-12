@@ -16,8 +16,8 @@
         <div class="mt-4 p-4 bg-base-200 rounded-box space-y-4">
           <div>
             <div class="text-center">
-              <div class="text-sm font-light text-base-content/70 uppercase">Total Acciones Compradas</div>
-              <div class="text-3xl font-bold text-primary">{{ totalCashRegistered }}</div>
+              <div class="text-sm font-light text-base-content/70 uppercase">Total En Acciones Compradas</div>
+              <div class="text-3xl font-bold text-primary">${{ -totalPurchasedShares.toFixed(2) }}</div>
             </div>
           </div>
           <div class="text-center">
@@ -156,64 +156,20 @@ import { stocksService } from '@/features/stocks/services/stocksService';
 import type { Operation } from '@/features/operations/types'
 import { operationsService } from '@/features/operations/services/operationsService'
 
-// Datos mockeados para stocks (mantener por ahora)
-// const stocks = ref([
-//   { id: 'a', name: 'Acción Garantizada', currentValue: 105.5, history: [ { date: '2024-06-01', value: 102 }, { date: '2024-07-01', value: 104 }, { date: '2024-08-01', value: 105.5 } ] },
-//   { id: 'b', name: 'Acción Normal', currentValue: 98.2, history: [ { date: '2024-06-01', value: 97 }, { date: '2024-07-01', value: 97.8 }, { date: '2024-08-01', value: 98.2 } ] },
-// ])
-
 type LocalLine = StocksForPurchase & { id: string, creditAmount: number }
 const stocks = ref<Stock[]>([])
 const registeredPurchases = ref<Operation[]>([])
-// const registeredPurchases = ref<any[]>([
-//   // Mock: operaciones ya "registradas" en el backend
-//   {
-//     id: 'op1',
-//     member_id: '1',
-//     type: 'buy_stock',
-//     description: 'Compra de 3 acciones Garantizadas',
-//     total_debit: 316.5,
-//     stockId: 'Acción Garantizada',
-//     quantity: 3,
-//     cash: 316.5,
-//     credit: 0,
-//     date: '2024-08-01',
-//     ledger_entries: [
-//       { account_type: 'INVERSIONES_EN_ACCIONES', amount: 316.5 }
-//     ]
-//   },
-//   {
-//     id: 'op2',
-//     member_id: '2',
-//     type: 'buy_stock',
-//     description: 'Compra de 2 acciones Normales',
-//     total_debit: 196.4,
-//     stockId: 'Acción Normal',
-//     quantity: 2,
-//     cash: 100,
-//     credit: 96.4,
-//     date: '2024-08-01',
-//     ledger_entries: [
-//       { account_type: 'INVERSIONES_EN_ACCIONES', amount: 196.4 }
-//     ]
-//   }
-// ])
 
 const activeMeetingStore = useActiveMeetingStore()
 
 onMounted(async () => {
   await activeMeetingStore.fetchMembers()
   stocks.value = await stocksService.getStocks()
-  registeredPurchases.value = await getRegisteredPurchases()
+  registeredPurchases.value = (await meetingsService.getStockPurchaseOperations(activeMeetingStore.meetingId || '')).data
 })
 
 async function getRegisteredPurchases() {
-  return (await operationsService.getOperations(
-    {
-      meetingId: activeMeetingStore.meetingId || '',
-      accountType: 'STOCK_PURCHASE',
-    }
-  )).data
+  return (await meetingsService.getStockPurchaseOperations(activeMeetingStore.meetingId || '')).data
 }
 
 // Estado de la UI de la compra de acciones
@@ -241,7 +197,19 @@ const form = ref({
   creditAmount: 0,
 })
 
-const totalCashRegistered = computed(() => registeredPurchases.value.reduce((sum, p) => sum + p.total_debit, 0))
+const totalCashRegistered = computed(() =>
+  registeredPurchases.value
+    .flatMap(op => op.ledger_entries)
+    .filter(entry => entry.account_type === 'CASH')
+    .reduce((sum, entry) => sum + Number(entry.amount), 0)
+)
+
+const totalPurchasedShares = computed(() =>
+  registeredPurchases.value
+    .flatMap(op => op.ledger_entries)
+    .filter(entry => entry.account_type === 'STOCK_CAPITAL')
+    .reduce((sum, entry) => sum + Number(entry.amount), 0)
+)
 
 function memberRegisteredPurchases(memberId: string) {
   return registeredPurchases.value.filter(p => p.member_id === memberId)

@@ -6,7 +6,7 @@
     <div class="mb-8 p-4 bg-base-200 rounded-box grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
       <div>
         <p class="text-sm font-semibold text-base-content/70">Recaudo Total</p>
-        <p class="text-4xl font-bold text-success">{{ activeMeetingStore.totalCollection.toFixed(2) }}</p>
+        <p class="text-4xl font-bold text-success">{{ totalCollection.toFixed(2) }}</p>
       </div>
        <div>
         <p class="text-sm font-semibold text-base-content/70">Efectivo Disponible</p>
@@ -14,7 +14,7 @@
       </div>
       <div>
         <p class="text-sm font-semibold text-base-content/70">Intereses Generados</p>
-        <p class="text-4xl font-bold text-info">{{ activeMeetingStore.totalInterest.toFixed(2) }}</p>
+        <p class="text-4xl font-bold text-info">{{ -totalInterest.toFixed(2) }}</p>
       </div>
     </div>
 
@@ -32,8 +32,6 @@
         <Step1Collection 
             v-if="activeMeetingStore.currentStep === 1" 
             @completed="goToNextStep"
-            @update:total-collected="activeMeetingStore.setTotalCollection"
-            @update:total-interest="activeMeetingStore.setTotalInterest"
         />
         <Step2Revaluation v-if="activeMeetingStore.currentStep === 2" @completed="goToNextStep" />
         <Step3Operations v-if="activeMeetingStore.currentStep === 3" @completed="goToNextStep" />
@@ -74,6 +72,8 @@ import Step4Disbursements from '../components/Step4Disbursements.vue'
 const activeMeetingStore = useActiveMeetingStore()
 const operations = ref<Operation[]>([])
 const availableCash = ref(0)
+const totalCollection = ref(0)
+const totalInterest = ref(0)
 
 async function fetchOperations() {
   if (activeMeetingStore.meetingId) {
@@ -81,23 +81,34 @@ async function fetchOperations() {
       operations.value = await (
         await operationsService.getOperations({
           meetingId: activeMeetingStore.meetingId,
-        }
-      )).data
-      calculateAvailableCash()
+        })
+      ).data
+      calculateTotals()
     } catch (error) {
       console.error("Error fetching operations for cash calculation:", error)
     }
   }
 }
 
-function calculateAvailableCash() {
-  const totalIn = activeMeetingStore.totalCollection
-  
-  const totalOut = operations.value
-    .filter(op => op.type === 'LOAN_DISBURSEMENT')
-    .reduce((sum, op) => sum + (op.total_credit || 0), 0)
-    
-  availableCash.value = totalIn - totalOut
+function calculateTotals() {
+  let recaudado = 0
+  let efectivo = 0
+  let intereses = 0
+
+  operations.value.forEach(op => {
+    op.ledger_entries.forEach(entry => {
+      if (entry.account_type.toUpperCase() === 'CASH') {
+        if (entry.amount > 0) recaudado += Number(entry.amount)
+        efectivo += Number(entry.amount)
+      }
+      if (entry.account_type.toUpperCase() === 'INTEREST_INCOME') {
+        intereses += Number(entry.amount)
+      }
+    })
+  })
+  totalCollection.value = recaudado
+  availableCash.value = efectivo
+  totalInterest.value = intereses
 }
 
 onMounted(() => {
@@ -108,10 +119,6 @@ onMounted(() => {
   } else {
     fetchOperations()
   }
-})
-
-watch(() => activeMeetingStore.totalCollection, () => {
-  calculateAvailableCash()
 })
 
 watch(() => activeMeetingStore.currentStep, (newStep, oldStep) => {
