@@ -89,7 +89,7 @@
                   <div class="flex items-baseline">
                     <div class="flex-shrink-0">
                       <p class="font-semibold text-xl">{{ stockName(line.stockId) }}</p>
-                      <p class="text-sm text-base-content/70">{{ line.quantity }} uds. x ${{ (stocks.find(s => s.id === line.stockId)?.value || 0).toFixed(2) }} c/u</p>
+                      <p class="text-sm text-base-content/70">{{ Number(line.quantity || 0) }} uds. x ${{ (stocks.find(s => s.id === line.stockId)?.value || 0).toFixed(2) }} c/u</p>
                     </div>
                     <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
                     <div class="flex-shrink-0 flex items-center gap-2">

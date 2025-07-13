@@ -38,6 +38,7 @@ export class StocksService {
   ) {}
 
   create(createStockDto: CreateStockDto): Promise<Stock> {
+    createStockDto.value = Number(createStockDto.monthly_contribution);
     const stock = this.stocksRepository.create(createStockDto);
     return this.stocksRepository.save(stock);
   }
@@ -148,9 +149,9 @@ export class StocksService {
     };
   }) {
     // 1. Validar camos de entrada
-    if (!Number.isInteger(quantity) || quantity <= 0) {
+    if (quantity <= 0) {
       throw new BadRequestException(
-        'La cantidad de acciones debe ser un entero positivo.',
+        'La cantidad de acciones debe ser un número positivo.',
       );
     }
     if (cashAmount < 0) {

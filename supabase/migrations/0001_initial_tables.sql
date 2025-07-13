@@ -21,6 +21,7 @@ drop table if exists "public"."mandatory_contributions" cascade;
 drop table if exists "public"."loans" cascade;
 drop table if exists "public"."loan_transaction_details" cascade;
 drop table if exists "public"."stock_value_history" cascade;
+drop table if exists  "public"."pending_member_payments";
 drop type if exists "public"."member_due" cascade;
 
 
@@ -104,7 +105,7 @@ create table public.stock_subscriptions (
     id uuid default extensions.uuid_generate_v4() primary key,
     member_id uuid references public.members(id) on delete cascade not null,
     stock_id uuid references public.stocks(id) on delete cascade not null,
-    quantity int default 1 not null,
+    quantity numeric(20,10) default 1 not null,
     purchase_date date default now() not null,
     status text default 'active' not null check (status in ('active', 'inactive')),
     financing_loan_id uuid null references public.loans(id) on delete set null,
@@ -160,4 +161,19 @@ create type public.member_due as (
   type text,
   description text,
   amount numeric
-); 
+);
+
+-- ----------------------------------------------------------------
+-- ▤ Tabla para solicitudes de pagos pendientes de socios
+-- ----------------------------------------------------------------
+create table public.pending_member_payments (
+    id uuid default extensions.uuid_generate_v4() primary key,
+    member_id uuid not null references public.members(id) on delete cascade,
+    meeting_id uuid not null references public.meetings(id) on delete cascade,
+    type text not null check (type in ('dividendo', 'retiro_accion', 'otro')),
+    amount numeric(12, 2) not null,
+    status text not null default 'pending' check (status in ('pending', 'approved', 'rejected', 'paid')),
+    notes text,
+    created_at timestamp with time zone default now() not null
+);
+comment on table public.pending_member_payments is 'Solicitudes de liquidez de socios (dividendos, retiros de acciones, etc.) a ser procesadas en el plan de desembolso.'; 

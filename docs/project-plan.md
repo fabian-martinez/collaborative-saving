@@ -94,6 +94,8 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
 -   **Backend**:
     -   [x] Implementar CRUD para `Stock` y `StockSubscription`.
     -   [x] Crear endpoints para obtener el historial de valor (`stock_value_history`).
+    -   [ ] **Nuevo**: Modificar la entidad `Stock` y la base de datos para soportar diferentes comportamientos (ej. `CAPITAL_APPRECIATION` vs `DIVIDEND_YIELD`) y un valor base, según ADR-0006.
+    -   [ ] **Nuevo**: Implementar migración de BD para cambiar `stock_subscriptions.quantity` a un tipo `NUMERIC` de alta precisión para soportar **acciones fraccionadas**.
 -   **Otras Tareas**:
     -   [ ] **Refinamiento**: En el detalle de acciones, asegurar que se muestre el **tipo de acción** (ej. Garantizada, Normal).
 -   **Testing**:
@@ -123,6 +125,7 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
 -   **Backend**:
     -   [x] `POST /meetings/:id/transactions`: Implementar el endpoint para registrar los pagos de un socio.
     -   [x] Implementar lógica para validar que un socio solo puede realizar su contribución obligatoria una vez por reunión.
+    -   [ ] **Nuevo**: Modificar la lógica de cálculo de cuotas para que **no se exija contribución** sobre el capital que un socio ya ha solicitado retirar (marcado en `pending_member_payments`).
 -   **Otras Tareas**:
     -   [ ] **Tarea de Validación**: Verificar que al procesar un pago de préstamo, se actualicen correctamente el `outstanding_balance` y se genere el registro de la transacción en el préstamo (`loan_transaction_detail`).
     -   [ ] **Refinamiento**: En el detalle del pago, especificar a qué crédito corresponde el interés y el abono a capital para mayor claridad.
@@ -145,12 +148,11 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
     -   [x] `POST /asset-revaluation/:meetingId`: Crear el endpoint para ejecutar y persistir la revalorización.
     -   [ ] **Detalle de Tareas de Implementación**:
         -   [x] Envolver la lógica de `executeRevaluation` en una **transacción de base de datos** para asegurar la atomicidad.
-        -   [x] Modificar la consulta de intereses para obtener por separado los generados por "préstamos ágiles" y "préstamos normales".
-        -   [x] Implementar la lógica de cobertura: los intereses de "préstamos ágiles" deben cubrir el rendimiento esperado de las acciones de tipo "Garantizada".
-        -   [x] Calcular el déficit (costo de oportunidad) si los intereses no son suficientes, o el sobrante si exceden la cobertura.
-        -   [x] Distribuir los intereses restantes (o el déficit) de forma ponderada entre las acciones no garantizadas ("Normales").
+        -   [ ] **Refactorizar `AssetRevaluationService`**:
+            -   [ ] La lógica debe manejar diferentes comportamientos de acciones (ver ADR-0006). Para acciones `DIVIDEND_YIELD`, calcular ganancias y generar "dividendos pendientes".
+            -   [ ] **Implementar lógica de revalorización justa**: La tasa de crecimiento por rendimientos se calcula sobre el capital *inicial* del período. Las ganancias se distribuyen, y solo después se suman las contribuciones de la reunión actual para obtener el capital final de cada socio.
         -   [x] Por cada tipo de acción cuyo valor cambie, actualizar su `current_value` en la tabla `stocks` y crear un nuevo registro en `stock_value_history`.
-        -   [x] Generar los asientos contables de partida doble en `ledger_entries` para reflejar la revalorización total, usando las cuentas `INVERSIONES_EN_ACCIONES` (Débito por el aumento de valor) y `SUPERAVIT_POR_REVALUACION` (Crédito).
+        -   [x] Generar los asientos contables de partida doble en `ledger_entries` para reflejar la revalorización total o la generación de dividendos.
 -   **Testing**:
     -   [ ] **Backend**: Crear pruebas unitarias exhaustivas para `AssetRevaluationService`, cubriendo:
         -   [ ] Escenario con superávit (intereses cubren y sobran).
@@ -173,54 +175,50 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
         -   [x] Feedback claro de éxito/error y loaders durante las operaciones.
         -   [x] Etiqueta visual "Pendiente" para miembros con compras en proceso no confirmadas.
 -   **Backend**:
-    -   [ ] **Detalle de Tareas de Implementación**:
-        -   [ ] Endpoint para registrar la compra de acciones durante la reunión: `POST /meetings/:id/operations/stocks`
-            -   [ ] Permitir incluir datos de un nuevo miembro en la misma petición (alta y compra en una sola operación atómica).
-            -   [ ] Validar que la cantidad de acciones sea un número entero positivo.
-            -   [ ] Registrar la operación y actualizar la suscripción de acciones del socio.
-            -   [ ] Si la compra es a crédito (total o parcial), crear el crédito asociado con interés fijo del 2% (sin plazo/cuota mínima).
-            -   [ ] Registrar los asientos contables correspondientes (compra de acciones y, si aplica, creación del crédito).
-            -   [ ] Actualizar el efectivo disponible en la reunión con los pagos en efectivo.
-        -   [ ] Endpoint para editar o anular compras antes de finalizar la reunión.
-        -   [ ] Endpoint para consultar el resumen de compras realizadas en la reunión actual, agrupadas por socio.
+    -   [x] **Detalle de Tareas de Implementación**:
+        -   [x] Endpoint para registrar la compra de acciones durante la reunión: `POST /meetings/:meetingId/buy/stocks`
+            -   [x] Validar que la cantidad de acciones sea un número entero positivo.
+            -   [x] Registrar la operación y actualizar la suscripción de acciones del socio.
+            -   [x] Si la compra es a crédito (total o parcial), crear el crédito asociado con interés fijo del 2% (sin plazo/cuota mínima).
+            -   [x] Registrar los asientos contables correspondientes (compra de acciones y, si aplica, creación del crédito).
+            -   [x] Actualizar el efectivo disponible en la reunión con los pagos en efectivo.
+        -   [x] Endpoint para consultar el resumen de compras realizadas en la reunión actual, agrupadas por socio.
 -   **Testing**:
     -   [ ] **Backend**: Añadir pruebas para la lógica de compra de acciones, registro de nuevos miembros y generación de créditos asociados.
     -   [ ] **Frontend**: Añadir pruebas de componentes para el flujo de compra, edición y anulación de operaciones en `Step3Operations.vue`.
 
-#### 4.5. Paso 4: Desembolsos
-
--   **Frontend**:
-    -   [ ] `Step4Disbursements.vue`: Mostrar un resumen de los desembolsos a realizar y un botón para finalizar la reunión.
--   **Backend**:
-    -   [ ] **Detalle de Tareas de Implementación**:
-        -   [ ] Implementar endpoint `POST /meetings/:id/complete` para cerrar la reunión.
-        -   [ ] El servicio debe cambiar el estado de la reunión a `COMPLETED`.
-        -   [ ] Actualizar el estado de los préstamos de `PENDING_DISBURSEMENT` a `ACTIVE`.
-        -   [ ] Generar los asientos contables en `ledger_entries` para la salida de efectivo por los desembolsos de préstamos.
--   **Testing**:
-    -   [ ] **Backend**: Añadir pruebas para el proceso de cierre y desembolso de la reunión.
-
-#### 4.6. Registro y gestión del paso actual de la reunión (`step`)
+#### 4.5. Proceso de Desembolso: Previsualización y Ejecución Atómica
 
 -   **Backend**:
-    -   [ ] Agregar el campo `step` en la entidad `Meeting` y crear la migración correspondiente (valores posibles: `recaudacion`, `revalorizacion`, `compra_acciones`, `modificacion_acciones`, `desembolsos`).
-    -   [ ] Actualizar los DTOs (`create-meeting.dto.ts`, `update-meeting.dto.ts`) para incluir el campo `step` y validar los valores permitidos.
-    -   [ ] Modificar el servicio y controlador de reuniones para soportar la actualización del campo `step`.
-    -   [ ] Crear un endpoint específico para cambiar el `step` de una reunión (`PATCH /meetings/:id/step`).
-    -   [ ] Actualizar los scripts de seed/reset para incluir el campo `step` con valor por defecto y ejemplos de los nuevos steps.
+    -   [ ] **Migración de BD**: Crear tabla `pending_member_payments` para registrar solicitudes de liquidez de socios (dividendos, retiros de acciones incompletos).
+    -   [ ] **Nuevo**: Refactorizar el proceso de desembolso para separar claramente la previsualización y la ejecución atómica del plan de desembolso:
+        -   [ ] **Endpoint de Previsualización**: `GET /meetings/:id/disbursement-plan/preview`.
+            -   Calcula y devuelve un **plan de desembolso recomendado** siguiendo la cola de prioridad definida en ADR-0006 (deudas antiguas, dividendos, préstamos, retiros, etc.).
+            -   No realiza ningún cambio en la base de datos.
+        -   [ ] **Endpoint de Ejecución**: `POST /meetings/:id/disbursement-plan/execute`.
+            -   Recibe el plan final (puede ser el recomendado o uno ajustado por el administrador).
+            -   Valida que el plan no exceda el efectivo disponible y ejecuta **todas las operaciones de desembolso de forma atómica** (en una sola transacción):
+                -   Actualiza entidades (`Loan.disbursed_amount`, `pending_member_payments`, etc.).
+                -   Genera los asientos contables correspondientes.
+                -   Actualiza los estados de préstamos, retiros y dividendos según corresponda.
+            -   Si ocurre un error, la transacción se revierte y no se aplican cambios parciales.
+        -   [ ] **Nota**: No se separan endpoints por tipo de operación (retiros, préstamos, dividendos) para garantizar que la lógica de prioridad y la integridad de los fondos se mantengan centralizadas y atómicas, evitando inconsistencias y errores de negocio.
 -   **Frontend**:
-    -   [ ] Refactorizar los componentes de steps de la reunión para reflejar el nuevo flujo:
-        -   [ ] Renombrar `Step3Operations.vue` a `Step3BuyStocks.vue` (Buy Stocks).
-        -   [ ] Crear `Step4StockModification.vue` para el nuevo step de modificación/intercambio/cruce de acciones (Stock Modification).
-        -   [ ] Renombrar `Step4Disbursements.vue` a `Step5Disbursements.vue` (Disbursements and Closing).
-        -   [ ] Actualizar la navegación y el stepper en la vista principal de la reunión para reflejar el nuevo orden y nombres de los pasos (`Step1Collection.vue`, `Step2Revaluation.vue`, `Step3BuyStocks.vue`, `Step4StockModification.vue`, `Step5Disbursements.vue`).
+    -   [ ] Renombrar `Step4Disbursements.vue` a `Step5Disbursements.vue`.
+    -   [ ] Al cargar, llamar al endpoint de previsualización para mostrar el plan recomendado.
+    -   [ ] **Implementar UI de Desembolso Flexible**:
+        -   Mostrar claramente el efectivo disponible vs. el total a desembolsar en el plan.
+        -   Permitir al administrador **editar los montos** del plan recomendado.
+        -   Validar en tiempo real que las ediciones no superen el efectivo disponible.
+    -   [ ] Implementar el botón "Confirmar y Finalizar Reunión" que envía el plan final (editado o no) al backend.
+    -   [ ] Actualizar la navegación y el stepper para reflejar el nuevo orden de los pasos (`Step1Collection.vue`, `Step2Revaluation.vue`, `Step3BuyStocks.vue`, `Step4StockModification.vue`, `Step5Disbursements.vue`).
     -   [ ] Actualizar el servicio de API para soportar el cambio de `step`.
     -   [ ] Actualizar el store de reunión activa y la navegación para soportar el nuevo flujo.
     -   [ ] Validar reglas de negocio para avanzar entre pasos.
 -   **Testing**:
-    -   [ ] Añadir pruebas unitarias y de integración para la funcionalidad de cambio de `step` en backend y frontend.
+    -   [ ] Añadir pruebas unitarias y de integración para la funcionalidad de desembolso y cierre de reunión en backend y frontend.
 
-#### 4.7. Step de Modificación de Acciones (`modificacion_acciones`)
+#### 4.6. Step de Modificación de Acciones (`modificacion_acciones`)
 
 -   **Backend**:
     -   [ ] Implementar endpoints y lógica para el nuevo step `modificacion_acciones`:
@@ -236,11 +234,12 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
 
 ### Módulo 5: Gestión de Préstamos (Pendiente)
 
--   **Frontend**:
+-   **Front end**:
     -   [ ] `LoansListView.vue`: Crear vista para listar todos los préstamos con filtros por estado y socio.
     -   [ ] `LoanDetailView.vue`: Vista para ver el detalle de un préstamo, su tabla de amortización y el historial de pagos.
 -   **Backend**:
     -   [ ] **Detalle de Tareas de Implementación**:
+        -   [ ] **Nuevo**: Modificar la entidad `Loan` y la base de datos para diferenciar entre `approved_amount` y `disbursed_amount`.
         -   [ ] Implementar `GET /loans` con filtrado y paginación.
         -   [ ] Implementar `GET /loans/:id` que devuelva el detalle completo.
         -   [ ] Implementar `PATCH /loans/:id` para ajustes administrativos (ej. condonar intereses, reestructurar).
@@ -342,12 +341,3 @@ Este módulo se enfoca en las tareas necesarias para que el proyecto pueda ser l
 -   **Testing**:
     -   [ ] Establecer un objetivo de cobertura de pruebas (ej. >80%) para el código del backend, garantizando la fiabilidad.
     -   [ ] Configurar el pipeline de CI (GitHub Actions) para que ejecute automáticamente las pruebas y el linter en cada `pull request` para mantener la calidad del código.
-
-
-
-
-
-
-
-
-

@@ -13,6 +13,10 @@ import { Meeting } from './entities/meeting.entity';
 import { Operation } from '../operations/entities/operation.entity';
 import { AssetRevaluationService } from '../asset-revaluation/asset-revaluation.service';
 import { BuyStockForMemberDto } from '../stocks/dto/buy-stock-for-member.dto';
+import {
+  ExecuteDisbursementPlanDto,
+  DisbursementPlanPreviewResponseDto,
+} from './dto/disbursement-plan.dto';
 
 @ApiTags('meetings')
 @Controller('meetings')
@@ -106,5 +110,27 @@ export class MeetingsController {
     @Body() dto: BuyStockForMemberDto,
   ) {
     return this.meetingsService.buyStocksForMember(meetingId, dto);
+  }
+
+  @Get(':id/disbursement-plan/preview')
+  @ApiOperation({
+    summary: 'Previsualizar el plan de desembolso para una reunión',
+  })
+  @ApiResponse({ status: 200, type: DisbursementPlanPreviewResponseDto })
+  previewDisbursementPlan(@Param('id') meetingId: string) {
+    return this.meetingsService.previewDisbursementPlan(meetingId);
+  }
+
+  @Post(':id/disbursement-plan/execute')
+  @ApiOperation({
+    summary: 'Ejecutar el plan de desembolso para una reunión (atómico)',
+  })
+  @ApiBody({ type: ExecuteDisbursementPlanDto })
+  @ApiResponse({ status: 201, description: 'Plan ejecutado correctamente.' })
+  executeDisbursementPlan(
+    @Param('id') meetingId: string,
+    @Body() dto: ExecuteDisbursementPlanDto,
+  ) {
+    return this.meetingsService.executeDisbursementPlan(meetingId, dto);
   }
 }

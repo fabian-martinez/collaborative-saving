@@ -1,0 +1,45 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+} from 'typeorm';
+import { Member } from '../../members/entities/member.entity';
+import { Meeting } from './meeting.entity';
+
+@Entity('pending_member_payments')
+export class PendingMemberPayment {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column('uuid')
+  member_id: string;
+
+  @Column('uuid')
+  meeting_id: string;
+
+  @Column({ type: 'text' })
+  type: 'dividendo' | 'retiro_accion' | 'otro';
+
+  @Column({ type: 'numeric', precision: 12, scale: 2 })
+  amount: number;
+
+  @Column({ type: 'text', default: 'pending' })
+  status: 'pending' | 'approved' | 'rejected' | 'paid';
+
+  @Column({ type: 'text', nullable: true })
+  notes: string;
+
+  @CreateDateColumn({ type: 'timestamp with time zone' })
+  created_at: Date;
+
+  @ManyToOne(() => Member, { eager: true })
+  @JoinColumn({ name: 'member_id' })
+  member: Member;
+
+  @ManyToOne(() => Meeting, { eager: false })
+  @JoinColumn({ name: 'meeting_id' })
+  meeting: Meeting;
+}

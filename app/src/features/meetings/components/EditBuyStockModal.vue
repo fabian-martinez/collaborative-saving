@@ -115,7 +115,7 @@ const canSave = computed(() => {
     form.value.stockId &&
     form.value.quantity > 0 &&
     Number.isInteger(form.value.quantity) &&
-    totalAmount.value > 0 &&
+    totalAmount.value >= 0 &&
     (form.value.paymentMethod === 'cash' || form.value.paymentMethod === 'mixed')
   )
 })

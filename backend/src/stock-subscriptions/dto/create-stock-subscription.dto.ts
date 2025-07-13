@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsPositive, IsUUID } from 'class-validator';
+import { IsNumber, IsOptional, IsPositive, IsUUID } from 'class-validator';
 
 export class CreateStockSubscriptionDto {
   @ApiProperty({
@@ -20,7 +20,7 @@ export class CreateStockSubscriptionDto {
     description: 'The number of stock units to subscribe to',
     example: 5,
   })
-  @IsInt()
+  @IsNumber()
   @IsPositive()
   quantity: number;
 

@@ -19,10 +19,11 @@ import { AssetRevaluationModule } from '../asset-revaluation/asset-revaluation.m
 import { DuesModule } from '../dues/dues.module';
 import { MembersModule } from '../members/members.module';
 import { StocksModule } from '../stocks/stocks.module';
+import { PendingMemberPayment } from './entities/pending-member-payment.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Meeting]),
+    TypeOrmModule.forFeature([Meeting, PendingMemberPayment]),
     StockSubscriptionsModule,
     OperationsModule,
     LedgerEntriesModule,

@@ -61,11 +61,11 @@ INSERT INTO public.loans (id, member_id, loan_type, approved_amount, interest_ra
 INSERT INTO public.stock_subscriptions (member_id, stock_id, quantity, financing_loan_id) VALUES
 -- Ana (Admin) tiene 2 acciones grandes
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 2, NULL),
--- Carlos tiene 1 acción mediana y 1 preferencial
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'f47ac10b-58cc-4372-a567-0e02b2c3d480', 1, NULL),
+-- Carlos tiene 1.5 acción mediana y 1 preferencial (ejemplo fraccionado)
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'f47ac10b-58cc-4372-a567-0e02b2c3d480', 1.5, NULL),
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'f47ac10b-58cc-4372-a567-0e02b2c3d478', 1, NULL),
--- Beatriz tiene 3 acciones pequeñas
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', 'f47ac10b-58cc-4372-a567-0e02b2c3d481', 3, NULL),
+-- Beatriz tiene 3.25 acciones pequeñas (ejemplo fraccionado)
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', 'f47ac10b-58cc-4372-a567-0e02b2c3d481', 3.25, NULL),
 -- David tiene 1 acción mediana comprada con el préstamo 'agil'
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14', 'f47ac10b-58cc-4372-a567-0e02b2c3d480', 1, 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b22');
 
@@ -130,6 +130,11 @@ INSERT INTO public.ledger_entries(operation_id, account_type, amount, stock_id, 
 ('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d41', 'CASH', 82.00, NULL, 'Ingreso de efectivo por pago mensual de Beatriz en reunión activa'), -- (3*25) + 5 + 2
 ('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d41', 'MANDATORY_CONTRIBUTION_INCOME', -7.00, NULL, 'Ingreso por contribuciones obligatorias de Beatriz en reunión activa'),
 ('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d41', 'STOCK_CAPITAL', -75.00, 'f47ac10b-58cc-4372-a567-0e02b2c3d481', 'Aporte de capital por acciones pequeñas de Beatriz en reunión activa');
+
+-- Solicitudes de pagos pendientes (ejemplo)
+INSERT INTO public.pending_member_payments (member_id, meeting_id, type, amount, status, notes) VALUES
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c32', 'dividendo', 120.00, 'pending', 'Solicitud de pago de dividendos para Carlos'),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', 'c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c32', 'retiro_accion', 300.00, 'pending', 'Retiro parcial de acciones solicitado por Beatriz');
 
 
 -- Historial y Estado Actual

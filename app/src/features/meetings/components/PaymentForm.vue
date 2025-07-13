@@ -33,7 +33,7 @@
             <div class="flex-shrink-0">
               <p class="font-semibold text-xl">{{ due.description }}</p>
               <p v-if="due.monthlyContribution && due.stockQuantity" class="text-sm text-base-content/70">
-                {{ due.stockQuantity }} uds. x {{ due.monthlyContribution?.toFixed(2) }} c/u
+                {{ Number(due.stockQuantity || 0).toFixed(2) }} uds. x {{ due.monthlyContribution?.toFixed(2) }} c/u
               </p>
             </div>
             <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
@@ -260,7 +260,7 @@ async function handleRecordTransaction() {
     if (!due) return [payment];
     let description = payment.description;
     if (due.type === 'stock_fee' && due.stockQuantity && due.monthlyContribution) {
-      description = `${due.description}, ${due.stockQuantity} uds. x ${due.monthlyContribution.toFixed(2)} c/u`;
+      description = `${due.description}, ${Number(due.stockQuantity).toFixed(2)} uds. x ${due.monthlyContribution.toFixed(2)} c/u`;
     } else if (due.type === 'loan_payment' && due.details) {
       const interest = due.details.interest || 0;
       const principal = payment.amount - interest;

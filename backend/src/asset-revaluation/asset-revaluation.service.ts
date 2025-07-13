@@ -77,7 +77,7 @@ export class AssetRevaluationService {
     for (const stock of guaranteedStocks) {
       const totalShares = subscriptions
         .filter((sub) => sub.stock_id === stock.id)
-        .reduce((sum, sub) => sum + sub.quantity, 0);
+        .reduce((sum, sub) => sum + Number(sub.quantity), 0);
 
       if (totalShares === 0) continue;
 
@@ -89,11 +89,11 @@ export class AssetRevaluationService {
         stock_id: stock.id,
         type: stock.type,
         is_guaranteed: true,
-        total_shares: totalShares,
+        total_shares: Number(totalShares),
         previous_value: Number(stock.value),
         required_growth: requiredGrowthPerShare,
         growth_from_contributions: 0,
-        estimated_growth_from_contributions: stock.monthly_contribution,
+        estimated_growth_from_contributions: Number(stock.monthly_contribution),
         growth_from_interest: 0, // Calculated below
         total_growth_per_share: 0, // Calculated below
         new_value: 0, // Calculated below
@@ -145,7 +145,7 @@ export class AssetRevaluationService {
     for (const stock of regularStocks) {
       const totalShares = subscriptions
         .filter((sub) => sub.stock_id === stock.id)
-        .reduce((sum, sub) => sum + sub.quantity, 0);
+        .reduce((sum, sub) => sum + Number(sub.quantity), 0);
       if (totalShares === 0) continue;
       const totalGrowthPerShare = Number(stock.value) * regularGrowthRate;
       const growthFromInterest = totalGrowthPerShare * interestProportion;
@@ -155,12 +155,14 @@ export class AssetRevaluationService {
             e.account_type === STOCK_CAPITAL_ACCOUNT && e.stock_id === stock.id,
         )
         .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
-      const estimatedGrowthFromContributions = stock.monthly_contribution;
+      const estimatedGrowthFromContributions = Number(
+        stock.monthly_contribution,
+      );
       details.push({
         stock_id: stock.id,
         type: stock.type,
         is_guaranteed: false,
-        total_shares: totalShares,
+        total_shares: Number(totalShares),
         previous_value: Number(stock.value),
         growth_from_contributions: growthFromContributions / totalShares,
         growth_from_interest: growthFromInterest,

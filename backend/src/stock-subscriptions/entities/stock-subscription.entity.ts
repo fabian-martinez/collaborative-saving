@@ -52,7 +52,7 @@ export class StockSubscription {
     description: 'The number of stock units in this subscription',
     example: 10,
   })
-  @Column({ type: 'integer', default: 1 })
+  @Column({ type: 'numeric', precision: 20, scale: 10, default: 1 })
   quantity: number;
 
   @ApiProperty({

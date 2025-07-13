@@ -26,7 +26,8 @@ export class StockSubscriptionsService {
     });
 
     if (existingSubscription) {
-      existingSubscription.quantity += quantity;
+      existingSubscription.quantity =
+        Number(existingSubscription.quantity) + Number(quantity);
       return repository.save(existingSubscription);
     }
 

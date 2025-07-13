@@ -97,8 +97,6 @@ import type { Member } from '@/features/members/types';
 import type { MemberDue, Payment } from '../types';
 import type { Operation } from '@/features/operations/types';
 import { useActiveMeetingStore } from '../stores/activeMeeting';
-import EditLoanPaymentModal from './EditLoanPaymentModal.vue';
-import EditFineModal from './EditFineModal.vue';
 import OperationDetails from '@/features/operations/components/operationDetails.vue';
 import PaymentForm from './PaymentForm.vue';
 
@@ -115,29 +113,11 @@ const paidMemberOperations = ref<Map<string, Operation[]>>(new Map());
 const viewedOperations = ref<Operation[] | null>(null);
 
 const isDuesLoading = ref(false);
-const isSubmitting = ref(false);
 const duesError = ref<string | null>(null);
-const submissionError = ref<string | null>(null);
-
-const isLoanModalOpen = ref(false);
-const editingLoanIndex = ref<number | null>(null);
-
-const isFineModalOpen = ref(false);
-const editingFineData = ref<{ description: string, amount: number } | null>(null);
-const editingFineIndex = ref<number | null>(null);
-
-const editingLoanDue = computed(() => {
-    if(editingLoanIndex.value === null) return null;
-    return indexedDues.value.find(due => due.originalIndex === editingLoanIndex.value) || null;
-});
 
 const viewedTotal = computed(() => {
     return viewedOperations.value?.reduce((sum, op) => sum + (op.total_debit || 0), 0) || 0;
 });
-
-const indexedDues = computed(() => 
-  memberDues.value.map((due, index) => ({...due, originalIndex: index}))
-);
 
 onMounted(async () => {
   await activeMeetingStore.fetchMembers();

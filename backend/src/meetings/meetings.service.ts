@@ -22,6 +22,12 @@ import { MemberDue } from '../dues/entities/member-due.entity';
 import { BuyStockForMemberDto } from '../stocks/dto/buy-stock-for-member.dto';
 import { StocksService } from '../stocks/stocks.service';
 import { LoansService } from '../loans/loans.service';
+import { PendingMemberPayment } from './entities/pending-member-payment.entity';
+import {
+  DisbursementPlanPreviewResponseDto,
+  ExecuteDisbursementPlanDto,
+  DisbursementPlanItemDto,
+} from './dto/disbursement-plan.dto';
 
 @Injectable()
 export class MeetingsService {
@@ -212,5 +218,89 @@ export class MeetingsService {
       throw new BadRequestException('La reunión no existe o no está activa.');
     }
     return this.stocksService.purchaseForMember(meetingId, dto);
+  }
+
+  async previewDisbursementPlan(
+    meetingId: string,
+  ): Promise<DisbursementPlanPreviewResponseDto> {
+    // 1. Obtener solicitudes pendientes de la tabla pending_member_payments para la reunión
+    const pendingPayments = await this.dataSource.manager
+      .getRepository(PendingMemberPayment)
+      .find({
+        where: { meeting_id: meetingId, status: 'pending' },
+      });
+    // 2. Calcular efectivo disponible (puedes ajustar la lógica según tu modelo)
+    // Aquí solo un ejemplo simple:
+    // const availableCash= 1000; // TODO: calcular realmente el efectivo disponible
+    const availableCash = await this.dataSource.manager
+      .getRepository(LedgerEntry)
+      .find({
+        where: {
+          operation: {
+            meeting_id: meetingId,
+          },
+          account_type: CASH_ACCOUNT,
+        },
+      })
+      .then((entries) => {
+        return entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
+      })
+      .catch((err) => {
+        this.logger.error('Error getting available cash', err);
+        throw err;
+      });
+    const plan: DisbursementPlanItemDto[] = pendingPayments.map((p) => ({
+      memberId: p.member_id,
+      type: p.type as DisbursementPlanItemDto['type'],
+      amount: Number(p.amount),
+      status: p.status as DisbursementPlanItemDto['status'],
+      notes: p.notes,
+    }));
+    const totalToDisburse = plan.reduce((sum, item) => sum + item.amount, 0);
+    return { plan, availableCash, totalToDisburse };
+  }
+
+  async executeDisbursementPlan(
+    meetingId: string,
+    dto: ExecuteDisbursementPlanDto,
+  ) {
+    // 1. Validar que el plan no exceda el efectivo disponible
+    const availableCash = 1000;
+    const totalSolicitado = dto.plan.reduce(
+      (sum, item) => sum + item.amount,
+      0,
+    );
+    if (totalSolicitado > availableCash) {
+      throw new BadRequestException(
+        'El monto total a desembolsar excede el efectivo disponible.',
+      );
+    }
+    // 2. Ejecutar todo en una transacción atómica
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      for (const item of dto.plan) {
+        // Actualizar el estado de la solicitud a 'paid'
+        await queryRunner.manager.update(
+          PendingMemberPayment,
+          {
+            member_id: item.memberId,
+            meeting_id: meetingId,
+            type: item.type,
+            status: 'pending',
+          },
+          { status: 'paid' },
+        );
+        // TODO: Generar asientos contables y actualizar entidades según el tipo de desembolso
+      }
+      await queryRunner.commitTransaction();
+      return { success: true };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }
