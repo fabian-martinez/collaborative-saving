@@ -69,6 +69,7 @@ create table public.stocks (
     monthly_contribution numeric(10, 2) default 0 not null,
     is_guaranteed boolean default false not null,
     guaranteed_yield numeric(5, 4),
+    behavior text not null default 'CAPITAL_APPRECIATION',
     deleted_at timestamp with time zone
 );
 comment on table public.stocks is 'Defines the types of stocks available in the fund.';

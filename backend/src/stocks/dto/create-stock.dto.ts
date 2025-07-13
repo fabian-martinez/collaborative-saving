@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNumber, Min } from 'class-validator';
+import { IsString, IsNumber, Min, IsEnum, IsOptional } from 'class-validator';
+import { StockBehavior } from '../entities/stock.entity';
 
 export class CreateStockDto {
   @ApiProperty({
@@ -24,4 +25,15 @@ export class CreateStockDto {
   @IsNumber()
   @Min(0)
   monthly_contribution: number;
+
+  @ApiProperty({
+    description:
+      'Comportamiento de la acción: apreciación de capital o dividendos',
+    enum: StockBehavior,
+    default: StockBehavior.CAPITAL_APPRECIATION,
+    required: false,
+  })
+  @IsEnum(StockBehavior)
+  @IsOptional()
+  behavior?: StockBehavior = StockBehavior.CAPITAL_APPRECIATION;
 }

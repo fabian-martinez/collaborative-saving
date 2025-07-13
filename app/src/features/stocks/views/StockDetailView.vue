@@ -15,6 +15,11 @@
           &larr; Volver a la lista
         </RouterLink>
       </div>
+      <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mt-2">
+        <span class="badge badge-info text-base">
+          Tipo: {{ stock.behavior === 'DIVIDEND_YIELD' ? 'Dividendos' : 'Apreciación de Capital' }}
+        </span>
+      </div>
 
        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         

@@ -9,28 +9,37 @@ El proceso de desembolso actual, definido como el último paso de una reunión, 
 
 1.  **Insuficiencia de Efectivo**: Los préstamos aprobados y los retiros de capital pueden exceder el efectivo disponible.
 2.  **Prioridad de Pagos**: Los pagos pendientes de reuniones anteriores (préstamos no desembolsados completamente, retiros de acciones) deben tener prioridad.
-3.  **Comportamientos de Acciones Diferenciados**: Algunas acciones están diseñadas para generar dividendos en efectivo en lugar de acumular valor (apreciación de capital), lo que requiere un mecanismo de distribución.
-4.  **Fondos Destinados (Earmarked Funds)**: Parte del efectivo podría estar restringido para usarse solo en ciertos tipos de crédito.
+3.  **Composición de los Desembolsos**: Dividendos, retiros de acciones, préstamos nuevos y pagos parciales deben poder coexistir en un mismo plan de desembolso.
 
-Es necesario un rediseño del proceso para que sea robusto, transparente y modele con precisión las restricciones del mundo real.
+## Decisión Arquitectónica
 
-## Decisión
+Se adopta la **Opción A**: los préstamos nuevos se crean y desembolsan de forma atómica durante la ejecución del plan de desembolso, no antes.
 
-Se ha decidido implementar un sistema de desembolso multifacético y basado en prioridades, que se ejecutará en el paso final de la reunión. Este sistema gestionará la asignación del efectivo disponible de manera ordenada y registrará cualquier pago parcial.
+## Proceso de Desembolso
 
-### Endpoints del Proceso de Desembolso
+- El plan de desembolso debe contemplar las 5 fuentes de salida de efectivo:
+  1. Deuda antigua con socios (pending_member_payments de reuniones anteriores)
+  2. Deuda antigua de préstamos (préstamos aprobados pero no desembolsados completamente)
+  3. Dividendos del período actual
+  4. Préstamos nuevos (creados y desembolsados en este paso)
+  5. Retiros de acciones nuevos (reunión actual)
 
--   **Previsualización del Plan de Desembolso**: `GET /meetings/:id/disbursement-plan/preview`
-    -   Calcula y devuelve un plan de desembolso recomendado siguiendo la cola de prioridad (deudas antiguas, dividendos, préstamos, retiros, etc.).
-    -   No realiza ningún cambio en la base de datos.
--   **Ejecución Atómica del Plan de Desembolso**: `POST /meetings/:id/disbursement-plan/execute`
-    -   Recibe el plan final (puede ser el recomendado o uno ajustado por el administrador).
-    -   Valida que el plan no exceda el efectivo disponible y ejecuta todas las operaciones de desembolso de forma atómica (en una sola transacción):
-        -   Actualiza entidades (`Loan.disbursed_amount`, `pending_member_payments`, etc.).
-        -   Genera los asientos contables correspondientes.
-        -   Actualiza los estados de préstamos, retiros y dividendos según corresponda.
-    -   Si ocurre un error, la transacción se revierte y no se aplican cambios parciales.
--   **Nota**: No se separan endpoints por tipo de operación (retiros, préstamos, dividendos) para garantizar que la lógica de prioridad y la integridad de los fondos se mantengan centralizadas y atómicas, evitando inconsistencias y errores de negocio.
+- El cálculo de dividendos se realizará usando el valor actual de la acción (`value`), no un valor base.
+
+- El endpoint de previsualización (`previewDisbursementPlan`) debe mostrar todas las obligaciones y permitir agregar préstamos nuevos.
+
+- El endpoint de ejecución (`executeDisbursementPlan`) debe:
+  - Crear préstamos nuevos y desembolsarlos
+  - Actualizar préstamos existentes con desembolsos parciales
+  - Marcar pagos pendientes como pagados
+  - Registrar retiros de acciones
+  - Registrar dividendos
+  - Generar los asientos contables correspondientes
+
+## Consideraciones Técnicas
+
+- No se requiere agregar un campo `valor_base` o `base_value` adicional en la entidad de acciones.
+- Los dividendos se calculan siempre sobre el valor actual de la acción.
 
 ### 1. Nuevos Comportamientos para las Acciones
 
@@ -48,7 +57,7 @@ El servicio `AssetRevaluationService` se adaptará para tener en cuenta el `beha
 
 ### 3. Modelo de Desembolso por Prioridades
 
-El paso final de la reunión (`POST /meetings/:id/complete`) ejecutará un algoritmo de asignación de efectivo.
+El paso final de la reunión (`POST /meetings/:id/disbursement-plan/execute`) ejecutará un algoritmo de asignación de efectivo.
 
 **A. Fuente de Fondos:** El `efectivo_disponible` total de la reunión. La lógica debe poder filtrar este efectivo si se implementan los fondos destinados.
 
@@ -57,12 +66,17 @@ El paso final de la reunión (`POST /meetings/:id/complete`) ejecutará un algor
 1.  **Prioridad 1: Deuda Antigua con Socios**: Pagos pendientes a socios de reuniones anteriores (retiros de acciones o dividendos no completados), consultados desde la nueva tabla `pending_member_payments`.
 2.  **Prioridad 2: Deuda Antigua de Préstamos**: Desembolsos pendientes de préstamos aprobados en reuniones anteriores (`approved_amount > disbursed_amount`).
 3.  **Prioridad 3: Dividendos del Período Actual**: Pagos de dividendos generados por acciones `DIVIDEND_YIELD` en la revalorización de la reunión actual.
-4.  **Prioridad 4: Préstamos Nuevos**: Desembolsos de préstamos aprobados en la reunión actual.
+4.  **Prioridad 4: Préstamos Nuevos (Opción A)**: **Creación y desembolso** de préstamos nuevos basados en datos del formulario de la interfaz de desembolso.
 5.  **Prioridad 5: Retiros de Acciones Nuevos**: Desembolsos por retiros de acciones realizados en la reunión actual.
 
 **C. Gestión de Pagos Parciales:**
 
--   **Préstamos**: La entidad `Loan` se modificará para tener `approved_amount` y `disbursed_amount`. Si el efectivo no es suficiente, se desembolsa una parte y se actualiza `disbursed_amount`. El préstamo queda en estado `PARTIALLY_DISBURSED`.
+-   **Préstamos Existentes**: La entidad `Loan` se modificará para tener `approved_amount` y `disbursed_amount`. Si el efectivo no es suficiente, se desembolsa una parte y se actualiza `disbursed_amount`. El préstamo queda en estado `PARTIALLY_DISBURSED`.
+-   **Préstamos Nuevos (Opción A)**: Si no hay efectivo suficiente para el monto solicitado:
+    - Se crea el préstamo con `approved_amount` = monto solicitado
+    - Se desembolsa solo el efectivo disponible: `disbursed_amount` = efectivo disponible
+    - El préstamo queda en estado `PARTIALLY_DISBURSED` desde su creación
+    - El resto queda como deuda pendiente para futuras reuniones
 -   **Retiros y Dividendos**: Si un pago a un socio no puede completarse, se registrará el monto pendiente en una nueva tabla `pending_member_payments`, creando una deuda del fondo hacia el socio.
 
 ### 4. Cambios en la Base de Datos
@@ -75,3 +89,93 @@ El paso final de la reunión (`POST /meetings/:id/complete`) ejecutará un algor
     -   Añadir columna `disbursed_amount NUMERIC NOT NULL DEFAULT 0`.
 -   **Nueva Tabla `pending_member_payments`**:
     -   `id` (PK), `member_id` (FK), `meeting_id` (FK a la reunión que originó la deuda), `amount` (monto pendiente), `reason` (dividendo, retiro), `status`
+    -   **Nuevo**: `loan_id` (FK opcional, para préstamos pendientes)
+    -   **Nuevo**: `stock_subscription_id` (FK opcional, para retiros de acciones)
+    -   **Nuevo**: `reference_meeting_id` (FK opcional, reunión que originó la deuda)
+    -   **Nuevo**: `disbursement_type` (VARCHAR, tipo específico de desembolso)
+
+### 5. Estructura de DTOs para Opción A
+
+```typescript
+export enum DisbursementType {
+  DIVIDENDO = 'dividendo',
+  RETIRO_ACCION = 'retiro_accion',
+  PRESTAMO_NUEVO = 'prestamo_nuevo',
+  PRESTAMO_PENDIENTE = 'prestamo_pendiente',
+  OTRO = 'otro',
+}
+
+export class NewLoanRequestDto {
+  @IsUUID()
+  memberId: string;
+  
+  @IsNumber()
+  @IsPositive()
+  amount: number;
+  
+  @IsString()
+  loanType: string; // 'corriente', 'agil'
+  
+  @IsNumber()
+  @IsPositive()
+  monthlyPaymentAmount: number;
+  
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  interestRate: number;
+}
+
+export class DisbursementPlanItemDto {
+  @IsUUID()
+  memberId: string;
+  
+  @IsEnum(DisbursementType)
+  type: DisbursementType;
+  
+  @IsNumber()
+  @IsPositive()
+  amount: number;
+  
+  @IsNumber()
+  @Min(1)
+  @Max(5)
+  priority: number; // 1-5 según prioridades
+  
+  // Para préstamos/retiros existentes
+  @IsOptional()
+  @IsUUID()
+  loanId?: string;
+  
+  @IsOptional()
+  @IsUUID()
+  stockSubscriptionId?: string;
+  
+  @IsOptional()
+  @IsUUID()
+  referenceMeetingId?: string;
+  
+  // Solo para PRESTAMO_NUEVO (Opción A)
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NewLoanRequestDto)
+  newLoanData?: NewLoanRequestDto;
+}
+```
+
+### 6. Flujo de Interfaz de Usuario (Opción A)
+
+**Step 4 (Modificación de Acciones)**:
+- Solo maneja modificaciones reales de acciones existentes
+- Retiros de acciones (crea `pending_member_payments`)
+- NO incluye creación de préstamos
+
+**Step 5 (Desembolsos)**:
+- **Sección 1**: Mostrar efectivo disponible
+- **Sección 2**: Obligaciones automáticas (prioridades 1-3)
+- **Sección 3**: Formulario para nuevos préstamos:
+  - Selector de socio
+  - Monto, tipo, cuota, tasa de interés
+  - Botón "Agregar al plan"
+- **Sección 4**: Plan completo de desembolso
+- **Confirmación**: Ejecuta creación y desembolso atómico

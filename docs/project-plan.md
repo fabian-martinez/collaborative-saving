@@ -94,12 +94,24 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
 -   **Backend**:
     -   [x] Implementar CRUD para `Stock` y `StockSubscription`.
     -   [x] Crear endpoints para obtener el historial de valor (`stock_value_history`).
-    -   [ ] **Nuevo**: Modificar la entidad `Stock` y la base de datos para soportar diferentes comportamientos (ej. `CAPITAL_APPRECIATION` vs `DIVIDEND_YIELD`) y un valor base, según ADR-0006.
-    -   [ ] **Nuevo**: Implementar migración de BD para cambiar `stock_subscriptions.quantity` a un tipo `NUMERIC` de alta precisión para soportar **acciones fraccionadas**.
+    -   [x] **Nuevo**: Modificar la entidad `Stock` y la base de datos para soportar diferentes comportamientos (ej. `CAPITAL_APPRECIATION` vs `DIVIDEND_YIELD`) y un valor base, según ADR-0006. _(Completado junio 2024)_
+    -   [x] **Nuevo**: Implementar migración de BD para cambiar `stock_subscriptions.quantity` a un tipo `NUMERIC` de alta precisión para soportar **acciones fraccionadas**. _(Completado junio 2024)_
+
+**Cambios Requeridos para Soporte de Desembolso**:
+- [ ] **Nuevo**: Implementar lógica para retiros de acciones:
+  - [ ] Endpoint para solicitar retiro de acciones durante reunión
+  - [ ] Cálculo del valor actual de las acciones a retirar
+  - [ ] Creación de registros en `pending_member_payments`
+  - [ ] Actualización de `stock_subscriptions` al completar retiro
+- [ ] **Nuevo**: Soporte para acciones con comportamiento `DIVIDEND_YIELD`:
+  - [ ] Modificar `AssetRevaluationService` para generar dividendos
+  - [ ] Crear registros en `pending_member_payments` para dividendos
+  - [ ] Diferenciar entre apreciación de capital y distribución de dividendos
+
 -   **Otras Tareas**:
-    -   [ ] **Refinamiento**: En el detalle de acciones, asegurar que se muestre el **tipo de acción** (ej. Garantizada, Normal).
+    -   [x] **Refinamiento**: En el detalle de acciones, asegurar que se muestre el **tipo de acción** (ej. Garantizada, Normal). _(Completado junio 2024)_
 -   **Testing**:
-    -   [ ] **Backend**: Añadir pruebas para los servicios relacionados con acciones.
+    -   [x] **Backend**: Añadir pruebas para los servicios relacionados con acciones. _(Completado junio 2024)_
 
 ### Módulo 4: Proceso de Reuniones (En Progreso)
 
@@ -107,7 +119,7 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
 
 -   **Frontend**:
     -   [x] `MeetingsView.vue`: Implementar historial de reuniones.
-    -   [x] `ActiveMeetingView.vue`: Crear la vista principal con un flujo de 4 pasos (Stepper de DaisyUI): Recaudo, Revalorización, Nuevas Operaciones y Desembolsos.
+    -   [x] `ActiveMeetingView.vue`: Crear la vista principal con un flujo de 5 pasos (Stepper de DaisyUI): Recaudo, Revalorización, Nuevas Operaciones, Modificación de Acciones y Desembolsos.
     -   [x] `activeMeeting.ts`: Crear un store de Pinia para gestionar el estado de la reunión activa.
     -   [x] Implementar resumen financiero superior (`Recaudo Total`, `Intereses Generados`, `Efectivo Disponible`).
 -   **Backend**:
@@ -162,7 +174,7 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
 #### 4.4. Paso 3: Nuevas Operaciones
 
 -   **Frontend**:
-    -   [x] `Step3Operations.vue`: Implementar el flujo completo para la compra de acciones durante la reunión.
+    -   [x] `Step3StockPurchase.vue`: Implementar el flujo completo para la compra de acciones durante la reunión.
         -   [x] Permitir seleccionar un miembro existente o registrar un nuevo miembro en el mismo flujo (el alta de miembro se registra como operación de la reunión).
         -   [x] Mostrar todos los tipos de acción disponibles, con el valor actualizado tras la revalorización (Paso 2) y acceso al histórico de valores.
         -   [x] Formulario para ingresar la cantidad de acciones (solo números enteros) y el método de pago: efectivo, crédito o mixto (con soporte para decimales).
@@ -185,69 +197,128 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
         -   [x] Endpoint para consultar el resumen de compras realizadas en la reunión actual, agrupadas por socio.
 -   **Testing**:
     -   [ ] **Backend**: Añadir pruebas para la lógica de compra de acciones, registro de nuevos miembros y generación de créditos asociados.
-    -   [ ] **Frontend**: Añadir pruebas de componentes para el flujo de compra, edición y anulación de operaciones en `Step3Operations.vue`.
+    -   [ ] **Frontend**: Añadir pruebas de componentes para el flujo de compra, edición y anulación de operaciones en `Step3StockPurchase.vue`.
 
-#### 4.5. Proceso de Desembolso: Previsualización y Ejecución Atómica
-
--   **Backend**:
-    -   [x] **Migración de BD**: Crear tabla `pending_member_payments` para registrar solicitudes de liquidez de socios (dividendos, retiros de acciones incompletos).
-    -   [x] **Nuevo**: Refactorizar el proceso de desembolso para separar claramente la previsualización y la ejecución atómica del plan de desembolso:
-        -   [x] **Endpoint de Previsualización**: `GET /meetings/:id/disbursement-plan/preview`.
-            -   Calcula y devuelve un **plan de desembolso recomendado** siguiendo la cola de prioridad definida en ADR-0006 (deudas antiguas, dividendos, préstamos, retiros, etc.).
-            -   No realiza ningún cambio en la base de datos.
-        -   [X] **Endpoint de Ejecución**: `POST /meetings/:id/disbursement-plan/execute`.
-            -   Recibe el plan final (puede ser el recomendado o uno ajustado por el administrador).
-            -   Valida que el plan no exceda el efectivo disponible y ejecuta **todas las operaciones de desembolso de forma atómica** (en una sola transacción):
-                -   Actualiza entidades (`Loan.disbursed_amount`, `pending_member_payments`, etc.).
-                -   Genera los asientos contables correspondientes.
-                -   Actualiza los estados de préstamos, retiros y dividendos según corresponda.
-            -   Si ocurre un error, la transacción se revierte y no se aplican cambios parciales.
-        -   [x] **Nota**: No se separan endpoints por tipo de operación (retiros, préstamos, dividendos) para garantizar que la lógica de prioridad y la integridad de los fondos se mantengan centralizadas y atómicas, evitando inconsistencias y errores de negocio.
--   **Frontend**:
-    -   [ ] Al cargar, llamar al endpoint de previsualización para mostrar el plan recomendado.
-    -   [ ] **Implementar UI de Desembolso Flexible**:
-        -   Mostrar claramente el efectivo disponible vs. el total a desembolsar en el plan.
-        -   Permitir al administrador **editar los montos** del plan recomendado.
-        -   Validar en tiempo real que las ediciones no superen el efectivo disponible.
-    -   [ ] Implementar el botón "Confirmar y Finalizar Reunión" que envía el plan final (editado o no) al backend.
-    -   [ ] Actualizar la navegación y el stepper para reflejar el nuevo orden de los pasos (`Step1Collection.vue`, `Step2Revaluation.vue`, `Step3BuyStocks.vue`, `Step4StockModification.vue`, `Step5Disbursements.vue`).
-    -   [ ] Actualizar el servicio de API para soportar el cambio de `step`.
-    -   [ ] Actualizar el store de reunión activa y la navegación para soportar el nuevo flujo.
-    -   [ ] Validar reglas de negocio para avanzar entre pasos.
--   **Testing**:
-    -   [ ] Añadir pruebas unitarias y de integración para la funcionalidad de desembolso y cierre de reunión en backend y frontend.
-
-#### 4.6. Step de Modificación de Acciones (`modificacion_acciones`)
+#### 4.5. Paso 4: Modificación de Acciones
 
 -   **Backend**:
-    -   [ ] Implementar endpoints y lógica para el nuevo step `modificacion_acciones`:
+    -   [ ] Implementar endpoints y lógica para el step `modificacion_acciones`:
         -   [ ] Registrar modificaciones/intercambios de acciones entre miembros.
         -   [ ] Permitir cruzar acciones con créditos (incluyendo lógica contable).
+        -   [ ] Implementar retiros de acciones que se procesan en el desembolso.
 -   **Frontend**:
-    -   [ ] Actualizar el servicio de API para soportar los nuevos endpoints de modificación de acciones.
-    -   [ ] Renombrar `Step4Disbursements.vue` a `Step5Disbursements.vue`.
-    -   [ ] Crear el step `modificacion_acciones` en el frontend.
-    -   [ ] Crear la vista/componente para el step `modificacion_acciones`:
+    -   [ ] `Step4StockModification.vue`: Crear la vista para modificación de acciones:
         -   [ ] Formulario para seleccionar miembros, acciones a intercambiar o cruzar con créditos.
+        -   [ ] Interfaz para solicitar retiros de acciones.
         -   [ ] Resumen y confirmación de modificaciones.
+        -   [ ] Actualizar el servicio de API para soportar los nuevos endpoints.
 -   **Testing**:
     -   [ ] Añadir pruebas unitarias y de integración para la lógica de modificación de acciones en backend y frontend.
 
+#### 4.6. Paso 5: Desembolsos - Previsualización y Ejecución Atómica
+
+**Estado Actual**: La implementación de los endpoints de desembolso está **incompleta** y presenta varios problemas críticos que deben resolverse.
+
+**Decisión Arquitectónica**: Se ha adoptado la **Opción A** - crear préstamos directamente durante el proceso de desembolso en lugar de pre-crearlos en steps anteriores.
+
+**Problemas Identificados en la Implementación Actual**:
+- ❌ `previewDisbursementPlan` solo consulta `pending_member_payments` pero no incluye las otras 4 fuentes de desembolso según ADR-0006
+- ❌ `executeDisbursementPlan` no actualiza las entidades afectadas (Loan.disbursed_amount, estados de préstamos, etc.)
+- ❌ No se generan los asientos contables correspondientes
+- ❌ Falta el campo `disbursed_amount` en Loan
+- ❌ Falta soporte para préstamos nuevos en el plan de desembolso
+
+**Cambios requeridos:**
+- Modificar entidad Loan para añadir campo `disbursed_amount` y soporte para `approved_amount`
+- Modificar entidad PendingMemberPayment para añadir campos `loan_id`, `stock_subscription_id`, `reference_meeting_id` y `disbursement_type`
+- Crear DTOs `NewLoanRequestDto` y actualizar `DisbursementPlanItemDto` para soporte de préstamos nuevos
+- Completar `previewDisbursementPlan` para incluir las 5 fuentes de desembolso (incluyendo préstamos nuevos como datos de formulario)
+- Completar `executeDisbursementPlan` para crear entidades Loan nuevas atómicamente durante desembolso
+- Implementar métodos helper para cada tipo de desembolso
+- Crear pruebas para flujos de creación atómica de préstamos durante desembolso
+
+**Notas sobre dividendos:**
+- El cálculo de dividendos se realizará usando el valor actual de la acción (`value`), no un valor base.
+
+**Frontend**:
+- [ ] **Step4StockModification.vue**: Solo para modificaciones reales de acciones:
+  - [ ] Retiros de acciones (genera `pending_member_payments`)
+  - [ ] Intercambios entre socios
+  - [ ] Cruces de acciones con créditos
+  - [ ] **NO incluir creación de préstamos** (se hace en Step 5)
+- [ ] **Step5Disbursements.vue**: Interfaz unificada de desembolso:
+  - [ ] **Sección 1**: Mostrar efectivo disponible claramente
+  - [ ] **Sección 2**: Obligaciones pendientes automáticas (prioridades 1-3)
+  - [ ] **Sección 3**: Formulario para "Nuevos Préstamos":
+    - [ ] Selector de socio
+    - [ ] Monto a prestar
+    - [ ] Tipo de préstamo (corriente, ágil)
+    - [ ] Cuota mensual
+    - [ ] Tasa de interés
+    - [ ] Botón "Agregar al plan"
+  - [ ] **Sección 4**: Plan de desembolso completo con visualización por prioridades
+  - [ ] Permitir al administrador **editar los montos** respetando las prioridades
+  - [ ] Validar en tiempo real que las ediciones no superen el efectivo disponible
+  - [ ] Implementar el botón "Confirmar y Finalizar Reunión"
+- [ ] **Actualizar servicio de API**: Añadir métodos para los nuevos endpoints de desembolso completos
+- [ ] **Actualizar store de reunión activa**: Manejar el estado del proceso de desembolso
+- [ ] **Validaciones de flujo**: Asegurar que no se pueda avanzar a desembolsos sin completar pasos anteriores
+
+**Testing**:
+- [ ] **Backend**: Crear pruebas unitarias para cada método helper de desembolso
+- [ ] **Backend**: Crear pruebas de integración para el flujo completo de desembolso
+- [ ] **Backend**: Probar escenarios de desembolso parcial y completo
+- [ ] **Backend**: **Probar creación directa de préstamos durante desembolso**
+- [ ] **Frontend**: Probar la UI con diferentes combinaciones de prioridades de desembolso
+
+**Casos de Prueba Específicos** (para Testing):
+- [ ] **Préstamo nuevo creado y entregado completo en una sola operación**
+- [ ] **Préstamo nuevo creado y entregado parcialmente** (queda `PARTIALLY_DISBURSED`)
+- [ ] Préstamo anterior que se completa su desembolso
+- [ ] Retiro de acción que se entrega completo
+- [ ] Retiro de acción que se entrega parcialmente
+- [ ] Entrega de dividendos
+- [ ] Combinación de múltiples tipos de desembolso con prioridades
+- [ ] Escenario de efectivo insuficiente para todos los desembolsos
+- [ ] **Validación de datos de préstamos nuevos** (tasas, montos, tipos válidos)
+
 ### Módulo 5: Gestión de Préstamos (Pendiente)
 
--   **Front end**:
-    -   [ ] `LoansListView.vue`: Crear vista para listar todos los préstamos con filtros por estado y socio.
-    -   [ ] `LoanDetailView.vue`: Vista para ver el detalle de un préstamo, su tabla de amortización y el historial de pagos.
--   **Backend**:
-    -   [ ] **Detalle de Tareas de Implementación**:
-        -   [ ] **Nuevo**: Modificar la entidad `Loan` y la base de datos para diferenciar entre `approved_amount` y `disbursed_amount`.
-        -   [ ] Implementar `GET /loans` con filtrado y paginación.
-        -   [ ] Implementar `GET /loans/:id` que devuelva el detalle completo.
-        -   [ ] Implementar `PATCH /loans/:id` para ajustes administrativos (ej. condonar intereses, reestructurar).
-        -   [ ] **Refactorizar `LoanTransactionsService` para que todas las transacciones de préstamos (abonos, pagos de interés, etc.) se asocien a una reunión activa.**
--   **Testing**:
-    -   [ ] **Backend**: Añadir pruebas unitarias para `LoansService`.
-    -   [ ] **Frontend**: Añadir pruebas para las vistas de lista y detalle de préstamos.
+**Estado Actual**: La entidad `Loan` y su servicio requieren modificaciones críticas para soportar el sistema de desembolso por prioridades.
+
+**Backend**:
+- [ ] **CRÍTICO**: Modificar entidad `Loan` para diferenciar entre `approved_amount` y `disbursed_amount`:
+  - [ ] Añadir migración de BD para el nuevo campo
+  - [ ] Actualizar todos los métodos que calculan `outstanding_balance`
+  - [ ] Modificar la lógica en `calculateDerivedFields()` para usar `disbursed_amount`
+- [ ] **CRÍTICO**: Refactorizar `LoansService.create()` para **NO** crear automáticamente el desembolso:
+  - [ ] Separar la creación del préstamo (approval) del desembolso (disbursement)
+  - [ ] El préstamo se crea con `status: 'pending'` y `disbursed_amount: 0`
+  - [ ] El desembolso se maneja exclusivamente a través del proceso de reunión
+- [ ] **Nuevo**: Implementar estados adicionales para préstamos:
+  - `pending`: Aprobado pero sin desembolsar
+  - `PARTIALLY_DISBURSED`: Desembolsado parcialmente
+  - `active`: Completamente desembolsado
+  - `paid`: Totalmente pagado
+  - `defaulted`: En mora
+- [ ] **Refactorizar**: Actualizar `LoanTransactionDetail` para distinguir entre:
+  - `'aprobacion'`: Cuando se aprueba el préstamo
+  - `'desembolso'`: Cuando se entrega dinero al socio
+  - `'abono_capital'`: Cuando el socio paga capital
+  - `'pago_interes'`: Cuando el socio paga intereses
+
+**Frontend**:
+- [ ] `LoansListView.vue`: Crear vista para listar todos los préstamos con filtros por estado y socio.
+- [ ] `LoanDetailView.vue`: Vista para ver el detalle de un préstamo, su tabla de amortización y el historial de pagos.
+- [ ] Actualizar vistas para mostrar el estado de desembolso
+- [ ] Mostrar diferencia entre monto aprobado y desembolsado
+- [ ] Agregar indicadores visuales para préstamos con desembolso pendiente
+
+**Testing**:
+- [ ] **Backend**: Probar la separación entre aprobación y desembolso
+- [ ] **Backend**: Probar el cálculo correcto de `outstanding_balance` con `disbursed_amount`
+- [ ] **Backend**: Añadir pruebas unitarias para `LoansService`.
+- [ ] **Frontend**: Añadir pruebas para las vistas de lista y detalle de préstamos.
 
 ### Módulo 6: Libro Contable (Pendiente)
 

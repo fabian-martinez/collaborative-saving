@@ -8,6 +8,11 @@ import {
 } from 'typeorm';
 import { StockValueHistory } from './stock-value-history.entity';
 
+export enum StockBehavior {
+  CAPITAL_APPRECIATION = 'CAPITAL_APPRECIATION',
+  DIVIDEND_YIELD = 'DIVIDEND_YIELD',
+}
+
 @Entity({ name: 'stocks' })
 export class Stock {
   @ApiProperty({
@@ -60,6 +65,15 @@ export class Stock {
     name: 'guaranteed_yield',
   })
   guaranteed_yield: number | null;
+
+  @ApiProperty({
+    description:
+      'Comportamiento de la acción: apreciación de capital o dividendos',
+    enum: StockBehavior,
+    default: StockBehavior.CAPITAL_APPRECIATION,
+  })
+  @Column({ type: 'text', default: StockBehavior.CAPITAL_APPRECIATION })
+  behavior: StockBehavior;
 
   @ApiProperty({ type: () => [StockValueHistory] })
   @OneToMany(() => StockValueHistory, (history) => history.stock)
