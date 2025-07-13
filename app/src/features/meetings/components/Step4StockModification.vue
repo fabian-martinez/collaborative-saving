@@ -4,7 +4,7 @@
     
     <div class="prose mb-6">
       <p>
-        En este paso puedes transferir acciones entre socios o utilizar acciones para pagos de créditos.
+        En este paso puedes transferir acciones entre socios, utilizar acciones para pagos de créditos, o intercambiar tipos de acciones.
       </p>
     </div>
 
@@ -40,6 +40,11 @@
             <div class="text-2xl font-bold text-success">{{ totalLoanPayments }}</div>
           </div>
           
+          <div class="text-center">
+            <div class="text-sm font-light text-base-content/70 uppercase">Total Modificaciones</div>
+            <div class="text-2xl font-bold text-info">{{ totalModifications }}</div>
+          </div>
+          
           <div class="border-t border-base-300/50"></div>
           
           <div>
@@ -55,8 +60,8 @@
                   @click="showOperationDetail(op)">
                   <div class="flex justify-between items-center">
                     <span class="font-semibold">{{ op.description }}</span>
-                    <span class="text-xs" :class="op.type === 'TRANSFER' ? 'text-primary' : 'text-success'">
-                      {{ op.type === 'TRANSFER' ? 'Transferencia' : 'Pago Crédito' }}
+                    <span class="text-xs" :class="getOperationTypeColor(op.type)">
+                      {{ getOperationTypeLabel(op.type) }}
                     </span>
                   </div>
                   <div class="text-xs text-base-content/60">{{ op.memberName }}</div>
@@ -71,8 +76,8 @@
                   @click="showOperationDetail(op)">
                   <div class="flex justify-between items-center">
                     <span class="font-semibold">{{ op.description }}</span>
-                    <span class="text-xs" :class="op.type === 'TRANSFER' ? 'text-primary' : 'text-success'">
-                      {{ op.type === 'TRANSFER' ? 'Transferencia' : 'Pago Crédito' }}
+                    <span class="text-xs" :class="getOperationTypeColor(op.type)">
+                      {{ getOperationTypeLabel(op.type) }}
                     </span>
                   </div>
                 </div>
@@ -102,21 +107,21 @@
               <div class="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span class="font-medium">Tipo:</span>
-                  <span class="ml-2">{{ selectedOperation.type === 'TRANSFER' ? 'Transferencia' : 'Pago de Crédito' }}</span>
+                  <span class="ml-2">{{ getOperationTypeLabel(selectedOperation.type) }}</span>
                 </div>
                 <div>
                   <span class="font-medium">Socio:</span>
                   <span class="ml-2">{{ selectedOperation.memberName }}</span>
                 </div>
-                <div>
+                <div v-if="selectedOperation.type !== 'STOCK_MODIFICATION'">
                   <span class="font-medium">Acción:</span>
                   <span class="ml-2">{{ selectedOperation.stockType }}</span>
                 </div>
-                <div>
+                <div v-if="selectedOperation.type !== 'STOCK_MODIFICATION'">
                   <span class="font-medium">Cantidad:</span>
                   <span class="ml-2">{{ selectedOperation.quantity }} unidades</span>
                 </div>
-                <div>
+                <div v-if="selectedOperation.type !== 'STOCK_MODIFICATION'">
                   <span class="font-medium">Valor unitario:</span>
                   <span class="ml-2">${{ selectedOperation.unitValue.toFixed(2) }}</span>
                 </div>
@@ -128,27 +133,68 @@
                   <span class="font-medium">Transferido a:</span>
                   <span class="ml-2">{{ selectedOperation.toMemberName }}</span>
                 </div>
-                <div v-else>
+                <div v-else-if="selectedOperation.type === 'LOAN_PAYMENT'">
                   <span class="font-medium">Aplicado a:</span>
                   <span class="ml-2">{{ selectedOperation.loanType }}</span>
                 </div>
               </div>
             </div>
             
-            <div v-if="selectedOperation.type === 'LOAN_PAYMENT'" class="bg-base-200 p-4 rounded-lg">
-              <h3 class="font-semibold mb-2">Impacto en el crédito</h3>
-                             <div class="grid grid-cols-2 gap-4 text-sm">
-                 <div>
-                   <span class="font-medium">Saldo anterior:</span>
-                   <span class="ml-2">${{ (selectedOperation.previousBalance || 0).toFixed(2) }}</span>
+            <!-- Detalles específicos para modificación de acciones -->
+            <div v-if="selectedOperation.type === 'STOCK_MODIFICATION'" class="bg-base-200 p-4 rounded-lg">
+              <h3 class="font-semibold mb-2">Detalle del intercambio</h3>
+              <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span class="font-medium">Acción origen:</span>
+                  <span class="ml-2">{{ selectedOperation.fromStockType }}</span>
+                </div>
+                <div>
+                  <span class="font-medium">Cantidad origen:</span>
+                  <span class="ml-2">{{ selectedOperation.fromQuantity }} unidades</span>
+                </div>
+                <div>
+                  <span class="font-medium">Acción destino:</span>
+                  <span class="ml-2">{{ selectedOperation.toStockType }}</span>
+                </div>
+                <div>
+                  <span class="font-medium">Cantidad destino:</span>
+                  <span class="ml-2">{{ selectedOperation.toQuantity }} unidades</span>
+                </div>
+                                 <div>
+                   <span class="font-medium">Valor origen:</span>
+                   <span class="ml-2">${{ (selectedOperation.fromValue || 0).toFixed(2) }}</span>
                  </div>
                  <div>
-                   <span class="font-medium">Nuevo saldo:</span>
-                   <span class="ml-2 font-bold" :class="(selectedOperation.newBalance || 0) > 0 ? 'text-warning' : 'text-success'">
-                     ${{ (selectedOperation.newBalance || 0).toFixed(2) }}
+                   <span class="font-medium">Valor destino:</span>
+                   <span class="ml-2">${{ (selectedOperation.toValue || 0).toFixed(2) }}</span>
+                 </div>
+                 <div>
+                   <span class="font-medium">Diferencia:</span>
+                   <span class="ml-2 font-bold" :class="(selectedOperation.difference || 0) >= 0 ? 'text-success' : 'text-error'">
+                     {{ (selectedOperation.difference || 0) >= 0 ? '+' : '' }}${{ (selectedOperation.difference || 0).toFixed(2) }}
                    </span>
                  </div>
-               </div>
+                <div>
+                  <span class="font-medium">Manejo diferencia:</span>
+                  <span class="ml-2">{{ selectedOperation.differenceHandling }}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div v-if="selectedOperation.type === 'LOAN_PAYMENT'" class="bg-base-200 p-4 rounded-lg">
+              <h3 class="font-semibold mb-2">Impacto en el crédito</h3>
+              <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span class="font-medium">Saldo anterior:</span>
+                  <span class="ml-2">${{ (selectedOperation.previousBalance || 0).toFixed(2) }}</span>
+                </div>
+                <div>
+                  <span class="font-medium">Nuevo saldo:</span>
+                  <span class="ml-2 font-bold" :class="(selectedOperation.newBalance || 0) > 0 ? 'text-warning' : 'text-success'">
+                    ${{ (selectedOperation.newBalance || 0).toFixed(2) }}
+                  </span>
+                </div>
+              </div>
             </div>
             
             <div class="flex items-baseline text-2xl font-bold">
@@ -156,6 +202,63 @@
               <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
               <span class="flex-shrink-0 text-primary font-mono">${{ selectedOperation.totalValue.toFixed(2) }}</span>
             </div>
+          </div>
+        </div>
+        
+        <!-- Vista de recibo para modificación de acciones -->
+        <div v-else-if="showModificationReceipt" class="bg-base-100 p-8 rounded-2xl shadow-lg">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold">Modificación de Acciones</h2>
+            <button class="btn btn-outline btn-sm" @click="cancelModification">Cancelar</button>
+          </div>
+          
+          <div class="space-y-4">
+            <div class="bg-base-200 p-4 rounded-lg">
+              <h3 class="font-semibold mb-2">Detalle del intercambio</h3>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 class="font-medium text-error">Entregar:</h4>
+                  <p class="text-lg">{{ modificationReceipt.fromStockType }}</p>
+                  <p class="text-sm text-base-content/70">{{ modificationReceipt.fromQuantity }} uds. x ${{ modificationReceipt.fromUnitValue.toFixed(2) }}</p>
+                  <p class="font-mono text-lg">-${{ modificationReceipt.fromValue.toFixed(2) }}</p>
+                </div>
+                <div>
+                  <h4 class="font-medium text-success">Recibir:</h4>
+                  <p class="text-lg">{{ modificationReceipt.toStockType }}</p>
+                  <p class="text-sm text-base-content/70">{{ modificationReceipt.toQuantity }} uds. x ${{ modificationReceipt.toUnitValue.toFixed(2) }}</p>
+                  <p class="font-mono text-lg">+${{ modificationReceipt.toValue.toFixed(2) }}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-base-200 p-4 rounded-lg">
+              <h3 class="font-semibold mb-2">Diferencia</h3>
+              <div class="flex items-center justify-between">
+                <span class="text-lg">{{ modificationReceipt.difference >= 0 ? 'A favor del socio:' : 'Debe pagar:' }}</span>
+                <span class="font-mono text-2xl font-bold" :class="modificationReceipt.difference >= 0 ? 'text-success' : 'text-error'">
+                  {{ modificationReceipt.difference >= 0 ? '+' : '' }}${{ modificationReceipt.difference.toFixed(2) }}
+                </span>
+              </div>
+              
+              <div class="mt-4">
+                <h4 class="font-medium mb-2">Manejo de la diferencia:</h4>
+                <p class="text-sm">{{ modificationReceipt.differenceHandling }}</p>
+              </div>
+            </div>
+            
+            <div class="flex items-baseline text-2xl font-bold">
+              <span class="flex-shrink-0">Operación neta:</span>
+              <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
+              <span class="flex-shrink-0 text-primary font-mono">${{ Math.abs(modificationReceipt.difference).toFixed(2) }}</span>
+            </div>
+          </div>
+          
+          <div class="text-right mt-6">
+            <button class="btn btn-success btn-lg" @click="confirmModification" :disabled="isProcessing">
+              <span v-if="isProcessing" class="loading loading-spinner loading-xs mr-2"></span>
+              <span v-if="!isProcessing">Confirmar Modificación</span>
+              <span v-else>Procesando...</span>
+            </button>
           </div>
         </div>
         
@@ -278,7 +381,7 @@
               <span>Este socio tiene {{ memberSubscriptions.length }} tipo(s) de acciones disponibles para modificar.</span>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <button class="btn btn-primary btn-lg" @click="openTransferModal">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
@@ -292,6 +395,13 @@
                 </svg>
                 Usar para Pago de Créditos
               </button>
+              
+              <button class="btn btn-info btn-lg" @click="openModificationModal">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
+                </svg>
+                Modificar Acciones
+              </button>
             </div>
           </div>
           
@@ -301,6 +411,145 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal de modificación de acciones -->
+    <dialog v-if="showModificationModal" class="modal modal-open">
+      <div class="modal-box max-w-4xl">
+        <h3 class="font-bold text-lg mb-4">Modificar Acciones</h3>
+        
+        <div class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Acciones origen -->
+            <div class="bg-base-200 p-4 rounded-lg">
+              <h4 class="font-semibold mb-2 text-error">Entregar</h4>
+              <div class="space-y-3">
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text">Tipo de acción</span>
+                  </label>
+                  <select v-model="modificationForm.fromSubscriptionId" class="select select-bordered w-full">
+                    <option value="">Seleccione una acción</option>
+                    <option v-for="sub in memberSubscriptions" :key="sub.id" :value="sub.id">
+                      {{ sub.stock?.type }} - {{ sub.quantity }} disponibles
+                    </option>
+                  </select>
+                </div>
+                
+                <div v-if="modificationForm.fromSubscriptionId" class="form-control">
+                  <label class="label">
+                    <span class="label-text">Cantidad</span>
+                  </label>
+                  <input 
+                    type="number" 
+                    v-model="modificationForm.fromQuantity" 
+                    class="input input-bordered w-full"
+                    :max="selectedFromSubscription?.quantity || 0"
+                    min="1"
+                  >
+                  <label class="label">
+                    <span class="label-text-alt">Máximo: {{ selectedFromSubscription?.quantity || 0 }}</span>
+                  </label>
+                </div>
+                
+                <div v-if="modificationForm.fromQuantity > 0" class="bg-base-300/50 p-3 rounded">
+                  <p class="text-sm">
+                    <span class="font-medium">Valor total:</span>
+                    <span class="ml-2 font-mono">${{ fromTotalValue.toFixed(2) }}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Acciones destino -->
+            <div class="bg-base-200 p-4 rounded-lg">
+              <h4 class="font-semibold mb-2 text-success">Recibir</h4>
+              <div class="space-y-3">
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text">Tipo de acción</span>
+                  </label>
+                  <select v-model="modificationForm.toStockId" class="select select-bordered w-full">
+                    <option value="">Seleccione una acción</option>
+                    <option v-for="stock in availableStocks" :key="stock.id" :value="stock.id">
+                      {{ stock.type }} - ${{ stock.value.toFixed(2) }} c/u
+                    </option>
+                  </select>
+                </div>
+                
+                <div v-if="modificationForm.toStockId" class="form-control">
+                  <label class="label">
+                    <span class="label-text">Cantidad</span>
+                  </label>
+                  <input 
+                    type="number" 
+                    v-model="modificationForm.toQuantity" 
+                    class="input input-bordered w-full"
+                    min="1"
+                  >
+                </div>
+                
+                <div v-if="modificationForm.toQuantity > 0" class="bg-base-300/50 p-3 rounded">
+                  <p class="text-sm">
+                    <span class="font-medium">Valor total:</span>
+                    <span class="ml-2 font-mono">${{ toTotalValue.toFixed(2) }}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Cálculo de diferencia -->
+          <div v-if="modificationForm.fromQuantity > 0 && modificationForm.toQuantity > 0" class="bg-base-200 p-4 rounded-lg">
+            <h4 class="font-semibold mb-2">Diferencia</h4>
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-lg">{{ difference >= 0 ? 'A favor del socio:' : 'Debe pagar:' }}</span>
+              <span class="font-mono text-2xl font-bold" :class="difference >= 0 ? 'text-success' : 'text-error'">
+                {{ difference >= 0 ? '+' : '' }}${{ difference.toFixed(2) }}
+              </span>
+            </div>
+            
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Manejo de la diferencia</span>
+              </label>
+              <select v-model="modificationForm.differenceHandling" class="select select-bordered w-full">
+                <option value="">Seleccione cómo manejar la diferencia</option>
+                <option v-if="difference > 0" value="cash">Entregar en efectivo</option>
+                <option v-if="difference > 0" value="credit">Abonar a crédito existente</option>
+                <option v-if="difference < 0" value="cash">Pagar en efectivo</option>
+                <option v-if="difference < 0" value="credit">Financiar con crédito</option>
+              </select>
+            </div>
+            
+            <div v-if="modificationForm.differenceHandling === 'credit' && difference > 0" class="form-control mt-2">
+              <label class="label">
+                <span class="label-text">Crédito a abonar</span>
+              </label>
+              <select v-model="modificationForm.targetLoanId" class="select select-bordered w-full">
+                <option value="">Seleccione un crédito</option>
+                <option v-for="loan in memberLoans" :key="loan.id" :value="loan.id">
+                  {{ loan.loan_type }} - Saldo: ${{ loan.outstanding_balance.toFixed(2) }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal-action">
+          <button class="btn btn-outline" @click="closeModificationModal">Cancelar</button>
+          <button 
+            class="btn btn-primary" 
+            @click="prepareModificationReceipt"
+            :disabled="!isModificationFormValid"
+          >
+            Preparar Modificación
+          </button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button @click.prevent="closeModificationModal">Cerrar</button>
+      </form>
+    </dialog>
 
     <!-- Modal de transferencia -->
     <dialog v-if="showTransferModal" class="modal modal-open">
@@ -441,13 +690,14 @@ import { ref, computed, onMounted } from 'vue'
 import { useActiveMeetingStore } from '../stores/activeMeeting'
 import { stocksService, type StockSubscription } from '@/features/stocks/services/stocksService'
 import { loansService, type Loan } from '@/features/loans/services/loansService'
+import type { Stock } from '@/features/stocks/types'
 
 const activeMeetingStore = useActiveMeetingStore()
 
 // Interfaz para las operaciones registradas
 interface RegisteredOperation {
   id: string
-  type: 'TRANSFER' | 'LOAN_PAYMENT'
+  type: 'TRANSFER' | 'LOAN_PAYMENT' | 'STOCK_MODIFICATION'
   description: string
   memberId: string
   memberName: string
@@ -464,6 +714,15 @@ interface RegisteredOperation {
   loanType?: string
   previousBalance?: number
   newBalance?: number
+  // Para modificaciones de acciones
+  fromStockType?: string
+  fromQuantity?: number
+  fromValue?: number
+  toStockType?: string
+  toQuantity?: number
+  toValue?: number
+  difference?: number
+  differenceHandling?: string
 }
 
 // Estados principales
@@ -476,6 +735,7 @@ const showAllOperations = ref(false)
 // Datos del socio seleccionado
 const memberSubscriptions = ref<StockSubscription[]>([])
 const memberLoans = ref<Loan[]>([])
+const availableStocks = ref<Stock[]>([])
 
 // Operaciones registradas
 const registeredOperations = ref<RegisteredOperation[]>([])
@@ -484,8 +744,10 @@ const selectedOperation = ref<RegisteredOperation | null>(null)
 // Estados de modales
 const showTransferModal = ref(false)
 const showLoanPaymentModal = ref(false)
+const showModificationModal = ref(false)
 const showTransferReceipt = ref(false)
 const showLoanPaymentReceipt = ref(false)
+const showModificationReceipt = ref(false)
 
 // Formularios
 const transferForm = ref({
@@ -498,6 +760,15 @@ const loanPaymentForm = ref({
   subscriptionId: '',
   quantity: 0,
   loanId: ''
+})
+
+const modificationForm = ref({
+  fromSubscriptionId: '',
+  fromQuantity: 0,
+  toStockId: '',
+  toQuantity: 0,
+  differenceHandling: '',
+  targetLoanId: ''
 })
 
 // Recibos
@@ -533,6 +804,30 @@ const loanPaymentReceipt = ref<{
   newBalance: 0
 })
 
+const modificationReceipt = ref<{
+  fromStockType: string
+  fromQuantity: number
+  fromUnitValue: number
+  fromValue: number
+  toStockType: string
+  toQuantity: number
+  toUnitValue: number
+  toValue: number
+  difference: number
+  differenceHandling: string
+}>({
+  fromStockType: '',
+  fromQuantity: 0,
+  fromUnitValue: 0,
+  fromValue: 0,
+  toStockType: '',
+  toQuantity: 0,
+  toUnitValue: 0,
+  toValue: 0,
+  difference: 0,
+  differenceHandling: ''
+})
+
 // Computadas
 const members = computed(() => activeMeetingStore.members)
 
@@ -548,12 +843,45 @@ const selectedSubscriptionForLoan = computed(() =>
   memberSubscriptions.value.find(sub => sub.id === loanPaymentForm.value.subscriptionId)
 )
 
+const selectedFromSubscription = computed(() => 
+  memberSubscriptions.value.find(sub => sub.id === modificationForm.value.fromSubscriptionId)
+)
+
+const selectedToStock = computed(() => 
+  availableStocks.value.find(stock => stock.id === modificationForm.value.toStockId)
+)
+
+const fromTotalValue = computed(() => 
+  (selectedFromSubscription.value?.stock?.value || 0) * modificationForm.value.fromQuantity
+)
+
+const toTotalValue = computed(() => 
+  (selectedToStock.value?.value || 0) * modificationForm.value.toQuantity
+)
+
+const difference = computed(() => 
+  fromTotalValue.value - toTotalValue.value
+)
+
+const isModificationFormValid = computed(() => 
+  modificationForm.value.fromSubscriptionId && 
+  modificationForm.value.fromQuantity > 0 && 
+  modificationForm.value.toStockId && 
+  modificationForm.value.toQuantity > 0 && 
+  modificationForm.value.differenceHandling &&
+  (modificationForm.value.differenceHandling !== 'credit' || modificationForm.value.targetLoanId)
+)
+
 const totalTransfers = computed(() => 
   registeredOperations.value.filter(op => op.type === 'TRANSFER').length
 )
 
 const totalLoanPayments = computed(() => 
   registeredOperations.value.filter(op => op.type === 'LOAN_PAYMENT').length
+)
+
+const totalModifications = computed(() => 
+  registeredOperations.value.filter(op => op.type === 'STOCK_MODIFICATION').length
 )
 
 const memberOperations = computed(() => 
@@ -563,13 +891,33 @@ const memberOperations = computed(() =>
 // Métodos
 onMounted(async () => {
   await activeMeetingStore.fetchMembers()
+  availableStocks.value = await stocksService.getStocks()
 })
+
+function getOperationTypeColor(type: string) {
+  switch (type) {
+    case 'TRANSFER': return 'text-primary'
+    case 'LOAN_PAYMENT': return 'text-success'
+    case 'STOCK_MODIFICATION': return 'text-info'
+    default: return 'text-base-content'
+  }
+}
+
+function getOperationTypeLabel(type: string) {
+  switch (type) {
+    case 'TRANSFER': return 'Transferencia'
+    case 'LOAN_PAYMENT': return 'Pago Crédito'
+    case 'STOCK_MODIFICATION': return 'Modificación'
+    default: return 'Operación'
+  }
+}
 
 async function selectMember(member: { id: string; name: string }) {
   selectedMember.value = member
   selectedOperation.value = null
   showTransferReceipt.value = false
   showLoanPaymentReceipt.value = false
+  showModificationReceipt.value = false
   
   try {
     isLoading.value = true
@@ -597,6 +945,104 @@ function showOperationDetail(operation: RegisteredOperation) {
 
 function closeOperationDetail() {
   selectedOperation.value = null
+}
+
+// Funciones de modificación de acciones
+function openModificationModal() {
+  showModificationModal.value = true
+  modificationForm.value = {
+    fromSubscriptionId: '',
+    fromQuantity: 0,
+    toStockId: '',
+    toQuantity: 0,
+    differenceHandling: '',
+    targetLoanId: ''
+  }
+}
+
+function closeModificationModal() {
+  showModificationModal.value = false
+}
+
+function prepareModificationReceipt() {
+  const fromSub = selectedFromSubscription.value
+  const toStock = selectedToStock.value
+  
+  if (!fromSub || !toStock) return
+  
+  const differenceHandlingLabels = {
+    'cash': difference.value >= 0 ? 'Entregar en efectivo' : 'Pagar en efectivo',
+    'credit': difference.value >= 0 ? 'Abonar a crédito existente' : 'Financiar con crédito'
+  }
+  
+  modificationReceipt.value = {
+    fromStockType: fromSub.stock?.type || '',
+    fromQuantity: modificationForm.value.fromQuantity,
+    fromUnitValue: fromSub.stock?.value || 0,
+    fromValue: fromTotalValue.value,
+    toStockType: toStock.type,
+    toQuantity: modificationForm.value.toQuantity,
+    toUnitValue: toStock.value,
+    toValue: toTotalValue.value,
+    difference: difference.value,
+    differenceHandling: differenceHandlingLabels[modificationForm.value.differenceHandling as keyof typeof differenceHandlingLabels] || ''
+  }
+  
+  showModificationModal.value = false
+  showModificationReceipt.value = true
+}
+
+function cancelModification() {
+  showModificationReceipt.value = false
+}
+
+async function confirmModification() {
+  if (!selectedMember.value) return
+  
+  const fromSub = selectedFromSubscription.value
+  const toStock = selectedToStock.value
+  
+  if (!fromSub || !toStock) return
+  
+  isProcessing.value = true
+  try {
+    // Aquí iría la llamada al backend para registrar la modificación
+    await new Promise(resolve => setTimeout(resolve, 1000)) // Simular llamada API
+    
+    // Crear el registro de la operación
+    const operation: RegisteredOperation = {
+      id: `modification-${Date.now()}-${Math.random()}`,
+      type: 'STOCK_MODIFICATION',
+      description: `Modificación ${modificationForm.value.fromQuantity} ${fromSub.stock?.type} → ${modificationForm.value.toQuantity} ${toStock.type}`,
+      memberId: selectedMember.value.id,
+      memberName: selectedMember.value.name,
+      stockType: 'Intercambio',
+      quantity: 0,
+      unitValue: 0,
+      totalValue: Math.abs(difference.value),
+      timestamp: new Date(),
+      fromStockType: fromSub.stock?.type || '',
+      fromQuantity: modificationForm.value.fromQuantity,
+      fromValue: fromTotalValue.value,
+      toStockType: toStock.type,
+      toQuantity: modificationForm.value.toQuantity,
+      toValue: toTotalValue.value,
+      difference: difference.value,
+      differenceHandling: modificationReceipt.value.differenceHandling
+    }
+    
+    registeredOperations.value.push(operation)
+    
+    // Actualizar las suscripciones del socio
+    await selectMember(selectedMember.value)
+    
+    showModificationReceipt.value = false
+    alert('Modificación registrada exitosamente')
+  } catch (err) {
+    error.value = 'Error al procesar la modificación'
+  } finally {
+    isProcessing.value = false
+  }
 }
 
 // Funciones de transferencia
