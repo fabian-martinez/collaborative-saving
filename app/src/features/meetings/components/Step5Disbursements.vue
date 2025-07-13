@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2 class="text-xl font-bold mb-4">Paso 4: Desembolsos y Cierre</h2>
+    <h2 class="text-xl font-bold mb-4">Paso 5: Desembolsos y Cierre</h2>
 
     <div v-if="isLoading" class="flex justify-center items-center my-8">
       <span class="loading loading-spinner loading-lg"></span>

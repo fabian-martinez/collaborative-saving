@@ -13,6 +13,17 @@ const transformStock = (
   monthly_contribution: Number(stock.monthly_contribution),
 });
 
+export interface StockSubscription {
+  id: string;
+  member_id: string;
+  stock_id: string;
+  quantity: number;
+  purchase_date: string;
+  status: string;
+  financing_loan_id?: string | null;
+  stock?: Stock;
+}
+
 export const stocksService = {
   getStocks: async (): Promise<Stock[]> => {
     const stocks = await api.get<Stock[]>('/stocks');
@@ -32,4 +43,13 @@ export const stocksService = {
   deleteStock: (id: string): Promise<void> => {
     return api.delete<void>(`/stocks/${id}`);
   },
+
+  getStockSubscriptionsByMember: async (memberId: string): Promise<StockSubscription[]> => {
+    const subscriptions = await api.get<StockSubscription[]>(`/stock-subscriptions/member/${memberId}`);
+    return subscriptions.map(sub => ({
+      ...sub,
+      quantity: Number(sub.quantity),
+      stock: sub.stock ? transformStock(sub.stock) : undefined
+    }));
+  }
 }; 

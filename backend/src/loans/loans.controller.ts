@@ -33,6 +33,18 @@ export class LoansController {
     return this.loansService.findAll();
   }
 
+  @Get('member/:memberId/active')
+  @ApiOperation({ summary: 'Get active loans by member ID' })
+  @ApiParam({ name: 'memberId', description: 'The ID of the member' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return active loans for the member.',
+    type: [Loan],
+  })
+  findActiveByMember(@Param('memberId') memberId: string) {
+    return this.loansService.findActiveByMember(memberId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a loan by id' })
   @ApiParam({ name: 'id', description: 'The ID of the loan' })

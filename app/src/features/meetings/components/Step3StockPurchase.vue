@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2 class="text-xl font-bold mb-4">Paso 3: Nuevas Operaciones - Compra de Acciones</h2>
+    <h2 class="text-xl font-bold mb-4">Paso 3: Compra de Acciones</h2>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <!-- Columna izquierda: Socios y resumen global -->
       <div class="md:col-span-1">

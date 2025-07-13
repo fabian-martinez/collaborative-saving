@@ -19,42 +19,40 @@
     </div>
 
     <!-- Stepper Visual -->
-    <ul class="steps w-full mb-8">
-      <li class="step" :class="{ 'step-primary': activeMeetingStore.currentStep >= 1 }">Recaudo</li>
-      <li class="step" :class="{ 'step-primary': activeMeetingStore.currentStep >= 2 }">Revalorización</li>
-      <li class="step" :class="{ 'step-primary': activeMeetingStore.currentStep >= 3 }">Nuevas Operaciones</li>
-      <li class="step" :class="{ 'step-primary': activeMeetingStore.currentStep === 4 }">Desembolsos</li>
+    <ul class="steps w-full">
+      <li class="step" :class="{ 'step-primary': activeMeetingStore.currentStep === 1 }">Recaudación</li>
+      <li class="step" :class="{ 'step-primary': activeMeetingStore.currentStep === 2 }">Revalorización</li>
+      <li class="step" :class="{ 'step-primary': activeMeetingStore.currentStep === 3 }">Compra</li>
+      <li class="step" :class="{ 'step-primary': activeMeetingStore.currentStep === 4 }">Modificación</li>
+      <li class="step" :class="{ 'step-primary': activeMeetingStore.currentStep === 5 }">Desembolsos</li>
     </ul>
 
-    <!-- Contenido de la Etapa Actual -->
-    <div class="card bg-base-100 shadow-xl">
-      <div class="card-body">
-        <Step1Collection 
-            v-if="activeMeetingStore.currentStep === 1" 
-            @completed="goToNextStep"
-        />
-        <Step2Revaluation v-if="activeMeetingStore.currentStep === 2" @completed="goToNextStep" />
-        <Step3Operations v-if="activeMeetingStore.currentStep === 3" @completed="goToNextStep" />
-        <Step4Disbursements v-if="activeMeetingStore.currentStep === 4" @completed="finishMeeting" />
-      </div>
-    </div>
-
-    <!-- Botones de navegación temporal para desarrollo -->
-    <div class="mt-8 flex justify-between">
-       <button 
-        class="btn btn-secondary" 
+    <!-- Botones de navegación -->
+    <div class="mt-6 mb-8 flex justify-center gap-20">
+      <button 
+        class="btn btn-secondary px-8 py-3 min-h-12" 
         @click="goToPreviousStep" 
         :disabled="activeMeetingStore.currentStep === 1"
       >
-        Anterior
+        ← Anterior
       </button>
       <button 
-        class="btn btn-primary" 
+        class="btn btn-primary p-10 py-3 min-h-12" 
         @click="goToNextStep" 
-        :disabled="activeMeetingStore.currentStep === 4"
+        :disabled="activeMeetingStore.currentStep >= 5"
+        :class="{ 'btn-disabled': activeMeetingStore.currentStep >= 5 }"
       >
-        Siguiente
+        Siguiente →
       </button>
+    </div>
+
+    <!-- Contenido de los pasos -->
+    <div class="mt-8">
+      <Step1Collection v-if="activeMeetingStore.currentStep === 1" @completed="goToNextStep" />
+      <Step2Revaluation v-if="activeMeetingStore.currentStep === 2" @completed="goToNextStep" />
+      <Step3StockPurchase v-if="activeMeetingStore.currentStep === 3" @completed="goToNextStep" />
+      <Step4StockModification v-if="activeMeetingStore.currentStep === 4" @completed="goToNextStep" />
+      <Step5Disbursements v-if="activeMeetingStore.currentStep === 5" @completed="finishMeeting" />
     </div>
   </div>
 </template>
@@ -66,8 +64,9 @@ import { operationsService } from '@/features/operations/services/operationsServ
 import type { Operation } from '@/features/operations/types'
 import Step1Collection from '../components/Step1Collection.vue'
 import Step2Revaluation from '../components/Step2Revaluation.vue'
-import Step3Operations from '../components/Step3Operations.vue'
-import Step4Disbursements from '../components/Step4Disbursements.vue'
+import Step3StockPurchase from '../components/Step3StockPurchase.vue'
+import Step4StockModification from '../components/Step4StockModification.vue'
+import Step5Disbursements from '../components/Step5Disbursements.vue'
 
 const activeMeetingStore = useActiveMeetingStore()
 const operations = ref<Operation[]>([])
@@ -128,14 +127,24 @@ watch(() => activeMeetingStore.currentStep, (newStep, oldStep) => {
 })
 
 function goToNextStep() {
-  if (activeMeetingStore.currentStep < 4) {
-    activeMeetingStore.goToStep(activeMeetingStore.currentStep + 1)
+  console.log('goToNextStep called, current step:', activeMeetingStore.currentStep)
+  if (activeMeetingStore.currentStep < 5) {
+    const nextStep = activeMeetingStore.currentStep + 1
+    console.log('Moving to step:', nextStep)
+    activeMeetingStore.goToStep(nextStep)
+  } else {
+    console.log('Already at final step, cannot go next')
   }
 }
 
 function goToPreviousStep() {
+  console.log('goToPreviousStep called, current step:', activeMeetingStore.currentStep)
   if (activeMeetingStore.currentStep > 1) {
-    activeMeetingStore.goToStep(activeMeetingStore.currentStep - 1)
+    const prevStep = activeMeetingStore.currentStep - 1
+    console.log('Moving to step:', prevStep)
+    activeMeetingStore.goToStep(prevStep)
+  } else {
+    console.log('Already at first step, cannot go back')
   }
 }
 
