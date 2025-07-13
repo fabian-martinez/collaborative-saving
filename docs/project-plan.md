@@ -190,21 +190,20 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
 #### 4.5. Proceso de Desembolso: Previsualización y Ejecución Atómica
 
 -   **Backend**:
-    -   [ ] **Migración de BD**: Crear tabla `pending_member_payments` para registrar solicitudes de liquidez de socios (dividendos, retiros de acciones incompletos).
-    -   [ ] **Nuevo**: Refactorizar el proceso de desembolso para separar claramente la previsualización y la ejecución atómica del plan de desembolso:
-        -   [ ] **Endpoint de Previsualización**: `GET /meetings/:id/disbursement-plan/preview`.
+    -   [x] **Migración de BD**: Crear tabla `pending_member_payments` para registrar solicitudes de liquidez de socios (dividendos, retiros de acciones incompletos).
+    -   [x] **Nuevo**: Refactorizar el proceso de desembolso para separar claramente la previsualización y la ejecución atómica del plan de desembolso:
+        -   [x] **Endpoint de Previsualización**: `GET /meetings/:id/disbursement-plan/preview`.
             -   Calcula y devuelve un **plan de desembolso recomendado** siguiendo la cola de prioridad definida en ADR-0006 (deudas antiguas, dividendos, préstamos, retiros, etc.).
             -   No realiza ningún cambio en la base de datos.
-        -   [ ] **Endpoint de Ejecución**: `POST /meetings/:id/disbursement-plan/execute`.
+        -   [X] **Endpoint de Ejecución**: `POST /meetings/:id/disbursement-plan/execute`.
             -   Recibe el plan final (puede ser el recomendado o uno ajustado por el administrador).
             -   Valida que el plan no exceda el efectivo disponible y ejecuta **todas las operaciones de desembolso de forma atómica** (en una sola transacción):
                 -   Actualiza entidades (`Loan.disbursed_amount`, `pending_member_payments`, etc.).
                 -   Genera los asientos contables correspondientes.
                 -   Actualiza los estados de préstamos, retiros y dividendos según corresponda.
             -   Si ocurre un error, la transacción se revierte y no se aplican cambios parciales.
-        -   [ ] **Nota**: No se separan endpoints por tipo de operación (retiros, préstamos, dividendos) para garantizar que la lógica de prioridad y la integridad de los fondos se mantengan centralizadas y atómicas, evitando inconsistencias y errores de negocio.
+        -   [x] **Nota**: No se separan endpoints por tipo de operación (retiros, préstamos, dividendos) para garantizar que la lógica de prioridad y la integridad de los fondos se mantengan centralizadas y atómicas, evitando inconsistencias y errores de negocio.
 -   **Frontend**:
-    -   [ ] Renombrar `Step4Disbursements.vue` a `Step5Disbursements.vue`.
     -   [ ] Al cargar, llamar al endpoint de previsualización para mostrar el plan recomendado.
     -   [ ] **Implementar UI de Desembolso Flexible**:
         -   Mostrar claramente el efectivo disponible vs. el total a desembolsar en el plan.
@@ -226,6 +225,8 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
         -   [ ] Permitir cruzar acciones con créditos (incluyendo lógica contable).
 -   **Frontend**:
     -   [ ] Actualizar el servicio de API para soportar los nuevos endpoints de modificación de acciones.
+    -   [ ] Renombrar `Step4Disbursements.vue` a `Step5Disbursements.vue`.
+    -   [ ] Crear el step `modificacion_acciones` en el frontend.
     -   [ ] Crear la vista/componente para el step `modificacion_acciones`:
         -   [ ] Formulario para seleccionar miembros, acciones a intercambiar o cruzar con créditos.
         -   [ ] Resumen y confirmación de modificaciones.

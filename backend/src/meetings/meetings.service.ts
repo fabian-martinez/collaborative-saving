@@ -231,7 +231,6 @@ export class MeetingsService {
       });
     // 2. Calcular efectivo disponible (puedes ajustar la lógica según tu modelo)
     // Aquí solo un ejemplo simple:
-    // const availableCash= 1000; // TODO: calcular realmente el efectivo disponible
     const availableCash = await this.dataSource.manager
       .getRepository(LedgerEntry)
       .find({
@@ -265,7 +264,24 @@ export class MeetingsService {
     dto: ExecuteDisbursementPlanDto,
   ) {
     // 1. Validar que el plan no exceda el efectivo disponible
-    const availableCash = 1000;
+    // const availableCash = 1000;
+    const availableCash = await this.dataSource.manager
+      .getRepository(LedgerEntry)
+      .find({
+        where: {
+          operation: {
+            meeting_id: meetingId,
+          },
+          account_type: CASH_ACCOUNT,
+        },
+      })
+      .then((entries) => {
+        return entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
+      })
+      .catch((err) => {
+        this.logger.error('Error getting available cash', err);
+        throw err;
+      });
     const totalSolicitado = dto.plan.reduce(
       (sum, item) => sum + item.amount,
       0,
