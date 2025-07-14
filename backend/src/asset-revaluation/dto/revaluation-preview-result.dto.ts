@@ -38,6 +38,14 @@ export class RevaluationDetailDto {
 
   @ApiProperty({ example: 108, description: 'Nuevo valor de la acción' })
   new_value: number;
+
+  @ApiProperty({
+    example: 0,
+    required: false,
+    description:
+      'Total de dividendos generados para esta acción (solo si es DIVIDEND_YIELD)',
+  })
+  dividends_generated?: number;
 }
 
 export class RevaluationPreviewResultDto {

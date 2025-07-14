@@ -56,4 +56,5 @@ export interface RevaluationDetail {
   growth_from_interest: number;
   total_growth_per_share: number;
   new_value: number;
+  dividends_generated?: number;
 }

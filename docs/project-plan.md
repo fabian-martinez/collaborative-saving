@@ -103,10 +103,10 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
   - [x] Cálculo del valor actual de las acciones a retirar
   - [x] Creación de registros en `pending_member_payments`
   - [x] Actualización de `stock_subscriptions` al completar retiro
-- [ ] **Nuevo**: Soporte para acciones con comportamiento `DIVIDEND_YIELD`:
-  - [ ] Modificar `AssetRevaluationService` para generar dividendos
-  - [ ] Crear registros en `pending_member_payments` para dividendos
-  - [ ] Diferenciar entre apreciación de capital y distribución de dividendos
+- [x] **Nuevo**: Soporte para acciones con comportamiento `DIVIDEND_YIELD`:
+  - [x] Modificar `AssetRevaluationService` para generar dividendos
+  - [x] Crear registros en `pending_member_payments` para dividendos
+  - [x] Diferenciar entre apreciación de capital y distribución de dividendos
 
 -   **Otras Tareas**:
     -   [x] **Refinamiento**: En el detalle de acciones, asegurar que se muestre el **tipo de acción** (ej. Garantizada, Normal). _(Completado junio 2024)_
@@ -137,10 +137,10 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
 -   **Backend**:
     -   [x] `POST /meetings/:id/transactions`: Implementar el endpoint para registrar los pagos de un socio.
     -   [x] Implementar lógica para validar que un socio solo puede realizar su contribución obligatoria una vez por reunión.
-    -   [ ] **Nuevo**: Modificar la lógica de cálculo de cuotas para que **no se exija contribución** sobre el capital que un socio ya ha solicitado retirar (marcado en `pending_member_payments`).
+    -   [x] **Nuevo**: Modificar la lógica de cálculo de cuotas para que **no se exija contribución** sobre el capital que un socio ya ha solicitado retirar (marcado en `pending_member_payments`).
 -   **Otras Tareas**:
-    -   [ ] **Tarea de Validación**: Verificar que al procesar un pago de préstamo, se actualicen correctamente el `outstanding_balance` y se genere el registro de la transacción en el préstamo (`loan_transaction_detail`).
-    -   [ ] **Refinamiento**: En el detalle del pago, especificar a qué crédito corresponde el interés y el abono a capital para mayor claridad.
+    -   [x] **Tarea de Validación**: Verificar que al procesar un pago de préstamo, se actualicen correctamente el `outstanding_balance` y se genere el registro de la transacción en el préstamo (`loan_transaction_detail`).
+    -   [x] **Refinamiento**: En el detalle del pago, especificar a qué crédito corresponde el interés y el abono a capital para mayor claridad.
 -   **Testing**:
     -   [ ] **Backend**: Crear pruebas unitarias para la lógica de negocio de `recordTransactions`.
     -   [ ] **Frontend**: Crear pruebas para el flujo de pago en `Step1Collection.vue`.
@@ -160,9 +160,10 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
     -   [x] `POST /asset-revaluation/:meetingId`: Crear el endpoint para ejecutar y persistir la revalorización.
     -   [ ] **Detalle de Tareas de Implementación**:
         -   [x] Envolver la lógica de `executeRevaluation` en una **transacción de base de datos** para asegurar la atomicidad.
-        -   [ ] **Refactorizar `AssetRevaluationService`**:
-            -   [ ] La lógica debe manejar diferentes comportamientos de acciones (ver ADR-0006). Para acciones `DIVIDEND_YIELD`, calcular ganancias y generar "dividendos pendientes".
-            -   [ ] **Implementar lógica de revalorización justa**: La tasa de crecimiento por rendimientos se calcula sobre el capital *inicial* del período. Las ganancias se distribuyen, y solo después se suman las contribuciones de la reunión actual para obtener el capital final de cada socio.
+        -   [x] **Refactorizar `AssetRevaluationService`**:
+            -   [x] La lógica ahora maneja correctamente diferentes comportamientos de acciones (ver ADR-0006). Para acciones `DIVIDEND_YIELD`, el crecimiento por intereses se distribuye como dividendos y no aumenta el valor de la acción.
+            -   [x] El DTO y el resultado del preview ahora incluyen el campo `dividends_generated` por acción, visible en el frontend.
+            -   [x] **Implementar lógica de revalorización justa**: La tasa de crecimiento por rendimientos se calcula sobre el capital *inicial* del período. Las ganancias se distribuyen, y solo después se suman las contribuciones de la reunión actual para obtener el capital final de cada socio.
         -   [x] Por cada tipo de acción cuyo valor cambie, actualizar su `current_value` en la tabla `stocks` y crear un nuevo registro en `stock_value_history`.
         -   [x] Generar los asientos contables de partida doble en `ledger_entries` para reflejar la revalorización total o la generación de dividendos.
 -   **Testing**:

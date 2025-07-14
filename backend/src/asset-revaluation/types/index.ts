@@ -9,6 +9,7 @@ export interface RevaluationDetail {
   total_growth_per_share: number;
   estimated_growth_from_contributions: number;
   new_value: number;
+  dividends_generated?: number;
 }
 
 export interface RevaluationPreviewResult {

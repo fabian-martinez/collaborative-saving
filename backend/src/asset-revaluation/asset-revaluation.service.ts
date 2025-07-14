@@ -160,6 +160,18 @@ export class AssetRevaluationService {
       const estimatedGrowthFromContributions = Number(
         stock.monthly_contribution,
       );
+      let dividends_generated: number | undefined = undefined;
+      let new_value: number;
+      let total_growth_per_share: number;
+      if (stock.behavior === StockBehavior.DIVIDEND_YIELD) {
+        // Solo crece por aportes, no por intereses
+        dividends_generated = growthFromInterest * totalShares;
+        total_growth_per_share = growthFromContributions / totalShares;
+        new_value = Number(stock.value) + total_growth_per_share;
+      } else {
+        total_growth_per_share = totalGrowthPerShare;
+        new_value = Number(stock.value) + Number(totalGrowthPerShare);
+      }
       details.push({
         stock_id: stock.id,
         type: stock.type,
@@ -168,9 +180,10 @@ export class AssetRevaluationService {
         previous_value: Number(stock.value),
         growth_from_contributions: growthFromContributions / totalShares,
         growth_from_interest: growthFromInterest,
-        total_growth_per_share: totalGrowthPerShare,
+        total_growth_per_share,
         estimated_growth_from_contributions: estimatedGrowthFromContributions,
-        new_value: Number(stock.value) + Number(totalGrowthPerShare),
+        new_value,
+        dividends_generated,
       });
     }
 

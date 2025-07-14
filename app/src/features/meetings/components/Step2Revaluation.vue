@@ -72,6 +72,7 @@
                 <th class="text-right text-info">Crecimiento (Intereses)</th>
                 <th class="text-right text-success">Crecimiento Total</th>
                 <th class="text-right text-primary">Nuevo Valor</th>
+                <th class="text-right text-warning">Dividendos Generados</th>
               </tr>
             </thead>
             <tbody>
@@ -95,6 +96,12 @@
                 </td>
                 <td class="text-right font-bold text-primary">
                   ${{ Number(detail.new_value).toFixed(2) }}
+                </td>
+                <td class="text-right text-warning font-bold">
+                  <span v-if="typeof detail.dividends_generated === 'number' && detail.dividends_generated > 0">
+                    ${{ Number(detail.dividends_generated).toFixed(2) }}
+                  </span>
+                  <span v-else>-</span>
                 </td>
               </tr>
             </tbody>
