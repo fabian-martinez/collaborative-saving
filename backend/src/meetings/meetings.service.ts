@@ -73,7 +73,7 @@ export class MeetingsService {
 
   async recordMonthlyPayment(
     recordTransactionsDto: SimplifiedRecordTransactionsDto,
-  ): Promise<any> { // Cambia el tipo de retorno a any para incluir el desglose
+  ): Promise<any> {
     const { memberId, payments } = recordTransactionsDto;
 
     const activeMeeting = await this.meetingRepository.findOne({
@@ -124,9 +124,10 @@ export class MeetingsService {
       await queryRunner.manager.save(ledgerEntries);
 
       // Obtener los detalles de pagos de préstamos realizados en esta operación
-      const loanDetails: LoanTransactionDetail[] = await queryRunner.manager.find(LoanTransactionDetail, {
-        where: { operation_id: operation.id },
-      });
+      const loanDetails: LoanTransactionDetail[] =
+        await queryRunner.manager.find(LoanTransactionDetail, {
+          where: { operation_id: operation.id },
+        });
 
       await queryRunner.commitTransaction();
       return {
