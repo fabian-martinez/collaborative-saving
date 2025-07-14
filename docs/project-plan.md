@@ -98,11 +98,11 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
     -   [x] **Nuevo**: Implementar migración de BD para cambiar `stock_subscriptions.quantity` a un tipo `NUMERIC` de alta precisión para soportar **acciones fraccionadas**. _(Completado junio 2024)_
 
 **Cambios Requeridos para Soporte de Desembolso**:
-- [ ] **Nuevo**: Implementar lógica para retiros de acciones:
-  - [ ] Endpoint para solicitar retiro de acciones durante reunión
-  - [ ] Cálculo del valor actual de las acciones a retirar
-  - [ ] Creación de registros en `pending_member_payments`
-  - [ ] Actualización de `stock_subscriptions` al completar retiro
+- [x] **Nuevo**: Implementar lógica para retiros de acciones:
+  - [x] Endpoint para solicitar retiro de acciones durante reunión
+  - [x] Cálculo del valor actual de las acciones a retirar
+  - [x] Creación de registros en `pending_member_payments`
+  - [x] Actualización de `stock_subscriptions` al completar retiro
 - [ ] **Nuevo**: Soporte para acciones con comportamiento `DIVIDEND_YIELD`:
   - [ ] Modificar `AssetRevaluationService` para generar dividendos
   - [ ] Crear registros en `pending_member_payments` para dividendos
@@ -260,6 +260,7 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
   - [ ] Permitir al administrador **editar los montos** respetando las prioridades
   - [ ] Validar en tiempo real que las ediciones no superen el efectivo disponible
   - [ ] Implementar el botón "Confirmar y Finalizar Reunión"
+  - [ ] **[Pendiente] Incluir la suma de pendientes (deudas, dividendos, etc.) en el cálculo del total a entregar.**
 - [ ] **Actualizar servicio de API**: Añadir métodos para los nuevos endpoints de desembolso completos
 - [ ] **Actualizar store de reunión activa**: Manejar el estado del proceso de desembolso
 - [ ] **Validaciones de flujo**: Asegurar que no se pueda avanzar a desembolsos sin completar pasos anteriores

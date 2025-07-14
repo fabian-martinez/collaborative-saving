@@ -14,6 +14,7 @@ import { LedgerEntriesModule } from './ledger-entries/ledger-entries.module';
 import { MandatoryContributionsModule } from './mandatory-contributions/mandatory-contributions.module';
 import { AssetRevaluationModule } from './asset-revaluation/asset-revaluation.module';
 import { DuesModule } from './dues/dues.module';
+import { DividendsModule } from './dividends/dividends.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { DuesModule } from './dues/dues.module';
     MandatoryContributionsModule,
     AssetRevaluationModule,
     DuesModule,
+    DividendsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

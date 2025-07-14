@@ -38,6 +38,19 @@ export class DisbursementPlanItemDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @ApiProperty({ example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12' })
+  @IsUUID()
+  @IsOptional()
+  loanId?: string;
+
+  @ApiProperty({
+    description: 'ID del tipo de acción (solo para retiros de acciones)',
+    required: false,
+  })
+  @IsUUID()
+  @IsOptional()
+  stockId?: string;
 }
 
 export class DisbursementPlanPreviewResponseDto {

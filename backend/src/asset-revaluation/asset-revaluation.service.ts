@@ -23,6 +23,8 @@ import {
   REVALUATION_SURPLUS_ACCOUNT,
 } from '../common/constants/account-types';
 import { RevaluationDetail, RevaluationPreviewResult } from './types';
+import { PendingMemberPayment } from '../meetings/entities/pending-member-payment.entity';
+import { StockBehavior } from '../stocks/entities/stock.entity';
 
 @Injectable()
 export class AssetRevaluationService {
@@ -386,6 +388,14 @@ export class AssetRevaluationService {
 
       // 2. Create history records and update stock values
       for (const detail of details) {
+        const stock = await queryRunner.manager.findOneByOrFail(Stock, {
+          id: detail.stock_id,
+        });
+        // Si la acción es DIVIDEND_YIELD, no aumentar el valor, solo registrar historia con el mismo valor
+        const isDividendYield = stock.behavior === StockBehavior.DIVIDEND_YIELD;
+        const newValue = isDividendYield
+          ? detail.previous_value
+          : detail.new_value;
         const historyEntry = queryRunner.manager.create(StockValueHistory, {
           stock_id: detail.stock_id,
           operation_id: revaluationOperation.id,
@@ -393,60 +403,115 @@ export class AssetRevaluationService {
           growth_from_contributions: detail.growth_from_contributions,
           growth_from_interest: detail.growth_from_interest,
           total_growth_per_share: detail.total_growth_per_share,
-          new_value: detail.new_value,
+          new_value: newValue,
         });
         await queryRunner.manager.save(historyEntry);
-
         await queryRunner.manager.update(Stock, detail.stock_id, {
-          value: detail.new_value,
+          value: newValue,
         });
       }
 
       // 3. Create Ledger Entries for the revaluation, split by source
       const ledgerEntries: LedgerEntry[] = [];
-
       // Asientos por cada tipo de acción revalorizada
       for (const detail of details) {
-        // Por aportes de capital
-        if (detail.growth_from_contributions > 0) {
-          ledgerEntries.push(
-            queryRunner.manager.create(LedgerEntry, {
-              operation_id: revaluationOperation.id,
-              account_type: INVESTMENT_IN_STOCKS_ACCOUNT,
-              amount: detail.growth_from_contributions * detail.total_shares,
-              description: `Aumento de valor por aportes de capital en acción ${detail.type}`,
-              stock_id: detail.stock_id,
-            }),
-            queryRunner.manager.create(LedgerEntry, {
-              operation_id: revaluationOperation.id,
-              account_type: REVALUATION_SURPLUS_ACCOUNT,
-              amount: -detail.growth_from_contributions * detail.total_shares,
-              description: `Contrapartida por aportes de capital en acción ${detail.type}`,
-              stock_id: detail.stock_id,
-            }),
-          );
-        }
-        // Por intereses
-        if (detail.growth_from_interest > 0) {
-          ledgerEntries.push(
-            queryRunner.manager.create(LedgerEntry, {
-              operation_id: revaluationOperation.id,
-              account_type: INVESTMENT_IN_STOCKS_ACCOUNT,
-              amount: detail.growth_from_interest * detail.total_shares,
-              description: `Aumento de valor por intereses en acción ${detail.type}`,
-              stock_id: detail.stock_id,
-            }),
-            queryRunner.manager.create(LedgerEntry, {
-              operation_id: revaluationOperation.id,
-              account_type: REVALUATION_SURPLUS_ACCOUNT,
-              amount: -detail.growth_from_interest * detail.total_shares,
-              description: `Contrapartida por intereses en acción ${detail.type}`,
-              stock_id: detail.stock_id,
-            }),
-          );
+        const stock = await queryRunner.manager.findOneByOrFail(Stock, {
+          id: detail.stock_id,
+        });
+        const isDividendYield = stock.behavior === StockBehavior.DIVIDEND_YIELD;
+        if (isDividendYield) {
+          // Generar dividendos: distribuir growth_from_interest como dividendos
+          if (detail.growth_from_interest > 0) {
+            // Obtener suscripciones activas para esta acción
+            const subscriptions = await queryRunner.manager.find(
+              StockSubscription,
+              { where: { stock_id: detail.stock_id, status: 'active' } },
+            );
+            const totalShares = subscriptions.reduce(
+              (sum, sub) => sum + Number(sub.quantity),
+              0,
+            );
+            if (totalShares > 0) {
+              for (const sub of subscriptions) {
+                const memberDividend =
+                  (Number(sub.quantity) / totalShares) *
+                  (detail.growth_from_interest * detail.total_shares);
+                if (memberDividend > 0) {
+                  const pendingDividend = queryRunner.manager.create(
+                    PendingMemberPayment,
+                    {
+                      member_id: sub.member_id,
+                      meeting_id: meetingId,
+                      type: 'dividendo',
+                      amount: memberDividend,
+                      status: 'pending',
+                      notes: `Dividendo generado por acción ${stock.type}`,
+                      stock_id: detail.stock_id,
+                    },
+                  );
+                  await queryRunner.manager.save(pendingDividend);
+                }
+              }
+              // Asiento contable: pasivo por dividendos por pagar
+              ledgerEntries.push(
+                queryRunner.manager.create(LedgerEntry, {
+                  operation_id: revaluationOperation.id,
+                  account_type: 'DIVIDENDS_PAYABLE_ACCOUNT',
+                  amount: detail.growth_from_interest * detail.total_shares,
+                  description: `Dividendo generado por acción ${stock.type}`,
+                  stock_id: detail.stock_id,
+                }),
+                queryRunner.manager.create(LedgerEntry, {
+                  operation_id: revaluationOperation.id,
+                  account_type: REVALUATION_SURPLUS_ACCOUNT,
+                  amount: -detail.growth_from_interest * detail.total_shares,
+                  description: `Contrapartida por dividendos en acción ${stock.type}`,
+                  stock_id: detail.stock_id,
+                }),
+              );
+            }
+          }
+        } else {
+          // Por aportes de capital
+          if (detail.growth_from_contributions > 0) {
+            ledgerEntries.push(
+              queryRunner.manager.create(LedgerEntry, {
+                operation_id: revaluationOperation.id,
+                account_type: INVESTMENT_IN_STOCKS_ACCOUNT,
+                amount: detail.growth_from_contributions * detail.total_shares,
+                description: `Aumento de valor por aportes de capital en acción ${detail.type}`,
+                stock_id: detail.stock_id,
+              }),
+              queryRunner.manager.create(LedgerEntry, {
+                operation_id: revaluationOperation.id,
+                account_type: REVALUATION_SURPLUS_ACCOUNT,
+                amount: -detail.growth_from_contributions * detail.total_shares,
+                description: `Contrapartida por aportes de capital en acción ${detail.type}`,
+                stock_id: detail.stock_id,
+              }),
+            );
+          }
+          // Por intereses
+          if (detail.growth_from_interest > 0) {
+            ledgerEntries.push(
+              queryRunner.manager.create(LedgerEntry, {
+                operation_id: revaluationOperation.id,
+                account_type: INVESTMENT_IN_STOCKS_ACCOUNT,
+                amount: detail.growth_from_interest * detail.total_shares,
+                description: `Aumento de valor por intereses en acción ${detail.type}`,
+                stock_id: detail.stock_id,
+              }),
+              queryRunner.manager.create(LedgerEntry, {
+                operation_id: revaluationOperation.id,
+                account_type: REVALUATION_SURPLUS_ACCOUNT,
+                amount: -detail.growth_from_interest * detail.total_shares,
+                description: `Contrapartida por intereses en acción ${detail.type}`,
+                stock_id: detail.stock_id,
+              }),
+            );
+          }
         }
       }
-
       // Asientos para aportes obligatorios (revalorización de aportes obligatorios)
       if (
         preview.mandatory_contributions_by_type &&
@@ -473,11 +538,8 @@ export class AssetRevaluationService {
           );
         }
       }
-
       await queryRunner.manager.save(ledgerEntries);
-
       await queryRunner.commitTransaction();
-
       return preview;
     } catch (err) {
       await queryRunner.rollbackTransaction();

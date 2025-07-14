@@ -17,6 +17,7 @@ import {
   ExecuteDisbursementPlanDto,
   DisbursementPlanPreviewResponseDto,
 } from './dto/disbursement-plan.dto';
+import { WithdrawStockForMemberDto } from './dto/withdraw-stock-for-member.dto';
 
 @ApiTags('meetings')
 @Controller('meetings')
@@ -110,6 +111,18 @@ export class MeetingsController {
     @Body() dto: BuyStockForMemberDto,
   ) {
     return this.meetingsService.buyStocksForMember(meetingId, dto);
+  }
+
+  @Post(':meetingId/withdraw/stocks')
+  @ApiOperation({
+    summary: 'Solicitar retiro de acciones para un socio en la reunión',
+  })
+  @ApiBody({ type: WithdrawStockForMemberDto })
+  withdrawStocksForMember(
+    @Param('meetingId') meetingId: string,
+    @Body() dto: WithdrawStockForMemberDto,
+  ) {
+    return this.meetingsService.withdrawStocksForMember(meetingId, dto);
   }
 
   @Get(':id/disbursement-plan/preview')

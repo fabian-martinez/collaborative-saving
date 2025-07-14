@@ -28,6 +28,8 @@ import {
   ExecuteDisbursementPlanDto,
   DisbursementPlanItemDto,
 } from './dto/disbursement-plan.dto';
+import { WithdrawStockForMemberDto } from './dto/withdraw-stock-for-member.dto';
+import { DisbursementStrategyFactory } from './strategies/disbursement-strategy.factory';
 
 @Injectable()
 export class MeetingsService {
@@ -41,6 +43,7 @@ export class MeetingsService {
     private readonly paymentStrategyFactory: PaymentStrategyFactory,
     private readonly stocksService: StocksService,
     private readonly loansService: LoansService,
+    private readonly disbursementStrategyFactory: DisbursementStrategyFactory,
   ) {}
 
   findAll(): Promise<Meeting[]> {
@@ -220,6 +223,57 @@ export class MeetingsService {
     return this.stocksService.purchaseForMember(meetingId, dto);
   }
 
+  async withdrawStocksForMember(
+    meetingId: string,
+    dto: WithdrawStockForMemberDto,
+  ) {
+    // Validar que la reunión existe y está activa
+    const meeting = await this.meetingRepository.findOneBy({ id: meetingId });
+    if (!meeting || meeting.status !== 'active') {
+      throw new BadRequestException('La reunión no existe o no está activa.');
+    }
+    // Validar que el socio tiene suscripción suficiente
+    const subscriptions =
+      await this.stocksService.getStockSubscriptionByMemberAndStock({
+        stockId: dto.stockId,
+        memberId: dto.memberId,
+      });
+    // Filtrar solo suscripciones sin crédito asociado
+    const withdrawableSubscriptions = subscriptions.filter(
+      (sub) => sub.financing_loan_id === null,
+    );
+    const totalWithdrawable = withdrawableSubscriptions.reduce(
+      (sum, sub) => sum + Number(sub.quantity),
+      0,
+    );
+    if (totalWithdrawable < dto.quantity) {
+      throw new BadRequestException(
+        'Solo puede retirar acciones que no tengan un crédito asociado. La cantidad solicitada excede las acciones libres de crédito.',
+      );
+    }
+    // Obtener el valor actual de la acción
+    const stock = await this.stocksService.findOne(dto.stockId);
+    const amount = Number(stock.value) * dto.quantity;
+    // Crear registro en pending_member_payments
+    const pendingPayment = this.dataSource.manager.create(
+      PendingMemberPayment,
+      {
+        member_id: dto.memberId,
+        meeting_id: meetingId,
+        type: 'retiro_accion',
+        amount,
+        status: 'pending',
+        notes: dto.notes,
+        stock_id: dto.stockId,
+      },
+    );
+    await this.dataSource.manager.save(pendingPayment);
+    return {
+      message: 'Solicitud de retiro registrada exitosamente.',
+      pendingPaymentId: pendingPayment.id,
+    };
+  }
+
   async previewDisbursementPlan(
     meetingId: string,
   ): Promise<DisbursementPlanPreviewResponseDto> {
@@ -254,6 +308,7 @@ export class MeetingsService {
       amount: Number(p.amount),
       status: p.status as DisbursementPlanItemDto['status'],
       notes: p.notes,
+      stockId: p.stock_id || undefined,
     }));
     const totalToDisburse = plan.reduce((sum, item) => sum + item.amount, 0);
     return { plan, availableCash, totalToDisburse };
@@ -264,7 +319,6 @@ export class MeetingsService {
     dto: ExecuteDisbursementPlanDto,
   ) {
     // 1. Validar que el plan no exceda el efectivo disponible
-    // const availableCash = 1000;
     const availableCash = await this.dataSource.manager
       .getRepository(LedgerEntry)
       .find({
@@ -305,10 +359,15 @@ export class MeetingsService {
             meeting_id: meetingId,
             type: item.type,
             status: 'pending',
+            ...(item.stockId ? { stock_id: item.stockId } : {}),
           },
           { status: 'paid' },
         );
-        // TODO: Generar asientos contables y actualizar entidades según el tipo de desembolso
+        // Usar el patrón Strategy para procesar el desembolso
+        const strategy = this.disbursementStrategyFactory.getStrategy(
+          item.type,
+        );
+        await strategy.execute({ queryRunner, meetingId, item });
       }
       await queryRunner.commitTransaction();
       return { success: true };

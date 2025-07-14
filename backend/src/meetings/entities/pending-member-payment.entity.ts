@@ -32,6 +32,9 @@ export class PendingMemberPayment {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
+  @Column({ type: 'uuid', nullable: true })
+  stock_id: string | null;
+
   @CreateDateColumn({ type: 'timestamp with time zone' })
   created_at: Date;
 

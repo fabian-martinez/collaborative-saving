@@ -22,6 +22,7 @@ export const OperationType = [
   'MONTHLY_PAYMENT',
   'ASSET_REVALUATION',
   'UNDEFINED',
+  'STOCK_WITHDRAWAL',
 ] as const;
 
 export type OperationTypeEnum = (typeof OperationType)[number];

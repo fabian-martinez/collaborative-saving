@@ -52,7 +52,7 @@
       <Step2Revaluation v-if="activeMeetingStore.currentStep === 2" @completed="goToNextStep" />
       <Step3StockPurchase v-if="activeMeetingStore.currentStep === 3" @completed="goToNextStep" />
       <Step4StockModification v-if="activeMeetingStore.currentStep === 4" @completed="goToNextStep" />
-      <Step5Disbursements v-if="activeMeetingStore.currentStep === 5" @completed="finishMeeting" />
+      <Step5Disbursements v-if="activeMeetingStore.currentStep === 5" />
     </div>
   </div>
 </template>

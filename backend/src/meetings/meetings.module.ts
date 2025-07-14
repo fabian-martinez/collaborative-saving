@@ -20,6 +20,8 @@ import { DuesModule } from '../dues/dues.module';
 import { MembersModule } from '../members/members.module';
 import { StocksModule } from '../stocks/stocks.module';
 import { PendingMemberPayment } from './entities/pending-member-payment.entity';
+import { DisbursementStrategyFactory } from './strategies/disbursement-strategy.factory';
+import { StockWithdrawalStrategy } from './strategies/stock-withdrawal.strategy';
 
 @Module({
   imports: [
@@ -43,6 +45,8 @@ import { PendingMemberPayment } from './entities/pending-member-payment.entity';
     FeeStrategy,
     InsuranceStrategy,
     DefaultPaymentStrategy,
+    DisbursementStrategyFactory,
+    StockWithdrawalStrategy,
   ],
   controllers: [MeetingsController],
   exports: [MeetingsService],
