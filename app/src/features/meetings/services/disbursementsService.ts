@@ -1,4 +1,5 @@
 import { api } from '@/services/api'
+import type { DisbursementPlan } from '../types'
 
 export default {
   // Obtiene el plan de desembolso pendiente y el efectivo disponible
@@ -6,7 +7,8 @@ export default {
     return api.get(`/meetings/${meetingId}/disbursement-plan/preview`)
   },
   // Ejecuta el plan de desembolso
-  async executeDisbursementPlan(meetingId: string, plan: any) {
-    return api.post(`/meetings/${meetingId}/disbursement-plan/execute`, plan)
+  async executeDisbursementPlan(meetingId: string, plan: DisbursementPlan[]) {
+    console.log('plan', plan)
+    return api.post(`/meetings/${meetingId}/disbursement-plan/execute`, { plan })
   },
 } 

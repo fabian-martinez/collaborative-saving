@@ -64,20 +64,20 @@
         </div>
         <div v-else class="bg-base-100 p-8 rounded-2xl shadow-lg font-sans">
           <h3 class="text-xl font-bold mb-4">Recibo de Desembolsos para {{ selectedMember.name }}</h3>
-          <div v-if="localLoans.length > 0 || localWithdrawals.length > 0 || pendingTransactions.length > 0 || selectedMemberDividends.length > 0">
+          <div v-if="localLoans.length > 0 || localWithdrawals.length > 0 || pendingTransactions.length > 0 || selectedMemberDividends.length > 0 || localOtherDisbursements.length > 0">
             <div class="space-y-4">
               <!-- Transacciones pendientes -->
               <div v-for="(pending, idx) in pendingTransactions" :key="`pending-${idx}`" class="py-4 rounded opacity-95">
                 <div class="flex items-baseline">
                   <div class="flex-shrink-0">
                     <p class="font-semibold text-lg text-yellow-800">{{ pending.description }} (Pendiente)</p>
-                    <p class="text-sm text-yellow-700">Monto original: ${{ pending.originalAmount.toFixed(2) }}</p>
+                    <p class="text-sm text-yellow-700">Monto original: ${{ pending.originalAmount !== undefined ? pending.originalAmount.toFixed(2) : 'N/D' }}</p>
                   </div>
                   <div class="flex-grow border-b-2 border-dotted border-yellow-300 mx-4"></div>
                   <div class="flex-shrink-0 flex items-center gap-2">
                     <button class="btn btn-ghost btn-xs text-yellow-800" @click="editPendingTransaction(pending, idx)">Editar</button>
                     <button class="btn btn-ghost btn-xs text-error" @click="postponePending(idx)">Aplazar</button>
-                    <p class="w-36 text-right font-mono text-2xl text-yellow-800">${{ pending.pendingAmount.toFixed(2) }}</p>
+                    <p class="w-36 text-right font-mono text-2xl text-yellow-800">${{ (pending.amount ?? 0).toFixed(2) }}</p>
                   </div>
                 </div>
                 <div class="pl-4 mt-2 space-y-1 text-md text-yellow-700 border-l-2 border-yellow-300 flex gap-4 items-center">
@@ -91,13 +91,13 @@
                 <div class="flex items-baseline">
                   <div class="flex-shrink-0">
                     <p class="font-semibold text-lg text-green-800">{{ loan.type === 'corriente' ? 'Préstamo Corriente' : 'Préstamo Ágil' }}</p>
-                    <p class="text-sm text-green-700">Aprobado: ${{ loan.approved.toFixed(2) }}</p>
+                    <p class="text-sm text-green-700">Aprobado: ${{ (loan.approved ?? 0).toFixed(2) }}</p>
                   </div>
                   <div class="flex-grow border-b-2 border-dotted border-green-300 mx-4"></div>
                   <div class="flex-shrink-0 flex items-center gap-2">
                     <button class="btn btn-ghost btn-xs text-green-800" @click="editLoan(idx)">Editar</button>
                     <button class="btn btn-ghost btn-xs text-error" @click="removeLoan(idx)">Anular</button>
-                    <p class="w-36 text-right font-mono text-2xl text-green-800">${{ loan.delivered.toFixed(2) }}</p>
+                    <p class="w-36 text-right font-mono text-2xl text-green-800">${{ (loan.delivered ?? 0).toFixed(2) }}</p>
                   </div>
                 </div>
                 <div class="pl-4 mt-2 space-y-1 text-md text-green-700 border-l-2 border-green-300 flex gap-4 items-center">
@@ -110,17 +110,17 @@
                 <div class="flex items-baseline">
                   <div class="flex-shrink-0">
                     <p class="font-semibold text-lg text-green-800">Retiro de Acciones {{ withdrawal.stockType }}</p>
-                    <p class="text-sm text-green-700">Cantidad: {{ withdrawal.quantity }} | Valor estimado: ${{ withdrawal.estimatedValue.toFixed(2) }}</p>
+                    <p class="text-sm text-green-700">Cantidad: {{ withdrawal.quantity }} | Valor estimado: ${{ (withdrawal.estimatedValue ?? 0).toFixed(2) }}</p>
                   </div>
                   <div class="flex-grow border-b-2 border-dotted border-green-300 mx-4"></div>
                   <div class="flex-shrink-0 flex items-center gap-2">
                     <button class="btn btn-ghost btn-xs text-error" @click="removeWithdrawal(idx)">Anular</button>
-                    <p class="w-36 text-right font-mono text-2xl text-green-800">${{ withdrawal.deliveredAmount.toFixed(2) }}</p>
+                    <p class="w-36 text-right font-mono text-2xl text-green-800">${{ (withdrawal.deliveredAmount ?? 0).toFixed(2) }}</p>
                   </div>
                 </div>
                 <div class="pl-4 mt-2 space-y-1 text-md text-green-700 border-l-2 border-green-300 flex gap-4 items-center">
-                  <span><b>Valor por acción:</b> <span>${{ (withdrawal.estimatedValue / withdrawal.quantity).toFixed(2) }}</span></span>
-                  <span><b>Pendiente por entregar:</b> <span class="text-green-800">${{ withdrawal.pending.toFixed(2) }}</span></span>
+                  <span><b>Valor por acción:</b> <span>${{ withdrawal.quantity ? (withdrawal.estimatedValue / withdrawal.quantity).toFixed(2) : 'N/D' }}</span></span>
+                  <span><b>Pendiente por entregar:</b> <span class="text-green-800">${{ (withdrawal.pending ?? 0).toFixed(2) }}</span></span>
                 </div>
               </div>
               <!-- Dividendos integrados con color diferenciado solo en texto/acento -->
@@ -133,7 +133,7 @@
                   <div class="flex-grow border-b-2 border-dotted border-blue-300 mx-4"></div>
                   <div class="flex-shrink-0 flex items-center gap-2">
                     <button class="btn btn-ghost btn-xs text-error" @click="postponeDividend(idx)">Aplazar</button>
-                    <p class="w-36 text-right font-mono text-2xl text-blue-800">${{ dividend.amount.toFixed(2) }}</p>
+                    <p class="w-36 text-right font-mono text-2xl text-blue-800">${{ (dividend.amount ?? 0).toFixed(2) }}</p>
                   </div>
                 </div>
                 <div class="pl-4 mt-2 space-y-1 text-md text-blue-700 border-l-2 border-blue-300 flex gap-4 items-center">
@@ -141,10 +141,28 @@
                   <span><b>Estado:</b> <span class="text-blue-800">Pendiente de entrega</span></span>
                 </div>
               </div>
+              <!-- Otros desembolsos -->
+              <div v-for="(other, idx) in localOtherDisbursements" :key="'other-' + idx" class="py-4 rounded opacity-95">
+                <div class="flex items-baseline">
+                  <div class="flex-shrink-0">
+                    <p class="font-semibold text-lg text-purple-800">Otro Desembolso</p>
+                    <p class="text-sm text-purple-700">{{ other.description }}</p>
+                  </div>
+                  <div class="flex-grow border-b-2 border-dotted border-purple-300 mx-4"></div>
+                  <div class="flex-shrink-0 flex items-center gap-2">
+                    <button class="btn btn-ghost btn-xs text-error" @click="removeOtherDisbursement(idx)">Anular</button>
+                    <button class="btn btn-ghost btn-xs text-purple-800" @click="editOtherDisbursement(idx)">Editar</button>
+                    <p class="w-36 text-right font-mono text-2xl text-purple-800">${{ (other.amount ?? 0).toFixed(2) }}</p>
+                  </div>
+                </div>
+                <div class="pl-4 mt-2 space-y-1 text-md text-purple-700 border-l-2 border-purple-300 flex gap-4 items-center">
+                  <span><b>Tipo:</b> Otro</span>
+                </div>
+              </div>
               <div class="flex items-baseline text-2xl font-bold mt-6">
                 <span class="flex-shrink-0">Total a entregar:</span>
                 <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
-                <span class="flex-shrink-0 text-primary font-mono">${{ (localLoans.reduce((sum, l) => sum + l.delivered, 0) + localWithdrawals.reduce((sum, w) => sum + w.deliveredAmount, 0) + pendingTransactions.reduce((sum, p) => sum + p.pendingAmount, 0) + selectedMemberDividends.reduce((sum, d) => sum + d.amount, 0)).toFixed(2) }}</span>
+                <span class="flex-shrink-0 text-primary font-mono">${{ (localLoans.reduce((sum: number, l: any) => sum + l.delivered, 0) + localWithdrawals.reduce((sum: number, w: any) => sum + w.deliveredAmount, 0) + pendingTransactions.reduce((sum: number, p: any) => sum + p.amount, 0) + selectedMemberDividends.reduce((sum: number, d: any) => sum + d.amount, 0) + localOtherDisbursements.reduce((sum: number, o: any) => sum + o.amount, 0)).toFixed(2) }}</span>
               </div>
             </div>
           </div>
@@ -155,17 +173,17 @@
               <div class="flex items-baseline">
                 <div class="flex-shrink-0">
                   <p class="font-semibold text-lg">Retiro de Acciones {{ withdrawal.stockType }}</p>
-                  <p class="text-sm text-base-content/70">Cantidad: {{ withdrawal.quantity }} | Valor estimado: ${{ withdrawal.estimatedValue.toFixed(2) }}</p>
+                  <p class="text-sm text-base-content/70">Cantidad: {{ withdrawal.quantity }} | Valor estimado: ${{ (withdrawal.estimatedValue ?? 0).toFixed(2) }}</p>
                 </div>
                 <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
                 <div class="flex-shrink-0 flex items-center gap-2">
                   <button class="btn btn-ghost btn-xs text-error" @click="removeWithdrawal(idx)">Anular</button>
-                  <p class="w-36 text-right font-mono text-2xl text-secondary">${{ withdrawal.deliveredAmount.toFixed(2) }}</p>
+                  <p class="w-36 text-right font-mono text-2xl text-secondary">${{ (withdrawal.deliveredAmount ?? 0).toFixed(2) }}</p>
                 </div>
               </div>
               <div class="pl-4 mt-2 space-y-1 text-md text-base-content/80 border-l-2 border-base-300/80">
-                <div class="flex justify-between"><span>Valor por acción:</span> <span>${{ (withdrawal.estimatedValue / withdrawal.quantity).toFixed(2) }}</span></div>
-                <div class="flex justify-between"><span>Pendiente por entregar:</span> <span class="text-warning">${{ withdrawal.pending.toFixed(2) }}</span></div>
+                <div class="flex justify-between"><span>Valor por acción:</span> <span>${{ withdrawal.quantity ? (withdrawal.estimatedValue / withdrawal.quantity).toFixed(2) : 'N/D' }}</span></div>
+                <div class="flex justify-between"><span>Pendiente por entregar:</span> <span class="text-warning">${{ (withdrawal.pending ?? 0).toFixed(2) }}</span></div>
               </div>
             </div>
             <!-- Transacciones pendientes (solo retiros) -->
@@ -173,12 +191,12 @@
               <div class="flex items-baseline">
                 <div class="flex-shrink-0">
                   <p class="font-semibold text-lg text-warning">{{ pending.description }} (Pendiente)</p>
-                  <p class="text-sm text-base-content/70">Monto original: ${{ pending.originalAmount.toFixed(2) }}</p>
+                  <p class="text-sm text-base-content/70">Monto original: ${{ (pending.originalAmount ?? 0).toFixed(2) }}</p>
                 </div>
                 <div class="flex-grow border-b-2 border-dotted border-warning/30 mx-4"></div>
                 <div class="flex-shrink-0 flex items-center gap-2">
                   <span class="badge badge-warning badge-sm">API</span>
-                  <p class="w-36 text-right font-mono text-2xl text-warning">${{ pending.pendingAmount.toFixed(2) }}</p>
+                  <p class="w-36 text-right font-mono text-2xl text-warning">${{ (pending.amount ?? 0).toFixed(2) }}</p>
                 </div>
               </div>
               <div class="pl-4 mt-2 space-y-1 text-md text-base-content/60 border-l-2 border-warning/30">
@@ -189,12 +207,18 @@
             <div class="flex items-baseline text-2xl font-bold mt-6">
               <span class="flex-shrink-0">Total a entregar:</span>
               <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
-              <span class="flex-shrink-0 text-primary font-mono">${{ (localWithdrawals.reduce((sum, w) => sum + w.deliveredAmount, 0) + pendingTransactions.reduce((sum, p) => sum + p.pendingAmount, 0)).toFixed(2) }}</span>
+              <span class="flex-shrink-0 text-primary font-mono">
+                ${{ (localWithdrawals.reduce(
+                  (sum: number, w: any) => sum + w.deliveredAmount, 0) 
+                  + pendingTransactions.reduce(
+                    (sum: number, p: any) => sum + p.amount, 0
+                    ) + localOtherDisbursements.reduce((sum: number, o: any) => sum + o.amount, 0)).toFixed(2) }}</span>
             </div>
           </div>
           <div class="flex gap-4 mt-6">
             <button class="btn btn-primary" @click="openModal">Solicitar/Editar Préstamo</button>
             <button class="btn btn-secondary" @click="openStockWithdrawalModal">Solicitar Retiro de Acciones</button>
+            <button class="btn btn-accent" @click="openOtherDisbursementModal">Registrar Otro Desembolso</button>
           </div>
         </div>
       </div>
@@ -217,6 +241,12 @@
       @save="handleSaveStockWithdrawal"
       @cancel="closeStockWithdrawalModal"
     />
+    <EditFineModal
+      :visible="showOtherDisbursementModal"
+      :initialData="editingOtherDisbursementIdx !== null ? localOtherDisbursements[editingOtherDisbursementIdx] : null"
+      @close="closeOtherDisbursementModal"
+      @save="handleSaveOtherDisbursement"
+    />
     <div v-if="hayDesembolsosPendientes()" class="mt-8 flex flex-col items-center">
       <button class="btn btn-primary btn-lg" :disabled="isApplying" @click="aplicarDesembolsos">
         <span v-if="isApplying" class="loading loading-spinner"></span>
@@ -237,6 +267,10 @@ import StockWithdrawalModal from './StockWithdrawalModal.vue'
 import { stocksService, type StockSubscription } from '@/features/stocks/services/stocksService'
 import { loansService } from '@/features/loans/services/loansService'
 import type { Member } from '@/features/members/types'
+import { useRouter } from 'vue-router'
+import { meetingsService } from '@/features/meetings/services/meetings'
+import EditFineModal from './EditFineModal.vue'
+import type { DisbursementPlan } from '../types'
 
 const activeMeetingStore = useActiveMeetingStore()
 const meetingId = computed(() => activeMeetingStore.meetingId)
@@ -285,6 +319,8 @@ const maxCapacity = computed(() => {
   const max = (totalStockValue * 2.0) - totalNonStockLoans
   return max > 0 ? max : 0
 })
+
+const router = useRouter()
 
 onMounted(async () => {
   if (!meetingId.value) {
@@ -398,7 +434,7 @@ function handleSaveLoan(loan: { type: string; approved: number; delivered: numbe
     transactions[editingPendingIdx.value] = {
       type: 'loan',
       description: loan.type === 'corriente' ? 'Préstamo Corriente' : 'Préstamo Ágil',
-      pendingAmount: loan.delivered,
+      amount: loan.delivered,
       originalAmount: loan.approved
     }
     pendingTransactions.value = transactions
@@ -448,7 +484,7 @@ function handleSaveStockWithdrawal(withdrawalData: any) {
     transactions[editingPendingIdx.value] = {
       type: 'withdrawal',
       description: 'Retiro de Acciones (Editado)',
-      pendingAmount: withdrawalData.deliveredAmount,
+      amount: withdrawalData.deliveredAmount,
       originalAmount: withdrawalData.estimatedTotal
     }
     pendingTransactions.value = transactions
@@ -469,7 +505,7 @@ function handleSaveStockWithdrawal(withdrawalData: any) {
   localWithdrawals.value = withdrawals
   closeStockWithdrawalModal()
 }
-function editPendingTransaction(pending: { type: 'loan' | 'withdrawal'; description: string; pendingAmount: number; originalAmount: number }, idx: number) {
+function editPendingTransaction(pending: { type: 'loan' | 'withdrawal'; description: string; amount: number; originalAmount: number }, idx: number) {
   if (!selectedMember.value) return
   editingPendingIdx.value = idx
   editingPendingType.value = pending.type
@@ -486,7 +522,7 @@ function getPrevLoanData() {
     return {
       type: loanType,
       approved: pending.originalAmount,
-      delivered: pending.pendingAmount
+      delivered: pending.amount
     }
   }
   if (editingLoanIdx.value !== null && editingLoanIdx.value >= 0) {
@@ -495,11 +531,12 @@ function getPrevLoanData() {
   return null
 }
 function getTotalToDeliver(memberId: string) {
-  const loans = localLoansByMember.value[memberId]?.reduce((sum, l) => sum + l.delivered, 0) || 0
-  const withdrawals = localWithdrawalsByMember.value[memberId]?.reduce((sum, w) => sum + w.deliveredAmount, 0) || 0
-  const pending = pendingTransactionsByMember.value[memberId]?.reduce((sum, t) => sum + t.pendingAmount, 0) || 0
-  const dividends = dividendsByMember.value[memberId]?.reduce((sum, d) => sum + d.amount, 0) || 0
-  return loans + withdrawals + pending + dividends
+  const loans = localLoansByMember.value[memberId]?.reduce((sum: number, l: any) => sum + l.delivered, 0) || 0
+  const withdrawals = localWithdrawalsByMember.value[memberId]?.reduce((sum: number, w: any) => sum + w.deliveredAmount, 0) || 0
+  const pending = pendingTransactionsByMember.value[memberId]?.reduce((sum: number, t: any) => sum + t.amount, 0) || 0
+  const dividends = dividendsByMember.value[memberId]?.reduce((sum: number, d: any) => sum + d.amount, 0) || 0
+  const others = localOtherDisbursementsByMember.value[memberId]?.reduce((sum: number, o: any) => sum + o.amount, 0) || 0
+  return loans + withdrawals + pending + dividends + others
 }
 const deliverySummary = computed(() => {
   return members.value
@@ -549,36 +586,72 @@ async function aplicarDesembolsos() {
   applySuccess.value = false
   try {
     // Construir el plan a enviar
-    const plan: any[] = []
+    const plan: DisbursementPlan[] = []
     for (const member of members.value) {
       // Préstamos
       if (localLoansByMember.value[member.id]) {
         for (const loan of localLoansByMember.value[member.id]) {
+          let interestRate = null;
+          if (loan.type === 'corriente') interestRate = 0.015;
+          else if (loan.type === 'agil') interestRate = 0.02;
           plan.push({
             ...loan,
             memberId: member.id,
-            type: 'nuevo_prestamo',
-            amount: Number(loan.delivered)
+            type: 'loan',
+            status: 'pending',
+            amount: Number(loan.delivered),
+            newLoanRequest: {
+              memberId: member.id,
+              amount: Number(loan.delivered),
+              loanType: loan.type as 'corriente' | 'agil' | 'accion',
+              approvedAmount: Number(loan.approved),
+              monthlyPaymentAmount: 0,
+              interestRate: interestRate || 0,
+              notes: ''
+            }
           })
         }
       }
-      // Retiros
+      // Retiros (enviar cada retiro individualmente)
       if (localWithdrawalsByMember.value[member.id]) {
         for (const withdrawal of localWithdrawalsByMember.value[member.id]) {
-          plan.push({
-            ...withdrawal,
-            memberId: member.id,
-            type: 'retiro_accion',
-            amount: Number(withdrawal.deliveredAmount)
-          })
+          const withdrawalAny = withdrawal as any;
+          if (typeof withdrawalAny.withdrawals !== 'undefined' && Array.isArray(withdrawalAny.withdrawals)) {
+            for (const w of withdrawalAny.withdrawals) {
+              plan.push({
+                ...withdrawal,
+                memberId: member.id,
+                type: 'withdrawal',
+                status: 'pending',
+                amount: Number(withdrawal.deliveredAmount),
+                disbursementStockRequest: {
+                  stockId: w.stockId || '',
+                  stockWithdrawalQuantity: w.quantity || 0
+                }
+              })
+            }
+          } else {
+            // Caso legacy: solo un retiro
+            plan.push({
+              ...withdrawal,
+              memberId: member.id,
+              type: 'withdrawal',
+              status: 'pending',
+              amount: Number(withdrawal.deliveredAmount),
+              disbursementStockRequest: {
+                stockId: '',
+                stockWithdrawalQuantity: withdrawal.quantity || 0
+              }
+            })
+          }
         }
       }
       // Pendientes
       if (pendingTransactionsByMember.value[member.id]) {
         for (const pending of pendingTransactionsByMember.value[member.id]) {
           let typeApi = 'otro';
-          let amountApi = Number(pending.pendingAmount || pending.amount || 0);
-          if (pending.type === 'loan') typeApi = 'nuevo_prestamo';
+          let amountApi = Number(pending.amount || 0);
+          if (pending.type === 'loan') typeApi = 'loan';
           else if (pending.type === 'withdrawal') typeApi = 'retiro_accion';
           else if (pending.type === 'dividendo') typeApi = 'dividendo';
           plan.push({
@@ -595,13 +668,33 @@ async function aplicarDesembolsos() {
           plan.push({
             ...dividend,
             memberId: member.id,
-            type: 'dividendo',
+            type: 'dividend',
+            status: 'pending',
             amount: Number(dividend.amount)
           })
         }
       }
+      // Otros desembolsos
+      if (localOtherDisbursementsByMember.value[member.id]) {
+        for (const other of localOtherDisbursementsByMember.value[member.id]) {
+          plan.push({
+            ...other,
+            memberId: member.id,
+            type: 'other',
+            status: 'pending',
+            notes: other.description,
+            amount: Number(other.amount)
+          })
+        }
+      }
     }
-    await disbursementsService.executeDisbursementPlan(meetingId.value, { plan })
+    await disbursementsService.executeDisbursementPlan(meetingId.value, plan)
+    // Cerrar la reunión
+    await meetingsService.close(meetingId.value)
+    // Limpiar el store activo
+    activeMeetingStore.$reset()
+    // Redirigir a la lista de reuniones
+    router.push('/meetings')
     applySuccess.value = true
     // Opcional: limpiar estados locales
     // localLoansByMember.value = {}
@@ -613,5 +706,49 @@ async function aplicarDesembolsos() {
   } finally {
     isApplying.value = false
   }
+}
+
+const showOtherDisbursementModal = ref(false)
+const editingOtherDisbursementIdx = ref<number|null>(null)
+const localOtherDisbursementsByMember = ref<Record<string, Array<{ description: string; amount: number }>>>({})
+
+const localOtherDisbursements = computed<Array<{ description: string; amount: number }>>({
+  get() {
+    return selectedMember.value ? (localOtherDisbursementsByMember.value[selectedMember.value.id] || []) : []
+  },
+  set(val) {
+    if (selectedMember.value) {
+      localOtherDisbursementsByMember.value[selectedMember.value.id] = val
+    }
+  }
+})
+
+function openOtherDisbursementModal() {
+  showOtherDisbursementModal.value = true
+  editingOtherDisbursementIdx.value = null
+}
+function editOtherDisbursement(idx: number) {
+  editingOtherDisbursementIdx.value = idx
+  showOtherDisbursementModal.value = true
+}
+function closeOtherDisbursementModal() {
+  showOtherDisbursementModal.value = false
+  editingOtherDisbursementIdx.value = null
+}
+function handleSaveOtherDisbursement(data: { description: string; amount: number }) {
+  if (!selectedMember.value) return
+  const disbursements = [...localOtherDisbursements.value]
+  if (editingOtherDisbursementIdx.value !== null) {
+    disbursements[editingOtherDisbursementIdx.value] = { ...data }
+  } else {
+    disbursements.push({ ...data })
+  }
+  localOtherDisbursements.value = disbursements
+  closeOtherDisbursementModal()
+}
+function removeOtherDisbursement(idx: number) {
+  const disbursements = [...localOtherDisbursements.value]
+  disbursements.splice(idx, 1)
+  localOtherDisbursements.value = disbursements
 }
 </script> 

@@ -81,6 +81,7 @@ create table public.loans (
     loan_type text not null check (loan_type in ('corriente', 'agil', 'accion')),
     approved_amount numeric(10, 2) not null,
     disbursed_amount numeric(10, 2) not null default 0, -- Monto desembolsado del préstamo
+    outstanding_balance numeric(10,2) not null default 0,
     monthly_payment_amount numeric(10, 2) not null,
     interest_rate numeric(4, 4) not null,
     status text default 'pending' not null,
@@ -172,7 +173,7 @@ create table public.pending_member_payments (
     id uuid default extensions.uuid_generate_v4() primary key,
     member_id uuid not null references public.members(id) on delete cascade,
     meeting_id uuid not null references public.meetings(id) on delete cascade,
-    type text not null check (type in ('dividendo', 'retiro_accion', 'otro')),
+    type text not null check (type in ('dividend', 'stock_withdrawal', 'loan', 'other')),
     amount numeric(12, 2) not null,
     status text not null default 'pending' check (status in ('pending', 'approved', 'rejected', 'paid')),
     notes text,

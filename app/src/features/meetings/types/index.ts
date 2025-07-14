@@ -58,3 +58,26 @@ export interface RevaluationDetail {
   new_value: number;
   dividends_generated?: number;
 }
+
+export interface DisbursementPlan {
+  memberId: string;
+  type: 'loan' | 'withdrawal' | 'dividend' | 'other';
+  amount: number;
+  status: 'pending' | 'approved' | 'delivered';
+  notes?: string;
+  loanId?: string;
+  stockSubscriptionId?: string;
+  disbursementStockRequest?: {
+    stockId: string;
+    stockWithdrawalQuantity: number;
+  };
+  newLoanRequest?: {
+    memberId: string;
+    amount: number;
+    loanType: 'corriente' | 'agil' | 'accion';
+    approvedAmount: number;
+    monthlyPaymentAmount: number;
+    interestRate: number;
+    notes: string;
+  };
+}

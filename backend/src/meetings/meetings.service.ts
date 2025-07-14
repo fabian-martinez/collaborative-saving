@@ -276,7 +276,7 @@ export class MeetingsService {
       {
         member_id: dto.memberId,
         meeting_id: meetingId,
-        type: 'retiro_accion',
+        type: 'stock_withdrawal',
         amount,
         status: 'pending',
         notes: dto.notes,
@@ -298,7 +298,7 @@ export class MeetingsService {
     const pendingPayments = await this.dataSource.manager
       .getRepository(PendingMemberPayment)
       .find({
-        where: { meeting_id: meetingId, status: 'pending' },
+        where: { status: 'pending' },
       });
     // 2. Calcular efectivo disponible
     const availableCash = await this.dataSource.manager
@@ -341,7 +341,7 @@ export class MeetingsService {
       for (const req of newLoanRequests) {
         plan.push({
           memberId: req.memberId,
-          type: DisbursementType.NUEVO_PRESTAMO,
+          type: DisbursementType.LOAN,
           amount: req.amount,
           status: 'pending',
           newLoanRequest: req,
@@ -357,6 +357,7 @@ export class MeetingsService {
     dto: ExecuteDisbursementPlanDto,
   ) {
     // 1. Validar que el plan no exceda el efectivo disponible
+    console.log('dto', dto);
     const availableCash = await this.dataSource.manager
       .getRepository(LedgerEntry)
       .find({
@@ -389,16 +390,15 @@ export class MeetingsService {
     await queryRunner.startTransaction();
     try {
       for (const item of dto.plan) {
-        if (
-          item.type === DisbursementType.NUEVO_PRESTAMO &&
-          item.newLoanRequest
-        ) {
+        if (item.type === DisbursementType.LOAN && item.newLoanRequest) {
           // Crear el préstamo nuevo de forma atómica
           const createLoanDto = {
             member_id: item.newLoanRequest.memberId,
             meeting_id: meetingId,
             loan_type: item.newLoanRequest.loanType,
-            approved_amount: item.newLoanRequest.amount,
+            approved_amount: item.newLoanRequest.approvedAmount,
+            disbursed_amount: item.newLoanRequest.amount,
+            outstanding_balance: item.newLoanRequest.amount,
             monthly_payment_amount: item.newLoanRequest.monthlyPaymentAmount,
             interest_rate: item.newLoanRequest.interestRate,
             status: 'active',

@@ -11,10 +11,10 @@ import {
 import { Type } from 'class-transformer';
 
 export enum DisbursementType {
-  DIVIDENDO = 'dividendo',
-  RETIRO_ACCION = 'retiro_accion',
-  NUEVO_PRESTAMO = 'nuevo_prestamo',
-  OTRO = 'otro',
+  DIVIDEND = 'dividend',
+  WITHDRAWAL = 'withdrawal',
+  LOAN = 'loan',
+  OTHER = 'other',
 }
 
 export class NewLoanRequestDto {
@@ -36,6 +36,10 @@ export class NewLoanRequestDto {
   })
   @IsString()
   loanType: string;
+
+  @ApiProperty({ description: 'Monto aprobado', example: 5000.0 })
+  @IsNumber()
+  approvedAmount: number;
 
   @ApiProperty({ description: 'Cuota mensual', example: 250.0 })
   @IsNumber()

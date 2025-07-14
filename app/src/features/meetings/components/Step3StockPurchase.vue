@@ -17,12 +17,26 @@
           <div>
             <div class="text-center">
               <div class="text-sm font-light text-base-content/70 uppercase">Total En Acciones Compradas</div>
-              <div class="text-3xl font-bold text-primary">${{ -totalPurchasedShares.toFixed(2) }}</div>
+              <div class="text-3xl font-bold text-primary">
+                <span v-if="typeof totalPurchasedShares === 'number'">
+                  ${{ -totalPurchasedShares.toFixed(2) }}
+                </span>
+                <span v-else>
+                  N/D
+                </span>
+              </div>
             </div>
           </div>
           <div class="text-center">
             <div class="text-sm font-light text-base-content/70 uppercase">Total Efectivo Recaudado</div>
-            <div class="text-2xl font-bold text-success">${{ totalCashRegistered.toFixed(2) }}</div>
+            <div class="text-2xl font-bold text-success">
+              <span v-if="typeof totalCashRegistered === 'number'">
+                ${{ totalCashRegistered.toFixed(2) }}
+              </span>
+              <span v-else>
+                N/D
+              </span>
+            </div>
           </div>
           <div class="border-t border-base-300/50"></div>
           <div>
@@ -38,7 +52,14 @@
                   <OperationDetails :operation="op" v-if="false" />
                   <!-- Solo resumen, el detalle va en el modal -->
                   <span class="font-semibold">{{ op.description }}</span>
-                  <span class="ml-2 text-xs text-base-content/60">${{ op.total_debit.toFixed(2) }}</span>
+                  <span class="ml-2 text-xs text-base-content/60">
+                    <span v-if="typeof op.total_debit === 'number'">
+                      ${{ op.total_debit.toFixed(2) }}
+                    </span>
+                    <span v-else>
+                      N/D
+                    </span>
+                  </span>
                 </div>
               </div>
               <p v-else class="text-base-content/60 italic text-sm text-center">Sin compras registradas aún.</p>
@@ -51,7 +72,14 @@
                   <OperationDetails :operation="op" v-if="false" />
                   <!-- Solo resumen, el detalle va en el modal -->
                   <span class="font-semibold">{{ op.description }}</span>
-                  <span class="ml-2 text-xs text-base-content/60">${{ op.total_debit.toFixed(2) }}</span>
+                  <span class="ml-2 text-xs text-base-content/60">
+                    <span v-if="typeof op.total_debit === 'number'">
+                      ${{ op.total_debit.toFixed(2) }}
+                    </span>
+                    <span v-else>
+                      N/D
+                    </span>
+                  </span>
                 </div>
               </div>
               <p v-else class="text-base-content/60 italic text-sm text-center">Este socio no ha realizado compras en la reunión.</p>
@@ -95,12 +123,33 @@
                     <div class="flex-shrink-0 flex items-center gap-2">
                       <button class="btn btn-ghost btn-xs" @click="openBuyModal(idx)">Editar</button>
                       <button class="btn btn-ghost btn-xs text-error" @click="removeLine(idx)">Anular</button>
-                      <p class="w-36 text-right font-mono text-2xl">${{ (line.cashAmount + line.creditAmount).toFixed(2) }}</p>
+                      <p class="w-36 text-right font-mono text-2xl">
+                        <span v-if="typeof (line.cashAmount + line.creditAmount) === 'number'">
+                          ${{ (line.cashAmount + line.creditAmount).toFixed(2) }}
+                        </span>
+                        <span v-else>
+                          N/D
+                        </span>
+                      </p>
                     </div>
                   </div>
                   <div class="pl-4 mt-2 space-y-1 text-md text-base-content/80 border-l-2 border-base-300/80">
-                    <div class="flex justify-between"><span>Efectivo:</span> <span>${{ line.cashAmount.toFixed(2) }}</span></div>
-                    <div class="flex justify-between"><span>Crédito:</span> <span>${{ line.creditAmount.toFixed(2) }}</span></div>
+                    <div class="flex justify-between"><span>Efectivo:</span> <span>
+                      <span v-if="typeof line.cashAmount === 'number'">
+                        ${{ line.cashAmount.toFixed(2) }}
+                      </span>
+                      <span v-else>
+                        N/D
+                      </span>
+                    </span></div>
+                    <div class="flex justify-between"><span>Crédito:</span> <span>
+                      <span v-if="typeof line.creditAmount === 'number'">
+                        ${{ line.creditAmount.toFixed(2) }}
+                      </span>
+                      <span v-else>
+                        N/D
+                      </span>
+                    </span></div>
                     <div class="flex justify-between">
                       <span>Interés crédito:</span>
                       <span v-if="line.loanDetails && typeof line.loanDetails.interest_rate === 'number' && line.loanDetails.interest_rate > 0">

@@ -63,6 +63,16 @@ export class CreateLoanDto {
   outstanding_balance?: number;
 
   @ApiProperty({
+    description:
+      'The amount already disbursed for the loan (optional, defaults to 0)',
+    example: 2500,
+    required: false,
+  })
+  @IsNumber()
+  @IsOptional()
+  disbursed_amount?: number;
+
+  @ApiProperty({
     description: 'The interest rate for the loan (e.g., 0.02 for 2%)',
     example: 0.02,
   })

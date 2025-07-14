@@ -24,6 +24,7 @@ import { DisbursementStrategyFactory } from './strategies/disbursement-strategy.
 import { StockWithdrawalStrategy } from './strategies/stock-withdrawal.strategy';
 import { NewLoanDisbursementStrategy } from './strategies/new-loan-disbursement.strategy';
 import { OtherDisbursementStrategy } from './strategies/other-disbursement.strategy';
+import { PendingDisbursementStrategy } from './strategies/pending-disbursement.strategy';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { OtherDisbursementStrategy } from './strategies/other-disbursement.strat
     StockWithdrawalStrategy,
     NewLoanDisbursementStrategy,
     OtherDisbursementStrategy,
+    PendingDisbursementStrategy,
   ],
   controllers: [MeetingsController],
   exports: [MeetingsService],

@@ -21,7 +21,7 @@ export class PendingMemberPayment {
   meeting_id: string;
 
   @Column({ type: 'text' })
-  type: 'dividendo' | 'retiro_accion' | 'otro';
+  type: 'dividend' | 'stock_withdrawal' | 'other' | 'loan';
 
   @Column({ type: 'numeric', precision: 12, scale: 2 })
   amount: number;

@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { DisbursementStrategy } from './disbursement-strategy.interface';
-import { LoansService } from '../../loans/loans.service';
 import { DisbursementPlanItemDto } from '../dto/disbursement-plan.dto';
+import { LoansService } from '../../loans/loans.service';
 
 @Injectable()
-export class NewLoanDisbursementStrategy implements DisbursementStrategy {
+export class PendingDisbursementStrategy implements DisbursementStrategy {
   constructor(private readonly loansService: LoansService) {}
 
   async execute({

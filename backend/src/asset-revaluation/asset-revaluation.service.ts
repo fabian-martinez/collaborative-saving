@@ -130,7 +130,7 @@ export class AssetRevaluationService {
     const totalValueOfRegularStocks = regularStocks.reduce((sum, stock) => {
       const totalShares = subscriptions
         .filter((sub) => sub.stock_id === stock.id)
-        .reduce((qtySum, sub) => qtySum + sub.quantity, 0);
+        .reduce((qtySum, sub) => qtySum + Number(sub.quantity), 0);
       return sum + Number(stock.value) * totalShares;
     }, 0);
 
@@ -138,7 +138,6 @@ export class AssetRevaluationService {
       totalValueOfRegularStocks > 0
         ? gainsForRegularStocks / totalValueOfRegularStocks
         : 0;
-
     const interestProportion =
       gainsForRegularStocks > 0
         ? interestAvailableForDistribution / gainsForRegularStocks
@@ -455,7 +454,7 @@ export class AssetRevaluationService {
                     {
                       member_id: sub.member_id,
                       meeting_id: meetingId,
-                      type: 'dividendo',
+                      type: 'dividend',
                       amount: memberDividend,
                       status: 'pending',
                       notes: `Dividendo generado por acción ${stock.type}`,

@@ -26,7 +26,14 @@
             <div>
                 <div class="text-center">
                     <div class="text-sm font-light text-base-content/70 uppercase">Total Aportes Recaudados</div>
-                    <div class="text-3xl font-bold text-primary">{{ totalCollected.toFixed(2) }}</div>
+                    <div class="text-3xl font-bold text-primary">
+                      <span v-if="typeof totalCollected === 'number'">
+                        {{ totalCollected.toFixed(2) }}
+                      </span>
+                      <span v-else>
+                        N/D
+                      </span>
+                    </div>
                 </div>
             </div>
             
@@ -37,7 +44,14 @@
                 <div v-if="completedPayments.length > 0" class="space-y-2">
                     <div v-for="(payment, index) in completedPayments" :key="index" class="flex justify-between items-center bg-base-100/50 p-2 rounded-md text-sm">
                         <span class="font-medium">{{ payment.memberName }}</span>
-                        <span class="font-mono text-success font-bold">+{{ payment.amount.toFixed(2) }}</span>
+                        <span class="font-mono text-success font-bold">
+                          <span v-if="typeof payment.amount === 'number'">
+                            +{{ payment.amount.toFixed(2) }}
+                          </span>
+                          <span v-else>
+                            N/D
+                          </span>
+                        </span>
                     </div>
                 </div>
                 <p v-else class="text-base-content/60 italic text-sm text-center">Sin pagos aún.</p>
@@ -67,7 +81,14 @@
                 <div class="flex items-baseline text-2xl font-bold">
                     <span class="flex-shrink-0">Total Pagado:</span>
                     <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
-                    <span class="flex-shrink-0 text-primary font-mono">{{ viewedTotal.toFixed(2) }}</span>
+                    <span class="flex-shrink-0 text-primary font-mono">
+                      <span v-if="typeof viewedTotal === 'number'">
+                        {{ viewedTotal.toFixed(2) }}
+                      </span>
+                      <span v-else>
+                        N/D
+                      </span>
+                    </span>
                 </div>
             </div>
             </div>

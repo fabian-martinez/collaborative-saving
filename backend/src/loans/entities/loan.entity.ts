@@ -53,6 +53,7 @@ export class Loan {
     description: 'The remaining balance to be paid',
     example: 2500.0,
   })
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   outstanding_balance: number;
 
   @ApiProperty({
@@ -113,7 +114,6 @@ export class Loan {
     const principalPaid = (this.transactions || [])
       .filter((t) => t.transaction_type === 'abono_capital')
       .reduce((sum, t) => sum + Number(t.amount), 0);
-    this.outstanding_balance = Number(this.approved_amount) - principalPaid;
 
     if (this.status !== 'active' || Number(this.monthly_payment_amount) <= 0) {
       this.due_installments = 0;
