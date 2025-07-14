@@ -22,6 +22,8 @@ import { StocksModule } from '../stocks/stocks.module';
 import { PendingMemberPayment } from './entities/pending-member-payment.entity';
 import { DisbursementStrategyFactory } from './strategies/disbursement-strategy.factory';
 import { StockWithdrawalStrategy } from './strategies/stock-withdrawal.strategy';
+import { NewLoanDisbursementStrategy } from './strategies/new-loan-disbursement.strategy';
+import { OtherDisbursementStrategy } from './strategies/other-disbursement.strategy';
 
 @Module({
   imports: [
@@ -47,6 +49,8 @@ import { StockWithdrawalStrategy } from './strategies/stock-withdrawal.strategy'
     DefaultPaymentStrategy,
     DisbursementStrategyFactory,
     StockWithdrawalStrategy,
+    NewLoanDisbursementStrategy,
+    OtherDisbursementStrategy,
   ],
   controllers: [MeetingsController],
   exports: [MeetingsService],

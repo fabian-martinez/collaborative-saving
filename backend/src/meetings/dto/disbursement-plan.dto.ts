@@ -13,7 +13,53 @@ import { Type } from 'class-transformer';
 export enum DisbursementType {
   DIVIDENDO = 'dividendo',
   RETIRO_ACCION = 'retiro_accion',
+  NUEVO_PRESTAMO = 'nuevo_prestamo',
   OTRO = 'otro',
+}
+
+export class NewLoanRequestDto {
+  @ApiProperty({
+    description: 'ID del socio que solicita el préstamo',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12',
+  })
+  @IsUUID()
+  memberId: string;
+
+  @ApiProperty({ description: 'Monto solicitado', example: 5000.0 })
+  @IsNumber()
+  amount: number;
+
+  @ApiProperty({
+    description: 'Tipo de préstamo',
+    example: 'corriente',
+    enum: ['corriente', 'agil', 'accion', 'prioritario'],
+  })
+  @IsString()
+  loanType: string;
+
+  @ApiProperty({ description: 'Cuota mensual', example: 250.0 })
+  @IsNumber()
+  monthlyPaymentAmount: number;
+
+  @ApiProperty({ description: 'Tasa de interés', example: 0.02 })
+  @IsNumber()
+  interestRate: number;
+
+  @ApiProperty({ description: 'Notas adicionales', required: false })
+  @IsString()
+  @IsOptional()
+  notes?: string;
+}
+
+export class DisbursementStockRequestDto {
+  @ApiProperty({ example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13' })
+  @IsUUID()
+  stockId: string;
+
+  @ApiProperty({ example: 5, required: false })
+  @IsNumber()
+  @IsOptional()
+  stockWithdrawalQuantity?: number;
 }
 
 export class DisbursementPlanItemDto {
@@ -44,13 +90,22 @@ export class DisbursementPlanItemDto {
   @IsOptional()
   loanId?: string;
 
-  @ApiProperty({
-    description: 'ID del tipo de acción (solo para retiros de acciones)',
-    required: false,
-  })
+  @ApiProperty({ example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13' })
   @IsUUID()
   @IsOptional()
-  stockId?: string;
+  stockSubscriptionId?: string;
+
+  @ApiProperty({ type: () => DisbursementStockRequestDto, required: false })
+  @ValidateNested()
+  @Type(() => DisbursementStockRequestDto)
+  @IsOptional()
+  disbursementStockRequest?: DisbursementStockRequestDto;
+
+  @ApiProperty({ type: () => NewLoanRequestDto, required: false })
+  @ValidateNested()
+  @Type(() => NewLoanRequestDto)
+  @IsOptional()
+  newLoanRequest?: NewLoanRequestDto;
 }
 
 export class DisbursementPlanPreviewResponseDto {

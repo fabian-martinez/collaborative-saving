@@ -27,7 +27,7 @@
           <div>
             <div class="text-center">
               <div class="text-sm font-light text-base-content/70 uppercase">Efectivo disponible</div>
-              <div class="text-3xl font-bold text-success">${{ efectivoDisponible.toFixed(2) }}</div>
+              <div class="text-3xl font-bold text-success">${{ efectivoDisponibleNeto.toFixed(2) }}</div>
             </div>
           </div>
           <div class="text-center">
@@ -102,7 +102,7 @@
                 </div>
                 <div class="pl-4 mt-2 space-y-1 text-md text-green-700 border-l-2 border-green-300 flex gap-4 items-center">
                   <span><b>Tasa de interés:</b> <span>{{ loan.type === 'corriente' ? '1.5%' : '2%' }}</span></span>
-                  <span><b>Capacidad máxima:</b> <span>${{ selectedMember.maxCapacity.toFixed(2) }}</span></span>
+                  <span><b>Capacidad máxima:</b> <span>{{ typeof maxCapacity === 'number' ? '$' + maxCapacity.toFixed(2) : 'N/D' }}</span></span>
                 </div>
               </div>
               <!-- Retiros de acciones -->
@@ -202,60 +202,129 @@
 
     <!-- Modal de Préstamo -->
     <LoanFormModal
+      v-if="selectedMember"
       :show="showModal"
       :member="selectedMember"
+      :maxCapacity="maxCapacity"
       :prevLoan="getPrevLoanData()"
       @save="handleSaveLoan"
       @cancel="closeModal"
     />
     <StockWithdrawalModal
+      v-if="selectedMember"
       :show="showStockWithdrawalModal"
       :member="selectedMember"
-      :memberStocks="mockMemberStocks"
       @save="handleSaveStockWithdrawal"
       @cancel="closeStockWithdrawalModal"
     />
+    <div v-if="hayDesembolsosPendientes()" class="mt-8 flex flex-col items-center">
+      <button class="btn btn-primary btn-lg" :disabled="isApplying" @click="aplicarDesembolsos">
+        <span v-if="isApplying" class="loading loading-spinner"></span>
+        Aplicar Desembolsos
+      </button>
+      <div v-if="applyError" class="alert alert-error mt-4">{{ applyError }}</div>
+      <div v-if="applySuccess" class="alert alert-success mt-4">¡Desembolsos aplicados correctamente!</div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useActiveMeetingStore } from '@/features/meetings/stores/activeMeeting'
+import disbursementsService from '../services/disbursementsService'
 import LoanFormModal from './LoanFormModal.vue'
 import StockWithdrawalModal from './StockWithdrawalModal.vue'
+import { stocksService, type StockSubscription } from '@/features/stocks/services/stocksService'
+import { loansService } from '@/features/loans/services/loansService'
+import type { Member } from '@/features/members/types'
 
-// Mock de socios (IDs como string)
-const members = ref([
-  { id: '1', name: 'Juan Pérez', maxCapacity: 5000 },
-  { id: '2', name: 'Ana Gómez', maxCapacity: 3000 },
-  { id: '3', name: 'Luis Torres', maxCapacity: 4000 },
-])
-
-const isLoading = ref(false)
+const activeMeetingStore = useActiveMeetingStore()
+const meetingId = computed(() => activeMeetingStore.meetingId)
+// Cargar miembros
+const members = computed(() => activeMeetingStore.members)
+const isLoading = ref(true)
 const error = ref('')
-const selectedMember = ref<{ id: string; name: string; maxCapacity: number } | null>(null)
+const efectivoDisponible = ref(0)
+const pendingTransactionsByMember = ref<Record<string, any[]>>({})
+const dividendsByMember = ref<Record<string, any[]>>({})
 
+const selectedMember = ref<Member | null>(null)
 const showModal = ref(false)
 const editingLoanIdx = ref<number|null>(null)
-
 const showStockWithdrawalModal = ref(false)
-
 const editingPendingIdx = ref<number | null>(null)
 const editingPendingType = ref<'loan' | 'withdrawal' | null>(null)
-
-// Recibo local de préstamos por socio
+// Estado local para préstamos y retiros NO confirmados
 const localLoansByMember = ref<Record<string, Array<{ type: string; approved: number; delivered: number }>>>({})
-// Recibo local de retiros de acciones por socio
 const localWithdrawalsByMember = ref<Record<string, Array<{ stockType: string; quantity: number; estimatedValue: number; deliveredAmount: number; pending: number }>>>({})
-// Transacciones pendientes mock (en el futuro vendrán del API)
-const pendingTransactionsByMember = ref<Record<string, Array<{ type: 'loan' | 'withdrawal'; description: string; pendingAmount: number; originalAmount: number }>>>({
-  '1': [
-    { type: 'loan', description: 'Préstamo Corriente', pendingAmount: 500, originalAmount: 2000 },
-    { type: 'withdrawal', description: 'Retiro Acciones Ordinarias', pendingAmount: 300, originalAmount: 800 }
-  ],
-  '2': [
-    { type: 'loan', description: 'Préstamo Ágil', pendingAmount: 1200, originalAmount: 1200 }
-  ]
+
+const memberStockSubscriptions = ref<StockSubscription[]>([])
+const memberLoans = ref<any[]>([])
+
+watch(selectedMember, async (newMember) => {
+  if (newMember && newMember.id) {
+    // Cargar acciones y préstamos activos del socio
+    memberStockSubscriptions.value = await stocksService.getStockSubscriptionsByMember(newMember.id)
+    memberLoans.value = await loansService.getActiveLoansByMember(newMember.id)
+  } else {
+    memberStockSubscriptions.value = []
+    memberLoans.value = []
+  }
+}, { immediate: true })
+
+const maxCapacity = computed(() => {
+  // Suma el valor de todas las acciones activas del socio
+  const totalStockValue = memberStockSubscriptions.value
+    .filter(sub => sub.stock && sub.status === 'active')
+    .reduce((sum, sub) => sum + (Number(sub.quantity) * Number(sub.stock!.value)), 0)
+  // Suma de todos los préstamos activos que NO sean de tipo 'accion'
+  const totalNonStockLoans = memberLoans.value
+    .filter(loan => loan.loan_type !== 'accion')
+    .reduce((sum, loan) => sum + Number(loan.approved_amount), 0)
+  // El máximo disponible es la diferencia
+  const max = (totalStockValue * 2.0) - totalNonStockLoans
+  return max > 0 ? max : 0
 })
+
+onMounted(async () => {
+  if (!meetingId.value) {
+    error.value = 'No hay reunión activa.'
+    isLoading.value = false
+    return
+  }
+  isLoading.value = true
+  error.value = ''
+  try {
+    // Obtener el plan de desembolso y efectivo disponible
+    const resp = await disbursementsService.getDisbursementPlanPreview(meetingId.value) as any
+    console.log('pending',resp)
+    const plan: any[] = resp.plan || []
+    efectivoDisponible.value = resp.availableCash || 0
+    // Agrupar pendientes y dividendos por miembro
+    pendingTransactionsByMember.value = {}
+    dividendsByMember.value = {}
+    for (const item of plan) {
+      // Agrupar dividendos
+      if (item.type === 'dividendo') {
+        if (!dividendsByMember.value[item.memberId]) {
+          dividendsByMember.value[item.memberId] = []
+        }
+        dividendsByMember.value[item.memberId].push(item)
+      } else {
+        // Agrupar otros pendientes (retiros, préstamos, etc.)
+        if (!pendingTransactionsByMember.value[item.memberId]) {
+          pendingTransactionsByMember.value[item.memberId] = []
+        }
+        pendingTransactionsByMember.value[item.memberId].push(item)
+      }
+    }
+  } catch (e: any) {
+    error.value = e.message || 'Error al cargar los datos de desembolsos.'
+  } finally {
+    isLoading.value = false
+  }
+})
+
 const localLoans = computed({
   get() {
     return selectedMember.value ? (localLoansByMember.value[selectedMember.value.id] || []) : []
@@ -286,50 +355,44 @@ const pendingTransactions = computed({
     }
   }
 })
+const selectedMemberDividends = computed(() => {
+  const member = selectedMember.value;
+  if (!member || !member.id) return [];
+  return dividendsByMember.value[member.id] || [];
+});
 
-const mockMemberStocks = computed(() => {
-  if (!selectedMember.value) return []
-  return [
-    { stockId: 'a1', stockType: 'Ordinaria', quantity: 10, currentValue: 100 },
-    { stockId: 'a2', stockType: 'Preferente', quantity: 5, currentValue: 150 }
-  ]
-})
-
-// Mock: efectivo disponible (puedes ajustar la lógica según la integración real)
-const efectivoDisponible = computed(() => 10000 - totalPrestado.value)
 const totalPrestado = computed(() => {
-  // Suma todos los préstamos locales de todos los socios
+  // Suma todos los préstamos y retiros locales de todos los socios
   const totalLoans = Object.values(localLoansByMember.value).flat().reduce((sum, l) => sum + l.delivered, 0)
   const totalWithdrawals = Object.values(localWithdrawalsByMember.value).flat().reduce((sum, w) => sum + w.deliveredAmount, 0)
   return totalLoans + totalWithdrawals
 })
 
-function selectMember(member: { id: string; name: string; maxCapacity: number }) {
+const efectivoDisponibleNeto = computed(() => {
+  const totalAEntregar = members.value.reduce((sum, member) => sum + getTotalToDeliver(member.id), 0)
+  return efectivoDisponible.value - totalAEntregar
+})
+
+function selectMember(member: any) {
   selectedMember.value = member
   editingLoanIdx.value = null
 }
-
 function openModal() {
   showModal.value = true
   editingLoanIdx.value = null
 }
-
 function editLoan(idx: number) {
   editingLoanIdx.value = idx
   showModal.value = true
 }
-
 function closeModal() {
   showModal.value = false
   editingLoanIdx.value = null
   editingPendingIdx.value = null
   editingPendingType.value = null
 }
-
 function handleSaveLoan(loan: { type: string; approved: number; delivered: number }) {
   if (!selectedMember.value) return
-  
-  // Si estamos editando una transacción pendiente
   if (editingPendingIdx.value !== null && editingPendingType.value === 'loan') {
     const transactions = [...pendingTransactions.value]
     transactions[editingPendingIdx.value] = {
@@ -342,7 +405,6 @@ function handleSaveLoan(loan: { type: string; approved: number; delivered: numbe
     closeModal()
     return
   }
-  
   const loans = [...localLoans.value]
   if (editingLoanIdx.value !== null) {
     loans[editingLoanIdx.value] = { ...loan }
@@ -352,36 +414,25 @@ function handleSaveLoan(loan: { type: string; approved: number; delivered: numbe
   localLoans.value = loans
   closeModal()
 }
-
 function removeLoan(idx: number) {
   const loans = [...localLoans.value]
   loans.splice(idx, 1)
   localLoans.value = loans
 }
-
 function removeWithdrawal(idx: number) {
   const withdrawals = [...localWithdrawals.value]
   withdrawals.splice(idx, 1)
   localWithdrawals.value = withdrawals
 }
-
-function confirmDisbursements() {
-  alert('Desembolsos confirmados para ' + selectedMember.value?.name + ': $' + localLoans.value.reduce((sum, l) => sum + l.delivered, 0).toFixed(2))
-  // Aquí iría la lógica real de envío al backend
-  localLoans.value = []
-}
-
 function hasAssignedLoan(memberId: string) {
   const hasLoans = localLoansByMember.value[memberId]?.length > 0
   const hasWithdrawals = localWithdrawalsByMember.value[memberId]?.length > 0
   const hasPending = pendingTransactionsByMember.value[memberId]?.length > 0
   return hasLoans || hasWithdrawals || hasPending
 }
-
 function hasPendingTransactions(memberId: string) {
   return pendingTransactionsByMember.value[memberId]?.length > 0
 }
-
 function openStockWithdrawalModal() {
   showStockWithdrawalModal.value = true
 }
@@ -392,8 +443,6 @@ function closeStockWithdrawalModal() {
 }
 function handleSaveStockWithdrawal(withdrawalData: any) {
   if (!selectedMember.value) return
-  
-  // Si estamos editando una transacción pendiente
   if (editingPendingIdx.value !== null && editingPendingType.value === 'withdrawal') {
     const transactions = [...pendingTransactions.value]
     transactions[editingPendingIdx.value] = {
@@ -406,42 +455,31 @@ function handleSaveStockWithdrawal(withdrawalData: any) {
     closeStockWithdrawalModal()
     return
   }
-  
   const withdrawals = [...localWithdrawals.value]
-  
-  // Convertir los retiros a formato para el recibo
   const formattedWithdrawals = withdrawalData.withdrawals
     .filter((w: any) => w.quantity > 0)
-    .map((w: any) => {
-      const stock = mockMemberStocks.value.find(s => s.stockId === w.stockId)
-      return {
-        stockType: stock?.stockType || 'Desconocido',
-        quantity: w.quantity,
-        estimatedValue: w.quantity * (stock?.currentValue || 0),
-        deliveredAmount: withdrawalData.deliveredAmount,
-        pending: withdrawalData.pending
-      }
-    })
-  
+    .map((w: any) => ({
+      stockType: w.stockType || 'Desconocido',
+      quantity: w.quantity,
+      estimatedValue: w.quantity * (w.currentValue || 0),
+      deliveredAmount: withdrawalData.deliveredAmount,
+      pending: withdrawalData.pending
+    }))
   withdrawals.push(...formattedWithdrawals)
   localWithdrawals.value = withdrawals
   closeStockWithdrawalModal()
 }
-
 function editPendingTransaction(pending: { type: 'loan' | 'withdrawal'; description: string; pendingAmount: number; originalAmount: number }, idx: number) {
   if (!selectedMember.value) return
   editingPendingIdx.value = idx
   editingPendingType.value = pending.type
-  
   if (pending.type === 'loan') {
     showModal.value = true
   } else {
     showStockWithdrawalModal.value = true
   }
 }
-
 function getPrevLoanData() {
-  // Si estamos editando una transacción pendiente
   if (editingPendingIdx.value !== null && editingPendingType.value === 'loan') {
     const pending = pendingTransactions.value[editingPendingIdx.value]
     const loanType = pending.description.includes('Ágil') ? 'agil' : 'corriente'
@@ -451,24 +489,18 @@ function getPrevLoanData() {
       delivered: pending.pendingAmount
     }
   }
-  // Si estamos editando un préstamo normal
   if (editingLoanIdx.value !== null && editingLoanIdx.value >= 0) {
     return localLoans.value[editingLoanIdx.value]
   }
   return null
 }
-
-// Función para calcular el total a entregar a un socio (préstamos + retiros + dividendos + pendientes)
 function getTotalToDeliver(memberId: string) {
   const loans = localLoansByMember.value[memberId]?.reduce((sum, l) => sum + l.delivered, 0) || 0
   const withdrawals = localWithdrawalsByMember.value[memberId]?.reduce((sum, w) => sum + w.deliveredAmount, 0) || 0
   const pending = pendingTransactionsByMember.value[memberId]?.reduce((sum, t) => sum + t.pendingAmount, 0) || 0
-  // Solo sumar dividendos que siguen en mockDividends
-  const dividends = mockDividends.value.filter(d => d.member_id === memberId).reduce((sum, d) => sum + d.amount, 0)
+  const dividends = dividendsByMember.value[memberId]?.reduce((sum, d) => sum + d.amount, 0) || 0
   return loans + withdrawals + pending + dividends
 }
-
-// Computed para el resumen de entregas
 const deliverySummary = computed(() => {
   return members.value
     .map(member => ({
@@ -478,56 +510,6 @@ const deliverySummary = computed(() => {
     }))
     .filter(summary => summary.total > 0)
 })
-
-// Mock de dividendos pendientes
-// Los member_id coinciden exactamente con los ids de los socios mock
-const mockDividends = ref([
-  {
-    id: 'd1',
-    member_id: '1', // Juan Pérez
-    meeting_id: 'm1',
-    type: 'dividendo',
-    amount: 120.5,
-    status: 'pending',
-    notes: 'Dividendo generado por acción Ordinaria',
-    stock_id: 'a1',
-    created_at: '2024-07-01T10:00:00Z',
-    stockType: 'Ordinaria',
-  },
-  {
-    id: 'd2',
-    member_id: '1', // Juan Pérez
-    meeting_id: 'm1',
-    type: 'dividendo',
-    amount: 80.0,
-    status: 'pending',
-    notes: 'Dividendo generado por acción Preferente',
-    stock_id: 'a2',
-    created_at: '2024-07-01T10:00:00Z',
-    stockType: 'Preferente',
-  },
-  {
-    id: 'd3',
-    member_id: '2', // Ana Gómez
-    meeting_id: 'm1',
-    type: 'dividendo',
-    amount: 50.0,
-    status: 'pending',
-    notes: 'Dividendo generado por acción Ordinaria',
-    stock_id: 'a1',
-    created_at: '2024-07-01T10:00:00Z',
-    stockType: 'Ordinaria',
-  },
-])
-
-// Computed para obtener los dividendos del socio seleccionado
-const selectedMemberDividends = computed(() => {
-  const member = selectedMember.value;
-  if (!member || !member.id) return [];
-  return mockDividends.value.filter(d => d.member_id === member.id);
-});
-
-// Función para aplazar/cancelar un pendiente
 function postponePending(idx: number) {
   if (confirm('¿Seguro que deseas aplazar este pendiente para la siguiente reunión?')) {
     const arr = [...pendingTransactions.value]
@@ -535,17 +517,101 @@ function postponePending(idx: number) {
     pendingTransactions.value = arr
   }
 }
-// Función para aplazar/cancelar un dividendo
 function postponeDividend(idx: number) {
   if (confirm('¿Seguro que deseas aplazar este dividendo para la siguiente reunión?')) {
     const arr = [...selectedMemberDividends.value]
     arr.splice(idx, 1)
-    // Como selectedMemberDividends es un computed, hay que eliminarlo del mockDividends
     const toRemove = selectedMemberDividends.value[idx]
-    if (toRemove) {
-      const i = mockDividends.value.findIndex(d => d.id === toRemove.id)
-      if (i !== -1) mockDividends.value.splice(i, 1)
+    if (toRemove && selectedMember.value?.id) {
+      const memberId = selectedMember.value.id
+      const memberDividends = dividendsByMember.value[memberId]
+      if (memberDividends) {
+        const i = memberDividends.findIndex((d: any) => d.id === toRemove.id)
+        if (i !== -1) memberDividends.splice(i, 1)
+      }
     }
+  }
+}
+
+// Estado para feedback
+const isApplying = ref(false)
+const applyError = ref('')
+const applySuccess = ref(false)
+
+function hayDesembolsosPendientes() {
+  return members.value.some(member => getTotalToDeliver(member.id) > 0)
+}
+
+async function aplicarDesembolsos() {
+  if (!meetingId.value) return
+  isApplying.value = true
+  applyError.value = ''
+  applySuccess.value = false
+  try {
+    // Construir el plan a enviar
+    const plan: any[] = []
+    for (const member of members.value) {
+      // Préstamos
+      if (localLoansByMember.value[member.id]) {
+        for (const loan of localLoansByMember.value[member.id]) {
+          plan.push({
+            ...loan,
+            memberId: member.id,
+            type: 'nuevo_prestamo',
+            amount: Number(loan.delivered)
+          })
+        }
+      }
+      // Retiros
+      if (localWithdrawalsByMember.value[member.id]) {
+        for (const withdrawal of localWithdrawalsByMember.value[member.id]) {
+          plan.push({
+            ...withdrawal,
+            memberId: member.id,
+            type: 'retiro_accion',
+            amount: Number(withdrawal.deliveredAmount)
+          })
+        }
+      }
+      // Pendientes
+      if (pendingTransactionsByMember.value[member.id]) {
+        for (const pending of pendingTransactionsByMember.value[member.id]) {
+          let typeApi = 'otro';
+          let amountApi = Number(pending.pendingAmount || pending.amount || 0);
+          if (pending.type === 'loan') typeApi = 'nuevo_prestamo';
+          else if (pending.type === 'withdrawal') typeApi = 'retiro_accion';
+          else if (pending.type === 'dividendo') typeApi = 'dividendo';
+          plan.push({
+            ...pending,
+            memberId: member.id,
+            type: typeApi,
+            amount: amountApi
+          })
+        }
+      }
+      // Dividendos
+      if (dividendsByMember.value[member.id]) {
+        for (const dividend of dividendsByMember.value[member.id]) {
+          plan.push({
+            ...dividend,
+            memberId: member.id,
+            type: 'dividendo',
+            amount: Number(dividend.amount)
+          })
+        }
+      }
+    }
+    await disbursementsService.executeDisbursementPlan(meetingId.value, { plan })
+    applySuccess.value = true
+    // Opcional: limpiar estados locales
+    // localLoansByMember.value = {}
+    // localWithdrawalsByMember.value = {}
+    // pendingTransactionsByMember.value = {}
+    // dividendsByMember.value = {}
+  } catch (e: any) {
+    applyError.value = e.message || 'Error al aplicar los desembolsos.'
+  } finally {
+    isApplying.value = false
   }
 }
 </script> 

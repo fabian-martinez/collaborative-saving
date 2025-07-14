@@ -80,6 +80,7 @@ create table public.loans (
     member_id uuid not null references public.members(id) on delete cascade,
     loan_type text not null check (loan_type in ('corriente', 'agil', 'accion')),
     approved_amount numeric(10, 2) not null,
+    disbursed_amount numeric(10, 2) not null default 0, -- Monto desembolsado del préstamo
     monthly_payment_amount numeric(10, 2) not null,
     interest_rate numeric(4, 4) not null,
     status text default 'pending' not null,
@@ -175,6 +176,11 @@ create table public.pending_member_payments (
     amount numeric(12, 2) not null,
     status text not null default 'pending' check (status in ('pending', 'approved', 'rejected', 'paid')),
     notes text,
+    stock_id uuid references public.stocks(id) on delete set null, -- Acción relacionada (si aplica)
+    loan_id uuid references public.loans(id) on delete set null, -- Préstamo relacionado (si aplica)
+    stock_subscription_id uuid references public.stock_subscriptions(id) on delete set null, -- Subscripción de acción relacionada (si aplica)
+    reference_meeting_id uuid references public.meetings(id) on delete set null, -- Reunión de referencia (si aplica)
+    disbursement_type text, -- Tipo de desembolso (opcional)
     created_at timestamp with time zone default now() not null
 );
 comment on table public.pending_member_payments is 'Solicitudes de liquidez de socios (dividendos, retiros de acciones, etc.) a ser procesadas en el plan de desembolso.'; 

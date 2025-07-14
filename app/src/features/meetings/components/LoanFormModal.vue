@@ -42,11 +42,13 @@
 </template>
 
 <script setup lang="ts">
+import type { Member } from '@/features/members/types';
 import { ref, watch, computed } from 'vue'
 
 const props = defineProps<{
   show: boolean,
-  member: { id: string; name: string; maxCapacity: number } | null,
+  member: Member | null,
+  maxCapacity: number,
   prevLoan?: { type: string; approved: number; delivered: number } | null
 }>()
 
@@ -61,7 +63,6 @@ const form = ref({
 const formError = ref('')
 
 const interestRate = computed(() => form.value.type === 'corriente' ? 1.5 : 2)
-const maxCapacity = computed(() => props.member ? props.member.maxCapacity : 0)
 
 watch(
   () => [props.show, props.prevLoan, props.member],
@@ -98,7 +99,7 @@ function onSubmit() {
     formError.value = 'El valor entregado no puede superar el valor aprobado.'
     return
   }
-  if (form.value.approved > maxCapacity.value) {
+  if (form.value.approved > props.maxCapacity) {
     formError.value = 'El valor aprobado supera la capacidad máxima de endeudamiento.'
     return
   }

@@ -27,10 +27,12 @@ import {
   DisbursementPlanPreviewResponseDto,
   ExecuteDisbursementPlanDto,
   DisbursementPlanItemDto,
+  DisbursementType,
 } from './dto/disbursement-plan.dto';
 import { WithdrawStockForMemberDto } from './dto/withdraw-stock-for-member.dto';
 import { DisbursementStrategyFactory } from './strategies/disbursement-strategy.factory';
 import { LoanTransactionDetail } from '../loans/entities/loan-transaction-detail.entity';
+import { NewLoanRequestDto } from './dto/disbursement-plan.dto';
 
 @Injectable()
 export class MeetingsService {
@@ -278,7 +280,7 @@ export class MeetingsService {
         amount,
         status: 'pending',
         notes: dto.notes,
-        stock_id: dto.stockId,
+        stock_subscription_id: withdrawableSubscriptions[0].id,
       },
     );
     await this.dataSource.manager.save(pendingPayment);
@@ -290,6 +292,7 @@ export class MeetingsService {
 
   async previewDisbursementPlan(
     meetingId: string,
+    newLoanRequests?: NewLoanRequestDto[],
   ): Promise<DisbursementPlanPreviewResponseDto> {
     // 1. Obtener solicitudes pendientes de la tabla pending_member_payments para la reunión
     const pendingPayments = await this.dataSource.manager
@@ -297,8 +300,7 @@ export class MeetingsService {
       .find({
         where: { meeting_id: meetingId, status: 'pending' },
       });
-    // 2. Calcular efectivo disponible (puedes ajustar la lógica según tu modelo)
-    // Aquí solo un ejemplo simple:
+    // 2. Calcular efectivo disponible
     const availableCash = await this.dataSource.manager
       .getRepository(LedgerEntry)
       .find({
@@ -316,14 +318,36 @@ export class MeetingsService {
         this.logger.error('Error getting available cash', err);
         throw err;
       });
-    const plan: DisbursementPlanItemDto[] = pendingPayments.map((p) => ({
-      memberId: p.member_id,
-      type: p.type as DisbursementPlanItemDto['type'],
-      amount: Number(p.amount),
-      status: p.status as DisbursementPlanItemDto['status'],
-      notes: p.notes,
-      stockId: p.stock_id || undefined,
-    }));
+    const plan: DisbursementPlanItemDto[] = pendingPayments.map((p) => {
+      const disbursementStockRequest = p.stock_subscription_id
+        ? {
+            stockId: p.stock_subscription_id,
+            stockWithdrawalQuantity: undefined,
+          }
+        : undefined;
+      return {
+        memberId: p.member_id,
+        type: p.type as DisbursementPlanItemDto['type'],
+        amount: Number(p.amount),
+        status: p.status as DisbursementPlanItemDto['status'],
+        notes: p.notes,
+        stockSubscriptionId: p.stock_subscription_id || undefined,
+        loanId: p.loan_id || undefined,
+        disbursementStockRequest,
+      };
+    });
+    // 3. Agregar préstamos nuevos al plan si se reciben
+    if (newLoanRequests && Array.isArray(newLoanRequests)) {
+      for (const req of newLoanRequests) {
+        plan.push({
+          memberId: req.memberId,
+          type: DisbursementType.NUEVO_PRESTAMO,
+          amount: req.amount,
+          status: 'pending',
+          newLoanRequest: req,
+        });
+      }
+    }
     const totalToDisburse = plan.reduce((sum, item) => sum + item.amount, 0);
     return { plan, availableCash, totalToDisburse };
   }
@@ -365,7 +389,25 @@ export class MeetingsService {
     await queryRunner.startTransaction();
     try {
       for (const item of dto.plan) {
-        // Actualizar el estado de la solicitud a 'paid'
+        if (
+          item.type === DisbursementType.NUEVO_PRESTAMO &&
+          item.newLoanRequest
+        ) {
+          // Crear el préstamo nuevo de forma atómica
+          const createLoanDto = {
+            member_id: item.newLoanRequest.memberId,
+            meeting_id: meetingId,
+            loan_type: item.newLoanRequest.loanType,
+            approved_amount: item.newLoanRequest.amount,
+            monthly_payment_amount: item.newLoanRequest.monthlyPaymentAmount,
+            interest_rate: item.newLoanRequest.interestRate,
+            status: 'active',
+          };
+          await this.loansService.create(createLoanDto, queryRunner);
+          // Aquí podrías agregar lógica adicional si necesitas registrar algo más
+          continue;
+        }
+        // Actualizar el estado de la solicitud a 'paid' (para los demás tipos)
         await queryRunner.manager.update(
           PendingMemberPayment,
           {
@@ -373,7 +415,9 @@ export class MeetingsService {
             meeting_id: meetingId,
             type: item.type,
             status: 'pending',
-            ...(item.stockId ? { stock_id: item.stockId } : {}),
+            ...(item.stockSubscriptionId
+              ? { stock_subscription_id: item.stockSubscriptionId }
+              : {}),
           },
           { status: 'paid' },
         );

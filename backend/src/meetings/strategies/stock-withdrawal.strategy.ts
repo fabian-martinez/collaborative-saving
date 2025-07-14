@@ -19,9 +19,13 @@ export class StockWithdrawalStrategy implements DisbursementStrategy {
     item: DisbursementPlanItemDto;
   }): Promise<void> {
     // 1. Buscar suscripciones libres de crédito del socio para ese stockId
+    const stockId = item.disbursementStockRequest?.stockId;
+    if (!stockId) {
+      throw new Error('No se proporcionó stockId para el retiro de acciones');
+    }
     const subscriptions =
       await this.stocksService.getStockSubscriptionByMemberAndStock({
-        stockId: item.stockId!,
+        stockId,
         memberId: item.memberId,
       });
     const withdrawable = subscriptions.filter(
@@ -33,8 +37,11 @@ export class StockWithdrawalStrategy implements DisbursementStrategy {
         new Date(a.purchase_date).getTime() -
         new Date(b.purchase_date).getTime(),
     );
-    let quantityToWithdraw =
-      item.amount / (await this.stocksService.findOne(item.stockId!)).value;
+    const stock = await this.stocksService.findOne(stockId);
+    if (!stock || !stock.value) {
+      throw new Error('No se encontró el stock o su valor es inválido');
+    }
+    let quantityToWithdraw = item.amount / stock.value;
     for (const sub of withdrawable) {
       if (quantityToWithdraw <= 0) break;
       const subQty = Number(sub.quantity);
@@ -60,14 +67,14 @@ export class StockWithdrawalStrategy implements DisbursementStrategy {
     const operation = queryRunner.manager.create(Operation, {
       member_id: item.memberId,
       meeting_id: meetingId,
-      description: `Retiro de acciones (${item.stockId})`,
+      description: `Retiro de acciones (${item.disbursementStockRequest?.stockId})`,
       type: 'STOCK_WITHDRAWAL',
     });
     await queryRunner.manager.save(operation);
     const ledgerEntries: LedgerEntry[] = [
       queryRunner.manager.create(LedgerEntry, {
         operation_id: operation.id,
-        stock_id: item.stockId!,
+        stock_id: item.disbursementStockRequest?.stockId,
         account_type: 'STOCK_CAPITAL_ACCOUNT',
         amount: item.amount,
         description: 'Retiro de acciones',

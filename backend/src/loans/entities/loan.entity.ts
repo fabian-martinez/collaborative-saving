@@ -77,6 +77,13 @@ export class Loan {
   interest_rate: number;
 
   @ApiProperty({
+    description: 'El monto total desembolsado del préstamo',
+    example: 0.0,
+  })
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  disbursed_amount: number;
+
+  @ApiProperty({
     description: 'The current status of the loan',
     example: 'active',
     enum: ['pending', 'active', 'paid', 'defaulted'],

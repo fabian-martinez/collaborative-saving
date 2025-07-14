@@ -230,13 +230,13 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
 - ❌ Falta soporte para préstamos nuevos en el plan de desembolso
 
 **Cambios requeridos:**
-- Modificar entidad Loan para añadir campo `disbursed_amount` y soporte para `approved_amount`
-- Modificar entidad PendingMemberPayment para añadir campos `loan_id`, `stock_subscription_id`, `reference_meeting_id` y `disbursement_type`
-- Crear DTOs `NewLoanRequestDto` y actualizar `DisbursementPlanItemDto` para soporte de préstamos nuevos
-- Completar `previewDisbursementPlan` para incluir las 5 fuentes de desembolso (incluyendo préstamos nuevos como datos de formulario)
-- Completar `executeDisbursementPlan` para crear entidades Loan nuevas atómicamente durante desembolso
-- Implementar métodos helper para cada tipo de desembolso
-- Crear pruebas para flujos de creación atómica de préstamos durante desembolso
+- [x] Modificar entidad Loan para añadir campo `disbursed_amount` y soporte para `approved_amount`
+- [ ] Modificar entidad PendingMemberPayment para añadir campos `loan_id`, `stock_subscription_id`, `reference_meeting_id` y `disbursement_type`
+- [x] Crear DTOs `NewLoanRequestDto` y actualizar `DisbursementPlanItemDto` para soporte de préstamos nuevos
+- [x] Completar `previewDisbursementPlan` para incluir las 5 fuentes de desembolso (incluyendo préstamos nuevos como datos de formulario)
+- [x] Completar `executeDisbursementPlan` para crear entidades Loan nuevas atómicamente durante desembolso
+- [x] Implementar métodos helper para cada tipo de desembolso
+- [ ] Crear pruebas para flujos de creación atómica de préstamos durante desembolso
 
 **Notas sobre dividendos:**
 - El cálculo de dividendos se realizará usando el valor actual de la acción (`value`), no un valor base.

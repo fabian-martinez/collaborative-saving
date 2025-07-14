@@ -459,7 +459,7 @@ export class AssetRevaluationService {
                       amount: memberDividend,
                       status: 'pending',
                       notes: `Dividendo generado por acción ${stock.type}`,
-                      stock_id: detail.stock_id,
+                      stock_subscription_id: sub.id,
                     },
                   );
                   await queryRunner.manager.save(pendingDividend);

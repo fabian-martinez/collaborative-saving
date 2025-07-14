@@ -33,7 +33,16 @@ export class PendingMemberPayment {
   notes: string;
 
   @Column({ type: 'uuid', nullable: true })
-  stock_id: string | null;
+  loan_id?: string | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  stock_subscription_id?: string | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  reference_meeting_id?: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  disbursement_type?: string | null;
 
   @CreateDateColumn({ type: 'timestamp with time zone' })
   created_at: Date;

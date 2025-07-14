@@ -2,7 +2,7 @@
   <dialog v-if="show" class="modal modal-open">
     <div class="modal-box max-w-lg">
       <h3 class="font-bold text-lg mb-4">Retiro de Acciones para {{ member?.name }}</h3>
-      <div v-if="memberStocks.length > 0">
+      <div v-if="(memberStocks?.length || 0) > 0">
         <div class="mb-4">
           <table class="table w-full">
             <thead>
@@ -14,7 +14,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(stock, idx) in memberStocks" :key="stock.stockId">
+              <tr v-for="(stock, idx) in memberStocks || []" :key="stock.stockId">
                 <td>{{ stock.stockType }}</td>
                 <td>{{ stock.quantity }}</td>
                 <td>${{ stock.currentValue.toFixed(2) }}</td>
@@ -87,7 +87,7 @@ interface Withdrawal {
 const props = defineProps<{
   show: boolean,
   member: any,
-  memberStocks: MemberStock[]
+  memberStocks?: MemberStock[]
 }>()
 const emits = defineEmits(['save', 'cancel'])
 
@@ -95,13 +95,13 @@ const withdrawals = ref<Withdrawal[]>([])
 const deliveredAmount = ref(0)
 
 watch(() => props.memberStocks, (newStocks) => {
-  withdrawals.value = newStocks.map(stock => ({ stockId: stock.stockId, quantity: 0 }))
+  withdrawals.value = (newStocks || []).map(stock => ({ stockId: stock.stockId, quantity: 0 }))
   deliveredAmount.value = 0
 }, { immediate: true })
 
 const estimatedTotal = computed(() => {
   return withdrawals.value.reduce((sum, w, idx) => {
-    const stock = props.memberStocks[idx]
+    const stock = (props.memberStocks || [])[idx]
     return sum + (w.quantity * (stock?.currentValue || 0))
   }, 0)
 })
@@ -110,10 +110,10 @@ const withdrawalSummary = computed(() => {
   return withdrawals.value
     .map((w, idx) => ({
       stockId: w.stockId,
-      stockType: props.memberStocks[idx].stockType,
+      stockType: (props.memberStocks || [])[idx]?.stockType || '',
       quantity: w.quantity,
-      currentValue: props.memberStocks[idx].currentValue,
-      total: w.quantity * props.memberStocks[idx].currentValue
+      currentValue: (props.memberStocks || [])[idx]?.currentValue || 0,
+      total: w.quantity * ((props.memberStocks || [])[idx]?.currentValue || 0)
     }))
     .filter(item => item.quantity > 0)
 })
