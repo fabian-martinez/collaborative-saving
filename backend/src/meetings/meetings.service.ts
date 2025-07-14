@@ -30,6 +30,7 @@ import {
 } from './dto/disbursement-plan.dto';
 import { WithdrawStockForMemberDto } from './dto/withdraw-stock-for-member.dto';
 import { DisbursementStrategyFactory } from './strategies/disbursement-strategy.factory';
+import { LoanTransactionDetail } from '../loans/entities/loan-transaction-detail.entity';
 
 @Injectable()
 export class MeetingsService {
@@ -72,7 +73,7 @@ export class MeetingsService {
 
   async recordMonthlyPayment(
     recordTransactionsDto: SimplifiedRecordTransactionsDto,
-  ): Promise<Operation> {
+  ): Promise<any> { // Cambia el tipo de retorno a any para incluir el desglose
     const { memberId, payments } = recordTransactionsDto;
 
     const activeMeeting = await this.meetingRepository.findOne({
@@ -122,8 +123,20 @@ export class MeetingsService {
       }
       await queryRunner.manager.save(ledgerEntries);
 
+      // Obtener los detalles de pagos de préstamos realizados en esta operación
+      const loanDetails: LoanTransactionDetail[] = await queryRunner.manager.find(LoanTransactionDetail, {
+        where: { operation_id: operation.id },
+      });
+
       await queryRunner.commitTransaction();
-      return operation;
+      return {
+        operation,
+        loanPayments: loanDetails.map((d) => ({
+          loanId: d.loan_id,
+          transactionType: d.transaction_type,
+          amount: d.amount,
+        })),
+      };
     } catch (err: unknown) {
       await queryRunner.rollbackTransaction();
       this.logger.error('Error recording transaction', err);

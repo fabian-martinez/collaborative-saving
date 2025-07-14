@@ -225,6 +225,16 @@ export class LoansService {
     return populatedLoan;
   }
 
+  async updateOutstandingBalance(loanId: string, runner?: QueryRunner) {
+    const newBalance = await this.calculateOutstandingBalance(loanId, runner);
+    const manager = runner ? runner.manager : this.dataSource.manager;
+    await manager.update(
+      Loan,
+      { id: loanId },
+      { outstanding_balance: newBalance },
+    );
+  }
+
   async remove(id: string): Promise<void> {
     const result = await this.loanRepository.delete(id);
     if (result.affected === 0) {

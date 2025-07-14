@@ -55,27 +55,36 @@ export class DuesService {
       throw new NotFoundException(`Member with ID ${memberId} not found.`);
     }
 
+    // 1. Obtener todas las contribuciones obligatorias
     const mandatoryContributions =
       await this.mandatoryContributionsService.findAll();
-    const subscriptions = await this.dataSource.manager.find(
-      StockSubscription,
-      {
-        where: { member_id: memberId },
-        relations: ['stock', 'financing_loan'],
-      },
-    );
-    const activeLoans = await this.loansService.findActiveByMember(memberId);
-
-    const mandatoryDues = this.calculateMandatoryContributionDues(
-      mandatoryContributions,
-    );
+    // 2. Obtener suscripciones activas del socio
+    const subscriptions =
+      await this.stockSubscriptionsService.findActiveByMember(memberId);
+    // Agrupar suscripciones activas por stock_id
+    const groupedSubs: Record<string, { stock: Stock; quantity: number }> = {};
+    for (const sub of subscriptions) {
+      if (!groupedSubs[sub.stock_id]) {
+        groupedSubs[sub.stock_id] = { stock: sub.stock, quantity: 0 };
+      }
+      groupedSubs[sub.stock_id].quantity += Number(sub.quantity);
+    }
+    // 3. Calcular la cuota obligatoria como monto fijo por contribución
+    const mandatoryDues: MemberDue[] = mandatoryContributions
+      .filter((contribution) => contribution.value > 0)
+      .map((contribution) => ({
+        type: 'mandatory_contribution',
+        description: contribution.asset_type,
+        amount: Number(contribution.value),
+        referenceId: contribution.id,
+      }));
+    // 4. Cuotas de acciones y préstamos (sin cambios)
     const stockDues = this.calculateStockFeeDues(subscriptions);
-
+    const activeLoans = await this.loansService.findActiveByMember(memberId);
     const unpaidLoans = activeLoans.filter(
       (loan) => loan.payment_status_this_month !== 'PAID',
     );
     const loanDues = this.calculateLoanPaymentDues(unpaidLoans);
-
     return [...mandatoryDues, ...stockDues, ...loanDues];
   }
 

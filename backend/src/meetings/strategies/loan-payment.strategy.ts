@@ -76,6 +76,9 @@ export class LoanPaymentStrategy implements PaymentStrategy {
       await queryRunner.manager.save(principalTransaction);
     }
 
+    // Actualizar el saldo del préstamo tras registrar los movimientos
+    await this.loansService.updateOutstandingBalance(loan.id, queryRunner);
+
     return ledgerEntries;
   }
 }
