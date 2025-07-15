@@ -121,6 +121,7 @@ import { useActiveMeetingStore } from '../stores/activeMeeting';
 import OperationDetails from '@/features/operations/components/operationDetails.vue';
 import PaymentForm from './PaymentForm.vue';
 import { formatNumber } from '@/shared/formatters'
+import { sumCashEntries } from '@/shared/utils'
 
 const activeMeetingStore = useActiveMeetingStore();
 const emit = defineEmits(['completed', 'update:totalCollected', 'update:totalInterest']);
@@ -137,9 +138,7 @@ const viewedOperations = ref<Operation[] | null>(null);
 const isDuesLoading = ref(false);
 const duesError = ref<string | null>(null);
 
-const viewedTotal = computed(() => {
-    return viewedOperations.value?.reduce((sum, op) => sum + (op.total_debit || 0), 0) || 0;
-});
+const viewedTotal = computed(() => sumCashEntries(viewedOperations.value || []));
 
 onMounted(async () => {
   await activeMeetingStore.fetchMembers();
@@ -180,7 +179,7 @@ async function fetchMeetingPayments(meetingId: string) {
     for(const [memberId, ops] of operationMap.entries()) {
         const member = activeMeetingStore.members.find(m => m.id === memberId);
         if(member) {
-            const amount = ops.reduce((sum, op) => sum + ( op.total_debit || 0), 0);
+            const amount = sumCashEntries(ops);
             total += amount;
             paymentsList.push({ memberName: member.name, amount });
         }

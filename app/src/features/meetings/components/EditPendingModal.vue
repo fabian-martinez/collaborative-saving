@@ -16,7 +16,7 @@
       </div>
       <div class="mb-2">
         <label class="block text-sm font-medium mb-1">Monto</label>
-        <input type="number" v-model.number="localAmount" class="input input-info input-bordered w-full" />
+        <input type="number" v-model.number="localAmount" class="input input-info input-bordered w-full" step="any" />
       </div>
       <div class="mb-2">
         <label class="block text-sm font-medium mb-1">Nota</label>

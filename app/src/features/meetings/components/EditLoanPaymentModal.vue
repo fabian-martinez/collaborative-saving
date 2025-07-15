@@ -18,6 +18,7 @@
               class="input input-bordered input-lg w-full font-mono text-right"
               :min="0"
               :max="originalOutstandingBalance"
+              step="any"
             />
           </div>
 

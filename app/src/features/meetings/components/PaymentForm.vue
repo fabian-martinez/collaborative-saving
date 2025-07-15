@@ -67,7 +67,7 @@
         <div>
           <div class="flex justify-between items-center">
             <h4 class="text-2xl font-semibold mb-3 pb-2 border-b-2 border-base-300/70">Otros Aportes</h4>
-            <button type="button" @click="addFine" class="btn btn-sm btn-outline btn-accent">+ Multa</button>
+            <button type="button" @click="addFine" class="btn btn-sm btn-outline btn-accent">+ Otro pago</button>
           </div>
           <div v-if="otherDues.length > 0">
             <div v-for="due in otherDues" :key="due.originalIndex" class="flex items-baseline py-3">
@@ -86,6 +86,31 @@
           </div>
           <p v-else class="text-sm text-base-content/50 italic mt-2">Sin aportes adicionales.</p>
         </div>
+
+        <!-- Novedades -->
+        <div class="mt-8">
+          <div class="flex justify-between items-center">
+            <h4 class="text-2xl font-semibold mb-3 pb-2 border-b-2 border-base-300/70 text-error">Novedades</h4>
+            <button type="button" @click="addNovelty" class="btn btn-sm btn-outline btn-error">+ Novedad</button>
+          </div>
+          <div v-if="noveltyPayments.length > 0">
+            <div v-for="(novelty, idx) in noveltyPayments" :key="idx" class="flex items-baseline py-3 text-error">
+              <div class="flex-grow">
+                <p class="font-semibold text-xl">{{ novelty.description }}</p>
+                <p v-if="novelty.noveltyComment" class="text-sm italic">{{ novelty.noveltyComment }}</p>
+              </div>
+              <div class="flex-grow border-b-2 border-dotted border-error/40 mx-4"></div>
+              <div class="flex-shrink-0 flex items-center gap-2">
+                <button type="button" @click="deleteNovelty(idx)" class="btn btn-ghost btn-xs text-error">Borrar</button>
+                <p class="w-36 text-right font-mono text-2xl">-{{ formatNumber(novelty.amount) }}</p>
+              </div>
+            </div>
+          </div>
+          <p v-else class="text-sm text-error/50 italic mt-2">Sin novedades registradas.</p>
+        </div>
+
+        <!-- Modal Novedad -->
+        <NoveltyModal v-if="isNoveltyModalOpen" :visible="isNoveltyModalOpen" @close="isNoveltyModalOpen = false" @save="handleNoveltySave" />
       </div>
 
       <div v-if="payments.length === 0 && otherDues.length === 0" class="text-center my-8 text-base-content/60">
@@ -125,6 +150,7 @@ import { useActiveMeetingStore } from '../stores/activeMeeting';
 import EditLoanPaymentModal from './EditLoanPaymentModal.vue';
 import EditFineModal from './EditFineModal.vue';
 import { formatNumber } from '@/shared/formatters'
+import NoveltyModal from './NoveltyModal.vue';
 
 const props = defineProps<{
   member: Member;
@@ -177,7 +203,12 @@ const loanDues = computed(() =>
 
 const totalToPay = computed(() => {
     if (!payments.value) return 0;
-    return payments.value.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    return payments.value.reduce((sum, payment) => {
+      if (payment.type === 'novelty') {
+        return sum - Number(payment.amount || 0);
+      }
+      return sum + Number(payment.amount || 0);
+    }, 0);
 });
 
 const totalInterest = computed(() => {
@@ -258,16 +289,21 @@ async function handleRecordTransaction() {
       return [];
     }
     const due = memberDues.value[index];
-    if (!due) return [payment];
     let description = payment.description;
-    if (due.type === 'stock_fee' && due.stockQuantity && due.monthlyContribution) {
-      description = `${due.description}, ${Number(due.stockQuantity).toFixed(2)} uds. x ${due.monthlyContribution.toFixed(2)} c/u`;
-    } else if (due.type === 'loan_payment' && due.details) {
-      const interest = due.details.interest || 0;
-      const principal = payment.amount - interest;
-      description = `${due.description}, Abono Capital: ${principal.toFixed(2)}, Intereses: ${interest.toFixed(2)}`;
+    let noveltyComment = payment.noveltyComment;
+    if (due) {
+      if (due.type === 'stock_fee' && due.stockQuantity && due.monthlyContribution) {
+        description = `${due.description}, ${Number(due.stockQuantity).toFixed(2)} uds. x ${due.monthlyContribution.toFixed(2)} c/u`;
+      } else if (due.type === 'loan_payment' && due.details) {
+        const interest = due.details.interest || 0;
+        const principal = payment.amount - interest;
+        description = `${due.description}, Abono Capital: ${principal.toFixed(2)}, Intereses: ${interest.toFixed(2)}`;
+      }
     }
-    return [{ ...payment, description: description }];
+    if (payment.type === 'novelty') {
+      return [{ ...payment, description, noveltyComment }];
+    }
+    return [{ ...payment, description }];
   });
   
   const payload: { memberId: string, payments: Payment[] } = {
@@ -358,4 +394,34 @@ watch(() => props.member, (newMember) => {
     fetchDues(newMember);
   }
 }, { immediate: true });
+
+// Novedades
+const isNoveltyModalOpen = ref(false);
+const noveltyForm = ref<{ amount: number | null, comment: string }>({ amount: null, comment: '' });
+const noveltyPayments = computed(() => payments.value.filter(p => p.type === 'novelty'));
+
+function addNovelty() {
+  noveltyForm.value = { amount: null, comment: '' };
+  isNoveltyModalOpen.value = true;
+}
+
+function handleNoveltySave(data: { amount: number, comment: string }) {
+  payments.value.push({
+    type: 'novelty',
+    description: 'Novedad',
+    amount: Math.abs(data.amount),
+    noveltyComment: data.comment,
+  });
+  isNoveltyModalOpen.value = false;
+}
+
+function deleteNovelty(idx: number) {
+  // Elimina la novedad por índice relativo a noveltyPayments
+  const allNovelty = payments.value.reduce<{ idx: number, i: number }[]>((acc, p, i) => {
+    if (p.type === 'novelty') acc.push({ idx: acc.length, i });
+    return acc;
+  }, []);
+  const toDelete = allNovelty.find(n => n.idx === idx);
+  if (toDelete) payments.value.splice(toDelete.i, 1);
+}
 </script> 

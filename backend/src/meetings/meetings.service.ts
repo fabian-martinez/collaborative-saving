@@ -176,11 +176,13 @@ export class MeetingsService {
     payment: MemberDue,
   ): Promise<LedgerEntry[]> {
     const ledgerEntries: LedgerEntry[] = [];
+    const isNovelty = payment.type === 'novelty';
+    const ledgerAmount = isNovelty ? -Math.abs(payment.amount) : payment.amount;
     ledgerEntries.push(
       queryRunner.manager.create(LedgerEntry, {
         operation_id: operation.id,
         account_type: CASH_ACCOUNT,
-        amount: payment.amount,
+        amount: ledgerAmount,
         description: payment.description,
       }),
     );

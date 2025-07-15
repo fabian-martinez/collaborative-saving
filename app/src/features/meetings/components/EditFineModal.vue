@@ -19,7 +19,7 @@
           <label class="label">
             <span class="label-text text-lg">Monto</span>
           </label>
-          <input type="number" v-model.number="editableAmount" class="input input-bordered input-lg w-full font-mono text-right" min="0.01" step="0.01" />
+          <input type="number" v-model.number="editableAmount" class="input input-bordered input-lg w-full font-mono text-right" min="0.01" step="any" />
         </div>
       </div>
       

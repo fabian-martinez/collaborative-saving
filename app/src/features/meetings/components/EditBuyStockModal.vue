@@ -24,7 +24,7 @@
           <label class="label">
             <span class="label-text text-lg">Cantidad</span>
           </label>
-          <input v-model.number="form.quantity" type="number" min="1" class="input input-bordered input-lg w-full font-mono text-right" required />
+          <input v-model.number="form.quantity" type="number" min="1" step="any" class="input input-bordered input-lg w-full font-mono text-right" required />
         </div>
         <!-- Método de pago -->
         <div class="form-control">
@@ -36,7 +36,7 @@
             <option value="mixed">Mixto</option>
           </select>
           <div v-if="form.paymentMethod === 'mixed'" class="flex gap-2 mt-2">
-            <input v-model.number="form.cashAmount" type="number" min="0" :max="totalAmount" step="0.01" class="input input-bordered input-lg w-1/2 font-mono text-right" placeholder="Efectivo" />
+            <input v-model.number="form.cashAmount" type="number" min="0" :max="totalAmount" step="any" class="input input-bordered input-lg w-1/2 font-mono text-right" placeholder="Efectivo" />
           </div>
           <div v-if="form.paymentMethod === 'mixed'" class="mt-2 text-warning text-sm flex items-center gap-1">
             <span class="font-bold">2% interés fijo</span> sobre el monto a crédito.
