@@ -123,11 +123,11 @@
                 </div>
                 <div v-if="selectedOperation.type !== 'STOCK_MODIFICATION'">
                   <span class="font-medium">Valor unitario:</span>
-                  <span class="ml-2">${{ selectedOperation.unitValue.toFixed(2) }}</span>
+                  <span class="ml-2">${{ formatNumber(selectedOperation.unitValue) }}</span>
                 </div>
                 <div>
                   <span class="font-medium">Valor total:</span>
-                  <span class="ml-2 font-bold text-primary">${{ selectedOperation.totalValue.toFixed(2) }}</span>
+                  <span class="ml-2 font-bold text-primary">${{ formatNumber(selectedOperation.totalValue) }}</span>
                 </div>
                 <div v-if="selectedOperation.type === 'TRANSFER'">
                   <span class="font-medium">Transferido a:</span>
@@ -162,16 +162,16 @@
                 </div>
                                  <div>
                    <span class="font-medium">Valor origen:</span>
-                   <span class="ml-2">${{ (selectedOperation.fromValue || 0).toFixed(2) }}</span>
+                   <span class="ml-2">${{ formatNumber(selectedOperation.fromValue || 0) }}</span>
                  </div>
                  <div>
                    <span class="font-medium">Valor destino:</span>
-                   <span class="ml-2">${{ (selectedOperation.toValue || 0).toFixed(2) }}</span>
+                   <span class="ml-2">${{ formatNumber(selectedOperation.toValue || 0) }}</span>
                  </div>
                  <div>
                    <span class="font-medium">Diferencia:</span>
                    <span class="ml-2 font-bold" :class="(selectedOperation.difference || 0) >= 0 ? 'text-success' : 'text-error'">
-                     {{ (selectedOperation.difference || 0) >= 0 ? '+' : '' }}${{ (selectedOperation.difference || 0).toFixed(2) }}
+                     {{ (selectedOperation.difference || 0) >= 0 ? '+' : '' }}${{ formatNumber(selectedOperation.difference || 0) }}
                    </span>
                  </div>
                 <div>
@@ -186,12 +186,12 @@
               <div class="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span class="font-medium">Saldo anterior:</span>
-                  <span class="ml-2">${{ (selectedOperation.previousBalance || 0).toFixed(2) }}</span>
+                  <span class="ml-2">${{ formatNumber(selectedOperation.previousBalance || 0) }}</span>
                 </div>
                 <div>
                   <span class="font-medium">Nuevo saldo:</span>
                   <span class="ml-2 font-bold" :class="(selectedOperation.newBalance || 0) > 0 ? 'text-warning' : 'text-success'">
-                    ${{ (selectedOperation.newBalance || 0).toFixed(2) }}
+                    ${{ formatNumber(selectedOperation.newBalance || 0) }}
                   </span>
                 </div>
               </div>
@@ -200,7 +200,7 @@
             <div class="flex items-baseline text-2xl font-bold">
               <span class="flex-shrink-0">Total operación:</span>
               <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
-              <span class="flex-shrink-0 text-primary font-mono">${{ selectedOperation.totalValue.toFixed(2) }}</span>
+              <span class="flex-shrink-0 text-primary font-mono">${{ formatNumber(selectedOperation.totalValue) }}</span>
             </div>
           </div>
         </div>
@@ -219,14 +219,14 @@
                 <div>
                   <h4 class="font-medium text-error">Entregar:</h4>
                   <p class="text-lg">{{ modificationReceipt.fromStockType }}</p>
-                  <p class="text-sm text-base-content/70">{{ modificationReceipt.fromQuantity }} uds. x ${{ modificationReceipt.fromUnitValue.toFixed(2) }}</p>
-                  <p class="font-mono text-lg">-${{ modificationReceipt.fromValue.toFixed(2) }}</p>
+                  <p class="text-sm text-base-content/70">{{ modificationReceipt.fromQuantity }} uds. x ${{ formatNumber(modificationReceipt.fromUnitValue) }}</p>
+                  <p class="font-mono text-lg">-${{ formatNumber(modificationReceipt.fromValue) }}</p>
                 </div>
                 <div>
                   <h4 class="font-medium text-success">Recibir:</h4>
                   <p class="text-lg">{{ modificationReceipt.toStockType }}</p>
-                  <p class="text-sm text-base-content/70">{{ modificationReceipt.toQuantity }} uds. x ${{ modificationReceipt.toUnitValue.toFixed(2) }}</p>
-                  <p class="font-mono text-lg">+${{ modificationReceipt.toValue.toFixed(2) }}</p>
+                  <p class="text-sm text-base-content/70">{{ modificationReceipt.toQuantity }} uds. x ${{ formatNumber(modificationReceipt.toUnitValue) }}</p>
+                  <p class="font-mono text-lg">+${{ formatNumber(modificationReceipt.toValue) }}</p>
                 </div>
               </div>
             </div>
@@ -236,7 +236,7 @@
               <div class="flex items-center justify-between">
                 <span class="text-lg">{{ modificationReceipt.difference >= 0 ? 'A favor del socio:' : 'Debe pagar:' }}</span>
                 <span class="font-mono text-2xl font-bold" :class="modificationReceipt.difference >= 0 ? 'text-success' : 'text-error'">
-                  {{ modificationReceipt.difference >= 0 ? '+' : '' }}${{ modificationReceipt.difference.toFixed(2) }}
+                  {{ modificationReceipt.difference >= 0 ? '+' : '' }}${{ formatNumber(modificationReceipt.difference) }}
                 </span>
               </div>
               
@@ -249,7 +249,7 @@
             <div class="flex items-baseline text-2xl font-bold">
               <span class="flex-shrink-0">Operación neta:</span>
               <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
-              <span class="flex-shrink-0 text-primary font-mono">${{ Math.abs(modificationReceipt.difference).toFixed(2) }}</span>
+              <span class="flex-shrink-0 text-primary font-mono">${{ formatNumber(Math.abs(modificationReceipt.difference)) }}</span>
             </div>
           </div>
           
@@ -275,13 +275,13 @@
               <div class="flex items-baseline">
                 <div class="flex-shrink-0">
                   <p class="font-semibold text-xl">{{ transferReceipt.stockType }}</p>
-                  <p class="text-sm text-base-content/70">{{ transferReceipt.quantity }} uds. x ${{ transferReceipt.unitValue.toFixed(2) }} c/u</p>
+                  <p class="text-sm text-base-content/70">{{ transferReceipt.quantity }} uds. x ${{ formatNumber(transferReceipt.unitValue) }} c/u</p>
                   <p class="text-sm text-base-content/70">De: {{ selectedMember.name }}</p>
                   <p class="text-sm text-base-content/70">Para: {{ transferReceipt.toMemberName }}</p>
                 </div>
                 <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
                 <div class="flex-shrink-0">
-                  <p class="w-36 text-right font-mono text-2xl">${{ transferReceipt.totalValue.toFixed(2) }}</p>
+                  <p class="w-36 text-right font-mono text-2xl">${{ formatNumber(transferReceipt.totalValue) }}</p>
                 </div>
               </div>
             </div>
@@ -289,7 +289,7 @@
             <div class="flex items-baseline text-2xl font-bold">
               <span class="flex-shrink-0">Total a transferir:</span>
               <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
-              <span class="flex-shrink-0 text-primary font-mono">${{ transferReceipt.totalValue.toFixed(2) }}</span>
+              <span class="flex-shrink-0 text-primary font-mono">${{ formatNumber(transferReceipt.totalValue) }}</span>
             </div>
           </div>
           
@@ -315,12 +315,12 @@
               <div class="flex items-baseline">
                 <div class="flex-shrink-0">
                   <p class="font-semibold text-xl">{{ loanPaymentReceipt.stockType }}</p>
-                  <p class="text-sm text-base-content/70">{{ loanPaymentReceipt.quantity }} uds. x ${{ loanPaymentReceipt.unitValue.toFixed(2) }} c/u</p>
+                  <p class="text-sm text-base-content/70">{{ loanPaymentReceipt.quantity }} uds. x ${{ formatNumber(loanPaymentReceipt.unitValue) }} c/u</p>
                   <p class="text-sm text-base-content/70">Crédito: {{ loanPaymentReceipt.loanType }}</p>
                 </div>
                 <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
                 <div class="flex-shrink-0">
-                  <p class="w-36 text-right font-mono text-2xl">${{ loanPaymentReceipt.totalValue.toFixed(2) }}</p>
+                  <p class="w-36 text-right font-mono text-2xl whitespace-nowrap">${{ formatNumber(loanPaymentReceipt.totalValue) }}</p>
                 </div>
               </div>
             </div>
@@ -330,17 +330,17 @@
               <div class="space-y-2">
                 <div class="flex justify-between">
                   <span>Saldo actual:</span>
-                  <span class="font-mono">${{ loanPaymentReceipt.currentBalance.toFixed(2) }}</span>
+                  <span class="font-mono">${{ formatNumber(loanPaymentReceipt.currentBalance) }}</span>
                 </div>
                 <div class="flex justify-between">
                   <span>Abono:</span>
-                  <span class="font-mono text-success">-${{ loanPaymentReceipt.totalValue.toFixed(2) }}</span>
+                  <span class="font-mono text-success">-${{ formatNumber(loanPaymentReceipt.totalValue) }}</span>
                 </div>
                 <div class="border-t border-base-300/50 pt-2">
                   <div class="flex justify-between font-bold">
                     <span>Nuevo saldo:</span>
                     <span class="font-mono" :class="loanPaymentReceipt.newBalance > 0 ? 'text-warning' : 'text-success'">
-                      ${{ loanPaymentReceipt.newBalance.toFixed(2) }}
+                      ${{ formatNumber(loanPaymentReceipt.newBalance) }}
                     </span>
                   </div>
                 </div>
@@ -348,7 +348,7 @@
                   El crédito queda con saldo pendiente
                 </div>
                 <div v-else-if="loanPaymentReceipt.newBalance < 0" class="text-sm text-base-content/70">
-                  Queda un saldo a favor de ${{ Math.abs(loanPaymentReceipt.newBalance).toFixed(2) }}
+                  Queda un saldo a favor de ${{ formatNumber(Math.abs(loanPaymentReceipt.newBalance)) }}
                 </div>
                 <div v-else class="text-sm text-success">
                   El crédito queda completamente pagado
@@ -359,7 +359,7 @@
             <div class="flex items-baseline text-2xl font-bold">
               <span class="flex-shrink-0">Total aplicado:</span>
               <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
-              <span class="flex-shrink-0 text-primary font-mono">${{ loanPaymentReceipt.totalValue.toFixed(2) }}</span>
+              <span class="flex-shrink-0 text-primary font-mono">${{ formatNumber(loanPaymentReceipt.totalValue) }}</span>
             </div>
           </div>
           
@@ -454,7 +454,7 @@
                 <div v-if="modificationForm.fromQuantity > 0" class="bg-base-300/50 p-3 rounded">
                   <p class="text-sm">
                     <span class="font-medium">Valor total:</span>
-                    <span class="ml-2 font-mono">${{ fromTotalValue.toFixed(2) }}</span>
+                    <span class="ml-2 font-mono">${{ formatNumber(fromTotalValue) }}</span>
                   </p>
                 </div>
               </div>
@@ -471,7 +471,7 @@
                   <select v-model="modificationForm.toStockId" class="select select-bordered w-full">
                     <option value="">Seleccione una acción</option>
                     <option v-for="stock in availableStocks" :key="stock.id" :value="stock.id">
-                      {{ stock.type }} - ${{ stock.value.toFixed(2) }} c/u
+                      {{ stock.type }} - ${{ formatNumber(stock.value) }} c/u
                     </option>
                   </select>
                 </div>
@@ -491,7 +491,7 @@
                 <div v-if="modificationForm.toQuantity > 0" class="bg-base-300/50 p-3 rounded">
                   <p class="text-sm">
                     <span class="font-medium">Valor total:</span>
-                    <span class="ml-2 font-mono">${{ toTotalValue.toFixed(2) }}</span>
+                    <span class="ml-2 font-mono">${{ formatNumber(toTotalValue) }}</span>
                   </p>
                 </div>
               </div>
@@ -504,7 +504,7 @@
             <div class="flex items-center justify-between mb-4">
               <span class="text-lg">{{ difference >= 0 ? 'A favor del socio:' : 'Debe pagar:' }}</span>
               <span class="font-mono text-2xl font-bold" :class="difference >= 0 ? 'text-success' : 'text-error'">
-                {{ difference >= 0 ? '+' : '' }}${{ difference.toFixed(2) }}
+                {{ difference >= 0 ? '+' : '' }}${{ formatNumber(difference) }}
               </span>
             </div>
             
@@ -528,7 +528,7 @@
               <select v-model="modificationForm.targetLoanId" class="select select-bordered w-full">
                 <option value="">Seleccione un crédito</option>
                 <option v-for="loan in memberLoans" :key="loan.id" :value="loan.id">
-                  {{ loan.loan_type }} - Saldo: ${{ loan.outstanding_balance.toFixed(2) }}
+                  {{ loan.loan_type }} - Saldo: ${{ formatNumber(loan.outstanding_balance) }}
                 </option>
               </select>
             </div>
@@ -661,7 +661,7 @@
             <select v-model="loanPaymentForm.loanId" class="select select-bordered w-full">
               <option value="">Seleccione un crédito</option>
               <option v-for="loan in memberLoans" :key="loan.id" :value="loan.id">
-                {{ loan.loan_type }} - Saldo: ${{ loan.outstanding_balance.toFixed(2) }}
+                {{ loan.loan_type }} - Saldo: ${{ formatNumber(loan.outstanding_balance) }}
               </option>
             </select>
           </div>
@@ -691,6 +691,7 @@ import { useActiveMeetingStore } from '../stores/activeMeeting'
 import { stocksService, type StockSubscription } from '@/features/stocks/services/stocksService'
 import { loansService, type Loan } from '@/features/loans/services/loansService'
 import type { Stock } from '@/features/stocks/types'
+import { formatNumber } from '@/shared/formatters'
 
 const activeMeetingStore = useActiveMeetingStore()
 

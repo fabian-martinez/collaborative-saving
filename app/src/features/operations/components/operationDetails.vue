@@ -19,7 +19,7 @@
                 <span class="text-base-content/80">{{ getAccountName(entry.account_type) }}</span>
                 <p class="text-xs text-base-content/60">{{ entry.description }}</p>
             </div>
-            <span class="font-mono text-error font-medium">{{ -Number(entry.amount).toFixed(2) }}</span>
+            <span class="font-mono text-error font-medium">{{ formatNumber(-Number(entry.amount)) }}</span>
         </div>
     </div>
 
@@ -34,6 +34,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { formatNumber } from '@/shared/formatters';
 import type { Operation, LedgerEntry } from '@/features/operations/types';
 
 const props = defineProps<{
