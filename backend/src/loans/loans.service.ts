@@ -757,13 +757,12 @@ export class LoansService {
   }
 
   async findActiveByMember(memberId: string): Promise<Loan[]> {
-    const loans = await this.loanRepository.find({
+    return await this.loanRepository.find({
       where: {
         member_id: memberId,
         status: In(['active', 'pending']),
       },
     });
-    return this.populateLoansWithBalance(loans);
   }
 
   async findOne(id: string): Promise<Loan> {
