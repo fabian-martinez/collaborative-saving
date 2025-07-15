@@ -14,6 +14,20 @@ export interface Loan {
   creation_date: string;
 }
 
+export interface DebtCapacity {
+  maxAmount: number | null;
+  availableCapital: number;
+  description: string;
+}
+
+export interface DebtCapacitiesByType {
+  corriente?: DebtCapacity;
+  agil?: DebtCapacity;
+  accion?: DebtCapacity;
+  normal?: DebtCapacity;
+  [key: string]: DebtCapacity | undefined;
+}
+
 export const loansService = {
   getLoansByMember: async (memberId: string): Promise<Loan[]> => {
     const loans = await api.get<Loan[]>(`/loans/member/${memberId}`);
@@ -37,5 +51,9 @@ export const loansService = {
       due_installments: Number(loan.due_installments),
       interest_rate: Number(loan.interest_rate)
     }));
+  },
+
+  getDebtCapacitiesByMember: async (memberId: string): Promise<DebtCapacitiesByType> => {
+    return api.get<DebtCapacitiesByType>(`/loans/member/${memberId}/capacity`);
   }
 }; 

@@ -3,10 +3,11 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
-import { StockSubscriptionsService } from '../stock-subscriptions/stock-subscriptions.service';
 import { SimplifiedRecordTransactionsDto } from './dto/simplified-record-transactions.dto';
 import {
   Operation,
@@ -41,10 +42,10 @@ export class MeetingsService {
   constructor(
     @InjectRepository(Meeting)
     private readonly meetingRepository: Repository<Meeting>,
-    private readonly stockSubscriptionsService: StockSubscriptionsService,
     private readonly dataSource: DataSource,
     private readonly paymentStrategyFactory: PaymentStrategyFactory,
     private readonly stocksService: StocksService,
+    @Inject(forwardRef(() => LoansService))
     private readonly loansService: LoansService,
     private readonly disbursementStrategyFactory: DisbursementStrategyFactory,
   ) {}
@@ -290,18 +291,8 @@ export class MeetingsService {
     };
   }
 
-  async previewDisbursementPlan(
-    meetingId: string,
-    newLoanRequests?: NewLoanRequestDto[],
-  ): Promise<DisbursementPlanPreviewResponseDto> {
-    // 1. Obtener solicitudes pendientes de la tabla pending_member_payments para la reunión
-    const pendingPayments = await this.dataSource.manager
-      .getRepository(PendingMemberPayment)
-      .find({
-        where: { status: 'pending' },
-      });
-    // 2. Calcular efectivo disponible
-    const availableCash = await this.dataSource.manager
+  async calculateCashInMeeting(meetingId: string): Promise<number> {
+    const cashInMeeting = await this.dataSource.manager
       .getRepository(LedgerEntry)
       .find({
         where: {
@@ -315,9 +306,24 @@ export class MeetingsService {
         return entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
       })
       .catch((err) => {
-        this.logger.error('Error getting available cash', err);
+        this.logger.error('Error calculating cash in meeting', err);
         throw err;
       });
+    return cashInMeeting;
+  }
+
+  async previewDisbursementPlan(
+    meetingId: string,
+    newLoanRequests?: NewLoanRequestDto[],
+  ): Promise<DisbursementPlanPreviewResponseDto> {
+    // 1. Obtener solicitudes pendientes de la tabla pending_member_payments para la reunión
+    const pendingPayments = await this.dataSource.manager
+      .getRepository(PendingMemberPayment)
+      .find({
+        where: { status: 'pending' },
+      });
+    // 2. Calcular efectivo disponible
+    const availableCash = await this.calculateCashInMeeting(meetingId);
     const plan: DisbursementPlanItemDto[] = pendingPayments.map((p) => {
       const disbursementStockRequest = p.stock_subscription_id
         ? {

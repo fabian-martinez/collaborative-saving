@@ -2,14 +2,15 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository, QueryRunner, Not } from 'typeorm';
+import { DataSource, Repository, QueryRunner, Not, In } from 'typeorm';
 import { CreateLoanDto } from './dto/create-loan.dto';
 import { UpdateLoanDto } from './dto/update-loan.dto';
 import { Loan } from './entities/loan.entity';
 import { LoanTransactionDetail } from './entities/loan-transaction-detail.entity';
-import { StockSubscriptionsService } from '../stock-subscriptions/stock-subscriptions.service';
 import { Operation } from '../operations/entities/operation.entity';
 import { LedgerEntry } from '../ledger-entries/entities/ledger-entry.entity';
 import {
@@ -18,10 +19,15 @@ import {
   MEMBER_EQUITY_ACCOUNT,
   INTEREST_INCOME_ACCOUNT,
 } from '../common/constants/account-types';
-import { StockSubscription } from '../stock-subscriptions/entities/stock-subscription.entity';
 import { PendingMemberPayment } from '../meetings/entities/pending-member-payment.entity';
 import { DisbursementPlanItemDto } from '../meetings/dto/disbursement-plan.dto';
 import { MemberDue } from '../dues/entities/member-due.entity';
+import { StocksService } from '../stocks/stocks.service';
+import { StockSubscription } from 'src/stock-subscriptions/entities/stock-subscription.entity';
+import { Meeting } from 'src/meetings/entities/meeting.entity';
+import { Stock } from 'src/stocks/entities/stock.entity';
+import { MeetingsService } from 'src/meetings/meetings.service';
+import { StockSubscriptionsService } from 'src/stock-subscriptions/stock-subscriptions.service';
 
 @Injectable()
 export class LoansService {
@@ -30,8 +36,11 @@ export class LoansService {
     private readonly loanRepository: Repository<Loan>,
     @InjectRepository(LoanTransactionDetail)
     private readonly loanTransactionDetailRepository: Repository<LoanTransactionDetail>,
-    private readonly stockSubscriptionsService: StockSubscriptionsService,
     private readonly dataSource: DataSource,
+    private readonly stocksService: StocksService,
+    private readonly stockSubscriptionsService: StockSubscriptionsService,
+    @Inject(forwardRef(() => MeetingsService))
+    private readonly meetingService: MeetingsService,
   ) {}
 
   /**
@@ -375,9 +384,215 @@ export class LoansService {
     return loans;
   }
 
+  /**
+   * Devuelve la capacidad máxima de endeudamiento por tipo de préstamo para un miembro
+   * Si se pasa 'type', retorna solo la capacidad para ese tipo
+   */
+  async getDebtCapacitiesByType(
+    memberId: string,
+    type?: 'accion' | 'agil' | 'corriente',
+  ): Promise<
+    | {
+        accion: {
+          maxAmount: null;
+          availableCapital: number;
+          description: string;
+        };
+        corriente: {
+          maxAmount: number;
+          availableCapital: number;
+          description: string;
+        };
+        agil: {
+          maxAmount: number;
+          availableCapital: number;
+          description: string;
+        };
+      }
+    | {
+        maxAmount: null | number;
+        availableCapital: number;
+        description: string;
+      }
+  > {
+    const memberSubscriptions: StockSubscription[] =
+      await this.stockSubscriptionsService.findByMember(memberId);
+    const totalCapital = memberSubscriptions
+      .filter((s) => !s.financing_loan_id)
+      .reduce((sum, s) => sum + s.quantity * Number(s.stock.value), 0);
+
+    const totalLoans = await this.loanRepository.find({
+      where: {
+        member_id: memberId,
+        loan_type: Not(In(['accion', 'agil'])),
+        status: In(['active', 'pending']),
+      },
+    });
+    const totalLoansAmount = totalLoans.reduce(
+      (sum, l) => sum + Number(l.outstanding_balance),
+      0,
+    );
+    const availableCapital = totalCapital - totalLoansAmount;
+    const maxNormalLoan = availableCapital > 0 ? availableCapital * 2 : 0;
+
+    const result = {
+      accion: {
+        maxAmount: null,
+        availableCapital: totalCapital,
+        description:
+          "No existe restricción de capital para préstamos de tipo 'acción'.",
+      },
+
+      corriente: {
+        maxAmount: maxNormalLoan,
+        availableCapital: availableCapital,
+        description:
+          'El monto máximo permitido es el doble del capital disponible descontando préstamos activos.',
+      },
+      agil: {
+        maxAmount: maxNormalLoan,
+        availableCapital: availableCapital,
+        description:
+          'El monto máximo permitido es el doble del capital disponible descontando préstamos activos.',
+      },
+    };
+
+    if (type) return result[type];
+    return result;
+  }
+
   async create(
     createLoanDto: CreateLoanDto,
     queryRunner?: QueryRunner,
+  ): Promise<Loan> {
+    return this.createLoanByType(createLoanDto, queryRunner);
+  }
+
+  /**
+   * Delegador principal para la creación de préstamos según tipo
+   */
+  private async createLoanByType(
+    createLoanDto: CreateLoanDto,
+    queryRunner?: QueryRunner,
+  ): Promise<Loan> {
+    switch (createLoanDto.loan_type) {
+      case 'accion':
+        return this.createAccionLoan(createLoanDto, queryRunner);
+      case 'corriente':
+        return this.createCorrienteLoan(createLoanDto, queryRunner);
+      case 'agil':
+        return this.createAgilLoan(createLoanDto, queryRunner);
+      default:
+        throw new BadRequestException(
+          `Tipo de préstamo no válido: ${createLoanDto.loan_type}`,
+        );
+    }
+  }
+
+  /**
+   * Lógica específica para préstamos de tipo 'acción'
+   */
+  private async createAccionLoan(
+    createLoanDto: CreateLoanDto,
+    queryRunner?: QueryRunner,
+  ): Promise<Loan> {
+    return this.createLoanBase(
+      createLoanDto,
+      queryRunner,
+      (qr, op, loan, amount) =>
+        this.createAccionLedgerEntries(qr, op, loan, amount),
+    );
+  }
+
+  /**
+   * Lógica específica para préstamos de tipo 'corriente'
+   */
+  private async createCorrienteLoan(
+    createLoanDto: CreateLoanDto,
+    queryRunner?: QueryRunner,
+  ): Promise<Loan> {
+    const normalCapacity = (await this.getDebtCapacitiesByType(
+      createLoanDto.member_id,
+      'corriente',
+    )) as {
+      maxAmount: number;
+      availableCapital: number;
+      description: string;
+    };
+    if (
+      normalCapacity.maxAmount !== null &&
+      createLoanDto.approved_amount > normalCapacity.maxAmount
+    ) {
+      throw new BadRequestException(
+        `El monto solicitado (${createLoanDto.approved_amount}) excede el máximo permitido (${normalCapacity.maxAmount}).`,
+      );
+    }
+    return this.createLoanBase(
+      createLoanDto,
+      queryRunner,
+      (qr, op, loan, amount) =>
+        this.createCorrienteLedgerEntries(qr, op, loan, amount),
+    );
+  }
+
+  /**
+   * Lógica específica para préstamos de tipo 'ágil'
+   * El monto máximo disponible es el valor de cierto tipo de acción por la cantidad de suscripciones del socio
+   */
+  private async createAgilLoan(
+    createLoanDto: CreateLoanDto,
+    queryRunner?: QueryRunner,
+  ): Promise<Loan> {
+    // Consultar el efectivo en la reunión activa
+    const meeting: Meeting | null = await this.meetingService.findActive();
+    if (!meeting) {
+      throw new BadRequestException('No hay una reunión activa');
+    }
+    // Consultar el valor de las acciones 'agil'
+    const agilStocks: Stock[] =
+      await this.stocksService.getStocksByType('bono');
+    const agilStockValue = agilStocks.reduce(
+      (sum, s) => sum + Number(s.value),
+      0,
+    );
+    // Consultar la cantidad total de suscripciones activas a acciones 'agil'
+    const agilStockIds = agilStocks.map((s) => s.id);
+    const allSubscriptions = await this.stockSubscriptionsService.findAll();
+    const agilActiveSubscriptions = allSubscriptions.filter(
+      (sub: StockSubscription) =>
+        agilStockIds.includes(sub.stock_id) && sub.status === 'active',
+    );
+    const agilStockTotalQuantity = agilActiveSubscriptions.reduce(
+      (sum, sub) => sum + Number(sub.quantity),
+      0,
+    );
+    const totalAgilCapital = agilStockValue * agilStockTotalQuantity;
+    if (createLoanDto.approved_amount > totalAgilCapital) {
+      throw new BadRequestException(
+        `El monto solicitado (${createLoanDto.approved_amount}) excede el máximo permitido por sus acciones ágiles (${totalAgilCapital}).`,
+      );
+    }
+    return this.createLoanBase(
+      createLoanDto,
+      queryRunner,
+      (qr, op, loan, amount) =>
+        this.createAgilLedgerEntries(qr, op, loan, amount),
+    );
+  }
+
+  /**
+   * Lógica común para la creación de préstamos (operación, asientos, pagos pendientes, etc.)
+   * Recibe como parámetro la función de generación de asientos contables
+   */
+  private async createLoanBase(
+    createLoanDto: CreateLoanDto,
+    queryRunner: QueryRunner | undefined,
+    ledgerEntriesFn: (
+      queryRunner: QueryRunner,
+      operation: Operation,
+      loan: Loan,
+      amount: number,
+    ) => LedgerEntry[],
   ): Promise<Loan> {
     const isTransactionManaged = !!queryRunner;
     const runner = isTransactionManaged
@@ -390,62 +605,21 @@ export class LoansService {
     }
 
     try {
-      // 1. Validate member's capital (only for non-'accion' loans)
-      if (createLoanDto.loan_type !== 'accion') {
-        const memberSubscriptions = await (isTransactionManaged
-          ? runner.manager.find(StockSubscription, {
-              where: { member_id: createLoanDto.member_id },
-              relations: { stock: true },
-            })
-          : this.stockSubscriptionsService.findByMember(
-              createLoanDto.member_id,
-            ));
-        // Calculate total capita, stock subscriptions without loans
-        const totalCapital = memberSubscriptions
-          .filter((s) => !s.financing_loan_id)
-          .reduce((sum, s) => sum + s.quantity * Number(s.stock.value), 0);
-        // Calculate total no accion loans
-        const totalLoans = await this.loanRepository.find({
-          where: {
-            member_id: createLoanDto.member_id,
-            loan_type: Not('accion'),
-            status: 'active',
-          },
-        });
-        const totalLoansAmount = totalLoans.reduce(
-          (sum, l) => sum + Number(l.outstanding_balance),
-          0,
-        );
-        const totalAvailableCapital = (totalCapital - totalLoansAmount) * 2;
-
-        if (createLoanDto.approved_amount > totalAvailableCapital) {
-          throw new BadRequestException(
-            `Requested loan amount (${createLoanDto.approved_amount}) exceeds member's total capital (${totalAvailableCapital}).`,
-          );
-        }
-      }
-
       if (createLoanDto.outstanding_balance === undefined) {
         createLoanDto.outstanding_balance = createLoanDto.approved_amount;
       }
-
       if (createLoanDto.disbursed_amount === undefined) {
         createLoanDto.disbursed_amount = createLoanDto.outstanding_balance;
       }
-
-      // 2. Create Operation
+      // Estado inicial
       createLoanDto.status = this.calculateLoanStatus(
         createLoanDto.disbursed_amount,
         createLoanDto.approved_amount,
       );
-
       const operationDescription =
         createLoanDto.loan_type === 'accion'
-          ? `Stock-based loan disbursement for member ${
-              createLoanDto.member_id
-            }`
-          : `Loan disbursement for member ${createLoanDto.member_id}`;
-
+          ? `Desembolso de préstamo basado en acciones para el miembro ${createLoanDto.member_id}`
+          : `Desembolso de préstamo para el miembro ${createLoanDto.member_id}`;
       const operation = runner.manager.create(Operation, {
         member_id: createLoanDto.member_id,
         meeting_id: createLoanDto.meeting_id,
@@ -453,12 +627,10 @@ export class LoansService {
         type: 'LOAN_DISBURSEMENT',
       });
       await runner.manager.save(operation);
-
-      // 3. Create Loan entity
+      // Crear entidad Loan
       const loanEntity = runner.manager.create(Loan, createLoanDto);
       const loan = await runner.manager.save(loanEntity);
-
-      // 3.1 Crear pago pendiente si el desembolso es parcial
+      // Crear pago pendiente si el desembolso es parcial
       if (createLoanDto.disbursed_amount < createLoanDto.approved_amount) {
         const pendingAmount =
           createLoanDto.approved_amount - createLoanDto.disbursed_amount;
@@ -473,8 +645,7 @@ export class LoansService {
         });
         await runner.manager.save(pendingLoan);
       }
-
-      // 4. Create disbursement transaction
+      // Crear transacción de desembolso
       const disbursement = runner.manager.create(LoanTransactionDetail, {
         loan_id: loan.id,
         operation_id: operation.id,
@@ -482,20 +653,17 @@ export class LoansService {
         amount: createLoanDto.disbursed_amount,
       });
       await runner.manager.save(disbursement);
-
-      // 5. Create Ledger Entries
-      const ledgerEntries = this.createDisbursementLedgerEntries(
+      // Crear asientos contables según el tipo
+      const ledgerEntries = ledgerEntriesFn(
         runner,
         operation,
         loan,
         createLoanDto.disbursed_amount,
       );
       await runner.manager.save(ledgerEntries);
-
       if (!isTransactionManaged) {
         await runner.commitTransaction();
       }
-
       return loan;
     } catch (err) {
       if (!isTransactionManaged) {
@@ -509,6 +677,78 @@ export class LoansService {
     }
   }
 
+  /**
+   * Asientos contables para préstamo de tipo 'acción'
+   */
+  private createAccionLedgerEntries(
+    queryRunner: QueryRunner,
+    operation: Operation,
+    loan: Loan,
+    amount: number,
+  ): LedgerEntry[] {
+    return [
+      queryRunner.manager.create(LedgerEntry, {
+        operation_id: operation.id,
+        loan_id: loan.id,
+        account_type: LOANS_RECEIVABLE_ACCOUNT,
+        amount: amount,
+        description: 'Desembolso de préstamo de acción',
+      }),
+      queryRunner.manager.create(LedgerEntry, {
+        operation_id: operation.id,
+        loan_id: loan.id,
+        account_type: MEMBER_EQUITY_ACCOUNT,
+        amount: -amount,
+        description: 'Desembolso de préstamo de acción',
+      }),
+    ];
+  }
+
+  /**
+   * Asientos contables para préstamo de tipo 'corriente'
+   */
+  private createCorrienteLedgerEntries(
+    queryRunner: QueryRunner,
+    operation: Operation,
+    loan: Loan,
+    amount: number,
+  ): LedgerEntry[] {
+    return [
+      queryRunner.manager.create(LedgerEntry, {
+        operation_id: operation.id,
+        loan_id: loan.id,
+        account_type: CASH_ACCOUNT,
+        amount: -amount,
+        description: 'Desembolso de préstamo',
+      }),
+      queryRunner.manager.create(LedgerEntry, {
+        operation_id: operation.id,
+        loan_id: loan.id,
+        account_type: LOANS_RECEIVABLE_ACCOUNT,
+        amount: amount,
+        description: 'Aumento de cuentas por cobrar (préstamo)',
+      }),
+    ];
+  }
+
+  /**
+   * Asientos contables para préstamo de tipo 'ágil'
+   * Por ahora igual a corriente, pero fácilmente editable
+   */
+  private createAgilLedgerEntries(
+    queryRunner: QueryRunner,
+    operation: Operation,
+    loan: Loan,
+    amount: number,
+  ): LedgerEntry[] {
+    return this.createCorrienteLedgerEntries(
+      queryRunner,
+      operation,
+      loan,
+      amount,
+    );
+  }
+
   async findAll(): Promise<Loan[]> {
     const loans = await this.loanRepository.find();
     return this.populateLoansWithBalance(loans);
@@ -518,7 +758,7 @@ export class LoansService {
     const loans = await this.loanRepository.find({
       where: {
         member_id: memberId,
-        status: 'active',
+        status: In(['active', 'pending']),
       },
     });
     return this.populateLoansWithBalance(loans);

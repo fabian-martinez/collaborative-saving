@@ -12,11 +12,11 @@
         </div>
         <div class="mb-4">
           <label class="block font-semibold mb-1">Valor Aprobado</label>
-          <input type="number" v-model.number="form.approved" class="input input-bordered w-full" min="0" :max="maxCapacity" />
+          <input type="number" v-model.number="form.approved" class="input input-bordered w-full" min="0" :max="maxCapacity" step="any" />
         </div>
         <div class="mb-4">
           <label class="block font-semibold mb-1">Valor Entregado</label>
-          <input type="number" v-model.number="form.delivered" class="input input-bordered w-full" min="0" :max="form.approved" />
+          <input type="number" v-model.number="form.delivered" class="input input-bordered w-full" min="0" :max="form.approved" step="any" />
         </div>
         <div class="mb-4">
           <label class="block font-semibold mb-1">Tasa de Interés</label>
@@ -44,6 +44,7 @@
 <script setup lang="ts">
 import type { Member } from '@/features/members/types';
 import { ref, watch, computed } from 'vue'
+import { loansService, type DebtCapacitiesByType, type DebtCapacity } from '@/features/loans/services/loansService'
 
 const props = defineProps<{
   show: boolean,
@@ -62,7 +63,32 @@ const form = ref({
 
 const formError = ref('')
 
+const debtCapacities = ref<DebtCapacitiesByType | null>(null)
+const loadingCapacity = ref(false)
+
 const interestRate = computed(() => form.value.type === 'corriente' ? 1.5 : 2)
+
+const maxCapacity = computed(() => {
+  if (!debtCapacities.value) return 0
+  // El backend puede devolver 'normal' para corriente/agil, pero si hay tipos separados, usar el que corresponda
+  const type = form.value.type
+  // Si existe la capacidad para el tipo, usarla, si no, usar 'normal' como fallback
+  const cap: DebtCapacity | undefined = debtCapacities.value[type] || debtCapacities.value['normal']
+  return cap?.maxAmount ?? 0
+})
+
+async function fetchDebtCapacities() {
+  if (!props.member) return
+  loadingCapacity.value = true
+  try {
+    debtCapacities.value = await loansService.getDebtCapacitiesByMember(props.member.id)
+  } catch (e) {
+    formError.value = 'No se pudo obtener la capacidad de endeudamiento.'
+    debtCapacities.value = null
+  } finally {
+    loadingCapacity.value = false
+  }
+}
 
 watch(
   () => [props.show, props.prevLoan, props.member],
@@ -80,9 +106,19 @@ watch(
         form.value = { type: 'corriente', approved: 0, delivered: 0 };
       }
       formError.value = '';
+      fetchDebtCapacities()
     }
   },
   { immediate: true }
+)
+
+watch(
+  () => form.value.type,
+  () => {
+    // Al cambiar el tipo de préstamo, se recalcula el maxCapacity automáticamente
+    // Si quieres volver a consultar al backend por cada tipo, descomenta la siguiente línea:
+    fetchDebtCapacities()
+  }
 )
 
 function onSubmit() {
@@ -99,7 +135,7 @@ function onSubmit() {
     formError.value = 'El valor entregado no puede superar el valor aprobado.'
     return
   }
-  if (form.value.approved > props.maxCapacity) {
+  if (form.value.approved > maxCapacity.value) {
     formError.value = 'El valor aprobado supera la capacidad máxima de endeudamiento.'
     return
   }

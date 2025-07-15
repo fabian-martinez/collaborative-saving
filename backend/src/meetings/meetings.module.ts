@@ -30,14 +30,14 @@ import { PendingDisbursementStrategy } from './strategies/pending-disbursement.s
   imports: [
     TypeOrmModule.forFeature([Meeting, PendingMemberPayment]),
     StockSubscriptionsModule,
-    OperationsModule,
+    forwardRef(() => OperationsModule),
     LedgerEntriesModule,
-    LoansModule,
+    forwardRef(() => LoansModule),
     MandatoryContributionsModule,
     AssetRevaluationModule,
     forwardRef(() => DuesModule),
     MembersModule,
-    StocksModule,
+    forwardRef(() => StocksModule),
   ],
   providers: [
     MeetingsService,

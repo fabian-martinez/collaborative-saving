@@ -2,13 +2,14 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, IsNull, Not, Repository } from 'typeorm';
 import { Stock } from './entities/stock.entity';
 import { CreateStockDto } from './dto/create-stock.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
-import { OperationsService } from '../operations/operations.service';
 import { MembersService } from '../members/members.service';
 import { LoansService } from '../loans/loans.service';
 import { StockSubscriptionsService } from '../stock-subscriptions/stock-subscriptions.service';
@@ -31,8 +32,8 @@ export class StocksService {
     @InjectRepository(StockSubscription)
     private readonly stockSubscriptionsRepository: Repository<StockSubscription>,
     private readonly dataSource: DataSource,
-    private readonly operationsService: OperationsService,
     private readonly membersService: MembersService,
+    @Inject(forwardRef(() => LoansService))
     private readonly loansService: LoansService,
     private readonly stockSubscriptionsService: StockSubscriptionsService,
   ) {}
@@ -85,6 +86,33 @@ export class StocksService {
       throw new NotFoundException(`Stock #${stockId} not found`);
     }
     return stockSubscriptions;
+  }
+  /// get stocks by type
+  async getStocksByType(type: string): Promise<Stock[]> {
+    const stocks = await this.stocksRepository.find({
+      where: { type },
+    });
+    return stocks;
+  }
+  // get stock value and total quantity of stock subscriptions
+  async getStockValueAndTotalQuantity(stockId: string): Promise<{
+    value: number;
+    totalQuantity: number;
+  }> {
+    const stock = await this.findOne(stockId);
+    const stockSubscriptions =
+      await this.stockSubscriptionsService.findAllWithDetails();
+    const stockSubscriptionsForStock = stockSubscriptions.filter(
+      (sub) => sub.stock_id === stockId,
+    );
+    const totalQuantity = stockSubscriptionsForStock.reduce(
+      (sum, sub) => sum + Number(sub.quantity),
+      0,
+    );
+    return {
+      value: stock.value,
+      totalQuantity,
+    };
   }
 
   async update(id: string, updateStockDto: UpdateStockDto): Promise<Stock> {

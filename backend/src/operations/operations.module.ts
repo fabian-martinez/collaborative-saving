@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Operation } from './entities/operation.entity';
 import { OperationsController } from './operations.controller';
@@ -14,7 +14,7 @@ import { LoansModule } from '../loans/loans.module';
     forwardRef(() => MeetingsModule),
     StockSubscriptionsModule,
     LedgerEntriesModule,
-    LoansModule,
+    forwardRef(() => LoansModule),
   ],
   controllers: [OperationsController],
   providers: [OperationsService],

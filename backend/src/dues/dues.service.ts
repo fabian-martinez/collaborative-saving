@@ -15,6 +15,8 @@ import { StockSubscription } from '../stock-subscriptions/entities/stock-subscri
 import { Loan } from '../loans/entities/loan.entity';
 import { MembersService } from '../members/members.service';
 import { Stock } from 'src/stocks/entities/stock.entity';
+import { Operation } from 'src/operations/entities/operation.entity';
+import { LoanTransactionDetail } from 'src/loans/entities/loan-transaction-detail.entity';
 
 @Injectable()
 export class DuesService {
@@ -81,9 +83,24 @@ export class DuesService {
     // 4. Cuotas de acciones y préstamos (sin cambios)
     const stockDues = this.calculateStockFeeDues(subscriptions);
     const activeLoans = await this.loansService.findActiveByMember(memberId);
-    const unpaidLoans = activeLoans.filter(
-      (loan) => loan.payment_status_this_month !== 'PAID',
-    );
+    // buscar los prestamos son transacciones en la reunion actual
+    // Obtener todas las loan transactions de la reunion actual que sean de tipo pago de interes
+    // Validar si los prestamos activos tienen transacciones de pago de interes en la reunion actual
+    const unpaidLoans: Loan[] = [];
+    for (const loan of activeLoans) {
+      const hasInterestPayment = await this.dataSource.manager
+        .createQueryBuilder(LoanTransactionDetail, 'ltd')
+        .innerJoin(Operation, 'op', 'ltd.operation_id = op.id')
+        .where('ltd.loan_id = :loanId', { loanId: loan.id })
+        .andWhere('ltd.transaction_type = :transactionType', {
+          transactionType: 'interest_payment',
+        })
+        .andWhere('op.meeting_id = :meetingId', { meetingId: activeMeeting.id })
+        .getExists();
+      if (!hasInterestPayment) {
+        unpaidLoans.push(loan);
+      }
+    }
     const loanDues = this.calculateLoanPaymentDues(unpaidLoans);
     return [...mandatoryDues, ...stockDues, ...loanDues];
   }

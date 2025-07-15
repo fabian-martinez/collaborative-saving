@@ -45,6 +45,38 @@ export class LoansController {
     return this.loansService.findActiveByMember(memberId);
   }
 
+  @Get('member/:memberId/capacity')
+  @ApiOperation({
+    summary:
+      'Obtener capacidad máxima de endeudamiento por tipo de préstamo para un miembro',
+  })
+  @ApiParam({ name: 'memberId', description: 'ID del miembro' })
+  @ApiResponse({
+    status: 200,
+    description: 'Capacidad máxima de endeudamiento por tipo de préstamo',
+    schema: {
+      example: {
+        accion: {
+          type: 'acción',
+          maxAmount: null,
+          availableCapital: 50000,
+          description:
+            "No existe restricción de capital para préstamos de tipo 'acción'.",
+        },
+        normal: {
+          type: 'normal',
+          maxAmount: 120000,
+          availableCapital: 60000,
+          description:
+            'El monto máximo permitido es el doble del capital disponible descontando préstamos activos.',
+        },
+      },
+    },
+  })
+  async getDebtCapacities(@Param('memberId') memberId: string) {
+    return this.loansService.getDebtCapacitiesByType(memberId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a loan by id' })
   @ApiParam({ name: 'id', description: 'The ID of the loan' })

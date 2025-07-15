@@ -6,7 +6,6 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
-  AfterLoad,
 } from 'typeorm';
 import { Member } from '../../members/entities/member.entity';
 import { LoanTransactionDetail } from './loan-transaction-detail.entity';
@@ -64,13 +63,6 @@ export class Loan {
   due_installments: number;
 
   @ApiProperty({
-    description: "The payment status for the current month's installment.",
-    example: 'PENDING',
-    enum: ['PAID', 'PENDING', 'OVERDUE', 'INACTIVE'],
-  })
-  payment_status_this_month: 'PAID' | 'PENDING' | 'OVERDUE' | 'INACTIVE';
-
-  @ApiProperty({
     description: 'The interest rate for the loan (e.g., 0.02 for 2%)',
     example: 0.02,
   })
@@ -108,47 +100,4 @@ export class Loan {
   @ApiProperty({ type: () => [LoanTransactionDetail] })
   @OneToMany(() => LoanTransactionDetail, (transaction) => transaction.loan)
   transactions: LoanTransactionDetail[];
-
-  @AfterLoad()
-  calculateDerivedFields() {
-    const principalPaid = (this.transactions || [])
-      .filter((t) => t.transaction_type === 'abono_capital')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-
-    if (this.status !== 'active' || Number(this.monthly_payment_amount) <= 0) {
-      this.due_installments = 0;
-      this.payment_status_this_month = 'INACTIVE';
-      return;
-    }
-
-    const today = new Date();
-    const creationDate = new Date(this.creation_date);
-
-    const monthsElapsed =
-      (today.getFullYear() - creationDate.getFullYear()) * 12 +
-      (today.getMonth() - creationDate.getMonth());
-
-    const installmentsPaid = Math.floor(
-      principalPaid / Number(this.monthly_payment_amount),
-    );
-
-    this.due_installments = Math.max(0, monthsElapsed - installmentsPaid);
-
-    if (this.due_installments > 0) {
-      this.payment_status_this_month = 'OVERDUE';
-    } else {
-      const currentMonth = today.getMonth();
-      const currentYear = today.getFullYear();
-
-      const paymentThisMonth = (this.transactions || []).find((t) => {
-        const transactionDate = new Date(t.transaction_date);
-        return (
-          t.transaction_type === 'abono_capital' &&
-          transactionDate.getMonth() === currentMonth &&
-          transactionDate.getFullYear() === currentYear
-        );
-      });
-      this.payment_status_this_month = paymentThisMonth ? 'PAID' : 'PENDING';
-    }
-  }
 }

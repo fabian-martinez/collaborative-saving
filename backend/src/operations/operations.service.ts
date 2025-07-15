@@ -1,17 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { StockSubscriptionsService } from '../stock-subscriptions/stock-subscriptions.service';
-import { LoansService } from '../loans/loans.service';
 import { Operation } from './entities/operation.entity';
 import { FindOperationsDto } from './dto/find-operations.dto';
 
 @Injectable()
 export class OperationsService {
-  constructor(
-    private readonly dataSource: DataSource,
-    private readonly stockSubscriptionsService: StockSubscriptionsService,
-    private readonly loansService: LoansService,
-  ) {}
+  constructor(private readonly dataSource: DataSource) {}
 
   async findOne(id: string): Promise<Operation> {
     const operation = await this.dataSource.manager
