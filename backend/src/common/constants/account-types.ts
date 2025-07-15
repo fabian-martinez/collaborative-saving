@@ -26,3 +26,6 @@ export const INSURANCE_INCOME_ACCOUNT = 'INSURANCE_INCOME'; // Ingresos por el s
 
 // Cuenta temporal para transacciones no clasificadas durante el desarrollo
 export const PENDING_CLASSIFICATION_ACCOUNT = 'PENDING_CLASSIFICATION';
+
+// Cuenta para registrar pérdidas por novedades que afectan negativamente el recaudo
+export const NOVELTY_LOSS_ACCOUNT = 'NOVELTY_LOSS';

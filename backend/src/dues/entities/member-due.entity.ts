@@ -4,7 +4,8 @@ export interface MemberDue {
     | 'stock_fee'
     | 'loan_payment'
     | 'fee'
-    | 'insurance';
+    | 'insurance'
+    | 'novelty';
   description: string;
   amount: number;
   referenceId: string;
@@ -15,4 +16,5 @@ export interface MemberDue {
   };
   monthlyContribution?: number;
   stockQuantity?: number;
+  noveltyComment?: string;
 }
