@@ -27,12 +27,12 @@
           <div>
             <div class="text-center">
               <div class="text-sm font-light text-base-content/70 uppercase">Efectivo disponible</div>
-              <div class="text-3xl font-bold text-success">${{ efectivoDisponibleNeto.toFixed(2) }}</div>
+              <div class="text-3xl font-bold text-success">${{ formatNumber(efectivoDisponibleNeto) }}</div>
             </div>
           </div>
           <div class="text-center">
             <div class="text-sm font-light text-base-content/70 uppercase">Total prestado</div>
-            <div class="text-2xl font-bold text-primary">${{ totalPrestado.toFixed(2) }}</div>
+            <div class="text-2xl font-bold text-primary">${{ formatNumber(totalPrestado) }}</div>
           </div>
         </div>
         
@@ -50,7 +50,7 @@
               <tbody>
                 <tr v-for="summary in deliverySummary" :key="summary.id">
                   <td class="text-sm">{{ summary.name }}</td>
-                  <td class="text-sm text-right font-bold text-primary">${{ summary.total.toFixed(2) }}</td>
+                  <td class="text-sm text-right font-bold text-primary">${{ formatNumber(summary.total) }}</td>
                 </tr>
               </tbody>
             </table>
@@ -71,13 +71,13 @@
                 <div class="flex items-baseline">
                   <div class="flex-shrink-0">
                     <p class="font-semibold text-lg text-yellow-800">{{ pending.description }} (Pendiente)</p>
-                    <p class="text-sm text-yellow-700">Monto original: ${{ pending.originalAmount !== undefined ? pending.originalAmount.toFixed(2) : 'N/D' }}</p>
+                    <p class="text-sm text-yellow-700">Monto original: ${{ pending.originalAmount !== undefined ? formatNumber(pending.originalAmount) : 'N/D' }}</p>
                   </div>
                   <div class="flex-grow border-b-2 border-dotted border-yellow-300 mx-4"></div>
                   <div class="flex-shrink-0 flex items-center gap-2">
                     <button class="btn btn-ghost btn-xs text-yellow-800" @click="editPendingTransaction(pending, idx)">Editar</button>
                     <button class="btn btn-ghost btn-xs text-error" @click="postponePending(idx)">Aplazar</button>
-                    <p class="w-36 text-right font-mono text-2xl text-yellow-800">${{ (pending.amount ?? 0).toFixed(2) }}</p>
+                    <p class="w-36 text-right font-mono text-2xl whitespace-nowrap text-yellow-800">${{ formatNumber(pending.amount ?? 0) }}</p>
                   </div>
                 </div>
                 <div class="pl-4 mt-2 space-y-1 text-md text-yellow-700 border-l-2 border-yellow-300 flex gap-4 items-center">
@@ -91,18 +91,18 @@
                 <div class="flex items-baseline">
                   <div class="flex-shrink-0">
                     <p class="font-semibold text-lg text-green-800">{{ loan.type === 'corriente' ? 'Préstamo Corriente' : 'Préstamo Ágil' }}</p>
-                    <p class="text-sm text-green-700">Aprobado: ${{ (loan.approved ?? 0).toFixed(2) }}</p>
+                    <p class="text-sm text-green-700">Aprobado: ${{ formatNumber(loan.approved ?? 0) }}</p>
                   </div>
                   <div class="flex-grow border-b-2 border-dotted border-green-300 mx-4"></div>
                   <div class="flex-shrink-0 flex items-center gap-2">
                     <button class="btn btn-ghost btn-xs text-green-800" @click="editLoan(idx)">Editar</button>
                     <button class="btn btn-ghost btn-xs text-error" @click="removeLoan(idx)">Anular</button>
-                    <p class="w-36 text-right font-mono text-2xl text-green-800">${{ (loan.delivered ?? 0).toFixed(2) }}</p>
+                    <p class="w-36 text-right font-mono text-2xl whitespace-nowrap text-green-800">${{ formatNumber(loan.delivered ?? 0) }}</p>
                   </div>
                 </div>
                 <div class="pl-4 mt-2 space-y-1 text-md text-green-700 border-l-2 border-green-300 flex gap-4 items-center">
                   <span><b>Tasa de interés:</b> <span>{{ loan.type === 'corriente' ? '1.5%' : '2%' }}</span></span>
-                  <span><b>Capacidad máxima:</b> <span>{{ typeof maxCapacity === 'number' ? '$' + maxCapacity.toFixed(2) : 'N/D' }}</span></span>
+                  <span><b>Capacidad máxima:</b> <span>{{ typeof maxCapacity === 'number' ? '$' + formatNumber(maxCapacity) : 'N/D' }}</span></span>
                 </div>
               </div>
               <!-- Retiros de acciones -->
@@ -110,17 +110,17 @@
                 <div class="flex items-baseline">
                   <div class="flex-shrink-0">
                     <p class="font-semibold text-lg text-green-800">Retiro de Acciones {{ withdrawal.stockType }}</p>
-                    <p class="text-sm text-green-700">Cantidad: {{ withdrawal.quantity }} | Valor estimado: ${{ (withdrawal.estimatedValue ?? 0).toFixed(2) }}</p>
+                    <p class="text-sm text-green-700">Cantidad: {{ withdrawal.quantity }} | Valor estimado: ${{ formatNumber(withdrawal.estimatedValue ?? 0) }}</p>
                   </div>
                   <div class="flex-grow border-b-2 border-dotted border-green-300 mx-4"></div>
                   <div class="flex-shrink-0 flex items-center gap-2">
                     <button class="btn btn-ghost btn-xs text-error" @click="removeWithdrawal(idx)">Anular</button>
-                    <p class="w-36 text-right font-mono text-2xl text-green-800">${{ (withdrawal.deliveredAmount ?? 0).toFixed(2) }}</p>
+                    <p class="w-36 text-right font-mono text-2xl whitespace-nowrap text-green-800">${{ formatNumber(withdrawal.deliveredAmount ?? 0) }}</p>
                   </div>
                 </div>
                 <div class="pl-4 mt-2 space-y-1 text-md text-green-700 border-l-2 border-green-300 flex gap-4 items-center">
-                  <span><b>Valor por acción:</b> <span>${{ withdrawal.quantity ? (withdrawal.estimatedValue / withdrawal.quantity).toFixed(2) : 'N/D' }}</span></span>
-                  <span><b>Pendiente por entregar:</b> <span class="text-green-800">${{ (withdrawal.pending ?? 0).toFixed(2) }}</span></span>
+                  <span><b>Valor por acción:</b> <span>${{ withdrawal.quantity ? formatNumber(withdrawal.estimatedValue / withdrawal.quantity) : 'N/D' }}</span></span>
+                  <span><b>Pendiente por entregar:</b> <span class="text-green-800">${{ formatNumber(withdrawal.pending ?? 0) }}</span></span>
                 </div>
               </div>
               <!-- Dividendos integrados con color diferenciado solo en texto/acento -->
@@ -133,7 +133,7 @@
                   <div class="flex-grow border-b-2 border-dotted border-blue-300 mx-4"></div>
                   <div class="flex-shrink-0 flex items-center gap-2">
                     <button class="btn btn-ghost btn-xs text-error" @click="postponeDividend(idx)">Aplazar</button>
-                    <p class="w-36 text-right font-mono text-2xl text-blue-800">${{ (dividend.amount ?? 0).toFixed(2) }}</p>
+                    <p class="w-36 text-right font-mono text-2xl whitespace-nowrap text-blue-800">${{ formatNumber(dividend.amount ?? 0) }}</p>
                   </div>
                 </div>
                 <div class="pl-4 mt-2 space-y-1 text-md text-blue-700 border-l-2 border-blue-300 flex gap-4 items-center">
@@ -152,7 +152,7 @@
                   <div class="flex-shrink-0 flex items-center gap-2">
                     <button class="btn btn-ghost btn-xs text-error" @click="removeOtherDisbursement(idx)">Anular</button>
                     <button class="btn btn-ghost btn-xs text-purple-800" @click="editOtherDisbursement(idx)">Editar</button>
-                    <p class="w-36 text-right font-mono text-2xl text-purple-800">${{ (other.amount ?? 0).toFixed(2) }}</p>
+                    <p class="w-36 text-right font-mono text-2xl whitespace-nowrap text-purple-800">${{ formatNumber(other.amount ?? 0) }}</p>
                   </div>
                 </div>
                 <div class="pl-4 mt-2 space-y-1 text-md text-purple-700 border-l-2 border-purple-300 flex gap-4 items-center">
@@ -162,7 +162,7 @@
               <div class="flex items-baseline text-2xl font-bold mt-6">
                 <span class="flex-shrink-0">Total a entregar:</span>
                 <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
-                <span class="flex-shrink-0 text-primary font-mono">${{ (localLoans.reduce((sum: number, l: any) => sum + l.delivered, 0) + localWithdrawals.reduce((sum: number, w: any) => sum + w.deliveredAmount, 0) + pendingTransactions.reduce((sum: number, p: any) => sum + p.amount, 0) + selectedMemberDividends.reduce((sum: number, d: any) => sum + d.amount, 0) + localOtherDisbursements.reduce((sum: number, o: any) => sum + o.amount, 0)).toFixed(2) }}</span>
+                <span class="flex-shrink-0 text-primary font-mono">${{ formatNumber(localLoans.reduce((sum, l) => sum + l.delivered, 0) + localWithdrawals.reduce((sum, w) => sum + w.deliveredAmount, 0) + pendingTransactions.reduce((sum, p) => sum + p.amount, 0) + selectedMemberDividends.reduce((sum, d) => sum + d.amount, 0) + localOtherDisbursements.reduce((sum, o) => sum + o.amount, 0)) }}</span>
               </div>
             </div>
           </div>
@@ -173,17 +173,17 @@
               <div class="flex items-baseline">
                 <div class="flex-shrink-0">
                   <p class="font-semibold text-lg">Retiro de Acciones {{ withdrawal.stockType }}</p>
-                  <p class="text-sm text-base-content/70">Cantidad: {{ withdrawal.quantity }} | Valor estimado: ${{ (withdrawal.estimatedValue ?? 0).toFixed(2) }}</p>
+                  <p class="text-sm text-base-content/70">Cantidad: {{ withdrawal.quantity }} | Valor estimado: ${{ formatNumber(withdrawal.estimatedValue ?? 0) }}</p>
                 </div>
                 <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
                 <div class="flex-shrink-0 flex items-center gap-2">
                   <button class="btn btn-ghost btn-xs text-error" @click="removeWithdrawal(idx)">Anular</button>
-                  <p class="w-36 text-right font-mono text-2xl text-secondary">${{ (withdrawal.deliveredAmount ?? 0).toFixed(2) }}</p>
+                  <p class="w-36 text-right font-mono text-2xl whitespace-nowrap text-secondary">${{ formatNumber(withdrawal.deliveredAmount ?? 0) }}</p>
                 </div>
               </div>
               <div class="pl-4 mt-2 space-y-1 text-md text-base-content/80 border-l-2 border-base-300/80">
-                <div class="flex justify-between"><span>Valor por acción:</span> <span>${{ withdrawal.quantity ? (withdrawal.estimatedValue / withdrawal.quantity).toFixed(2) : 'N/D' }}</span></div>
-                <div class="flex justify-between"><span>Pendiente por entregar:</span> <span class="text-warning">${{ (withdrawal.pending ?? 0).toFixed(2) }}</span></div>
+                <div class="flex justify-between"><span>Valor por acción:</span> <span>${{ withdrawal.quantity ? formatNumber(withdrawal.estimatedValue / withdrawal.quantity) : 'N/D' }}</span></div>
+                <div class="flex justify-between"><span>Pendiente por entregar:</span> <span class="text-warning">${{ formatNumber(withdrawal.pending ?? 0) }}</span></div>
               </div>
             </div>
             <!-- Transacciones pendientes (solo retiros) -->
@@ -191,12 +191,12 @@
               <div class="flex items-baseline">
                 <div class="flex-shrink-0">
                   <p class="font-semibold text-lg text-warning">{{ pending.description }} (Pendiente)</p>
-                  <p class="text-sm text-base-content/70">Monto original: ${{ (pending.originalAmount ?? 0).toFixed(2) }}</p>
+                  <p class="text-sm text-base-content/70">Monto original: ${{ pending.originalAmount !== undefined ? formatNumber(pending.originalAmount) : 'N/D' }}</p>
                 </div>
                 <div class="flex-grow border-b-2 border-dotted border-warning/30 mx-4"></div>
                 <div class="flex-shrink-0 flex items-center gap-2">
                   <span class="badge badge-warning badge-sm">API</span>
-                  <p class="w-36 text-right font-mono text-2xl text-warning">${{ (pending.amount ?? 0).toFixed(2) }}</p>
+                  <p class="w-36 text-right font-mono text-2xl whitespace-nowrap text-warning">${{ formatNumber(pending.amount ?? 0) }}</p>
                 </div>
               </div>
               <div class="pl-4 mt-2 space-y-1 text-md text-base-content/60 border-l-2 border-warning/30">
@@ -208,11 +208,12 @@
               <span class="flex-shrink-0">Total a entregar:</span>
               <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
               <span class="flex-shrink-0 text-primary font-mono">
-                ${{ (localWithdrawals.reduce(
-                  (sum: number, w: any) => sum + w.deliveredAmount, 0) 
+                ${{ formatNumber(localWithdrawals.reduce(
+                  (sum, w) => sum + w.deliveredAmount, 0) 
                   + pendingTransactions.reduce(
-                    (sum: number, p: any) => sum + p.amount, 0
-                    ) + localOtherDisbursements.reduce((sum: number, o: any) => sum + o.amount, 0)).toFixed(2) }}</span>
+                    (sum, p) => sum + p.amount, 0
+                    ) + localOtherDisbursements.reduce((sum, o) => sum + o.amount, 0)) }}
+              </span>
             </div>
           </div>
           <div class="flex gap-4 mt-6">
@@ -271,6 +272,7 @@ import { useRouter } from 'vue-router'
 import { meetingsService } from '@/features/meetings/services/meetings'
 import EditFineModal from './EditFineModal.vue'
 import type { DisbursementPlan } from '../types'
+import { formatNumber } from '@/shared/formatters'
 
 const activeMeetingStore = useActiveMeetingStore()
 const meetingId = computed(() => activeMeetingStore.meetingId)

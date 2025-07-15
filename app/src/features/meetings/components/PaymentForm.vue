@@ -33,12 +33,12 @@
             <div class="flex-shrink-0">
               <p class="font-semibold text-xl">{{ due.description }}</p>
               <p v-if="due.monthlyContribution && due.stockQuantity" class="text-sm text-base-content/70">
-                {{ Number(due.stockQuantity || 0).toFixed(2) }} uds. x {{ due.monthlyContribution?.toFixed(2) }} c/u
+                {{ formatNumber(Number(due.stockQuantity || 0)) }} uds. x {{ formatNumber(due.monthlyContribution) }} c/u
               </p>
             </div>
             <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
             <div class="flex-shrink-0">
-              <p class="w-48 text-right font-mono text-2xl">{{ payments[due.originalIndex].amount.toFixed(2) }}</p>
+              <p class="w-48 text-right font-mono text-2xl">{{ formatNumber(payments[due.originalIndex].amount) }}</p>
             </div>
           </div>
         </div>
@@ -50,15 +50,15 @@
             <div class="flex items-baseline">
               <p class="font-semibold text-xl flex-shrink-0">{{ due.description }}</p>
               <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
-              <div class="flex-shrink-0 flex items-center gap-2">
+              <div class="flex-shrink-0 flex items-center gap-2 min-w-0">
                 <button type="button" @click="editPayment(due.originalIndex)" class="btn btn-ghost btn-xs">Editar</button>
-                <p class="w-36 text-right font-mono text-2xl">{{ payments[due.originalIndex].amount.toFixed(2) }}</p>
+                <p class="text-right font-mono text-2xl whitespace-nowrap">{{ formatNumber(payments[due.originalIndex].amount) }}</p>
               </div>
             </div>
             <div v-if="due.details" class="w-full pl-4 mt-2 space-y-1 text-md text-base-content/80 border-l-2 border-base-300/80">
-              <div class="flex justify-between"><span>Saldo actual:</span> <span>{{ (due.details.outstanding_balance).toFixed(2) }}</span></div>
-              <div class="flex justify-between"><span>Abono Capital:</span> <span>{{ (payments[due.originalIndex].amount - due.details.interest).toFixed(2) }}</span></div>
-              <div class="flex justify-between"><span>Intereses:</span> <span class="font-semibold text-accent">{{ due.details.interest.toFixed(2) }}</span></div>
+              <div class="flex justify-between"><span>Saldo actual:</span> <span>{{ formatNumber(due.details.outstanding_balance) }}</span></div>
+              <div class="flex justify-between"><span>Abono Capital:</span> <span>{{ formatNumber(payments[due.originalIndex].amount - due.details.interest) }}</span></div>
+              <div class="flex justify-between"><span>Intereses:</span> <span class="font-semibold text-accent">{{ formatNumber(due.details.interest) }}</span></div>
             </div>
           </div>
         </div>
@@ -80,7 +80,7 @@
                     <button type="button" @click="deletePayment(due.originalIndex)" class="btn btn-ghost btn-xs text-error">Borrar</button>
                   </template>
                 </div>
-                <p class="w-36 text-right font-mono text-2xl">{{ payments[due.originalIndex].amount.toFixed(2) }}</p>
+                <p class="w-36 text-right font-mono text-2xl">{{ formatNumber(payments[due.originalIndex].amount) }}</p>
               </div>
             </div>
           </div>
@@ -97,12 +97,12 @@
         <div class="flex items-baseline text-2xl font-bold">
           <span class="flex-shrink-0">Total a Pagar:</span>
           <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
-          <span class="flex-shrink-0 text-primary font-mono">{{ totalToPay.toFixed(2) }}</span>
+          <span class="flex-shrink-0 text-primary font-mono">{{ formatNumber(totalToPay) }}</span>
         </div>
         <div v-if="totalInterest > 0" class="flex items-baseline text-lg text-base-content/80">
           <span class="flex-shrink-0">Total Intereses:</span>
           <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
-          <span class="flex-shrink-0 font-mono">{{ totalInterest.toFixed(2) }}</span>
+          <span class="flex-shrink-0 font-mono">{{ formatNumber(totalInterest) }}</span>
         </div>
       </div>
       
@@ -124,6 +124,7 @@ import { meetingsService } from '@/features/meetings/services/meetings';
 import { useActiveMeetingStore } from '../stores/activeMeeting';
 import EditLoanPaymentModal from './EditLoanPaymentModal.vue';
 import EditFineModal from './EditFineModal.vue';
+import { formatNumber } from '@/shared/formatters'
 
 const props = defineProps<{
   member: Member;

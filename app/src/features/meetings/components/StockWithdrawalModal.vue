@@ -31,7 +31,7 @@
           <div class="bg-base-200 p-3 rounded">
             <ul class="text-sm space-y-1">
               <li v-for="item in withdrawalSummary" :key="item.stockId">
-                {{ item.stockType }}: {{ item.quantity }} x ${{ item.currentValue.toFixed(2) }} = <span class="font-mono font-semibold">${{ item.total.toFixed(2) }}</span>
+                {{ item.stockType }}: {{ item.quantity }} x ${{ formatNumber(item.currentValue) }} = <span class="font-mono font-semibold">${{ formatNumber(item.total) }}</span>
               </li>
             </ul>
           </div>
@@ -39,7 +39,7 @@
         
         <div class="mb-4">
           <label class="block font-semibold mb-1">Valor estimado de retiro</label>
-          <input type="text" :value="'$' + estimatedTotal.toFixed(2)" class="input input-bordered w-full" disabled />
+          <input type="text" :value="formatNumber(estimatedTotal)" class="input input-bordered w-full" disabled />
         </div>
         
         <div class="mb-4">
@@ -49,7 +49,7 @@
         
         <div class="mb-4">
           <label class="block font-semibold mb-1">Pendiente por entregar</label>
-          <input type="text" :value="'$' + (estimatedTotal - deliveredAmount).toFixed(2)" class="input input-bordered w-full" disabled />
+          <input type="text" :value="formatNumber(estimatedTotal - deliveredAmount)" class="input input-bordered w-full" disabled />
         </div>
         
         <div class="modal-action flex justify-between items-center">
@@ -72,6 +72,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
+import { formatNumber } from '@/shared/formatters'
 
 interface MemberStock {
   stockId: string;
