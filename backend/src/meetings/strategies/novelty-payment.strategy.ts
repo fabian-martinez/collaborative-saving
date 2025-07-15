@@ -22,7 +22,7 @@ export class NoveltyPaymentStrategy implements PaymentStrategy {
       queryRunner.manager.create(LedgerEntry, {
         operation_id: operation.id,
         account_type: NOVELTY_LOSS_ACCOUNT,
-        amount: -payment.amount, // Impacto negativo
+        amount: payment.amount,
         description: `NOVEDAD: ${payment.noveltyComment || payment.description}`,
       }),
     ];

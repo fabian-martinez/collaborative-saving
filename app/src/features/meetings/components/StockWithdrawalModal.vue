@@ -19,7 +19,7 @@
                 <td>{{ stock.quantity }}</td>
                 <td>${{ stock.currentValue.toFixed(2) }}</td>
                 <td>
-                  <input type="number" min="0" :max="stock.quantity" v-model.number="withdrawals[idx].quantity" class="input input-bordered input-sm w-20" />
+                  <input type="number" min="0" :max="stock.quantity" v-model.number="withdrawals[idx].quantity" class="input input-bordered input-sm w-20" step="any" />
                 </td>
               </tr>
             </tbody>
@@ -44,7 +44,7 @@
         
         <div class="mb-4">
           <label class="block font-semibold mb-1">Monto entregado</label>
-          <input type="number" min="0" :max="estimatedTotal" v-model.number="deliveredAmount" class="input input-bordered w-full" />
+          <input type="number" min="0" :max="estimatedTotal" v-model.number="deliveredAmount" class="input input-bordered w-full" step="any" />
         </div>
         
         <div class="mb-4">

@@ -36,13 +36,14 @@
 import { computed } from 'vue';
 import { formatNumber } from '@/shared/formatters';
 import type { Operation, LedgerEntry } from '@/features/operations/types';
+import { CASH_ACCOUNT } from '@/shared/constants/account-types';
 
 const props = defineProps<{
   operation: Operation;
 }>();
 
 const creditEntries = computed(() => {
-    return props.operation.ledger_entries?.filter(e => Number(e.amount) < 0) || [];
+    return props.operation.ledger_entries?.filter(e => e.account_type !== CASH_ACCOUNT) || [];
 });
 
 const accountNames: Record<string, string> = {
@@ -55,6 +56,7 @@ const accountNames: Record<string, string> = {
   MANDATORY_CONTRIBUTION_INCOME: 'Aportes Obligatorios',
   PENDING_CLASSIFICATION: 'Pendiente de Clasificar',
   MONTHLY_PAYMENT: 'Cuota Mensual',
+  NOVELTY_LOSS: 'Pérdida por Novedad',
 };
 
 const getAccountName = (accountKey: string) => {

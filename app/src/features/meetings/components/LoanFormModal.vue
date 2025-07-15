@@ -24,7 +24,7 @@
         </div>
         <div class="mb-4">
           <label class="block font-semibold mb-1">Capacidad Máxima de Endeudamiento</label>
-          <input type="text" :value="'$' + maxCapacity.toFixed(2)" class="input input-bordered w-full" disabled />
+          <input type="text" :value="'$' + formatNumber(maxCapacity)" class="input input-bordered w-full" disabled />
         </div>
         <div v-if="formError" class="alert alert-error my-2">
           <span>{{ formError }}</span>
@@ -45,6 +45,7 @@
 import type { Member } from '@/features/members/types';
 import { ref, watch, computed } from 'vue'
 import { loansService, type DebtCapacitiesByType, type DebtCapacity } from '@/features/loans/services/loansService'
+import { formatNumber } from '@/shared/formatters';
 
 const props = defineProps<{
   show: boolean,
