@@ -7,6 +7,7 @@ import { LoanPaymentStrategy } from './loan-payment.strategy';
 import { FeeStrategy } from './fee.strategy';
 import { InsuranceStrategy } from './insurance.strategy';
 import { DefaultPaymentStrategy } from './default-payment.strategy';
+import { NoveltyPaymentStrategy } from './novelty-payment.strategy';
 
 @Injectable()
 export class PaymentStrategyFactory {
@@ -19,6 +20,7 @@ export class PaymentStrategyFactory {
     private readonly feeStrategy: FeeStrategy,
     private readonly insuranceStrategy: InsuranceStrategy,
     private readonly defaultPaymentStrategy: DefaultPaymentStrategy,
+    private readonly noveltyPaymentStrategy: NoveltyPaymentStrategy,
   ) {
     this.strategies.set(
       'mandatory_contribution',
@@ -28,6 +30,7 @@ export class PaymentStrategyFactory {
     this.strategies.set('loan_payment', this.loanPaymentStrategy);
     this.strategies.set('fee', this.feeStrategy);
     this.strategies.set('insurance', this.insuranceStrategy);
+    this.strategies.set('novelty', this.noveltyPaymentStrategy);
   }
 
   getStrategy(paymentType: MemberDue['type']): PaymentStrategy {

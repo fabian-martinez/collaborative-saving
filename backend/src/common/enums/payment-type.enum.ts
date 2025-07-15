@@ -4,4 +4,5 @@ export enum PaymentType {
   LOAN_PAYMENT = 'loan_payment',
   FEE = 'fee',
   INSURANCE = 'insurance',
+  NOVELTY = 'novelty',
 }
