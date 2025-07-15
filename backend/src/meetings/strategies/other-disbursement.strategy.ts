@@ -3,6 +3,7 @@ import { DisbursementStrategy } from './disbursement-strategy.interface';
 import { DisbursementPlanItemDto } from '../dto/disbursement-plan.dto';
 import { Operation } from '../../operations/entities/operation.entity';
 import { LedgerEntry } from '../../ledger-entries/entities/ledger-entry.entity';
+import { OperationType } from '../../common/enums/operation-type.enum';
 
 @Injectable()
 export class OtherDisbursementStrategy implements DisbursementStrategy {
@@ -26,7 +27,7 @@ export class OtherDisbursementStrategy implements DisbursementStrategy {
       member_id: item.memberId,
       meeting_id: meetingId,
       description,
-      type: 'OTHER_WITHDRAWAL',
+      type: OperationType.OTHER_WITHDRAWAL,
     });
     await queryRunner.manager.save(operation);
     // 2. Registrar asientos contables (salida de efectivo)

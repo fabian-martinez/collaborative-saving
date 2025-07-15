@@ -130,7 +130,7 @@ create table public.loan_transaction_details (
     id uuid default extensions.uuid_generate_v4() primary key,
     loan_id uuid not null references public.loans(id) on delete cascade,
     operation_id uuid references public.operations(id) on delete set null,
-    transaction_type text not null check (transaction_type in ('desembolso', 'abono_capital', 'pago_interes')),
+    transaction_type text not null check (transaction_type in ('disbursement', 'principal_payment', 'interest_payment')),
     amount numeric(10, 2) not null,
     transaction_date date default current_date not null,
     notes text

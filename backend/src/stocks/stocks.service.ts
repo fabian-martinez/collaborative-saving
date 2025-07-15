@@ -23,6 +23,7 @@ import {
   STOCK_CAPITAL_ACCOUNT,
 } from '../common/constants/account-types';
 import { StockSubscription } from 'src/stock-subscriptions/entities/stock-subscription.entity';
+import { OperationType } from '../common/enums/operation-type.enum';
 
 @Injectable()
 export class StocksService {
@@ -204,7 +205,7 @@ export class StocksService {
         member_id: memberId,
         meeting_id: meetingId,
         description: `Compra de ${quantity} acciones de ${stock.type}`,
-        type: 'STOCK_PURCHASE',
+        type: OperationType.STOCK_PURCHASE,
       });
 
       await queryRunner.manager.save(operation);

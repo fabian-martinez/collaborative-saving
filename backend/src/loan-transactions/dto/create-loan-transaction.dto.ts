@@ -4,10 +4,11 @@ import {
   IsString,
   IsUUID,
   IsNumber,
-  IsIn,
   IsPositive,
   IsOptional,
+  IsEnum,
 } from 'class-validator';
+import { TransactionType } from '../../common/enums/transaction-type.enum';
 
 export class CreateLoanTransactionDto {
   @ApiProperty({
@@ -20,13 +21,12 @@ export class CreateLoanTransactionDto {
 
   @ApiProperty({
     description: 'The type of loan transaction',
-    enum: ['desembolso', 'abono_capital', 'pago_interes'],
-    example: 'abono_capital',
+    enum: TransactionType,
+    example: TransactionType.PRINCIPAL_PAYMENT,
   })
-  @IsString()
+  @IsEnum(TransactionType)
   @IsNotEmpty()
-  @IsIn(['desembolso', 'abono_capital', 'pago_interes'])
-  transaction_type: string;
+  transaction_type: TransactionType;
 
   @ApiProperty({
     description: 'The amount of the transaction',

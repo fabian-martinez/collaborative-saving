@@ -58,7 +58,7 @@ Este documento describe un escenario de negocio completo, desde el inicio hasta 
         *   `approved_amount`: 5,000
         *   `interest_rate`: 1% mensual (sobre saldo desembolsado)
         *   `status`: 'activo'
-        *   **Historial:** Se ha registrado un `LoanTransactionDetails` de tipo `desembolso` por 2,500.
+        *   **Historial:** Se ha registrado un `LoanTransactionDetails` de tipo `disbursement` por 2,500.
 
 ---
 
@@ -133,7 +133,7 @@ Se crea una `Operation` por socio para registrar el recaudo.
 *   **Caja Inicial (de esta reunión):** `595 (recaudación) + 1,000 (abono acción) = 1,595`
 *   **Salidas de Dinero:**
     *   **Desembolso Socio 2:** `500` para su crédito `loan_3`.
-        *   **Acción:** `LedgerEntry` y `LoanTransactionDetails` de tipo `desembolso`.
+        *   **Acción:** `LedgerEntry` y `LoanTransactionDetails` de tipo `disbursement`.
     *   **Nuevo Crédito Ágil Socio 1:** `595 - 500 = 95`.
         *   **Acción:** Se crea un `Loan` nuevo por `95` y su respectivo `LedgerEntry/LoanTransactionDetails` de desembolso.
 

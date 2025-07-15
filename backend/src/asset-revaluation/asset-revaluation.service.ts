@@ -25,6 +25,7 @@ import {
 import { RevaluationDetail, RevaluationPreviewResult } from './types';
 import { PendingMemberPayment } from '../meetings/entities/pending-member-payment.entity';
 import { StockBehavior } from '../stocks/entities/stock.entity';
+import { OperationType } from '../common/enums/operation-type.enum';
 
 @Injectable()
 export class AssetRevaluationService {
@@ -326,7 +327,7 @@ export class AssetRevaluationService {
       {
         where: {
           meeting_id: meetingId,
-          type: 'ASSET_REVALUATION',
+          type: OperationType.ASSET_REVALUATION,
         },
       },
     );
@@ -349,7 +350,7 @@ export class AssetRevaluationService {
       {
         where: {
           meeting_id: meetingId,
-          type: 'ASSET_REVALUATION',
+          type: OperationType.ASSET_REVALUATION,
         },
       },
     );
@@ -366,7 +367,7 @@ export class AssetRevaluationService {
       {
         where: {
           meeting_id: meetingId,
-          type: 'ASSET_REVALUATION',
+          type: OperationType.ASSET_REVALUATION,
         },
       },
     );
@@ -392,7 +393,7 @@ export class AssetRevaluationService {
       // 1. Create the master Revaluation Operation
       const revaluationOperation = queryRunner.manager.create(Operation, {
         meeting_id: meetingId,
-        type: 'ASSET_REVALUATION',
+        type: OperationType.ASSET_REVALUATION,
         date: meeting.date,
         description: `Revaluación de activos para la reunión del ${meeting.date.toLocaleDateString()}`,
       });

@@ -141,13 +141,13 @@ INSERT INTO public.pending_member_payments (member_id, meeting_id, type, amount,
 -- ---------------------------
 -- Transacciones del préstamo de Carlos
 INSERT INTO public.loan_transaction_details (loan_id, operation_id, transaction_type, amount) VALUES
-('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b21', 'd1eebc99-9c0b-4ef8-bb6d-6bb9bd380d42', 'desembolso', 2000.00);
+('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b21', 'd1eebc99-9c0b-4ef8-bb6d-6bb9bd380d42', 'disbursement', 2000.00);
 
 -- Transacciones del préstamo de David (solo desembolso)
 INSERT INTO public.operations (id, member_id, meeting_id, description, type) VALUES
 ('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380d43', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14', 'c1eebc99-9c0b-4ef8-bb6d-6bb9bd380c31', 'Desembolso Préstamo Ágil a David', 'LOAN_DISBURSEMENT');
 INSERT INTO public.loan_transaction_details (loan_id, operation_id, transaction_type, amount) VALUES
-('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b22', 'd1eebc99-9c0b-4ef8-bb6d-6bb9bd380d43', 'desembolso', 500.00);
+('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380b22', 'd1eebc99-9c0b-4ef8-bb6d-6bb9bd380d43', 'disbursement', 500.00);
 
 -- Asientos contables para el desembolso del préstamo de David
 INSERT INTO public.ledger_entries(operation_id, account_type, amount, loan_id, description) VALUES

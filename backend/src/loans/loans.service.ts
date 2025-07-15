@@ -28,6 +28,8 @@ import { Meeting } from 'src/meetings/entities/meeting.entity';
 import { Stock } from 'src/stocks/entities/stock.entity';
 import { MeetingsService } from 'src/meetings/meetings.service';
 import { StockSubscriptionsService } from 'src/stock-subscriptions/stock-subscriptions.service';
+import { OperationType } from '../common/enums/operation-type.enum';
+import { TransactionType } from '../common/enums/transaction-type.enum';
 
 @Injectable()
 export class LoansService {
@@ -138,7 +140,7 @@ export class LoansService {
       member_id: loan.member_id,
       meeting_id: meetingId,
       description,
-      type: 'LOAN_DISBURSEMENT',
+      type: OperationType.LOAN_DISBURSEMENT,
     });
     await queryRunner.manager.save(operation);
 
@@ -157,7 +159,7 @@ export class LoansService {
       {
         loan_id: loan.id,
         operation_id: operation.id,
-        transaction_type: 'desembolso',
+        transaction_type: TransactionType.DISBURSEMENT,
         amount: item.amount,
       },
     );
@@ -224,7 +226,7 @@ export class LoansService {
         {
           loan_id: loan.id,
           operation_id: operation.id,
-          transaction_type: 'pago_interes',
+          transaction_type: TransactionType.INTEREST_PAYMENT,
           amount: interestPaid,
         },
       );
@@ -248,7 +250,7 @@ export class LoansService {
         {
           loan_id: loan.id,
           operation_id: operation.id,
-          transaction_type: 'abono_capital',
+          transaction_type: TransactionType.PRINCIPAL_PAYMENT,
           amount: principalPaid,
         },
       );
@@ -359,10 +361,10 @@ export class LoansService {
     });
 
     return transactions.reduce((balance, t) => {
-      if (t.transaction_type === 'desembolso') {
+      if (t.transaction_type === TransactionType.DISBURSEMENT) {
         return balance + Number(t.amount);
       }
-      if (t.transaction_type === 'abono_capital') {
+      if (t.transaction_type === TransactionType.PRINCIPAL_PAYMENT) {
         return balance - Number(t.amount);
       }
       return balance;
@@ -624,7 +626,7 @@ export class LoansService {
         member_id: createLoanDto.member_id,
         meeting_id: createLoanDto.meeting_id,
         description: operationDescription,
-        type: 'LOAN_DISBURSEMENT',
+        type: OperationType.LOAN_DISBURSEMENT,
       });
       await runner.manager.save(operation);
       // Crear entidad Loan
@@ -649,7 +651,7 @@ export class LoansService {
       const disbursement = runner.manager.create(LoanTransactionDetail, {
         loan_id: loan.id,
         operation_id: operation.id,
-        transaction_type: 'desembolso',
+        transaction_type: TransactionType.DISBURSEMENT,
         amount: createLoanDto.disbursed_amount,
       });
       await runner.manager.save(disbursement);

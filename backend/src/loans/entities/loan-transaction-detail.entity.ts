@@ -7,6 +7,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Loan } from './loan.entity';
+import { TransactionType } from '../../common/enums/transaction-type.enum';
 
 @Entity({ name: 'loan_transaction_details' })
 export class LoanTransactionDetail {
@@ -26,10 +27,11 @@ export class LoanTransactionDetail {
 
   @ApiProperty({
     description: 'The type of transaction (e.g., payment, interest)',
-    example: 'payment',
+    example: TransactionType.PRINCIPAL_PAYMENT,
+    enum: TransactionType,
   })
   @Column({ type: 'text' })
-  transaction_type: string;
+  transaction_type: TransactionType;
 
   @ApiProperty({ description: 'The amount of the transaction', example: 100.5 })
   @Column({ type: 'decimal', precision: 10, scale: 2 })

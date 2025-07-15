@@ -8,7 +8,7 @@ import {
   IsInt,
   Min,
 } from 'class-validator';
-import { OperationTypeEnum, OperationType } from '../entities/operation.entity';
+import { OperationType } from '../../common/enums/operation-type.enum';
 
 export class FindOperationsDto {
   @ApiPropertyOptional({
@@ -35,7 +35,7 @@ export class FindOperationsDto {
   })
   @IsOptional()
   @IsEnum(OperationType)
-  operationType?: OperationTypeEnum;
+  operationType?: OperationType;
 
   @ApiPropertyOptional({
     description: 'Fecha desde (ISO 8601)',

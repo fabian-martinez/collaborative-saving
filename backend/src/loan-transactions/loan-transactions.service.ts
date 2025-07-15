@@ -9,16 +9,15 @@ import { CreateLoanTransactionDto } from './dto/create-loan-transaction.dto';
 import { UpdateLoanTransactionDto } from './dto/update-loan-transaction.dto';
 import { LoanTransactionDetail } from '../loans/entities/loan-transaction-detail.entity';
 import { LoansService } from '../loans/loans.service';
-import {
-  Operation,
-  OperationTypeEnum,
-} from '../operations/entities/operation.entity';
+import { Operation } from '../operations/entities/operation.entity';
 import { LedgerEntry } from '../ledger-entries/entities/ledger-entry.entity';
 import {
   CASH_ACCOUNT,
   INTEREST_INCOME_ACCOUNT,
   LOANS_RECEIVABLE_ACCOUNT,
 } from '../common/constants/account-types';
+import { OperationType } from '../common/enums/operation-type.enum';
+import { TransactionType } from '../common/enums/transaction-type.enum';
 
 @Injectable()
 export class LoanTransactionsService {
@@ -38,19 +37,20 @@ export class LoanTransactionsService {
 
     const { loan_id, transaction_type, amount, notes } =
       createLoanTransactionDto;
+    const txType = transaction_type;
 
     try {
       const loan = await this.loansService.findOne(loan_id);
       const member_id = loan.member_id;
 
-      let operationType: OperationTypeEnum = 'UNDEFINED';
-      switch (transaction_type) {
-        case 'desembolso':
-          operationType = 'LOAN_DISBURSEMENT';
+      let operationType: OperationType = OperationType.UNDEFINED;
+      switch (txType) {
+        case TransactionType.DISBURSEMENT:
+          operationType = OperationType.LOAN_DISBURSEMENT;
           break;
-        case 'abono_capital':
-        case 'pago_interes':
-          operationType = 'LOAN_PAYMENT';
+        case TransactionType.PRINCIPAL_PAYMENT:
+        case TransactionType.INTEREST_PAYMENT:
+          operationType = OperationType.LOAN_PAYMENT;
           break;
         default:
           throw new BadRequestException(
@@ -76,8 +76,8 @@ export class LoanTransactionsService {
       );
 
       // 2. Business Logic per transaction type
-      switch (transaction_type) {
-        case 'desembolso':
+      switch (txType) {
+        case TransactionType.DISBURSEMENT:
           newOutstandingBalance += amount;
           ledgerEntries.push(
             queryRunner.manager.create(LedgerEntry, {
@@ -93,7 +93,7 @@ export class LoanTransactionsService {
           );
           break;
 
-        case 'abono_capital':
+        case TransactionType.PRINCIPAL_PAYMENT:
           newOutstandingBalance -= amount;
           ledgerEntries.push(
             queryRunner.manager.create(LedgerEntry, {
@@ -109,7 +109,7 @@ export class LoanTransactionsService {
           );
           break;
 
-        case 'pago_interes':
+        case TransactionType.INTEREST_PAYMENT:
           // Interest payment does not affect the loan's outstanding balance
           ledgerEntries.push(
             queryRunner.manager.create(LedgerEntry, {

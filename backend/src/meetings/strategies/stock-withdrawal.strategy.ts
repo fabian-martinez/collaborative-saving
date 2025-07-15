@@ -4,6 +4,7 @@ import { Operation } from '../../operations/entities/operation.entity';
 import { LedgerEntry } from '../../ledger-entries/entities/ledger-entry.entity';
 import { StocksService } from '../../stocks/stocks.service';
 import { DisbursementPlanItemDto } from '../dto/disbursement-plan.dto';
+import { OperationType } from '../../common/enums/operation-type.enum';
 
 @Injectable()
 export class StockWithdrawalStrategy implements DisbursementStrategy {
@@ -68,7 +69,7 @@ export class StockWithdrawalStrategy implements DisbursementStrategy {
       member_id: item.memberId,
       meeting_id: meetingId,
       description: `Retiro de acciones (${item.disbursementStockRequest?.stockId})`,
-      type: 'STOCK_WITHDRAWAL',
+      type: OperationType.STOCK_WITHDRAWAL,
     });
     await queryRunner.manager.save(operation);
     const ledgerEntries: LedgerEntry[] = [

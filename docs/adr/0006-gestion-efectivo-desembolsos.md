@@ -98,11 +98,11 @@ El paso final de la reunión (`POST /meetings/:id/disbursement-plan/execute`) ej
 
 ```typescript
 export enum DisbursementType {
-  DIVIDENDO = 'dividendo',
-  RETIRO_ACCION = 'retiro_accion',
-  PRESTAMO_NUEVO = 'prestamo_nuevo',
-  PRESTAMO_PENDIENTE = 'prestamo_pendiente',
-  OTRO = 'otro',
+  DIVIDEND = 'dividend',
+  STOCK_WITHDRAWAL = 'stock_withdrawal',
+  NEW_LOAN = 'new_loan',
+  PENDING_LOAN = 'pending_loan',
+  OTHER = 'other',
 }
 
 export class NewLoanRequestDto {
@@ -155,7 +155,7 @@ export class DisbursementPlanItemDto {
   @IsUUID()
   referenceMeetingId?: string;
   
-  // Solo para PRESTAMO_NUEVO (Opción A)
+  // Solo para NEW_LOAN (Opción A)
   @IsOptional()
   @ValidateNested()
   @Type(() => NewLoanRequestDto)

@@ -145,7 +145,7 @@ erDiagram
         UUID id PK
         UUID loan_id FK
         UUID operation_id FK
-        String transaction_type
+        String transaction_type // 'disbursement', 'principal_payment', 'interest_payment'
         Decimal amount
         DATE transaction_date
         String notes

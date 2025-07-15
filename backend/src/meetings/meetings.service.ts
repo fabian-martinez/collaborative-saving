@@ -9,10 +9,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { SimplifiedRecordTransactionsDto } from './dto/simplified-record-transactions.dto';
-import {
-  Operation,
-  OperationTypeEnum,
-} from '../operations/entities/operation.entity';
+import { Operation } from '../operations/entities/operation.entity';
 import { LedgerEntry } from '../ledger-entries/entities/ledger-entry.entity';
 import { CASH_ACCOUNT } from '../common/constants/account-types';
 import { Meeting } from './entities/meeting.entity';
@@ -34,6 +31,7 @@ import { WithdrawStockForMemberDto } from './dto/withdraw-stock-for-member.dto';
 import { DisbursementStrategyFactory } from './strategies/disbursement-strategy.factory';
 import { LoanTransactionDetail } from '../loans/entities/loan-transaction-detail.entity';
 import { NewLoanRequestDto } from './dto/disbursement-plan.dto';
+import { OperationType } from '../common/enums/operation-type.enum';
 
 @Injectable()
 export class MeetingsService {
@@ -68,7 +66,7 @@ export class MeetingsService {
     return this.dataSource.manager.getRepository(Operation).find({
       where: {
         meeting_id: meetingId,
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
       },
       relations: ['member', 'ledger_entries'],
     });
@@ -93,7 +91,7 @@ export class MeetingsService {
         where: {
           member_id: memberId,
           meeting_id: activeMeeting.id,
-          type: 'MONTHLY_PAYMENT',
+          type: OperationType.MONTHLY_PAYMENT,
         },
       });
 
@@ -112,7 +110,7 @@ export class MeetingsService {
         queryRunner,
         activeMeeting.id,
         memberId,
-        'MONTHLY_PAYMENT',
+        OperationType.MONTHLY_PAYMENT,
       );
 
       const ledgerEntries: LedgerEntry[] = [];
@@ -154,11 +152,8 @@ export class MeetingsService {
     queryRunner: QueryRunner,
     meetingId: string,
     memberId: string,
-    type: OperationTypeEnum | null,
+    type: OperationType,
   ): Promise<Operation> {
-    if (!type) {
-      throw new BadRequestException('Tipo de operación no válido.');
-    }
     const member = await this.dataSource.manager.findOne(Member, {
       where: { id: memberId },
     });

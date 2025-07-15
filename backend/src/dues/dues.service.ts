@@ -17,6 +17,7 @@ import { MembersService } from '../members/members.service';
 import { Stock } from 'src/stocks/entities/stock.entity';
 import { Operation } from 'src/operations/entities/operation.entity';
 import { LoanTransactionDetail } from 'src/loans/entities/loan-transaction-detail.entity';
+import { TransactionType } from '../common/enums/transaction-type.enum';
 
 @Injectable()
 export class DuesService {
@@ -93,7 +94,7 @@ export class DuesService {
         .innerJoin(Operation, 'op', 'ltd.operation_id = op.id')
         .where('ltd.loan_id = :loanId', { loanId: loan.id })
         .andWhere('ltd.transaction_type = :transactionType', {
-          transactionType: 'interest_payment',
+          transactionType: TransactionType.INTEREST_PAYMENT,
         })
         .andWhere('op.meeting_id = :meetingId', { meetingId: activeMeeting.id })
         .getExists();

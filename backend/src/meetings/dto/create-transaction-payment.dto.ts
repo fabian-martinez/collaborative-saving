@@ -4,18 +4,11 @@ import {
   IsNumber,
   IsPositive,
   IsNotEmpty,
-  IsIn,
+  IsEnum,
   IsUUID,
   IsOptional,
 } from 'class-validator';
-
-export const PaymentType = [
-  'mandatory_contribution',
-  'stock_fee',
-  'loan_payment',
-  'fee',
-  'insurance',
-] as const;
+import { PaymentType } from '../../common/enums/payment-type.enum';
 
 export class CreateTransactionPaymentDto {
   @ApiProperty({
@@ -23,9 +16,9 @@ export class CreateTransactionPaymentDto {
     enum: PaymentType,
     example: 'loan_payment',
   })
-  @IsIn(PaymentType)
+  @IsEnum(PaymentType)
   @IsNotEmpty()
-  type: (typeof PaymentType)[number];
+  type: PaymentType;
 
   @ApiProperty({
     description: 'A description for the payment',

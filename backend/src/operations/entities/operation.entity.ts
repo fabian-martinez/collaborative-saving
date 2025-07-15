@@ -11,23 +11,7 @@ import {
 import { Member } from '../../members/entities/member.entity';
 import { Meeting } from '../../meetings/entities/meeting.entity';
 import { LedgerEntry } from '../../ledger-entries/entities/ledger-entry.entity';
-
-export const OperationType = [
-  'MANDATORY_CONTRIBUTION',
-  'STOCK_FEE',
-  'LOAN_PAYMENT',
-  'FEE',
-  'STOCK_PURCHASE',
-  'LOAN_DISBURSEMENT',
-  'MONTHLY_PAYMENT',
-  'ASSET_REVALUATION',
-  'UNDEFINED',
-  'STOCK_WITHDRAWAL',
-  'OTHER_WITHDRAWAL',
-  'DIVIDEND_PAYMENT',
-] as const;
-
-export type OperationTypeEnum = (typeof OperationType)[number];
+import { OperationType } from '../../common/enums/operation-type.enum';
 
 @Entity({ name: 'operations' })
 export class Operation {
@@ -57,10 +41,8 @@ export class Operation {
     example: 'MONTHLY_PAYMENT',
     enum: OperationType,
   })
-  @Column({
-    type: 'text',
-  })
-  type: OperationTypeEnum;
+  @Column({ type: 'text' })
+  type: OperationType;
 
   @ApiProperty({
     description: 'The timestamp when the operation occurred',
