@@ -65,8 +65,8 @@ comment on table public.operations is 'Represents a single, high-level financial
 create table public.stocks (
     id uuid default extensions.uuid_generate_v4() primary key,
     type text not null unique,
-    value numeric(10, 2) not null,
-    monthly_contribution numeric(10, 2) default 0 not null,
+    value numeric(12, 2) not null,
+    monthly_contribution numeric(12, 2) default 0 not null,
     is_guaranteed boolean default false not null,
     guaranteed_yield numeric(5, 4),
     behavior text not null default 'CAPITAL_APPRECIATION',
@@ -78,11 +78,11 @@ comment on table public.stocks is 'Defines the types of stocks available in the 
 create table public.loans (
     id uuid default extensions.uuid_generate_v4() primary key,
     member_id uuid not null references public.members(id) on delete cascade,
-    loan_type text not null check (loan_type in ('corriente', 'agil', 'accion')),
-    approved_amount numeric(10, 2) not null,
-    disbursed_amount numeric(10, 2) not null default 0, -- Monto desembolsado del préstamo
-    outstanding_balance numeric(10,2) not null default 0,
-    monthly_payment_amount numeric(10, 2) not null,
+    loan_type text not null,
+    approved_amount numeric(12, 2) not null,
+    disbursed_amount numeric(12, 2) not null default 0, -- Monto desembolsado del préstamo
+    outstanding_balance numeric(12, 2) not null default 0,
+    monthly_payment_amount numeric(12, 2) not null,
     interest_rate numeric(4, 4) not null,
     status text default 'pending' not null,
     creation_date date default current_date not null
@@ -94,11 +94,11 @@ create table public.stock_value_history (
     id uuid default extensions.uuid_generate_v4() primary key,
     stock_id uuid not null references public.stocks(id) on delete cascade,
     operation_id uuid not null references public.operations(id) on delete cascade,
-    previous_value numeric(10, 2) not null,
+    previous_value numeric(12, 2) not null,
     growth_from_contributions numeric(10, 4) not null,
     growth_from_interest numeric(10, 4) not null,
     total_growth_per_share numeric(10, 4) not null,
-    new_value numeric(10, 2) not null,
+    new_value numeric(12, 2) not null,
     created_at timestamp with time zone default now() not null
 );
 comment on table public.stock_value_history is 'Stores the historical value of each stock after revaluation.';
@@ -111,8 +111,7 @@ create table public.stock_subscriptions (
     quantity numeric(20,10) default 1 not null,
     purchase_date date default now() not null,
     status text default 'active' not null check (status in ('active', 'inactive')),
-    financing_loan_id uuid null references public.loans(id) on delete set null,
-    unique(member_id, stock_id)
+    financing_loan_id uuid null references public.loans(id) on delete set null
 );
 comment on table public.stock_subscriptions is 'Tracks which members are subscribed to which stocks.';
 comment on column public.stock_subscriptions.financing_loan_id is 'ID del préstamo utilizado para financiar esta subscripción de acción, si aplica.';
@@ -121,7 +120,7 @@ comment on column public.stock_subscriptions.financing_loan_id is 'ID del prést
 create table public.mandatory_contributions (
     id uuid default extensions.uuid_generate_v4() primary key,
     asset_type text not null unique,
-    value numeric(10, 2) not null
+    value numeric(12, 2) not null
 );
 comment on table public.mandatory_contributions is 'Defines mandatory, recurring contributions for the fund.';
 
@@ -131,7 +130,7 @@ create table public.loan_transaction_details (
     loan_id uuid not null references public.loans(id) on delete cascade,
     operation_id uuid references public.operations(id) on delete set null,
     transaction_type text not null check (transaction_type in ('disbursement', 'principal_payment', 'interest_payment')),
-    amount numeric(10, 2) not null,
+    amount numeric(12, 2) not null,
     transaction_date date default current_date not null,
     notes text
 );
@@ -142,7 +141,7 @@ create table public.ledger_entries (
     id uuid default extensions.uuid_generate_v4() primary key,
     operation_id uuid references public.operations(id) on delete cascade not null,
     account_type text not null,
-    amount numeric(10, 2) not null,
+    amount numeric(12, 2) not null,
     description text,
     created_at timestamp with time zone default now() not null,
     -- Affected entity fields for traceability
