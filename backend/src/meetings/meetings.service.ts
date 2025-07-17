@@ -11,7 +11,14 @@ import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { SimplifiedRecordTransactionsDto } from './dto/simplified-record-transactions.dto';
 import { Operation } from '../operations/entities/operation.entity';
 import { LedgerEntry } from '../ledger-entries/entities/ledger-entry.entity';
-import { CASH_ACCOUNT } from '../common/constants/account-types';
+import {
+  CASH_ACCOUNT,
+  DIVIDENDS_PAYABLE_ACCOUNT,
+  INTEREST_INCOME_ACCOUNT,
+  LOANS_RECEIVABLE_ACCOUNT,
+  NOVELTY_LOSS_ACCOUNT,
+  STOCK_CAPITAL_ACCOUNT,
+} from '../common/constants/account-types';
 import { Meeting } from './entities/meeting.entity';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
 import { Member } from '../members/entities/member.entity';
@@ -32,6 +39,7 @@ import { DisbursementStrategyFactory } from './strategies/disbursement-strategy.
 import { LoanTransactionDetail } from '../loans/entities/loan-transaction-detail.entity';
 import { NewLoanRequestDto } from './dto/disbursement-plan.dto';
 import { OperationType } from '../common/enums/operation-type.enum';
+import { MeetingSummaryField } from './dto/meeting-summary-fields.dto';
 
 @Injectable()
 export class MeetingsService {
@@ -438,5 +446,86 @@ export class MeetingsService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  /**
+   * Calcula los totales solicitados para el resumen de la reunión.
+   * @param meetingId ID de la reunión
+   * @param fields Campos a calcular
+   */
+  async getMeetingSummary(
+    meetingId: string,
+    fields: MeetingSummaryField[],
+  ): Promise<Record<string, number>> {
+    const result: Record<string, number> = {};
+    const repo = this.dataSource.manager.getRepository(LedgerEntry);
+    // Buscar operaciones de la reunión
+    const operationRepo = this.dataSource.manager.getRepository(Operation);
+    const operations = await operationRepo.find({
+      where: { meeting_id: meetingId },
+      select: ['id'],
+    });
+    const operationIds = operations.map((op) => op.id);
+    if (operationIds.length === 0) return result;
+
+    // Helper para sumar asientos por tipo de cuenta
+    type SumResult = { sum: string | null };
+    const sumByAccountType = async (
+      accountType: string,
+      positiveOnly = false,
+      descriptionLike?: string,
+    ) => {
+      const qb = repo
+        .createQueryBuilder('l')
+        .where('l.operation_id IN (:...operationIds)', { operationIds })
+        .andWhere('l.account_type = :accountType', { accountType });
+      if (positiveOnly) qb.andWhere('l.amount > 0');
+      if (descriptionLike)
+        qb.andWhere('l.description ILIKE :desc', {
+          desc: `%${descriptionLike}%`,
+        });
+      const rawResult = ((await qb
+        .select('SUM(l.amount)', 'sum')
+        .getRawOne()) as SumResult) || { sum: null };
+      const sum = rawResult && rawResult.sum ? Number(rawResult.sum) : 0;
+      return sum;
+    };
+
+    for (const field of fields) {
+      switch (field) {
+        case 'totalCash':
+          result.totalCash = await sumByAccountType(CASH_ACCOUNT);
+          break;
+        case 'totalInterest':
+          result.totalInterest = await sumByAccountType(
+            INTEREST_INCOME_ACCOUNT,
+          );
+          break;
+        case 'totalLoans':
+          result.totalLoans = await sumByAccountType(LOANS_RECEIVABLE_ACCOUNT);
+          break;
+        case 'totalCollected': {
+          const cashIn = await sumByAccountType(CASH_ACCOUNT, true);
+          const noveltyLoss = await sumByAccountType(NOVELTY_LOSS_ACCOUNT);
+          result.totalCollected = cashIn - Math.abs(noveltyLoss);
+          break;
+        }
+        case 'totalDividends':
+          result.totalDividends = await sumByAccountType(
+            DIVIDENDS_PAYABLE_ACCOUNT,
+          );
+          break;
+        case 'totalStockInvestment':
+          result.totalStockInvestment = await sumByAccountType(
+            STOCK_CAPITAL_ACCOUNT,
+            false,
+            'compra',
+          );
+          break;
+        default:
+          break;
+      }
+    }
+    return result;
   }
 }

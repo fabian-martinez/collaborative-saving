@@ -6,15 +6,15 @@
     <div class="mb-8 p-4 bg-base-200 rounded-box grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
       <div>
         <p class="text-sm font-semibold text-base-content/70">Recaudo Total</p>
-        <p class="text-4xl font-bold text-success">{{ totalCollection.toFixed(2) }}</p>
+        <CopyOnDblClickNumber :value="totalCollection" class="text-4xl font-bold text-success" />
       </div>
        <div>
         <p class="text-sm font-semibold text-base-content/70">Efectivo Disponible</p>
-        <p class="text-4xl font-bold text-primary">{{ availableCash.toFixed(2) }}</p>
+        <CopyOnDblClickNumber :value="availableCash" class="text-4xl font-bold text-primary" />
       </div>
       <div>
         <p class="text-sm font-semibold text-base-content/70">Intereses Generados</p>
-        <p class="text-4xl font-bold text-info">{{ -totalInterest.toFixed(2) }}</p>
+        <CopyOnDblClickNumber :value="-totalInterest" class="text-4xl font-bold text-info" />
       </div>
     </div>
 
@@ -60,69 +60,59 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useActiveMeetingStore } from '@/features/meetings/stores/activeMeeting'
-import { operationsService } from '@/features/operations/services/operationsService'
+import { meetingsService } from '../services/meetings'
 import type { Operation } from '@/features/operations/types'
 import Step1Collection from '../components/Step1Collection.vue'
 import Step2Revaluation from '../components/Step2Revaluation.vue'
 import Step3StockPurchase from '../components/Step3StockPurchase.vue'
 import Step4StockModification from '../components/Step4StockModification.vue'
 import Step5Disbursements from '../components/Step5Disbursements.vue'
+import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
 
 const activeMeetingStore = useActiveMeetingStore()
 const operations = ref<Operation[]>([])
 const availableCash = ref(0)
 const totalCollection = ref(0)
 const totalInterest = ref(0)
+const loadingSummary = ref(false)
+const summaryError = ref('')
 
-async function fetchOperations() {
+async function fetchMeetingSummary() {
   if (activeMeetingStore.meetingId) {
+    loadingSummary.value = true
+    summaryError.value = ''
     try {
-      operations.value = await (
-        await operationsService.getOperations({
-          meetingId: activeMeetingStore.meetingId,
-        })
-      ).data
-      calculateTotals()
+      const summary = await meetingsService.getMeetingSummary(
+        activeMeetingStore.meetingId,
+        ['totalCollected', 'totalCash', 'totalInterest']
+      )
+      totalCollection.value = summary.totalCollected ?? 0
+      availableCash.value = summary.totalCash ?? 0
+      totalInterest.value = summary.totalInterest ?? 0
     } catch (error) {
-      console.error("Error fetching operations for cash calculation:", error)
+      summaryError.value = 'Error al obtener el resumen de la reunión'
+      totalCollection.value = 0
+      availableCash.value = 0
+      totalInterest.value = 0
+    } finally {
+      loadingSummary.value = false
     }
   }
-}
-
-function calculateTotals() {
-  let recaudado = 0
-  let efectivo = 0
-  let intereses = 0
-
-  operations.value.forEach(op => {
-    op.ledger_entries.forEach(entry => {
-      if (entry.account_type.toUpperCase() === 'CASH') {
-        if (entry.amount > 0) recaudado += Number(entry.amount)
-        efectivo += Number(entry.amount)
-      }
-      if (entry.account_type.toUpperCase() === 'INTEREST_INCOME') {
-        intereses += Number(entry.amount)
-      }
-    })
-  })
-  totalCollection.value = recaudado
-  availableCash.value = efectivo
-  totalInterest.value = intereses
 }
 
 onMounted(() => {
   if (!activeMeetingStore.meetingId) {
     activeMeetingStore.fetchActiveMeeting().then(() => {
-      fetchOperations()
+      fetchMeetingSummary()
     })
   } else {
-    fetchOperations()
+    fetchMeetingSummary()
   }
 })
 
 watch(() => activeMeetingStore.currentStep, (newStep, oldStep) => {
   if (newStep !== oldStep) {
-    fetchOperations()
+    fetchMeetingSummary()
   }
 })
 
