@@ -67,6 +67,7 @@ export interface DisbursementPlan {
   status: 'pending' | 'approved' | 'delivered';
   notes?: string;
   loanId?: string;
+  pendingMemberPaymentId?: string;
   stockSubscriptionId?: string;
   disbursementStockRequest?: {
     stockId: string;
@@ -75,7 +76,7 @@ export interface DisbursementPlan {
   newLoanRequest?: {
     memberId: string;
     amount: number;
-    loanType: 'corriente' | 'agil' | 'accion';
+    loanType: 'corriente' | 'agil' | 'accion' | 'prioritario';
     approvedAmount: number;
     monthlyPaymentAmount: number;
     interestRate: number;

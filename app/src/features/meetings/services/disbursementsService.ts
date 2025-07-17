@@ -8,6 +8,7 @@ export default {
   },
   // Ejecuta el plan de desembolso
   async executeDisbursementPlan(meetingId: string, plan: DisbursementPlan[]) {
+    console.log('plan', plan)
     return api.post(`/meetings/${meetingId}/disbursement-plan/execute`, { plan })
   },
 } 

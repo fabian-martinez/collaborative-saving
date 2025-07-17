@@ -4,6 +4,7 @@ import { DisbursementPlanItemDto } from '../dto/disbursement-plan.dto';
 import { Operation } from '../../operations/entities/operation.entity';
 import { LedgerEntry } from '../../ledger-entries/entities/ledger-entry.entity';
 import { OperationType } from '../../common/enums/operation-type.enum';
+import { PendingMemberPayment } from '../entities/pending-member-payment.entity';
 
 @Injectable()
 export class DividendDisbursementStrategy implements DisbursementStrategy {
@@ -21,6 +22,29 @@ export class DividendDisbursementStrategy implements DisbursementStrategy {
         'Debe asignar un miembro para el desembolso de dividendo.',
       );
     const description = item.notes || 'Entrega de dividendos';
+    // Actualice el pago pendiente
+    if (item.pendingMemberPaymentId) {
+      // validar que el monto del pago pendiente cubra el monto del dividendo
+      const pendingPayment = await queryRunner.manager.findOne(
+        PendingMemberPayment,
+        {
+          where: { id: item.pendingMemberPaymentId },
+        },
+      );
+      if (!pendingPayment) {
+        throw new Error('El pago pendiente no existe.');
+      }
+      if (pendingPayment.amount < item.amount) {
+        throw new Error(
+          'El monto del pago pendiente no cubre el monto del dividendo.',
+        );
+      }
+      await queryRunner.manager.update(
+        PendingMemberPayment,
+        { id: item.pendingMemberPaymentId },
+        { status: 'paid' },
+      );
+    }
     // 1. Registrar operación
     const operation = queryRunner.manager.create(Operation, {
       member_id: item.memberId,

@@ -22,10 +22,10 @@ import { StocksModule } from '../stocks/stocks.module';
 import { PendingMemberPayment } from './entities/pending-member-payment.entity';
 import { DisbursementStrategyFactory } from './strategies/disbursement-strategy.factory';
 import { StockWithdrawalStrategy } from './strategies/stock-withdrawal.strategy';
-import { NewLoanDisbursementStrategy } from './strategies/new-loan-disbursement.strategy';
+import { LoanDisbursementStrategy } from './strategies/loan-disbursement.strategy';
 import { OtherDisbursementStrategy } from './strategies/other-disbursement.strategy';
-import { PendingDisbursementStrategy } from './strategies/pending-disbursement.strategy';
 import { NoveltyPaymentStrategy } from './strategies/novelty-payment.strategy';
+import { DividendDisbursementStrategy } from './strategies/dividend-disbursement.strategy';
 
 @Module({
   imports: [
@@ -51,10 +51,10 @@ import { NoveltyPaymentStrategy } from './strategies/novelty-payment.strategy';
     DefaultPaymentStrategy,
     DisbursementStrategyFactory,
     StockWithdrawalStrategy,
-    NewLoanDisbursementStrategy,
+    LoanDisbursementStrategy,
     OtherDisbursementStrategy,
-    PendingDisbursementStrategy,
     NoveltyPaymentStrategy,
+    DividendDisbursementStrategy,
   ],
   controllers: [MeetingsController],
   exports: [MeetingsService],

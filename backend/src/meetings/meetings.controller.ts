@@ -156,6 +156,7 @@ export class MeetingsController {
     @Param('id') meetingId: string,
     @Body() dto: ExecuteDisbursementPlanDto,
   ) {
+    console.log('executeDisbursementPlan', dto);
     return this.meetingsService.executeDisbursementPlan(meetingId, dto);
   }
 

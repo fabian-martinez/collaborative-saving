@@ -20,6 +20,7 @@
               {{ member.name }}
               <span v-if="hasAssignedLoan(member.id)" class="badge badge-info badge-sm ml-2">Assigned</span>
               <span v-if="hasPendingTransactions(member.id)" class="badge badge-warning badge-sm ml-2">Pending</span>
+              <span v-if="hasDividends(member.id)" class="badge badge-success badge-sm ml-2">Dividends</span>
             </a>
           </li>
         </ul>
@@ -90,7 +91,7 @@
               <div v-for="(loan, idx) in localLoans" :key="idx" class="py-4 rounded">
                 <div class="flex items-baseline">
                   <div class="flex-shrink-0">
-                    <p class="font-semibold text-lg text-green-800">{{ loan.type === 'corriente' ? 'Préstamo Corriente' : 'Préstamo Ágil' }}</p>
+                    <p class="font-semibold text-lg text-green-800">Prestamo tipo:{{ loan.type }}</p>
                     <p class="text-sm text-green-700">Aprobado: <CopyOnDblClickNumber :value="loan.approved" /></p>
                   </div>
                   <div class="flex-grow border-b-2 border-dotted border-green-300 mx-4"></div>
@@ -291,7 +292,7 @@ const showModal = ref(false)
 const editingLoanIdx = ref<number|null>(null)
 const showStockWithdrawalModal = ref(false)
 const editingPendingIdx = ref<number | null>(null)
-const editingPendingType = ref<'loan' | 'withdrawal' | null>(null)
+const editingPendingType = ref<'loan' | 'withdrawal' | 'dividend' | 'other' | null>(null)
 // Estado local para préstamos y retiros NO confirmados
 const localLoansByMember = ref<Record<string, Array<{ type: string; approved: number; delivered: number }>>>({})
 const localWithdrawalsByMember = ref<Record<string, Array<{ stockType: string; quantity: number; estimatedValue: number; deliveredAmount: number; pending: number }>>>({})
@@ -344,7 +345,7 @@ onMounted(async () => {
     dividendsByMember.value = {}
     for (const item of plan) {
       // Agrupar dividendos
-      if (item.type === 'dividendo') {
+      if (item.type === 'dividend') {
         if (!dividendsByMember.value[item.memberId]) {
           dividendsByMember.value[item.memberId] = []
         }
@@ -436,7 +437,7 @@ function handleSaveLoan(loan: { type: string; approved: number; delivered: numbe
     const transactions = [...pendingTransactions.value]
     transactions[editingPendingIdx.value] = {
       type: 'loan',
-      description: loan.type === 'corriente' ? 'Préstamo Corriente' : 'Préstamo Ágil',
+      description: loan.type,
       amount: loan.delivered,
       originalAmount: loan.approved
     }
@@ -471,6 +472,9 @@ function hasAssignedLoan(memberId: string) {
 }
 function hasPendingTransactions(memberId: string) {
   return pendingTransactionsByMember.value[memberId]?.length > 0
+}
+function hasDividends(memberId: string) {
+  return dividendsByMember.value[memberId]?.length > 0
 }
 function openStockWithdrawalModal() {
   showStockWithdrawalModal.value = true
@@ -596,7 +600,7 @@ async function aplicarDesembolsos() {
         for (const loan of localLoansByMember.value[member.id]) {
           let interestRate = null;
           if (loan.type === 'corriente') interestRate = 0.015;
-          else if (loan.type === 'agil') interestRate = 0.02;
+          else if (loan.type === 'agil' || loan.type === 'prioritario') interestRate = 0.02;
           plan.push({
             ...loan,
             memberId: member.id,
@@ -606,7 +610,7 @@ async function aplicarDesembolsos() {
             newLoanRequest: {
               memberId: member.id,
               amount: Number(loan.delivered),
-              loanType: loan.type as 'corriente' | 'agil' | 'accion',
+              loanType: loan.type as 'corriente' | 'agil' | 'accion' | 'prioritario',
               approvedAmount: Number(loan.approved),
               monthlyPaymentAmount: 0,
               interestRate: interestRate || 0,
@@ -659,6 +663,7 @@ async function aplicarDesembolsos() {
           else if (pending.type === 'dividendo') typeApi = 'dividendo';
           plan.push({
             ...pending,
+            pendingMemberPaymentId: pending.id,
             memberId: member.id,
             type: typeApi,
             amount: amountApi
