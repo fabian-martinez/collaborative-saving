@@ -4,7 +4,7 @@ import { LoansService } from '../../loans/loans.service';
 import { DisbursementPlanItemDto } from '../dto/disbursement-plan.dto';
 
 @Injectable()
-export class NewLoanDisbursementStrategy implements DisbursementStrategy {
+export class LoanDisbursementStrategy implements DisbursementStrategy {
   constructor(private readonly loansService: LoansService) {}
 
   async execute({

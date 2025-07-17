@@ -3,8 +3,6 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
-  Inject,
-  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
@@ -26,7 +24,6 @@ import { PaymentStrategyFactory } from './strategies/payment-strategy.factory';
 import { MemberDue } from '../dues/entities/member-due.entity';
 import { BuyStockForMemberDto } from '../stocks/dto/buy-stock-for-member.dto';
 import { StocksService } from '../stocks/stocks.service';
-import { LoansService } from '../loans/loans.service';
 import { PendingMemberPayment } from './entities/pending-member-payment.entity';
 import {
   DisbursementPlanPreviewResponseDto,
@@ -52,8 +49,6 @@ export class MeetingsService {
     private readonly dataSource: DataSource,
     private readonly paymentStrategyFactory: PaymentStrategyFactory,
     private readonly stocksService: StocksService,
-    @Inject(forwardRef(() => LoansService))
-    private readonly loansService: LoansService,
     private readonly disbursementStrategyFactory: DisbursementStrategyFactory,
   ) {}
 
@@ -401,37 +396,6 @@ export class MeetingsService {
     await queryRunner.startTransaction();
     try {
       for (const item of dto.plan) {
-        if (item.type === DisbursementType.LOAN && item.newLoanRequest) {
-          // Crear el préstamo nuevo de forma atómica
-          const createLoanDto = {
-            member_id: item.newLoanRequest.memberId,
-            meeting_id: meetingId,
-            loan_type: item.newLoanRequest.loanType,
-            approved_amount: item.newLoanRequest.approvedAmount,
-            disbursed_amount: item.newLoanRequest.amount,
-            outstanding_balance: item.newLoanRequest.amount,
-            monthly_payment_amount: item.newLoanRequest.monthlyPaymentAmount,
-            interest_rate: item.newLoanRequest.interestRate,
-            status: 'active',
-          };
-          await this.loansService.create(createLoanDto, queryRunner);
-          // Aquí podrías agregar lógica adicional si necesitas registrar algo más
-          continue;
-        }
-        // Actualizar el estado de la solicitud a 'paid' (para los demás tipos)
-        await queryRunner.manager.update(
-          PendingMemberPayment,
-          {
-            member_id: item.memberId,
-            meeting_id: meetingId,
-            type: item.type,
-            status: 'pending',
-            ...(item.stockSubscriptionId
-              ? { stock_subscription_id: item.stockSubscriptionId }
-              : {}),
-          },
-          { status: 'paid' },
-        );
         // Usar el patrón Strategy para procesar el desembolso
         const strategy = this.disbursementStrategyFactory.getStrategy(
           item.type,

@@ -53,6 +53,7 @@ export class LoansService {
     meetingId: string,
     item: DisbursementPlanItemDto,
   ): Promise<void> {
+    console.log('processLoanDisbursement', item);
     // Si es un nuevo préstamo
     if (item.newLoanRequest) {
       return this.processNewLoanDisbursement(queryRunner, meetingId, item);
@@ -483,6 +484,7 @@ export class LoansService {
       case 'corriente':
         return this.createCorrienteLoan(createLoanDto, queryRunner);
       case 'agil':
+      case 'prioritario':
         return this.createAgilLoan(createLoanDto, queryRunner);
       default:
         throw new BadRequestException(
@@ -552,7 +554,7 @@ export class LoansService {
     }
     // Consultar el valor de las acciones 'agil'
     const agilStocks: Stock[] =
-      await this.stocksService.getStocksByType('bono');
+      await this.stocksService.getStocksByType('Bono Navideño');
     const agilStockValue = agilStocks.reduce(
       (sum, s) => sum + Number(s.value),
       0,
