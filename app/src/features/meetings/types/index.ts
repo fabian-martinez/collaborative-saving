@@ -82,3 +82,33 @@ export interface DisbursementPlan {
     notes: string;
   };
 }
+
+export interface MeetingDetail {
+  meeting: {
+    id: string;
+    date: string;
+    status: 'active' | 'closed';
+    notes?: string;
+  };
+  income: {
+    contributions: number;
+    loanPayments: number;
+    interest: number;
+    insurance: number;
+    assets: number;
+    purchases: number;
+  };
+  withdrawals: {
+    loansGranted: { ordinary: number; emergency: number };
+    dividendPayouts: number;
+    shareWithdrawals: number;
+  };
+  transactions: Array<{
+    id: string;
+    type: string;
+    member: string;
+    memberId: string;
+    amount: number;
+    details: string;
+  }>;
+}

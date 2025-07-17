@@ -36,10 +36,6 @@ export class DividendYieldStockGrowthHandler implements DistributionHandler {
       valueByStock[stock.id] = value;
       totalValue += value;
     }
-    console.log('[DividendYieldStockGrowthHandler]');
-    console.log('  available:', available);
-    console.log('  valueByStock:', valueByStock);
-    console.log('  totalValue:', totalValue);
     if (totalValue === 0) {
       return {
         assigned: 0,
@@ -57,7 +53,6 @@ export class DividendYieldStockGrowthHandler implements DistributionHandler {
       assignedByStock[stock.id] = assign;
       totalAssigned += assign;
     }
-    console.log('  totalAssigned:', totalAssigned);
     const updatedResult: DistributionResult = {
       ...partialResult,
       assigned: {

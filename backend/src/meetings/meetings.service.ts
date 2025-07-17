@@ -40,6 +40,7 @@ import { LoanTransactionDetail } from '../loans/entities/loan-transaction-detail
 import { NewLoanRequestDto } from './dto/disbursement-plan.dto';
 import { OperationType } from '../common/enums/operation-type.enum';
 import { MeetingSummaryField } from './dto/meeting-summary-fields.dto';
+import { validate as isUuid } from 'uuid';
 
 @Injectable()
 export class MeetingsService {
@@ -368,7 +369,6 @@ export class MeetingsService {
     dto: ExecuteDisbursementPlanDto,
   ) {
     // 1. Validar que el plan no exceda el efectivo disponible
-    console.log('dto', dto);
     const availableCash = await this.dataSource.manager
       .getRepository(LedgerEntry)
       .find({
@@ -456,8 +456,13 @@ export class MeetingsService {
   async getMeetingSummary(
     meetingId: string,
     fields: MeetingSummaryField[],
-  ): Promise<Record<string, number>> {
-    const result: Record<string, number> = {};
+  ): Promise<Record<string, any>> {
+    if (!meetingId || meetingId === 'undefined' || !isUuid(meetingId)) {
+      throw new BadRequestException(
+        'El parámetro meetingId es inválido o no está definido.',
+      );
+    }
+    const result: { meeting?: Record<string, any>; [key: string]: any } = {};
     const repo = this.dataSource.manager.getRepository(LedgerEntry);
     // Buscar operaciones de la reunión
     const operationRepo = this.dataSource.manager.getRepository(Operation);
@@ -466,6 +471,23 @@ export class MeetingsService {
       select: ['id'],
     });
     const operationIds = operations.map((op) => op.id);
+    // Si se piden campos de 'meeting', incluir el objeto meeting
+    const meetingFields = fields.filter((f) => f.startsWith('meeting.'));
+    if (meetingFields.length > 0) {
+      const meeting = await this.meetingRepository.findOne({
+        where: { id: meetingId },
+      });
+      if (meeting) {
+        result.meeting = {} as Record<string, any>;
+        for (const field of meetingFields) {
+          const key = field.split('.')[1];
+          const m = meeting as Partial<Meeting>;
+          if (key && key in m) {
+            result.meeting[key] = m[key as keyof Meeting] ?? null;
+          }
+        }
+      }
+    }
     if (operationIds.length === 0) return result;
 
     // Helper para sumar asientos por tipo de cuenta

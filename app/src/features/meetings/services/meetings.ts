@@ -3,6 +3,7 @@ import type {
   Meeting,
   MemberDue,
   SimplifiedRecordTransactions,
+  MeetingDetail,
 } from '../types';
 import type { Operation } from '@/features/operations/types';
 import type { StocksForPurchase } from '@/features/stocks/types';
@@ -52,7 +53,6 @@ class MeetingsService {
    * Compra de acciones para un socio existente
    */
   buyStocks(meetingId: string, payload: StocksForPurchase): Promise<any> {
-    console.log('payload', payload)
     return api.post(`/meetings/${meetingId}/buy/stocks`, payload);
   }
 
@@ -77,6 +77,44 @@ class MeetingsService {
     }
     return api.get(url);
   }
+
+  async getMeetingDetail(meetingId: string): Promise<MeetingDetail> {
+    // Obtener el resumen de la reunión (JSON plano)
+    const summary = await api.get<any>(`/meetings/${meetingId}/summary`);
+    // Obtener las operaciones asociadas a la reunión (JSON plano)
+    const operations = await api.get<any>(`/operations?meetingId=${meetingId}`);
+
+    // Mapear los datos al modelo MeetingDetail
+    return {
+      meeting: summary.meeting || {
+        id: '',
+        date: '',
+        status: '',
+        notes: '',
+      },
+      income: {
+        contributions: summary.totalCash ?? 0,
+        loanPayments: 0,
+        interest: summary.totalInterest ?? 0,
+        insurance: 0,
+        assets: 0,
+        purchases: 0,
+      },
+      withdrawals: {
+        loansGranted: { ordinary: 0, emergency: 0 },
+        dividendPayouts: summary.totalDividends ?? 0,
+        shareWithdrawals: 0,
+      },
+      transactions: (operations.data ?? operations).map((op: any) => ({
+        id: op.id,
+        type: op.type,
+        member: op.member?.name || '',
+        memberId: op.member?.id || '',
+        amount: (op.total_debit ?? 0) - (op.total_credit ?? 0),
+        details: op.description,
+      })),
+    };
+  }
 }
 
-export const meetingsService = new MeetingsService(); 
+export const meetingsService = new MeetingsService();
