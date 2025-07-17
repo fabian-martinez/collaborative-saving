@@ -1,21 +1,61 @@
 <template>
-  <div class="container mx-auto p-4 sm:p-6 lg:p-8">
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-3xl font-bold">Administración de Acciones</h1>
-      <button class="btn btn-primary" @click="openCreateModal">
-        Añadir Tipo de Acción
+  <div class="container mx-auto pt-10 pb-4">
+    <!-- Título y acciones principales -->
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
+      <div>
+        <h1 class="text-3xl font-bold">Administración de Acciones</h1>
+        <p class="text-gray-500">Gestiona los diferentes tipos de acciones y sus valores</p>
+      </div>
+      <button class="btn btn-primary flex items-center gap-2" @click="openCreateModal">
+        <Plus class="w-5 h-5" /> Añadir Tipo de Acción
       </button>
     </div>
 
-    <!-- Stock List Table -->
-    <div class="overflow-x-auto shadow-lg rounded-lg">
+    <!-- Tarjetas de resumen -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div class="stat bg-white shadow rounded-xl border border-blue-100">
+        <div class="stat-figure text-green-600">
+          <PiggyBank class="w-7 h-7" />
+        </div>
+        <div class="stat-title text-gray-500">Valor Total</div>
+        <div class="stat-value text-blue-900">{{ formatCurrency(totalValue) }}</div>
+      </div>
+      <div class="stat bg-white shadow rounded-xl border border-blue-100">
+        <div class="stat-figure text-blue-500">
+          <StatsUpSquare class="w-7 h-7" />
+        </div>
+        <div class="stat-title text-gray-500">Aporte Mensual Total</div>
+        <div class="stat-value text-blue-700">{{ formatCurrency(totalMonthlyContribution) }}</div>
+      </div>
+      <div class="stat bg-white shadow rounded-xl border border-blue-100">
+        <div class="stat-figure text-purple-600">
+          <Clock class="w-7 h-7" />
+        </div>
+        <div class="stat-title text-gray-500">Tipos de Acciones</div>
+        <div class="stat-value text-purple-700">{{ filteredStocks.length }}</div>
+      </div>
+    </div>
+
+    <!-- Buscador -->
+    <div class="mb-4 flex items-center justify-between">
+      <input
+        v-model="search"
+        type="text"
+        placeholder="Buscar por tipo de acción..."
+        class="input input-bordered w-full max-w-md"
+      />
+      <span class="ml-4 text-gray-500 text-sm">{{ filteredStocks.length }} resultados</span>
+    </div>
+
+    <!-- Tabla de acciones -->
+    <div class="overflow-x-auto bg-white rounded-xl shadow border border-blue-100">
       <table class="table w-full">
-        <thead>
+        <thead class="bg-blue-50">
           <tr>
             <th>Tipo/Nombre</th>
             <th>Valor Actual (Bs.)</th>
             <th>Aporte Mensual (Bs.)</th>
-            <th class="text-right">Acciones</th>
+            <th class="text-center">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -27,19 +67,23 @@
           <tr v-else-if="error">
             <td colspan="4" class="text-center text-error p-4">{{ error }}</td>
           </tr>
-          <tr v-else-if="stocks.length === 0">
+          <tr v-else-if="filteredStocks.length === 0">
             <td colspan="4" class="text-center p-4">No hay tipos de acciones registrados.</td>
           </tr>
-          <tr v-for="stock in stocks" :key="stock.id">
+          <tr v-for="stock in filteredStocks" :key="stock.id">
             <td class="font-semibold">{{ stock.type }}</td>
-            <td>{{ stock.value.toFixed(2) }}</td>
-            <td>{{ stock.monthly_contribution.toFixed(2) }}</td>
-            <td class="text-right space-x-2">
-              <RouterLink :to="{ name: 'stock-details', params: { id: stock.id } }" class="btn btn-sm btn-ghost">
-                Ver Detalles
+            <td>{{ formatCurrency(stock.value) }}</td>
+            <td>{{ formatCurrency(stock.monthly_contribution) }}</td>
+            <td class="flex items-center justify-center gap-2">
+              <RouterLink :to="{ name: 'stock-details', params: { id: stock.id } }" class="btn btn-ghost btn-xs flex items-center gap-1" title="Ver Detalles">
+                <Page class="w-5 h-5 text-blue-700" /> Ver
               </RouterLink>
-              <button class="btn btn-sm btn-outline" @click="openEditModal(stock)">Editar</button>
-              <button class="btn btn-sm btn-error" @click="handleDeleteStock(stock.id)" :disabled="isDeleting">Eliminar</button>
+              <button class="btn btn-ghost btn-xs flex items-center gap-1" @click="openEditModal(stock)" title="Editar">
+                <EditPencil class="w-5 h-5 text-green-600" /> Editar
+              </button>
+              <button class="btn btn-error btn-xs flex items-center gap-1" @click="handleDeleteStock(stock.id)" :disabled="isDeleting" title="Eliminar">
+                <Trash class="w-5 h-5 text-red-500" /> Eliminar
+              </button>
             </td>
           </tr>
         </tbody>
@@ -55,10 +99,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { stocksService } from '../services/stocksService';
 import type { Stock } from '../types';
 import StockFormModal from '../components/StockFormModal.vue';
+import { Plus, PiggyBank, StatsUpSquare, Clock, Page, EditPencil, Trash } from 'iconoir-vue/regular';
 
 const stocks = ref<Stock[]>([]);
 const loading = ref(false);
@@ -67,6 +112,26 @@ const error = ref<string | null>(null);
 
 const isModalOpen = ref(false);
 const stockToEdit = ref<Stock | null>(null);
+const search = ref('');
+
+const filteredStocks = computed(() => {
+  if (!search.value) return stocks.value;
+  const s = search.value.toLowerCase();
+  return stocks.value.filter(stock =>
+    stock.type.toLowerCase().includes(s)
+  );
+});
+
+const totalValue = computed(() =>
+  filteredStocks.value.reduce((sum, stock) => sum + stock.value, 0)
+);
+const totalMonthlyContribution = computed(() =>
+  filteredStocks.value.reduce((sum, stock) => sum + stock.monthly_contribution, 0)
+);
+
+function formatCurrency(value: number) {
+  return value.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2 });
+}
 
 async function fetchStocks() {
   loading.value = true;
