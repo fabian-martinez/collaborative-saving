@@ -337,7 +337,6 @@ onMounted(async () => {
   try {
     // Obtener el plan de desembolso y efectivo disponible
     const resp = await disbursementsService.getDisbursementPlanPreview(meetingId.value) as any
-    console.log('pending',resp)
     const plan: any[] = resp.plan || []
     efectivoDisponible.value = resp.availableCash || 0
     // Agrupar pendientes y dividendos por miembro

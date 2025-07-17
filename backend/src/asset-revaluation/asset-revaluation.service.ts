@@ -12,7 +12,6 @@ import { StockSubscription } from '../stock-subscriptions/entities/stock-subscri
 import { LedgerEntry } from '../ledger-entries/entities/ledger-entry.entity';
 import {
   DIVIDENDS_PAYABLE_ACCOUNT,
-  FEE_INCOME_ACCOUNT,
   INTEREST_INCOME_ACCOUNT,
   MANDATORY_CONTRIBUTION_INCOME_ACCOUNT,
   STOCK_CAPITAL_ACCOUNT,
@@ -244,7 +243,6 @@ export class AssetRevaluationService {
           .then((entries) =>
             entries.reduce((sum, e) => sum + Number(e.amount), 0),
           )) / totalShares;
-      console.log(stock?.type, totalShares, dividendsGenerated);
       if (stock) {
         details.push({
           stock_id: history.stock_id,
@@ -276,9 +274,7 @@ export class AssetRevaluationService {
       .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
 
     const totalInterest = meetingLedgerEntries
-      .filter((e) =>
-        [INTEREST_INCOME_ACCOUNT, FEE_INCOME_ACCOUNT].includes(e.account_type),
-      )
+      .filter((e) => [INTEREST_INCOME_ACCOUNT].includes(e.account_type))
       .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
 
     const totalMandatoryContributions = meetingLedgerEntries
@@ -441,7 +437,6 @@ export class AssetRevaluationService {
           total_growth_per_share,
           new_value,
         });
-        console.log(historyEntry);
         await queryRunner.manager.save(historyEntry);
         await queryRunner.manager.update(Stock, detail.stock_id, {
           value: new_value,

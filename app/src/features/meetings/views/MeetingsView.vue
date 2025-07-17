@@ -70,6 +70,9 @@ onMounted(() => {
               <router-link :to="`/meetings/active`" class="btn btn-primary btn-outline">
                 Go to Meeting
               </router-link>
+              <router-link :to="`/meetings/${activeMeeting.id}`" class="btn btn-secondary btn-outline ml-2">
+                Ver Detalle
+              </router-link>
             </div>
           </div>
         </div>

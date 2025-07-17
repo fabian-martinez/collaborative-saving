@@ -214,11 +214,6 @@ export class DuesService {
     const adjustedDebt = totalDebt - capitalPayment;
     const insuranceBase = adjustedDebt - totalSavings;
     const insuranceAmount = insuranceBase > 0 ? insuranceBase * 0.001 : 0;
-    console.log('totalDebt', totalDebt);
-    console.log('totalSavings', totalSavings);
-    console.log('adjustedDebt', adjustedDebt);
-    console.log('insuranceBase', insuranceBase);
-    console.log('insuranceAmount', insuranceAmount);
     return { insuranceAmount };
   }
 }

@@ -64,8 +64,6 @@ export class GuaranteedGrowthHandler implements DistributionHandler {
       totalAssigned += assign;
     }
 
-    console.log('assignedByStock', assignedByStock);
-
     const updatedResult: DistributionResult = {
       ...partialResult,
       assigned: {

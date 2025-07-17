@@ -190,7 +190,6 @@ async function fetchPreview() {
 
   try {
     const data = await assetRevaluationService.getPreview(activeMeetingStore.meetingId)
-    console.log(data)
     previewData.value = data
     // Cargar los nombres de los aportes obligatorios
     mandatoryContributions.value = await contributionsService.getContributions()
