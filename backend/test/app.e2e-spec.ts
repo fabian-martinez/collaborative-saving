@@ -23,3 +23,24 @@ describe('AppController (e2e)', () => {
       .expect('Hello World!');
   });
 });
+
+// Test e2e para el endpoint de resumen de reunión
+// (Nota: este esqueleto debe ser completado con datos reales y mocks según el entorno de test)
+describe('GET /meetings/:id/summary', () => {
+  it('debe devolver todos los campos si no se especifica fields', async () => {
+    // TODO: implementar test real con datos de prueba
+    // const res = await request(app.getHttpServer()).get('/meetings/MEETING_ID/summary');
+    // expect(res.status).toBe(200);
+    // expect(res.body).toHaveProperty('totalCash');
+    // expect(res.body).toHaveProperty('totalInterest');
+    // ...
+  });
+  it('debe devolver solo los campos solicitados', async () => {
+    // TODO: implementar test real con datos de prueba
+    // const res = await request(app.getHttpServer()).get('/meetings/MEETING_ID/summary?fields=totalCash,totalDividends');
+    // expect(res.status).toBe(200);
+    // expect(res.body).toHaveProperty('totalCash');
+    // expect(res.body).toHaveProperty('totalDividends');
+    // expect(res.body).not.toHaveProperty('totalInterest');
+  });
+});

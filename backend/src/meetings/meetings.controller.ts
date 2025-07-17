@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Query,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -18,6 +26,10 @@ import {
   DisbursementPlanPreviewResponseDto,
 } from './dto/disbursement-plan.dto';
 import { WithdrawStockForMemberDto } from './dto/withdraw-stock-for-member.dto';
+import {
+  MeetingSummaryFieldsDto,
+  MEETING_SUMMARY_FIELDS,
+} from './dto/meeting-summary-fields.dto';
 
 @ApiTags('meetings')
 @Controller('meetings')
@@ -145,5 +157,26 @@ export class MeetingsController {
     @Body() dto: ExecuteDisbursementPlanDto,
   ) {
     return this.meetingsService.executeDisbursementPlan(meetingId, dto);
+  }
+
+  @Get(':id/summary')
+  @ApiOperation({
+    summary: 'Resumen flexible de la reunión (totales solicitados)',
+  })
+  @ApiParam({ name: 'id', description: 'ID de la reunión' })
+  @ApiResponse({
+    status: 200,
+    description: 'Resumen de la reunión (solo los campos solicitados)',
+  })
+  async getMeetingSummary(
+    @Param('id') id: string,
+    @Query() query: MeetingSummaryFieldsDto,
+  ) {
+    // Si no se especifican campos, devolver todos
+    const fields =
+      query.fields && query.fields.length > 0
+        ? query.fields
+        : [...MEETING_SUMMARY_FIELDS];
+    return this.meetingsService.getMeetingSummary(id, fields);
   }
 }

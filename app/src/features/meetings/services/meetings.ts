@@ -65,6 +65,18 @@ class MeetingsService {
       operationType: 'STOCK_PURCHASE',
     });
   }
+
+  /**
+   * Obtiene el resumen de la reunión con los campos solicitados
+   */
+  getMeetingSummary(meetingId: string, fields?: string[]): Promise<any> {
+    let url = `/meetings/${meetingId}/summary`;
+    if (fields && fields.length > 0) {
+      const params = fields.map(f => `fields=${encodeURIComponent(f)}`).join('&');
+      url += `?${params}`;
+    }
+    return api.get(url);
+  }
 }
 
 export const meetingsService = new MeetingsService(); 
