@@ -3,4 +3,5 @@ export interface Member {
   name: string
   email: string
   identificationNumber: string
+  deletedAt?: string | null // null = activo, fecha = inactivo
 } 
