@@ -51,7 +51,7 @@ const accountNames: Record<string, string> = {
   LOANS_RECEIVABLE: 'Préstamos por Cobrar',
   STOCK_CAPITAL: 'Capital Social (Acciones)',
   INTEREST_INCOME: 'Ingresos por Intereses',
-  FEE_INCOME: 'Ingresos por Multas',
+  FEE_INCOME: 'Ingresos por Otros',
   INSURANCE_INCOME: 'Ingresos por Seguro',
   MANDATORY_CONTRIBUTION_INCOME: 'Aportes Obligatorios',
   PENDING_CLASSIFICATION: 'Pendiente de Clasificar',

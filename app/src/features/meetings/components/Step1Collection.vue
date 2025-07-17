@@ -27,12 +27,7 @@
                 <div class="text-center">
                     <div class="text-sm font-light text-base-content/70 uppercase">Total Aportes Recaudados</div>
                     <div class="text-3xl font-bold text-primary">
-                      <span v-if="typeof totalCollected === 'number'">
-                        {{ formatNumber(totalCollected) }}
-                      </span>
-                      <span v-else>
-                        N/D
-                      </span>
+                      <CopyOnDblClickNumber :value="totalCollected" />
                     </div>
                 </div>
             </div>
@@ -45,12 +40,7 @@
                     <div v-for="(payment, index) in completedPayments" :key="index" class="flex justify-between items-center bg-base-100/50 p-2 rounded-md text-sm">
                         <span class="font-medium">{{ payment.memberName }}</span>
                         <span class="font-mono text-success font-bold">
-                          <span v-if="typeof payment.amount === 'number'">
-                            +{{ formatNumber(payment.amount) }}
-                          </span>
-                          <span v-else>
-                            N/D
-                          </span>
+                          <CopyOnDblClickNumber :value="payment.amount" />
                         </span>
                     </div>
                 </div>
@@ -82,12 +72,7 @@
                     <span class="flex-shrink-0">Total Pagado:</span>
                     <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
                     <span class="flex-shrink-0 text-primary font-mono">
-                      <span v-if="typeof viewedTotal === 'number'">
-                        {{ formatNumber(viewedTotal) }}
-                      </span>
-                      <span v-else>
-                        N/D
-                      </span>
+                      <CopyOnDblClickNumber :value="viewedTotal" />
                     </span>
                 </div>
             </div>
@@ -120,7 +105,7 @@ import type { Operation } from '@/features/operations/types';
 import { useActiveMeetingStore } from '../stores/activeMeeting';
 import OperationDetails from '@/features/operations/components/operationDetails.vue';
 import PaymentForm from './PaymentForm.vue';
-import { formatNumber } from '@/shared/formatters'
+import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
 import { sumCashEntries } from '@/shared/utils'
 
 const activeMeetingStore = useActiveMeetingStore();

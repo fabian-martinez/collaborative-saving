@@ -134,7 +134,8 @@ export class DuesService {
               monthlyContribution: Number(sub.stock.monthly_contribution),
             };
           }
-          acc[stockId].quantity += sub.quantity;
+          acc[stockId].quantity =
+            Number(acc[stockId].quantity) + Number(sub.quantity);
         }
         return acc;
       },
@@ -150,7 +151,7 @@ export class DuesService {
       amount: group.quantity * group.monthlyContribution,
       referenceId: group.stock.id,
       monthlyContribution: group.monthlyContribution,
-      stockQuantity: group.quantity,
+      stockQuantity: Number(group.quantity),
     }));
   }
 
@@ -213,7 +214,11 @@ export class DuesService {
     const adjustedDebt = totalDebt - capitalPayment;
     const insuranceBase = adjustedDebt - totalSavings;
     const insuranceAmount = insuranceBase > 0 ? insuranceBase * 0.001 : 0;
-
+    console.log('totalDebt', totalDebt);
+    console.log('totalSavings', totalSavings);
+    console.log('adjustedDebt', adjustedDebt);
+    console.log('insuranceBase', insuranceBase);
+    console.log('insuranceAmount', insuranceAmount);
     return { insuranceAmount };
   }
 }

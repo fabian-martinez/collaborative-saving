@@ -34,7 +34,7 @@ export class LoanTransactionDetail {
   transaction_type: TransactionType;
 
   @ApiProperty({ description: 'The amount of the transaction', example: 100.5 })
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 12, scale: 2 })
   amount: number;
 
   @ApiProperty({

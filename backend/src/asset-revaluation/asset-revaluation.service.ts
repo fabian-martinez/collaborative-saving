@@ -11,6 +11,7 @@ import { Stock } from '../stocks/entities/stock.entity';
 import { StockSubscription } from '../stock-subscriptions/entities/stock-subscription.entity';
 import { LedgerEntry } from '../ledger-entries/entities/ledger-entry.entity';
 import {
+  DIVIDENDS_PAYABLE_ACCOUNT,
   FEE_INCOME_ACCOUNT,
   INTEREST_INCOME_ACCOUNT,
   MANDATORY_CONTRIBUTION_INCOME_ACCOUNT,
@@ -22,11 +23,18 @@ import {
   INVESTMENT_IN_STOCKS_ACCOUNT,
   REVALUATION_SURPLUS_ACCOUNT,
 } from '../common/constants/account-types';
-import { RevaluationDetail, RevaluationPreviewResult } from './types';
+import {
+  RevaluationDetailDto,
+  RevaluationPreviewResultDto,
+} from './dto/revaluation-preview-result.dto';
 import { PendingMemberPayment } from '../meetings/entities/pending-member-payment.entity';
 import { StockBehavior } from '../stocks/entities/stock.entity';
 import { OperationType } from '../common/enums/operation-type.enum';
-
+import { roundAndLimit } from '../common/utils/round-and-limit.util';
+import { GuaranteedGrowthHandler } from './strategies/guaranteed-growth.handler';
+import { ProportionalGrowthHandler } from './strategies/proportional-growth.handler';
+import { DistributionContext } from './strategies/distribution-chain';
+import { DividendYieldStockGrowthHandler } from './strategies/dividend-yield-stock-growth.handler';
 @Injectable()
 export class AssetRevaluationService {
   private readonly logger = new Logger(AssetRevaluationService.name);
@@ -35,11 +43,12 @@ export class AssetRevaluationService {
     private readonly dataSource: DataSource,
     @InjectRepository(Meeting)
     private readonly meetingRepository: Repository<Meeting>,
+    // private readonly growthStrategyFactory: GrowthStrategyFactory,
   ) {}
 
   private async _calculateRevaluationData(
     meetingId: string,
-  ): Promise<RevaluationPreviewResult> {
+  ): Promise<RevaluationPreviewResultDto> {
     const meeting = await this.meetingRepository.findOneBy({ id: meetingId });
     if (!meeting) {
       throw new NotFoundException(`Meeting with ID ${meetingId} not found.`);
@@ -50,12 +59,9 @@ export class AssetRevaluationService {
     });
 
     const totalInterest = ledgerEntries
-      .filter((e) =>
-        [INTEREST_INCOME_ACCOUNT, FEE_INCOME_ACCOUNT].includes(e.account_type),
-      )
+      .filter((e) => [INTEREST_INCOME_ACCOUNT].includes(e.account_type))
       .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
 
-    // Separar aportes por acción y aportes obligatorios
     const totalStockContributions = ledgerEntries
       .filter((e) => e.account_type === STOCK_CAPITAL_ACCOUNT)
       .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
@@ -66,128 +72,106 @@ export class AssetRevaluationService {
 
     const stocks = await this.dataSource.manager.find(Stock);
     const subscriptions = await this.dataSource.manager.find(StockSubscription);
-
-    const details: RevaluationDetail[] = [];
-    let interestAvailableForDistribution = totalInterest;
-
-    // 1. Calculate growth for guaranteed stocks
+    // Paso 1: Construir el contexto para la cadena
+    const interestAvailableForDistribution = totalInterest;
     const guaranteedStocks = stocks.filter((s) => s.is_guaranteed);
     let totalRequiredGuaranteedGrowth = 0;
-    const guaranteedStockDetails: (RevaluationDetail & {
-      required_growth: number;
-    })[] = [];
-
     for (const stock of guaranteedStocks) {
       const totalShares = subscriptions
         .filter((sub) => sub.stock_id === stock.id)
         .reduce((sum, sub) => sum + Number(sub.quantity), 0);
-
       if (totalShares === 0) continue;
-
       const requiredGrowthPerShare =
         Number(stock.value) * Number(stock.guaranteed_yield);
       totalRequiredGuaranteedGrowth += requiredGrowthPerShare * totalShares;
-
-      guaranteedStockDetails.push({
-        stock_id: stock.id,
-        type: stock.type,
-        is_guaranteed: true,
-        total_shares: Number(totalShares),
-        previous_value: Number(stock.value),
-        required_growth: requiredGrowthPerShare,
-        growth_from_contributions: 0,
-        estimated_growth_from_contributions: Number(stock.monthly_contribution),
-        growth_from_interest: 0, // Calculated below
-        total_growth_per_share: 0, // Calculated below
-        new_value: 0, // Calculated below
-      });
     }
-
-    // Distribute available interest to guaranteed stocks
-    const growthForGuaranteedStocks = Math.min(
+    const context: DistributionContext = {
+      totalInterest,
+      totalStockContributions,
       interestAvailableForDistribution,
       totalRequiredGuaranteedGrowth,
+      stocks,
+      subscriptions,
+      ledgerEntries,
+    };
+    // Paso 2: Ejecutar la cadena de distribución en dos fases
+    // Fase 1: Garantizados
+    const guaranteedHandler = new GuaranteedGrowthHandler();
+    const guaranteedResult = guaranteedHandler.handle(totalInterest, context, {
+      assigned: {},
+      remaining: totalInterest,
+    });
+    // Remanente de intereses para dividendos y proporcionales
+    const interestRemainder = guaranteedResult.remaining;
+    // Fase 2: Dividendos y Proporcional
+    const dividendHandler = new DividendYieldStockGrowthHandler();
+    const proportionalHandler = new ProportionalGrowthHandler();
+    // El remanente va a proporcionales
+    const proportionalResult = proportionalHandler.handle(
+      interestRemainder,
+      context,
+      { assigned: {}, remaining: interestRemainder },
     );
-    interestAvailableForDistribution -= growthForGuaranteedStocks;
-
-    const guaranteedGrowthRatio =
-      totalRequiredGuaranteedGrowth > 0
-        ? growthForGuaranteedStocks / totalRequiredGuaranteedGrowth
-        : 0;
-
-    for (const detail of guaranteedStockDetails) {
-      const actualGrowth = detail.required_growth * guaranteedGrowthRatio;
-      detail.growth_from_interest = actualGrowth;
-      detail.total_growth_per_share = actualGrowth;
-      detail.new_value = detail.previous_value + actualGrowth;
-      details.push(detail);
-    }
-
-    // 2. Distribute remaining growth among non-guaranteed stocks
-    const gainsForRegularStocks =
-      interestAvailableForDistribution + totalStockContributions;
-    const regularStocks = stocks.filter((s) => !s.is_guaranteed);
-
-    const totalValueOfRegularStocks = regularStocks.reduce((sum, stock) => {
-      const totalShares = subscriptions
-        .filter((sub) => sub.stock_id === stock.id)
-        .reduce((qtySum, sub) => qtySum + Number(sub.quantity), 0);
-      return sum + Number(stock.value) * totalShares;
-    }, 0);
-
-    const regularGrowthRate =
-      totalValueOfRegularStocks > 0
-        ? gainsForRegularStocks / totalValueOfRegularStocks
-        : 0;
-    const interestProportion =
-      gainsForRegularStocks > 0
-        ? interestAvailableForDistribution / gainsForRegularStocks
-        : 0;
-
-    for (const stock of regularStocks) {
+    // Unir los resultados de asignación de intereses
+    // Ejecutar dividendos primero
+    const dividendResult = dividendHandler.handle(
+      proportionalResult.remaining,
+      context,
+      {
+        assigned: {},
+        remaining: proportionalResult.remaining,
+      },
+    );
+    const assignedInterest: Record<string, number> = {
+      ...proportionalResult.updatedResult.assigned,
+      ...guaranteedResult.updatedResult.assigned,
+      ...dividendResult.updatedResult.assigned,
+    };
+    // Paso 3: Calcular detalles por stock
+    // Calcular crecimiento por aportes exacto por acción
+    const contributionsByStock: Record<string, number> = {};
+    ledgerEntries
+      .filter((e) => e.account_type === STOCK_CAPITAL_ACCOUNT && e.stock_id)
+      .forEach((e) => {
+        const stockId = e.stock_id as string;
+        if (!contributionsByStock[stockId]) contributionsByStock[stockId] = 0;
+        contributionsByStock[stockId] += Math.abs(Number(e.amount));
+      });
+    // Proporción de intereses para la cadena
+    const details: RevaluationDetailDto[] = stocks.map((stock) => {
       const totalShares = subscriptions
         .filter((sub) => sub.stock_id === stock.id)
         .reduce((sum, sub) => sum + Number(sub.quantity), 0);
-      if (totalShares === 0) continue;
-      const totalGrowthPerShare = Number(stock.value) * regularGrowthRate;
-      const growthFromInterest = totalGrowthPerShare * interestProportion;
-      const growthFromContributions = ledgerEntries
-        .filter(
-          (e) =>
-            e.account_type === STOCK_CAPITAL_ACCOUNT && e.stock_id === stock.id,
-        )
-        .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
-      const estimatedGrowthFromContributions = Number(
-        stock.monthly_contribution,
-      );
-      let dividends_generated: number | undefined = undefined;
-      let new_value: number;
-      let total_growth_per_share: number;
-      if (stock.behavior === StockBehavior.DIVIDEND_YIELD) {
-        // Solo crece por aportes, no por intereses
-        dividends_generated = growthFromInterest * totalShares;
-        total_growth_per_share = growthFromContributions / totalShares;
-        new_value = Number(stock.value) + total_growth_per_share;
-      } else {
-        total_growth_per_share = totalGrowthPerShare;
-        new_value = Number(stock.value) + Number(totalGrowthPerShare);
-      }
-      details.push({
+      // Crecimiento por aportes: total aportado a la acción dividido entre acciones
+      const growthFromContributions =
+        totalShares > 0
+          ? (contributionsByStock[stock.id] || 0) / totalShares
+          : 0;
+      // Si es DIVIDEND_YIELD, el asignado va a dividends_generated, no a growth_from_interest
+      const isDividendYield = stock.behavior === StockBehavior.DIVIDEND_YIELD;
+      const assigned = assignedInterest[stock.id] || 0;
+      const growthFromInterest = isDividendYield
+        ? 0
+        : totalShares > 0
+          ? assigned / totalShares
+          : 0;
+      const dividendsGenerated = isDividendYield ? assigned / totalShares : 0;
+      return {
         stock_id: stock.id,
         type: stock.type,
-        is_guaranteed: false,
-        total_shares: Number(totalShares),
+        is_guaranteed: stock.is_guaranteed,
+        total_shares: totalShares,
         previous_value: Number(stock.value),
-        growth_from_contributions: growthFromContributions / totalShares,
+        growth_from_contributions: growthFromContributions,
         growth_from_interest: growthFromInterest,
-        total_growth_per_share,
-        estimated_growth_from_contributions: estimatedGrowthFromContributions,
-        new_value,
-        dividends_generated,
-      });
-    }
-
-    // Agrupar aportes obligatorios por tipo
+        total_growth_per_share: growthFromInterest + growthFromContributions,
+        estimated_growth_from_contributions: stock.monthly_contribution,
+        new_value:
+          Number(stock.value) + growthFromInterest + growthFromContributions,
+        dividends_generated: dividendsGenerated,
+      };
+    });
+    // Paso 4: Agrupar aportes obligatorios por tipo (igual que antes)
     const mandatoryContributionMap: Record<
       string,
       { total: number; mandatory_contribution_id: string }
@@ -212,7 +196,6 @@ export class AssetRevaluationService {
     const mandatoryContributionsByType = Object.values(
       mandatoryContributionMap,
     );
-
     return {
       total_contributions: totalStockContributions,
       total_interest: totalInterest,
@@ -226,7 +209,7 @@ export class AssetRevaluationService {
   private async _getExecutedRevaluationData(
     operationId: string,
     meetingId: string,
-  ): Promise<RevaluationPreviewResult> {
+  ): Promise<RevaluationPreviewResultDto> {
     // Obtener el historial de revaluación ejecutada
     const stockHistories = await this.dataSource.manager.find(
       StockValueHistory,
@@ -235,9 +218,8 @@ export class AssetRevaluationService {
         relations: ['stock'],
       },
     );
-
     // Reconstruir los detalles de la revaluación ejecutada
-    const details: RevaluationDetail[] = [];
+    const details: RevaluationDetailDto[] = [];
     const stocks = await this.dataSource.manager.find(Stock);
     const subscriptions = await this.dataSource.manager.find(StockSubscription);
 
@@ -245,8 +227,24 @@ export class AssetRevaluationService {
       const stock = stocks.find((s) => s.id === history.stock_id);
       const totalShares = subscriptions
         .filter((sub) => sub.stock_id === history.stock_id)
-        .reduce((sum, sub) => sum + sub.quantity, 0);
+        .reduce((sum, sub) => sum + Number(sub.quantity), 0);
 
+      const dividendsGenerated =
+        (await this.dataSource.manager
+          .find(LedgerEntry, {
+            select: {
+              amount: true,
+            },
+            where: {
+              operation_id: operationId,
+              account_type: DIVIDENDS_PAYABLE_ACCOUNT,
+              stock_id: history.stock_id,
+            },
+          })
+          .then((entries) =>
+            entries.reduce((sum, e) => sum + Number(e.amount), 0),
+          )) / totalShares;
+      console.log(stock?.type, totalShares, dividendsGenerated);
       if (stock) {
         details.push({
           stock_id: history.stock_id,
@@ -259,6 +257,7 @@ export class AssetRevaluationService {
           total_growth_per_share: Number(history.total_growth_per_share),
           estimated_growth_from_contributions: stock.monthly_contribution,
           new_value: Number(history.new_value),
+          dividends_generated: dividendsGenerated,
         });
       }
     }
@@ -320,7 +319,7 @@ export class AssetRevaluationService {
 
   async getRevaluationPreview(
     meetingId: string,
-  ): Promise<RevaluationPreviewResult> {
+  ): Promise<RevaluationPreviewResultDto> {
     // Verificar si ya existe una revaluación ejecutada para esta reunión
     const existingRevaluation = await this.dataSource.manager.findOne(
       Operation,
@@ -360,7 +359,7 @@ export class AssetRevaluationService {
 
   async executeRevaluation(
     meetingId: string,
-  ): Promise<RevaluationPreviewResult> {
+  ): Promise<RevaluationPreviewResultDto> {
     // Verificar si ya existe una revaluación para esta reunión
     const existingRevaluation = await this.dataSource.manager.findOne(
       Operation,
@@ -409,18 +408,43 @@ export class AssetRevaluationService {
         const newValue = isDividendYield
           ? detail.previous_value
           : detail.new_value;
+
+        // Validación y redondeo para evitar overflow en la base de datos
+        const previous_value = roundAndLimit(
+          detail.previous_value,
+          9999999999.99,
+          2,
+        );
+        const growth_from_contributions = roundAndLimit(
+          detail.growth_from_contributions,
+          999999.9999,
+          4,
+        );
+        const growth_from_interest = roundAndLimit(
+          detail.growth_from_interest,
+          999999.9999,
+          4,
+        );
+        const total_growth_per_share = roundAndLimit(
+          detail.total_growth_per_share,
+          999999.9999,
+          4,
+        );
+        const new_value = roundAndLimit(newValue, 9999999999.99, 2);
+
         const historyEntry = queryRunner.manager.create(StockValueHistory, {
           stock_id: detail.stock_id,
           operation_id: revaluationOperation.id,
-          previous_value: detail.previous_value,
-          growth_from_contributions: detail.growth_from_contributions,
-          growth_from_interest: detail.growth_from_interest,
-          total_growth_per_share: detail.total_growth_per_share,
-          new_value: newValue,
+          previous_value,
+          growth_from_contributions,
+          growth_from_interest,
+          total_growth_per_share,
+          new_value,
         });
+        console.log(historyEntry);
         await queryRunner.manager.save(historyEntry);
         await queryRunner.manager.update(Stock, detail.stock_id, {
-          value: newValue,
+          value: new_value,
         });
       }
 
@@ -434,7 +458,7 @@ export class AssetRevaluationService {
         const isDividendYield = stock.behavior === StockBehavior.DIVIDEND_YIELD;
         if (isDividendYield) {
           // Generar dividendos: distribuir growth_from_interest como dividendos
-          if (detail.growth_from_interest > 0) {
+          if (detail.dividends_generated && detail.dividends_generated > 0) {
             // Obtener suscripciones activas para esta acción
             const subscriptions = await queryRunner.manager.find(
               StockSubscription,
@@ -448,7 +472,7 @@ export class AssetRevaluationService {
               for (const sub of subscriptions) {
                 const memberDividend =
                   (Number(sub.quantity) / totalShares) *
-                  (detail.growth_from_interest * detail.total_shares);
+                  (detail.dividends_generated * detail.total_shares);
                 if (memberDividend > 0) {
                   const pendingDividend = queryRunner.manager.create(
                     PendingMemberPayment,
@@ -469,15 +493,15 @@ export class AssetRevaluationService {
               ledgerEntries.push(
                 queryRunner.manager.create(LedgerEntry, {
                   operation_id: revaluationOperation.id,
-                  account_type: 'DIVIDENDS_PAYABLE_ACCOUNT',
-                  amount: detail.growth_from_interest * detail.total_shares,
+                  account_type: DIVIDENDS_PAYABLE_ACCOUNT,
+                  amount: detail.dividends_generated * detail.total_shares,
                   description: `Dividendo generado por acción ${stock.type}`,
                   stock_id: detail.stock_id,
                 }),
                 queryRunner.manager.create(LedgerEntry, {
                   operation_id: revaluationOperation.id,
                   account_type: REVALUATION_SURPLUS_ACCOUNT,
-                  amount: -detail.growth_from_interest * detail.total_shares,
+                  amount: -detail.dividends_generated * detail.total_shares,
                   description: `Contrapartida por dividendos en acción ${stock.type}`,
                   stock_id: detail.stock_id,
                 }),
