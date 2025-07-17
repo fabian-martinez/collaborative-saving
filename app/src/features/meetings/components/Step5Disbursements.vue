@@ -65,7 +65,12 @@
         </div>
         <div v-else class="bg-base-100 p-8 rounded-2xl shadow-lg font-sans">
           <h3 class="text-xl font-bold mb-4">Recibo de Desembolsos para {{ selectedMember.name }}</h3>
-          <div v-if="localLoans.length > 0 || localWithdrawals.length > 0 || pendingTransactions.length > 0 || selectedMemberDividends.length > 0 || localOtherDisbursements.length > 0">
+          <div v-if="localLoans.length > 0
+            || localWithdrawals.length > 0
+            || pendingTransactions.length > 0
+            || selectedMemberDividends.length > 0
+            || localOtherDisbursements.length > 0"
+          >
             <div class="space-y-4">
               <!-- Transacciones pendientes -->
               <div v-for="(pending, idx) in pendingTransactions" :key="`pending-${idx}`" class="py-4 rounded opacity-95">
@@ -165,7 +170,15 @@
               <div class="flex items-baseline text-2xl font-bold mt-6">
                 <span class="flex-shrink-0">Total a entregar:</span>
                 <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
-                <span class="flex-shrink-0 text-primary font-mono"><CopyOnDblClickNumber :value="localLoans.reduce((sum, l) => sum + l.delivered, 0) + localWithdrawals.reduce((sum, w) => sum + w.deliveredAmount, 0) + pendingTransactions.reduce((sum, p) => sum + p.amount, 0) + selectedMemberDividends.reduce((sum, d) => sum + d.amount, 0) + localOtherDisbursements.reduce((sum, o) => sum + o.amount, 0)" /></span>
+                <span class="flex-shrink-0 text-primary font-mono">
+                  <CopyOnDblClickNumber 
+                    :value="
+                      localLoans.reduce((sum: number, l: any) => sum + l.delivered, 0)
+                      + localWithdrawals.reduce((sum: number, w: any) => sum + w.deliveredAmount, 0)
+                      + pendingTransactions.reduce((sum: number, p: any) => sum + p.amount, 0)
+                      + selectedMemberDividends.reduce((sum: number, d: any) => sum + d.amount, 0)
+                      + localOtherDisbursements.reduce((sum: number, o: any) => sum + o.amount, 0)" />
+                </span>
               </div>
             </div>
           </div>
@@ -212,10 +225,10 @@
               <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
               <span class="flex-shrink-0 text-primary font-mono">
                 <CopyOnDblClickNumber :value="localWithdrawals.reduce(
-                  (sum, w) => sum + w.deliveredAmount, 0) 
+                  (sum: number, w: any) => sum + w.deliveredAmount, 0) 
                   + pendingTransactions.reduce(
-                    (sum, p) => sum + p.amount, 0
-                    ) + localOtherDisbursements.reduce((sum, o) => sum + o.amount, 0)" />
+                    (sum: number, p: any) => sum + p.amount, 0
+                    ) + localOtherDisbursements.reduce((sum: number, o: any) => sum + o.amount, 0)" />
               </span>
             </div>
           </div>
