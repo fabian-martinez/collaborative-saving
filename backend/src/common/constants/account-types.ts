@@ -9,6 +9,7 @@ export const LOANS_RECEIVABLE_ACCOUNT = 'LOANS_RECEIVABLE'; // Dinero que los so
 
 // Inversiones
 export const INVESTMENT_IN_STOCKS_ACCOUNT = 'INVESTMENT_IN_STOCKS'; // Valor de las acciones que posee el fondo. Aumenta con la revalorización.
+export const DIVIDENDS_PAYABLE_ACCOUNT = 'DIVIDENDS_PAYABLE'; // Dividendos por pagar a los socios.
 
 // --- PATRIMONIO Y CAPITAL ---
 // Representan el valor que pertenece a los socios.

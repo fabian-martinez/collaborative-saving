@@ -8,11 +8,12 @@
           <select v-model="form.type" class="select select-bordered w-full">
             <option value="corriente">Corriente (1.5%)</option>
             <option value="agil">Ágil (2%)</option>
+            <option value="prioritario">Prioritario (2%)</option>
           </select>
         </div>
         <div class="mb-4">
           <label class="block font-semibold mb-1">Valor Aprobado</label>
-          <input type="number" v-model.number="form.approved" class="input input-bordered w-full" min="0" :max="maxCapacity" step="any" />
+          <input type="number" v-model.number="form.approved" class="input input-bordered w-full" min="0" step="any" />
         </div>
         <div class="mb-4">
           <label class="block font-semibold mb-1">Valor Entregado</label>
@@ -136,7 +137,7 @@ function onSubmit() {
     formError.value = 'El valor entregado no puede superar el valor aprobado.'
     return
   }
-  if (form.value.approved > maxCapacity.value) {
+  if (form.value.approved > maxCapacity.value && form.value.type === 'corriente') {
     formError.value = 'El valor aprobado supera la capacidad máxima de endeudamiento.'
     return
   }

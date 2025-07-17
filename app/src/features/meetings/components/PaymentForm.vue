@@ -408,7 +408,7 @@ function addNovelty() {
 function handleNoveltySave(data: { amount: number, comment: string }) {
   payments.value.push({
     type: 'novelty',
-    description: 'Novedad',
+    description: data.comment || 'Novedad',
     amount: Math.abs(data.amount),
     noveltyComment: data.comment,
   });

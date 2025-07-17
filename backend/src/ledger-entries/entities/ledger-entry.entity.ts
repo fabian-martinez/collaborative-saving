@@ -48,7 +48,7 @@ export class LedgerEntry {
       'The amount of the entry. Positive for debits, negative for credits.',
     example: 150.75,
   })
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 12, scale: 2 })
   amount: number;
 
   @ApiProperty({

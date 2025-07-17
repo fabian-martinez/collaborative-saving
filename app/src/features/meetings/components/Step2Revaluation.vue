@@ -45,19 +45,19 @@
           <div class="stat">
             <div class="stat-title">Aportes Recaudados</div>
             <div class="stat-value text-success">
-              ${{ formatNumber(previewData.total_contributions) }}
+              <CopyOnDblClickNumber :value="previewData.total_contributions" />
             </div>
           </div>
           <div class="stat">
-            <div class="stat-title">Intereses y Multas Generadas</div>
+            <div class="stat-title">Intereses Recaudados</div>
             <div class="stat-value text-success">
-              ${{ formatNumber(previewData.total_interest) }}
+              <CopyOnDblClickNumber :value="previewData.total_interest" />
             </div>
           </div>
           <div class="stat">
             <div class="stat-title">Total a Distribuir</div>
             <div class="stat-value text-primary">
-              ${{ formatNumber(previewData.total_to_distribute) }}
+              <CopyOnDblClickNumber :value="previewData.total_to_distribute" />
             </div>
           </div>
         </div>
@@ -83,25 +83,19 @@
                     Garantizada
                   </div>
                 </td>
-                <td class="text-right">${{ formatNumber(Number(detail.previous_value)) }}</td>
+                <td class="text-right">$<CopyOnDblClickNumber :value="detail.previous_value" /></td>
                 <td class="text-right text-info">
-                  +${{ formatNumber(Number(detail.growth_from_contributions)) }}
-                  ({{ formatNumber(Number(detail.estimated_growth_from_contributions), { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }})
+                  +<CopyOnDblClickNumber :value="detail.growth_from_contributions" /> ({{ Number(detail.estimated_growth_from_contributions).toLocaleString() }})
                 </td>
                 <td class="text-right text-info">
-                  +${{ formatNumber(Number(detail.growth_from_interest)) }}
+                  +<CopyOnDblClickNumber :value="detail.growth_from_interest" />
                 </td>
                 <td class="text-right font-bold text-success">
-                  +${{ formatNumber(Number(detail.total_growth_per_share)) }}
+                  +<CopyOnDblClickNumber :value="detail.total_growth_per_share" />
                 </td>
-                <td class="text-right font-bold text-primary">
-                  ${{ formatNumber(Number(detail.new_value)) }}
-                </td>
+                <td class="text-right font-bold text-primary">$<CopyOnDblClickNumber :value="detail.new_value" /></td>
                 <td class="text-right text-warning font-bold">
-                  <span v-if="typeof detail.dividends_generated === 'number' && detail.dividends_generated > 0">
-                    ${{ formatNumber(Number(detail.dividends_generated)) }}
-                  </span>
-                  <span v-else>-</span>
+                  <span v-if="typeof detail.dividends_generated === 'number' && detail.dividends_generated > 0">$<CopyOnDblClickNumber :value="detail.dividends_generated" /></span><span v-else>-</span>
                 </td>
               </tr>
             </tbody>
@@ -135,7 +129,7 @@
                       }}
                     </td>
                     <td class="text-right font-bold">
-                      ${{ formatNumber(item.total) }}
+                      <CopyOnDblClickNumber :value="item.total" />
                     </td>
                   </tr>
                 </tbody>
@@ -143,7 +137,7 @@
                   <tr>
                     <th>Total</th>
                     <th class="text-right text-primary">
-                      ${{ formatNumber(previewData?.total_mandatory_contributions ?? 0) }}
+                      <CopyOnDblClickNumber :value="previewData?.total_mandatory_contributions ?? 0" />
                     </th>
                   </tr>
                 </tfoot>
@@ -170,7 +164,7 @@ import { assetRevaluationService } from '../services/assetRevaluationService'
 import type { RevaluationPreviewResult } from '../types'
 import { contributionsService } from '@/features/contributions/services/contributionsService'
 import type { MandatoryContribution } from '@/features/contributions/types'
-import { formatNumber } from '@/shared/formatters'
+import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
 
 type Status = 'idle' | 'loading' | 'success' | 'error'
 

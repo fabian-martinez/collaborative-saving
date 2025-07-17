@@ -19,7 +19,7 @@
               <div class="text-sm font-light text-base-content/70 uppercase">Total En Acciones Compradas</div>
               <div class="text-3xl font-bold text-primary">
                 <span v-if="typeof totalPurchasedShares === 'number'">
-                  ${{ formatNumber(-totalPurchasedShares) }}
+                  <CopyOnDblClickNumber :value="-totalPurchasedShares" />
                 </span>
                 <span v-else>
                   N/D
@@ -31,7 +31,7 @@
             <div class="text-sm font-light text-base-content/70 uppercase">Total Efectivo Recaudado</div>
             <div class="text-2xl font-bold text-success">
               <span v-if="typeof totalCashRegistered === 'number'">
-                ${{ formatNumber(totalCashRegistered) }}
+                <CopyOnDblClickNumber :value="totalCashRegistered" />
               </span>
               <span v-else>
                 N/D
@@ -54,7 +54,7 @@
                   <span class="font-semibold">{{ op.description }}</span>
                   <span class="ml-2 text-xs text-base-content/60">
                     <span v-if="typeof op.total_debit === 'number'">
-                      ${{ formatNumber(op.total_debit) }}
+                      <CopyOnDblClickNumber :value="op.total_debit" />
                     </span>
                     <span v-else>
                       N/D
@@ -74,7 +74,7 @@
                   <span class="font-semibold">{{ op.description }}</span>
                   <span class="ml-2 text-xs text-base-content/60">
                     <span v-if="typeof op.total_debit === 'number'">
-                      ${{ formatNumber(op.total_debit) }}
+                      <CopyOnDblClickNumber :value="op.total_debit" />
                     </span>
                     <span v-else>
                       N/D
@@ -117,7 +117,7 @@
                   <div class="flex items-baseline">
                     <div class="flex-shrink-0">
                       <p class="font-semibold text-xl">{{ stockName(line.stockId) }}</p>
-                      <p class="text-sm text-base-content/70">{{ formatNumber(Number(line.quantity || 0)) }} uds. x ${{ formatNumber(stocks.find(s => s.id === line.stockId)?.value || 0) }} c/u</p>
+                      <p class="text-sm text-base-content/70"><CopyOnDblClickNumber :value="Number(line.quantity || 0)" /> uds. x <CopyOnDblClickNumber :value="stocks.find(s => s.id === line.stockId)?.value || 0" /> c/u</p>
                     </div>
                     <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
                     <div class="flex-shrink-0 flex items-center gap-2">
@@ -125,7 +125,7 @@
                       <button class="btn btn-ghost btn-xs text-error" @click="removeLine(idx)">Anular</button>
                       <p class="text-right font-mono text-2xl whitespace-nowrap">
                         <span v-if="typeof (line.cashAmount + line.creditAmount) === 'number'">
-                          ${{ formatNumber(line.cashAmount + line.creditAmount) }}
+                          <CopyOnDblClickNumber :value="line.cashAmount + line.creditAmount" />
                         </span>
                         <span v-else>
                           N/D
@@ -136,7 +136,7 @@
                   <div class="pl-4 mt-2 space-y-1 text-md text-base-content/80 border-l-2 border-base-300/80">
                     <div class="flex justify-between"><span>Efectivo:</span> <span>
                       <span v-if="typeof line.cashAmount === 'number'">
-                        ${{ formatNumber(line.cashAmount) }}
+                        <CopyOnDblClickNumber :value="line.cashAmount" />
                       </span>
                       <span v-else>
                         N/D
@@ -144,7 +144,7 @@
                     </span></div>
                     <div class="flex justify-between"><span>Crédito:</span> <span>
                       <span v-if="typeof line.creditAmount === 'number'">
-                        ${{ formatNumber(line.creditAmount) }}
+                        <CopyOnDblClickNumber :value="line.creditAmount" />
                       </span>
                       <span v-else>
                         N/D
@@ -161,7 +161,9 @@
                 <div class="flex items-baseline text-2xl font-bold">
                   <span class="flex-shrink-0">Total a pagar:</span>
                   <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
-                  <span class="flex-shrink-0 text-primary font-mono">${{ formatNumber(localLines.reduce((sum, l) => sum + l.cashAmount + l.creditAmount, 0)) }}</span>
+                  <span class="flex-shrink-0 text-primary font-mono">
+                    <CopyOnDblClickNumber :value="localLines.reduce((sum, l) => sum + l.cashAmount + l.creditAmount, 0)" />
+                  </span>
                   </div>
                 </div>
               </div>
@@ -204,7 +206,7 @@ import type { Stock, StocksForPurchase } from '@/features/stocks/types'
 import { stocksService } from '@/features/stocks/services/stocksService';
 import type { Operation } from '@/features/operations/types'
 import { operationsService } from '@/features/operations/services/operationsService'
-import { formatNumber } from '@/shared/formatters'
+import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
 
 type LocalLine = StocksForPurchase & { id: string, creditAmount: number }
 const stocks = ref<Stock[]>([])

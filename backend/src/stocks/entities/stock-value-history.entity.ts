@@ -28,12 +28,12 @@ export class StockValueHistory {
   @JoinColumn({ name: 'operation_id' })
   operation: Operation;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, name: 'previous_value' })
+  @Column({ type: 'decimal', precision: 12, scale: 2, name: 'previous_value' })
   previous_value: number;
 
   @Column({
     type: 'decimal',
-    precision: 10,
+    precision: 12,
     scale: 4,
     name: 'growth_from_contributions',
   })
@@ -41,7 +41,7 @@ export class StockValueHistory {
 
   @Column({
     type: 'decimal',
-    precision: 10,
+    precision: 12,
     scale: 4,
     name: 'growth_from_interest',
   })
@@ -49,13 +49,13 @@ export class StockValueHistory {
 
   @Column({
     type: 'decimal',
-    precision: 10,
+    precision: 12,
     scale: 4,
     name: 'total_growth_per_share',
   })
   total_growth_per_share: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, name: 'new_value' })
+  @Column({ type: 'decimal', precision: 12, scale: 2, name: 'new_value' })
   new_value: number;
 
   @CreateDateColumn({ type: 'timestamp with time zone', name: 'created_at' })

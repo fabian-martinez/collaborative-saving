@@ -31,7 +31,7 @@ drop type if exists "public"."member_due" cascade;
 
 -- Stores information about each member of the fund.
 create table public.members (
-    id uuid default extensions.uuid_generate_v4() primary key,
+    id uuid default uuid_generate_v4() primary key,
     name text not null,
     email text unique,
     identification_number text unique,
@@ -43,7 +43,7 @@ comment on table public.members is 'Stores information about each member of the 
 
 -- Stores records of each meeting session.
 create table public.meetings (
-    id uuid default extensions.uuid_generate_v4() primary key,
+    id uuid default uuid_generate_v4() primary key,
     date timestamp with time zone default now() not null,
     status text default 'active' not null check (status in ('active', 'closed')),
     notes text
@@ -52,7 +52,7 @@ comment on table public.meetings is 'Stores records of each meeting session.';
 
 -- Represents a single, high-level financial event, like a member's payment in a meeting.
 create table public.operations (
-    id uuid default extensions.uuid_generate_v4() primary key,
+    id uuid default uuid_generate_v4() primary key,
     member_id uuid references public.members(id) on delete set null,
     meeting_id uuid references public.meetings(id) on delete cascade,
     date timestamp with time zone default now() not null,
@@ -63,7 +63,7 @@ comment on table public.operations is 'Represents a single, high-level financial
 
 -- Defines the types of stocks available in the fund.
 create table public.stocks (
-    id uuid default extensions.uuid_generate_v4() primary key,
+    id uuid default uuid_generate_v4() primary key,
     type text not null unique,
     value numeric(12, 2) not null,
     monthly_contribution numeric(12, 2) default 0 not null,
@@ -76,7 +76,7 @@ comment on table public.stocks is 'Defines the types of stocks available in the 
 
 -- Stores information about loans granted to members.
 create table public.loans (
-    id uuid default extensions.uuid_generate_v4() primary key,
+    id uuid default uuid_generate_v4() primary key,
     member_id uuid not null references public.members(id) on delete cascade,
     loan_type text not null,
     approved_amount numeric(12, 2) not null,
@@ -85,13 +85,15 @@ create table public.loans (
     monthly_payment_amount numeric(12, 2) not null,
     interest_rate numeric(4, 4) not null,
     status text default 'pending' not null,
-    creation_date date default current_date not null
+    creation_date date default current_date not null,
+    guaranteed_stock_id uuid references public.stocks(id) on delete set null -- Relación con acción garantizada
 );
 comment on table public.loans is 'Stores information about loans granted to members.';
+comment on column public.loans.guaranteed_stock_id is 'ID de la acción garantizada asociada a este préstamo, si aplica.';
 
 -- Stores the historical value of each stock after revaluation.
 create table public.stock_value_history (
-    id uuid default extensions.uuid_generate_v4() primary key,
+    id uuid default uuid_generate_v4() primary key,
     stock_id uuid not null references public.stocks(id) on delete cascade,
     operation_id uuid not null references public.operations(id) on delete cascade,
     previous_value numeric(12, 2) not null,
@@ -105,7 +107,7 @@ comment on table public.stock_value_history is 'Stores the historical value of e
 
 -- Tracks which members are subscribed to which stocks.
 create table public.stock_subscriptions (
-    id uuid default extensions.uuid_generate_v4() primary key,
+    id uuid default uuid_generate_v4() primary key,
     member_id uuid references public.members(id) on delete cascade not null,
     stock_id uuid references public.stocks(id) on delete cascade not null,
     quantity numeric(20,10) default 1 not null,
@@ -118,7 +120,7 @@ comment on column public.stock_subscriptions.financing_loan_id is 'ID del prést
 
 -- Defines mandatory, recurring contributions for the fund.
 create table public.mandatory_contributions (
-    id uuid default extensions.uuid_generate_v4() primary key,
+    id uuid default uuid_generate_v4() primary key,
     asset_type text not null unique,
     value numeric(12, 2) not null
 );
@@ -126,7 +128,7 @@ comment on table public.mandatory_contributions is 'Defines mandatory, recurring
 
 -- Details of transactions related to a specific loan.
 create table public.loan_transaction_details (
-    id uuid default extensions.uuid_generate_v4() primary key,
+    id uuid default uuid_generate_v4() primary key,
     loan_id uuid not null references public.loans(id) on delete cascade,
     operation_id uuid references public.operations(id) on delete set null,
     transaction_type text not null check (transaction_type in ('disbursement', 'principal_payment', 'interest_payment')),
@@ -138,7 +140,7 @@ comment on table public.loan_transaction_details is 'Details of transactions rel
 
 -- Stores the atomic double-entry accounting records (debits and credits).
 create table public.ledger_entries (
-    id uuid default extensions.uuid_generate_v4() primary key,
+    id uuid default uuid_generate_v4() primary key,
     operation_id uuid references public.operations(id) on delete cascade not null,
     account_type text not null,
     amount numeric(12, 2) not null,
@@ -169,7 +171,7 @@ create type public.member_due as (
 -- ▤ Tabla para solicitudes de pagos pendientes de socios
 -- ----------------------------------------------------------------
 create table public.pending_member_payments (
-    id uuid default extensions.uuid_generate_v4() primary key,
+    id uuid default uuid_generate_v4() primary key,
     member_id uuid not null references public.members(id) on delete cascade,
     meeting_id uuid not null references public.meetings(id) on delete cascade,
     type text not null check (type in ('dividend', 'stock_withdrawal', 'loan', 'other')),
