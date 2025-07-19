@@ -20,6 +20,7 @@ import {
   INTEREST_INCOME_ACCOUNT,
 } from '../common/constants/account-types';
 import { PendingMemberPayment } from '../meetings/entities/pending-member-payment.entity';
+import { PendingPaymentType } from '../common/enums/pending-payment-type.enum';
 import { DisbursementPlanItemDto } from '../meetings/dto/disbursement-plan.dto';
 import { MemberDue } from '../dues/entities/member-due.entity';
 import { StocksService } from '../stocks/stocks.service';
@@ -641,7 +642,7 @@ export class LoansService {
         const pendingLoan = runner.manager.create(PendingMemberPayment, {
           member_id: createLoanDto.member_id,
           meeting_id: createLoanDto.meeting_id,
-          type: 'loan',
+          type: PendingPaymentType.LOAN,
           status: 'pending',
           amount: pendingAmount,
           loan_id: loan.id,

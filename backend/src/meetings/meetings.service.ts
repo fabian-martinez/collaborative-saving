@@ -25,6 +25,7 @@ import { MemberDue } from '../dues/entities/member-due.entity';
 import { BuyStockForMemberDto } from '../stocks/dto/buy-stock-for-member.dto';
 import { StocksService } from '../stocks/stocks.service';
 import { PendingMemberPayment } from './entities/pending-member-payment.entity';
+import { PendingPaymentType } from '../common/enums/pending-payment-type.enum';
 import {
   DisbursementPlanPreviewResponseDto,
   ExecuteDisbursementPlanDto,
@@ -278,7 +279,7 @@ export class MeetingsService {
       {
         member_id: dto.memberId,
         meeting_id: meetingId,
-        type: 'stock_withdrawal',
+        type: PendingPaymentType.STOCK_WITHDRAWAL,
         amount,
         status: 'pending',
         notes: dto.notes,
@@ -332,9 +333,29 @@ export class MeetingsService {
             stockWithdrawalQuantity: undefined,
           }
         : undefined;
+      
+      // Mapear PendingPaymentType a DisbursementType
+      let disbursementType: DisbursementType;
+      switch (p.type) {
+        case PendingPaymentType.DIVIDEND:
+          disbursementType = DisbursementType.DIVIDEND;
+          break;
+        case PendingPaymentType.STOCK_WITHDRAWAL:
+          disbursementType = DisbursementType.WITHDRAWAL;
+          break;
+        case PendingPaymentType.LOAN:
+          disbursementType = DisbursementType.LOAN;
+          break;
+        case PendingPaymentType.OTHER:
+          disbursementType = DisbursementType.OTHER;
+          break;
+        default:
+          disbursementType = DisbursementType.OTHER;
+      }
+      
       return {
         memberId: p.member_id,
-        type: p.type as DisbursementPlanItemDto['type'],
+        type: disbursementType,
         amount: Number(p.amount),
         status: p.status as DisbursementPlanItemDto['status'],
         notes: p.notes,

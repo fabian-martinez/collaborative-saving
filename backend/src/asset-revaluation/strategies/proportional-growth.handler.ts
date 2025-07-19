@@ -14,7 +14,7 @@ export class ProportionalGrowthHandler implements DistributionHandler {
     remaining: number;
     updatedResult: DistributionResult;
   } {
-    // Solo acciones que NO sean garantizadas NI dividend yield
+    // Incluir todas las acciones que NO sean garantizadas (regulares + dividendos)
     const regularStocks = context.stocks.filter((s) => !s.is_guaranteed);
     if (regularStocks.length === 0 || available <= 0) {
       return {

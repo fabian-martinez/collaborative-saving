@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Member } from '../../members/entities/member.entity';
 import { Meeting } from './meeting.entity';
+import { PendingPaymentType } from '../../common/enums/pending-payment-type.enum';
 
 @Entity('pending_member_payments')
 export class PendingMemberPayment {
@@ -21,7 +22,7 @@ export class PendingMemberPayment {
   meeting_id: string;
 
   @Column({ type: 'text' })
-  type: 'dividend' | 'stock_withdrawal' | 'other' | 'loan';
+  type: PendingPaymentType;
 
   @Column({ type: 'numeric', precision: 12, scale: 2 })
   amount: number;
@@ -34,6 +35,9 @@ export class PendingMemberPayment {
 
   @Column({ type: 'uuid', nullable: true })
   loan_id?: string | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  stock_id?: string | null;
 
   @Column({ type: 'uuid', nullable: true })
   stock_subscription_id?: string | null;
