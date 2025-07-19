@@ -132,7 +132,7 @@ export class LoansService {
       Number(loan.approved_amount)
     ) {
       throw new BadRequestException(
-        'El valor entregado no puede ser mayor al aprobado',
+        `El valor entregado ${item.amount + loan.outstanding_balance} no puede ser mayor al aprobado ${loan.approved_amount}`,
       );
     }
 

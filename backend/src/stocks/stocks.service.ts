@@ -6,7 +6,7 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, IsNull, Not, Repository } from 'typeorm';
+import { DataSource, IsNull, Not, Repository, QueryRunner } from 'typeorm';
 import { Stock } from './entities/stock.entity';
 import { CreateStockDto } from './dto/create-stock.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
@@ -24,6 +24,7 @@ import {
 } from '../common/constants/account-types';
 import { StockSubscription } from 'src/stock-subscriptions/entities/stock-subscription.entity';
 import { OperationType } from '../common/enums/operation-type.enum';
+import { StockModificationDto } from './dto/stock-modification.dto';
 
 @Injectable()
 export class StocksService {
@@ -291,5 +292,432 @@ export class StocksService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async processStockModification(
+    dto: StockModificationDto,
+  ): Promise<{
+    operationId: string;
+    message: string;
+    details: any;
+  }> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      switch (dto.modificationType) {
+        case 'STOCK_MODIFICATION':
+          return await this.processStockExchange(queryRunner, dto);
+        case 'STOCK_TRANSFER':
+          return await this.processStockTransfer(queryRunner, dto);
+        case 'STOCK_LOAN_PAYMENT':
+          return await this.processStockLoanPayment(queryRunner, dto);
+        default:
+          throw new BadRequestException(
+            `Tipo de modificación no válido: ${dto.modificationType}`,
+          );
+      }
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  private async processStockExchange(
+    queryRunner: QueryRunner,
+    dto: StockModificationDto,
+  ): Promise<{
+    operationId: string;
+    message: string;
+    details: any;
+  }> {
+    if (!dto.fromSubscriptionId || !dto.fromQuantity || !dto.toStockId || !dto.toQuantity) {
+      throw new BadRequestException('Faltan datos requeridos para el intercambio de acciones');
+    }
+
+    // Validar suscripción origen
+    const fromSubscription = await this.stockSubscriptionsService.findOne(dto.fromSubscriptionId);
+    if (!fromSubscription || fromSubscription.member_id !== dto.memberId) {
+      throw new BadRequestException('Suscripción de origen no válida');
+    }
+    if (Number(fromSubscription.quantity) < dto.fromQuantity) {
+      throw new BadRequestException('Cantidad insuficiente en la suscripción de origen');
+    }
+
+    // Obtener acciones origen y destino
+    const fromStock = await this.findOne(fromSubscription.stock_id);
+    const toStock = await this.findOne(dto.toStockId);
+
+    // Calcular valores
+    const fromValue = fromStock.value * dto.fromQuantity;
+    const toValue = toStock.value * dto.toQuantity;
+    const difference = fromValue - toValue;
+
+    // Crear operación
+    const operation = queryRunner.manager.create(Operation, {
+      member_id: dto.memberId,
+      meeting_id: dto.meetingId,
+      description: `Intercambio ${dto.fromQuantity} ${fromStock.type} → ${dto.toQuantity} ${toStock.type}`,
+      type: OperationType.STOCK_MODIFICATION,
+    });
+    await queryRunner.manager.save(operation);
+
+    // Actualizar suscripción origen
+    const newFromQuantity = Number(fromSubscription.quantity) - dto.fromQuantity;
+    if (newFromQuantity > 0) {
+      await queryRunner.manager.update(
+        'stock_subscriptions',
+        { id: dto.fromSubscriptionId },
+        { quantity: newFromQuantity },
+      );
+    } else {
+      await queryRunner.manager.update(
+        'stock_subscriptions',
+        { id: dto.fromSubscriptionId },
+        { quantity: 0 },
+      );
+    }
+
+    // Crear o actualizar suscripción destino
+    await this.stockSubscriptionsService.create(
+      {
+        member_id: dto.memberId,
+        stock_id: dto.toStockId,
+        quantity: dto.toQuantity,
+        financing_loan_id: null,
+      },
+      queryRunner,
+    );
+
+    // Crear asientos contables
+    const ledgerEntries: LedgerEntry[] = [];
+    
+    // Disminuir capital de acciones origen
+    ledgerEntries.push(
+      queryRunner.manager.create(LedgerEntry, {
+        operation_id: operation.id,
+        stock_id: fromSubscription.stock_id,
+        stock_subscription_id: dto.fromSubscriptionId,
+        account_type: STOCK_CAPITAL_ACCOUNT,
+        amount: fromValue,
+        description: `Reducción de ${dto.fromQuantity} ${fromStock.type}`,
+      }),
+    );
+
+    // Aumentar capital de acciones destino
+    ledgerEntries.push(
+      queryRunner.manager.create(LedgerEntry, {
+        operation_id: operation.id,
+        stock_id: dto.toStockId,
+        account_type: STOCK_CAPITAL_ACCOUNT,
+        amount: -toValue,
+        description: `Adquisición de ${dto.toQuantity} ${toStock.type}`,
+      }),
+    );
+
+    // Manejar diferencia si existe
+    if (difference !== 0) {
+      if (dto.differenceHandling === 'credit' && dto.targetLoanId) {
+        if (difference > 0) {
+          // Aplicar diferencia a crédito existente
+          const loan = await this.loansService.findOne(dto.targetLoanId);
+          const newBalance = Number(loan.outstanding_balance) - difference;
+          
+          await queryRunner.manager.update(
+            'loans',
+            { id: dto.targetLoanId },
+            { outstanding_balance: newBalance },
+          );
+
+          // Asiento contable para el pago del crédito
+          ledgerEntries.push(
+            queryRunner.manager.create(LedgerEntry, {
+              operation_id: operation.id,
+              account_type: LOANS_RECEIVABLE_ACCOUNT,
+              amount: -difference,
+              description: `Pago de crédito con diferencia de intercambio`,
+            }),
+          );
+        } else {
+          // Crear nuevo crédito para financiar la diferencia
+          const loanType = dto.targetLoanId === 'new_action_loan' ? 'accion' : 'corriente';
+          await this.loansService.create(
+            {
+              member_id: dto.memberId,
+              meeting_id: dto.meetingId,
+              approved_amount: Math.abs(difference),
+              monthly_payment_amount: 0,
+              outstanding_balance: Math.abs(difference),
+              interest_rate: 0.02, // 2% interés
+              loan_type: loanType,
+              status: 'active',
+            },
+            queryRunner,
+          );
+
+          // Asiento contable para el nuevo crédito
+          ledgerEntries.push(
+            queryRunner.manager.create(LedgerEntry, {
+              operation_id: operation.id,
+              account_type: LOANS_RECEIVABLE_ACCOUNT,
+              amount: Math.abs(difference),
+              description: `Nuevo crédito ${loanType} por diferencia de intercambio`,
+            }),
+          );
+        }
+      } else {
+        // Diferencia en efectivo
+        // Si difference > 0: el socio debe pagar (sale dinero de caja = negativo)
+        // Si difference < 0: el socio debe recibir (entra dinero a caja = positivo)
+        ledgerEntries.push(
+          queryRunner.manager.create(LedgerEntry, {
+            operation_id: operation.id,
+            account_type: CASH_ACCOUNT,
+            amount: -difference, // Invertir el signo para que sea correcto contablemente
+            description: `Diferencia de intercambio en efectivo`,
+          }),
+        );
+      }
+    }
+
+    await queryRunner.manager.save(ledgerEntries);
+    await queryRunner.commitTransaction();
+
+    return {
+      operationId: operation.id,
+      message: 'Intercambio de acciones procesado exitosamente',
+      details: {
+        fromStock: fromStock.type,
+        fromQuantity: dto.fromQuantity,
+        fromValue,
+        toStock: toStock.type,
+        toQuantity: dto.toQuantity,
+        toValue,
+        difference,
+        differenceHandling: dto.differenceHandling,
+      },
+    };
+  }
+
+  private async processStockTransfer(
+    queryRunner: QueryRunner,
+    dto: StockModificationDto,
+  ): Promise<{
+    operationId: string;
+    message: string;
+    details: any;
+  }> {
+    if (!dto.transferSubscriptionId || !dto.transferQuantity || !dto.toMemberId) {
+      throw new BadRequestException('Faltan datos requeridos para la transferencia');
+    }
+
+    // Validar suscripción origen
+    const fromSubscription = await this.stockSubscriptionsService.findOne(dto.transferSubscriptionId);
+    if (!fromSubscription || fromSubscription.member_id !== dto.memberId) {
+      throw new BadRequestException('Suscripción de origen no válida');
+    }
+    if (Number(fromSubscription.quantity) < dto.transferQuantity) {
+      throw new BadRequestException('Cantidad insuficiente en la suscripción de origen');
+    }
+
+    // Comentado temporalmente: Validar que no tenga crédito asociado
+    // if (fromSubscription.financing_loan_id) {
+    //   throw new BadRequestException('No se pueden transferir acciones con crédito asociado');
+    // }
+
+    // Obtener acción
+    const stock = await this.findOne(fromSubscription.stock_id);
+    const transferValue = stock.value * dto.transferQuantity;
+
+    // Crear operación
+    const operation = queryRunner.manager.create(Operation, {
+      member_id: dto.memberId,
+      meeting_id: dto.meetingId,
+      description: `Transferencia ${dto.transferQuantity} ${stock.type} a socio`,
+      type: OperationType.STOCK_TRANSFER,
+    });
+    await queryRunner.manager.save(operation);
+
+    // Actualizar suscripción origen
+    const newFromQuantity = Number(fromSubscription.quantity) - dto.transferQuantity;
+    if (newFromQuantity > 0) {
+      await queryRunner.manager.update(
+        'stock_subscriptions',
+        { id: dto.transferSubscriptionId },
+        { quantity: newFromQuantity },
+      );
+    } else {
+      await queryRunner.manager.update(
+        'stock_subscriptions',
+        { id: dto.transferSubscriptionId },
+        { quantity: 0 },
+      );
+    }
+
+    // Crear suscripción destino
+    await this.stockSubscriptionsService.create(
+      {
+        member_id: dto.toMemberId,
+        stock_id: fromSubscription.stock_id,
+        quantity: dto.transferQuantity,
+        financing_loan_id: null,
+      },
+      queryRunner,
+    );
+
+    // Crear asientos contables
+    const ledgerEntries: LedgerEntry[] = [];
+    
+    // Disminuir capital del socio origen
+    ledgerEntries.push(
+      queryRunner.manager.create(LedgerEntry, {
+        operation_id: operation.id,
+        stock_id: fromSubscription.stock_id,
+        stock_subscription_id: dto.transferSubscriptionId,
+        account_type: STOCK_CAPITAL_ACCOUNT,
+        amount: transferValue,
+        description: `Transferencia de ${dto.transferQuantity} ${stock.type}`,
+      }),
+    );
+
+    // Aumentar capital del socio destino
+    ledgerEntries.push(
+      queryRunner.manager.create(LedgerEntry, {
+        operation_id: operation.id,
+        stock_id: fromSubscription.stock_id,
+        account_type: STOCK_CAPITAL_ACCOUNT,
+        amount: -transferValue,
+        description: `Recepción de ${dto.transferQuantity} ${stock.type}`,
+      }),
+    );
+
+    await queryRunner.manager.save(ledgerEntries);
+    await queryRunner.commitTransaction();
+
+    return {
+      operationId: operation.id,
+      message: 'Transferencia de acciones procesada exitosamente',
+      details: {
+        stockType: stock.type,
+        quantity: dto.transferQuantity,
+        value: transferValue,
+        fromMemberId: dto.memberId,
+        toMemberId: dto.toMemberId,
+      },
+    };
+  }
+
+  private async processStockLoanPayment(
+    queryRunner: QueryRunner,
+    dto: StockModificationDto,
+  ): Promise<{
+    operationId: string;
+    message: string;
+    details: any;
+  }> {
+    if (!dto.loanPaymentSubscriptionId || !dto.loanPaymentQuantity || !dto.loanId) {
+      throw new BadRequestException('Faltan datos requeridos para el pago con acciones');
+    }
+
+    // Validar suscripción
+    const subscription = await this.stockSubscriptionsService.findOne(dto.loanPaymentSubscriptionId);
+    if (!subscription || subscription.member_id !== dto.memberId) {
+      throw new BadRequestException('Suscripción no válida');
+    }
+    if (Number(subscription.quantity) < dto.loanPaymentQuantity) {
+      throw new BadRequestException('Cantidad insuficiente en la suscripción');
+    }
+
+    // Comentado temporalmente: Validar que no tenga crédito asociado
+    // if (subscription.financing_loan_id) {
+    //   throw new BadRequestException('No se pueden usar acciones con crédito asociado para pagos');
+    // }
+
+    // Obtener acción y crédito
+    const stock = await this.findOne(subscription.stock_id);
+    const loan = await this.loansService.findOne(dto.loanId);
+    
+    if (loan.member_id !== dto.memberId) {
+      throw new BadRequestException('El crédito no pertenece al socio');
+    }
+
+    const paymentValue = stock.value * dto.loanPaymentQuantity;
+    const newBalance = Number(loan.outstanding_balance) - paymentValue;
+
+    // Crear operación
+    const operation = queryRunner.manager.create(Operation, {
+      member_id: dto.memberId,
+      meeting_id: dto.meetingId,
+      description: `Pago de crédito con ${dto.loanPaymentQuantity} ${stock.type}`,
+      type: OperationType.STOCK_LOAN_PAYMENT,
+    });
+    await queryRunner.manager.save(operation);
+
+    // Actualizar suscripción
+    const newQuantity = Number(subscription.quantity) - dto.loanPaymentQuantity;
+    if (newQuantity > 0) {
+      await queryRunner.manager.update(
+        'stock_subscriptions',
+        { id: dto.loanPaymentSubscriptionId },
+        { quantity: newQuantity },
+      );
+    } else {
+      await queryRunner.manager.update(
+        'stock_subscriptions',
+        { id: dto.loanPaymentSubscriptionId },
+        { quantity: 0 },
+      );
+    }
+
+    // Actualizar crédito
+    await queryRunner.manager.update(
+      'loans',
+      { id: dto.loanId },
+      { outstanding_balance: newBalance },
+    );
+
+    // Crear asientos contables
+    const ledgerEntries: LedgerEntry[] = [];
+    
+    // Disminuir capital de acciones
+    ledgerEntries.push(
+      queryRunner.manager.create(LedgerEntry, {
+        operation_id: operation.id,
+        stock_id: subscription.stock_id,
+        stock_subscription_id: dto.loanPaymentSubscriptionId,
+        account_type: STOCK_CAPITAL_ACCOUNT,
+        amount: paymentValue,
+        description: `Pago de crédito con ${dto.loanPaymentQuantity} ${stock.type}`,
+      }),
+    );
+
+    // Reducir deuda del crédito
+    ledgerEntries.push(
+      queryRunner.manager.create(LedgerEntry, {
+        operation_id: operation.id,
+        account_type: LOANS_RECEIVABLE_ACCOUNT,
+        amount: -paymentValue,
+        description: `Pago de crédito ${loan.loan_type}`,
+      }),
+    );
+
+    await queryRunner.manager.save(ledgerEntries);
+    await queryRunner.commitTransaction();
+
+    return {
+      operationId: operation.id,
+      message: 'Pago de crédito con acciones procesado exitosamente',
+      details: {
+        stockType: stock.type,
+        quantity: dto.loanPaymentQuantity,
+        paymentValue,
+        loanType: loan.loan_type,
+        previousBalance: loan.outstanding_balance,
+        newBalance,
+      },
+    };
   }
 }

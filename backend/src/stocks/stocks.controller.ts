@@ -22,6 +22,7 @@ import { StocksService } from './stocks.service';
 import { CreateStockDto } from './dto/create-stock.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
 import { Stock } from './entities/stock.entity';
+import { StockModificationDto } from './dto/stock-modification.dto';
 
 @ApiTags('stocks')
 @Controller('stocks')
@@ -129,5 +130,16 @@ export class StocksController {
   @ApiResponse({ status: 404, description: 'Stock type not found.' })
   restore(@Param('id') id: string) {
     return this.stocksService.restore(id);
+  }
+
+  @Post('modify')
+  @ApiOperation({ summary: 'Process stock modifications' })
+  @ApiResponse({
+    status: 201,
+    description: 'The stock modification has been successfully processed.',
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request.' })
+  processStockModification(@Body() stockModificationDto: StockModificationDto) {
+    return this.stocksService.processStockModification(stockModificationDto);
   }
 }
