@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { PendingMemberPayment } from '../meetings/entities/pending-member-payment.entity';
+import { PendingPaymentType } from '../common/enums/pending-payment-type.enum';
 
 @Injectable()
 export class DividendsService {
@@ -11,7 +12,7 @@ export class DividendsService {
     meetingId?: string,
     status: string = 'pending',
   ) {
-    const where: Record<string, any> = { type: 'dividendo' };
+    const where: Record<string, any> = { type: PendingPaymentType.DIVIDEND };
     if (memberId) where.member_id = memberId;
     if (meetingId) where.meeting_id = meetingId;
     if (status) where.status = status;
@@ -23,7 +24,7 @@ export class DividendsService {
     meetingId?: string,
     status?: string,
   ) {
-    const where: Record<string, any> = { type: 'dividendo' };
+    const where: Record<string, any> = { type: PendingPaymentType.DIVIDEND };
     if (memberId) where.member_id = memberId;
     if (meetingId) where.meeting_id = meetingId;
     if (status) where.status = status;

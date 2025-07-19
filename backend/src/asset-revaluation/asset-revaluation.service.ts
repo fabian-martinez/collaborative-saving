@@ -33,8 +33,8 @@ import { roundAndLimit } from '../common/utils/round-and-limit.util';
 import { GuaranteedGrowthHandler } from './strategies/guaranteed-growth.handler';
 import { ProportionalGrowthHandler } from './strategies/proportional-growth.handler';
 import { DistributionContext } from './strategies/distribution-chain';
-import { DividendYieldStockGrowthHandler } from './strategies/dividend-yield-stock-growth.handler';
 import { runDistributionChain } from './strategies/distribution-orchestrator';
+import { PendingPaymentType } from '../common/enums/pending-payment-type.enum';
 
 @Injectable()
 export class AssetRevaluationService {
@@ -151,10 +151,9 @@ export class AssetRevaluationService {
     };
 
     // Paso 2: Ejecutar la cadena de distribución con el orden correcto
-    // Orden de prioridad: 1. Garantizados, 2. Dividendos, 3. Proporcionales
+    // Orden de prioridad: 1. Garantizados, 2. Proporcionales (incluye dividendos)
     const handlers = [
       new GuaranteedGrowthHandler(),
-      new DividendYieldStockGrowthHandler(),
       new ProportionalGrowthHandler(),
     ];
 
@@ -528,11 +527,14 @@ export class AssetRevaluationService {
                     {
                       member_id: sub.member_id,
                       meeting_id: meetingId,
-                      type: 'dividend',
+                      type: PendingPaymentType.DIVIDEND,
                       amount: memberDividend,
                       status: 'pending',
                       notes: `Dividendo generado por acción ${stock.type}`,
+                      stock_id: detail.stock_id,
                       stock_subscription_id: sub.id,
+                      reference_meeting_id: meetingId,
+                      disbursement_type: 'dividend',
                     },
                   );
                   await queryRunner.manager.save(pendingDividend);
