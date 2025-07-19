@@ -533,15 +533,17 @@
               </select>
             </div>
             
-            <div v-if="modificationForm.differenceHandling === 'credit' && difference > 0" class="form-control mt-2">
+            <div v-if="modificationForm.differenceHandling === 'credit'" class="form-control mt-2">
               <label class="label">
-                <span class="label-text">Crédito a abonar</span>
+                <span class="label-text">{{ difference > 0 ? 'Crédito a abonar' : 'Crear nuevo crédito' }}</span>
               </label>
               <select v-model="modificationForm.targetLoanId" class="select select-bordered w-full">
-                <option value="">Seleccione un crédito</option>
-                <option v-for="loan in memberLoans" :key="loan.id" :value="loan.id">
+                <option value="">{{ difference > 0 ? 'Seleccione un crédito' : 'Seleccione tipo de crédito' }}</option>
+                <option v-if="difference > 0" v-for="loan in memberLoans" :key="loan.id" :value="loan.id">
                   {{ loan.loan_type }} - Saldo: $<CopyOnDblClickNumber :value="loan.outstanding_balance" />
                 </option>
+                <option v-if="difference < 0" value="new_action_loan">Crédito de Acción (2% interés)</option>
+                <option v-if="difference < 0" value="new_current_loan">Crédito Corriente (2% interés)</option>
               </select>
             </div>
           </div>
@@ -700,7 +702,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useActiveMeetingStore } from '../stores/activeMeeting'
-import { stocksService, type StockSubscription } from '@/features/stocks/services/stocksService'
+import { stocksService, type StockSubscription, type StockModificationResponse } from '@/features/stocks/services/stocksService'
 import { loansService, type Loan } from '@/features/loans/services/loansService'
 import type { Stock } from '@/features/stocks/types'
 import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
@@ -876,14 +878,22 @@ const difference = computed(() =>
   fromTotalValue.value - toTotalValue.value
 )
 
-const isModificationFormValid = computed(() => 
-  modificationForm.value.fromSubscriptionId && 
-  modificationForm.value.fromQuantity > 0 && 
-  modificationForm.value.toStockId && 
-  modificationForm.value.toQuantity > 0 && 
-  modificationForm.value.differenceHandling &&
-  (modificationForm.value.differenceHandling !== 'credit' || modificationForm.value.targetLoanId)
-)
+const isModificationFormValid = computed(() => {
+  const basicValidation = modificationForm.value.fromSubscriptionId && 
+    modificationForm.value.fromQuantity > 0 && 
+    modificationForm.value.toStockId && 
+    modificationForm.value.toQuantity > 0 && 
+    modificationForm.value.differenceHandling;
+  
+  if (!basicValidation) return false;
+  
+  // Si se seleccionó crédito, debe tener un targetLoanId
+  if (modificationForm.value.differenceHandling === 'credit') {
+    return !!modificationForm.value.targetLoanId;
+  }
+  
+  return true;
+})
 
 const totalTransfers = computed(() => 
   registeredOperations.value.filter(op => op.type === 'TRANSFER').length
@@ -983,9 +993,17 @@ function prepareModificationReceipt() {
   
   if (!fromSub || !toStock) return
   
-  const differenceHandlingLabels = {
-    'cash': difference.value >= 0 ? 'Entregar en efectivo' : 'Pagar en efectivo',
-    'credit': difference.value >= 0 ? 'Abonar a crédito existente' : 'Financiar con crédito'
+  let differenceHandlingLabel = '';
+  if (modificationForm.value.differenceHandling === 'cash') {
+    differenceHandlingLabel = difference.value >= 0 ? 'Entregar en efectivo' : 'Pagar en efectivo';
+  } else if (modificationForm.value.differenceHandling === 'credit') {
+    if (difference.value > 0) {
+      const selectedLoan = memberLoans.value.find(loan => loan.id === modificationForm.value.targetLoanId);
+      differenceHandlingLabel = `Abonar a crédito: ${selectedLoan?.loan_type || 'N/A'}`;
+    } else {
+      const loanType = modificationForm.value.targetLoanId === 'new_action_loan' ? 'Crédito de Acción' : 'Crédito Corriente';
+      differenceHandlingLabel = `Financiar con ${loanType}`;
+    }
   }
   
   modificationReceipt.value = {
@@ -998,7 +1016,7 @@ function prepareModificationReceipt() {
     toUnitValue: toStock.value,
     toValue: toTotalValue.value,
     difference: difference.value,
-    differenceHandling: differenceHandlingLabels[modificationForm.value.differenceHandling as keyof typeof differenceHandlingLabels] || ''
+    differenceHandling: differenceHandlingLabel
   }
   
   showModificationModal.value = false
@@ -1010,7 +1028,7 @@ function cancelModification() {
 }
 
 async function confirmModification() {
-  if (!selectedMember.value) return
+  if (!selectedMember.value || !activeMeetingStore.meetingId) return
   
   const fromSub = selectedFromSubscription.value
   const toStock = selectedToStock.value
@@ -1019,12 +1037,21 @@ async function confirmModification() {
   
   isProcessing.value = true
   try {
-    // Aquí iría la llamada al backend para registrar la modificación
-    await new Promise(resolve => setTimeout(resolve, 1000)) // Simular llamada API
+    const response: StockModificationResponse = await stocksService.processStockExchange({
+      memberId: selectedMember.value.id,
+      meetingId: activeMeetingStore.meetingId,
+      fromSubscriptionId: modificationForm.value.fromSubscriptionId,
+      fromQuantity: modificationForm.value.fromQuantity,
+      toStockId: modificationForm.value.toStockId,
+      toQuantity: modificationForm.value.toQuantity,
+      differenceHandling: modificationForm.value.differenceHandling as 'cash' | 'credit',
+      targetLoanId: modificationForm.value.targetLoanId,
+      notes: `Intercambio ${modificationForm.value.fromQuantity} ${fromSub.stock?.type} → ${modificationForm.value.toQuantity} ${toStock.type}`
+    })
     
     // Crear el registro de la operación
     const operation: RegisteredOperation = {
-      id: `modification-${Date.now()}-${Math.random()}`,
+      id: response.operationId,
       type: 'STOCK_MODIFICATION',
       description: `Modificación ${modificationForm.value.fromQuantity} ${fromSub.stock?.type} → ${modificationForm.value.toQuantity} ${toStock.type}`,
       memberId: selectedMember.value.id,
@@ -1050,9 +1077,10 @@ async function confirmModification() {
     await selectMember(selectedMember.value)
     
     showModificationReceipt.value = false
-    alert('Modificación registrada exitosamente')
+    alert(response.message)
   } catch (err) {
     error.value = 'Error al procesar la modificación'
+    console.error(err)
   } finally {
     isProcessing.value = false
   }
@@ -1095,7 +1123,7 @@ function cancelTransfer() {
 }
 
 async function confirmTransfer() {
-  if (!selectedMember.value) return
+  if (!selectedMember.value || !activeMeetingStore.meetingId) return
   
   const subscription = selectedSubscription.value
   const toMember = members.value.find(m => m.id === transferForm.value.toMemberId)
@@ -1104,12 +1132,18 @@ async function confirmTransfer() {
   
   isProcessing.value = true
   try {
-    // Aquí iría la llamada al backend para registrar la transferencia
-    await new Promise(resolve => setTimeout(resolve, 1000)) // Simular llamada API
+    const response: StockModificationResponse = await stocksService.processStockTransfer({
+      memberId: selectedMember.value.id,
+      meetingId: activeMeetingStore.meetingId,
+      transferSubscriptionId: transferForm.value.subscriptionId,
+      transferQuantity: transferForm.value.quantity,
+      toMemberId: transferForm.value.toMemberId,
+      notes: `Transferencia ${transferForm.value.quantity} ${subscription.stock?.type} a ${toMember.name}`
+    })
     
     // Crear el registro de la operación
     const operation: RegisteredOperation = {
-      id: `transfer-${Date.now()}-${Math.random()}`,
+      id: response.operationId,
       type: 'TRANSFER',
       description: `Transferencia ${transferForm.value.quantity} ${subscription.stock?.type}`,
       memberId: selectedMember.value.id,
@@ -1129,9 +1163,10 @@ async function confirmTransfer() {
     await selectMember(selectedMember.value)
     
     showTransferReceipt.value = false
-    alert('Transferencia registrada exitosamente')
+    alert(response.message)
   } catch (err) {
     error.value = 'Error al procesar la transferencia'
+    console.error(err)
   } finally {
     isProcessing.value = false
   }
@@ -1179,7 +1214,7 @@ function cancelLoanPayment() {
 }
 
 async function confirmLoanPayment() {
-  if (!selectedMember.value) return
+  if (!selectedMember.value || !activeMeetingStore.meetingId) return
   
   const subscription = selectedSubscriptionForLoan.value
   const loan = memberLoans.value.find(l => l.id === loanPaymentForm.value.loanId)
@@ -1188,15 +1223,21 @@ async function confirmLoanPayment() {
   
   isProcessing.value = true
   try {
-    // Aquí iría la llamada al backend para registrar el pago
-    await new Promise(resolve => setTimeout(resolve, 1000)) // Simular llamada API
+    const response: StockModificationResponse = await stocksService.processStockLoanPayment({
+      memberId: selectedMember.value.id,
+      meetingId: activeMeetingStore.meetingId,
+      loanPaymentSubscriptionId: loanPaymentForm.value.subscriptionId,
+      loanPaymentQuantity: loanPaymentForm.value.quantity,
+      loanId: loanPaymentForm.value.loanId,
+      notes: `Pago de crédito ${loan.loan_type} con ${loanPaymentForm.value.quantity} ${subscription.stock?.type}`
+    })
     
     const totalValue = loanPaymentForm.value.quantity * (subscription.stock?.value || 0)
     const newBalance = loan.outstanding_balance - totalValue
     
     // Crear el registro de la operación
     const operation: RegisteredOperation = {
-      id: `loan-payment-${Date.now()}-${Math.random()}`,
+      id: response.operationId,
       type: 'LOAN_PAYMENT',
       description: `Pago ${loanPaymentForm.value.quantity} ${subscription.stock?.type} a ${loan.loan_type}`,
       memberId: selectedMember.value.id,
@@ -1218,9 +1259,10 @@ async function confirmLoanPayment() {
     await selectMember(selectedMember.value)
     
     showLoanPaymentReceipt.value = false
-    alert('Pago registrado exitosamente')
+    alert(response.message)
   } catch (err) {
     error.value = 'Error al procesar el pago'
+    console.error(err)
   } finally {
     isProcessing.value = false
   }

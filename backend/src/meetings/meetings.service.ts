@@ -229,8 +229,62 @@ export class MeetingsService {
       throw new BadRequestException('This meeting is already closed.');
     }
 
-    meeting.status = 'closed';
-    return this.meetingRepository.save(meeting);
+    // Ejecutar en una transacción para asegurar consistencia
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 1. Marcar como 'paid' todos los pagos pendientes de esta reunión
+              const pendingPayments = await queryRunner.manager
+          .getRepository(PendingMemberPayment)
+          .find({
+            where: {
+              meeting_id: id,
+              status: 'pending',
+            },
+          });
+
+      if (pendingPayments.length > 0) {
+        this.logger.log(
+          `Marcando ${pendingPayments.length} pagos pendientes como 'paid' para la reunión ${id}`,
+        );
+
+        await queryRunner.manager.update(
+          PendingMemberPayment,
+          {
+            meeting_id: id,
+            status: 'pending',
+          },
+          { status: 'paid' },
+        );
+
+        // Log de los pagos actualizados
+        for (const payment of pendingPayments) {
+          this.logger.log(
+            `Pago actualizado: ${payment.type} - $${payment.amount} (ID: ${payment.id})`,
+          );
+        }
+      }
+
+      // 2. Cerrar la reunión
+      meeting.status = 'closed';
+      await queryRunner.manager.save(meeting);
+
+      await queryRunner.commitTransaction();
+
+      this.logger.log(
+        `Reunión ${id} cerrada exitosamente con ${pendingPayments.length} pagos actualizados`,
+      );
+
+      return meeting;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.logger.error(`Error al cerrar la reunión ${id}:`, error);
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async buyStocksForMember(meetingId: string, dto: BuyStockForMemberDto) {
@@ -333,7 +387,7 @@ export class MeetingsService {
             stockWithdrawalQuantity: undefined,
           }
         : undefined;
-      
+
       // Mapear PendingPaymentType a DisbursementType
       let disbursementType: DisbursementType;
       switch (p.type) {
@@ -352,7 +406,7 @@ export class MeetingsService {
         default:
           disbursementType = DisbursementType.OTHER;
       }
-      
+
       return {
         memberId: p.member_id,
         type: disbursementType,

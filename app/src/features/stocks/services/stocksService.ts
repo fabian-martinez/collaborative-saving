@@ -24,6 +24,31 @@ export interface StockSubscription {
   stock?: Stock;
 }
 
+export interface StockModificationRequest {
+  memberId: string;
+  meetingId: string;
+  modificationType: 'STOCK_MODIFICATION' | 'STOCK_TRANSFER' | 'STOCK_LOAN_PAYMENT';
+  fromSubscriptionId?: string;
+  fromQuantity?: number;
+  toStockId?: string;
+  toQuantity?: number;
+  transferSubscriptionId?: string;
+  transferQuantity?: number;
+  toMemberId?: string;
+  loanPaymentSubscriptionId?: string;
+  loanPaymentQuantity?: number;
+  loanId?: string;
+  differenceHandling?: 'cash' | 'credit';
+  targetLoanId?: string;
+  notes?: string;
+}
+
+export interface StockModificationResponse {
+  operationId: string;
+  message: string;
+  details: any;
+}
+
 export const stocksService = {
   getStocks: async (): Promise<Stock[]> => {
     const stocks = await api.get<Stock[]>('/stocks');
@@ -51,5 +76,73 @@ export const stocksService = {
       quantity: Number(sub.quantity),
       stock: sub.stock ? transformStock(sub.stock) : undefined
     }));
-  }
+  },
+
+  processStockModification: async (request: StockModificationRequest): Promise<StockModificationResponse> => {
+    return api.post<StockModificationResponse>('/stocks/modify', request);
+  },
+
+  // Helper methods for specific scenarios
+  processStockExchange: async (params: {
+    memberId: string;
+    meetingId: string;
+    fromSubscriptionId: string;
+    fromQuantity: number;
+    toStockId: string;
+    toQuantity: number;
+    differenceHandling?: 'cash' | 'credit';
+    targetLoanId?: string;
+    notes?: string;
+  }): Promise<StockModificationResponse> => {
+    return stocksService.processStockModification({
+      memberId: params.memberId,
+      meetingId: params.meetingId,
+      modificationType: 'STOCK_MODIFICATION',
+      fromSubscriptionId: params.fromSubscriptionId,
+      fromQuantity: params.fromQuantity,
+      toStockId: params.toStockId,
+      toQuantity: params.toQuantity,
+      differenceHandling: params.differenceHandling,
+      targetLoanId: params.targetLoanId,
+      notes: params.notes,
+    });
+  },
+
+  processStockTransfer: async (params: {
+    memberId: string;
+    meetingId: string;
+    transferSubscriptionId: string;
+    transferQuantity: number;
+    toMemberId: string;
+    notes?: string;
+  }): Promise<StockModificationResponse> => {
+    return stocksService.processStockModification({
+      memberId: params.memberId,
+      meetingId: params.meetingId,
+      modificationType: 'STOCK_TRANSFER',
+      transferSubscriptionId: params.transferSubscriptionId,
+      transferQuantity: params.transferQuantity,
+      toMemberId: params.toMemberId,
+      notes: params.notes,
+    });
+  },
+
+  processStockLoanPayment: async (params: {
+    memberId: string;
+    meetingId: string;
+    loanPaymentSubscriptionId: string;
+    loanPaymentQuantity: number;
+    loanId: string;
+    notes?: string;
+  }): Promise<StockModificationResponse> => {
+    return stocksService.processStockModification({
+      memberId: params.memberId,
+      meetingId: params.meetingId,
+      modificationType: 'STOCK_LOAN_PAYMENT',
+      loanPaymentSubscriptionId: params.loanPaymentSubscriptionId,
+      loanPaymentQuantity: params.loanPaymentQuantity,
+      loanId: params.loanId,
+      notes: params.notes,
+    });
+  },
 }; 

@@ -101,6 +101,7 @@ export class AssetRevaluationService {
 
     const ledgerEntries = await this.dataSource.manager.find(LedgerEntry, {
       where: { operation: { meeting_id: meetingId } },
+      relations: ['operation'],
     });
 
     const totalInterest = ledgerEntries
@@ -108,7 +109,11 @@ export class AssetRevaluationService {
       .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
 
     const totalStockContributions = ledgerEntries
-      .filter((e) => e.account_type === STOCK_CAPITAL_ACCOUNT)
+      .filter(
+        (e) =>
+          e.account_type === STOCK_CAPITAL_ACCOUNT &&
+          e.operation?.type === OperationType.MONTHLY_PAYMENT,
+      )
       .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
 
     const totalMandatoryContributions = ledgerEntries
@@ -175,9 +180,15 @@ export class AssetRevaluationService {
 
     // Paso 3: Calcular detalles por stock
     // Calcular crecimiento por aportes exacto por acción
+    // SOLO incluir aportes mensuales (MONTHLY_PAYMENT), NO compras de acciones ni ajustes extraordinarios
     const contributionsByStock: Record<string, number> = {};
     ledgerEntries
-      .filter((e) => e.account_type === STOCK_CAPITAL_ACCOUNT && e.stock_id)
+      .filter(
+        (e) =>
+          e.account_type === STOCK_CAPITAL_ACCOUNT &&
+          e.stock_id &&
+          e.operation?.type === OperationType.MONTHLY_PAYMENT,
+      )
       .forEach((e) => {
         const stockId = e.stock_id as string;
         if (!contributionsByStock[stockId]) contributionsByStock[stockId] = 0;
@@ -318,12 +329,17 @@ export class AssetRevaluationService {
       LedgerEntry,
       {
         where: { operation: { meeting_id: meetingId } },
+        relations: ['operation'],
       },
     );
 
     // Calcular totales desde los asientos contables
     const totalContributions = meetingLedgerEntries
-      .filter((e) => e.account_type === STOCK_CAPITAL_ACCOUNT)
+      .filter(
+        (e) =>
+          e.account_type === STOCK_CAPITAL_ACCOUNT &&
+          e.operation?.type === OperationType.MONTHLY_PAYMENT,
+      )
       .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
 
     const totalInterest = meetingLedgerEntries
