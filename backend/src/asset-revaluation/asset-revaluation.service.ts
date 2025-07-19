@@ -34,6 +34,8 @@ import { GuaranteedGrowthHandler } from './strategies/guaranteed-growth.handler'
 import { ProportionalGrowthHandler } from './strategies/proportional-growth.handler';
 import { DistributionContext } from './strategies/distribution-chain';
 import { DividendYieldStockGrowthHandler } from './strategies/dividend-yield-stock-growth.handler';
+import { runDistributionChain } from './strategies/distribution-orchestrator';
+
 @Injectable()
 export class AssetRevaluationService {
   private readonly logger = new Logger(AssetRevaluationService.name);
@@ -42,8 +44,52 @@ export class AssetRevaluationService {
     private readonly dataSource: DataSource,
     @InjectRepository(Meeting)
     private readonly meetingRepository: Repository<Meeting>,
-    // private readonly growthStrategyFactory: GrowthStrategyFactory,
   ) {}
+
+  private async _validateRevaluationContext(
+    meetingId: string,
+    totalInterest: number,
+    stocks: Stock[],
+    subscriptions: StockSubscription[],
+  ): Promise<void> {
+    // Validar que la reunión existe
+    const meeting = await this.meetingRepository.findOneBy({ id: meetingId });
+    if (!meeting) {
+      throw new NotFoundException(`Meeting with ID ${meetingId} not found.`);
+    }
+
+    // Validar que hay acciones disponibles
+    if (stocks.length === 0) {
+      throw new BadRequestException('No stocks available for revaluation.');
+    }
+
+    // Validar que hay suscripciones activas
+    const activeSubscriptions = subscriptions.filter(
+      (sub) => sub.status === 'active',
+    );
+    if (activeSubscriptions.length === 0) {
+      throw new BadRequestException('No active stock subscriptions found.');
+    }
+
+    // Validar que los intereses no son negativos
+    if (totalInterest < 0) {
+      throw new BadRequestException('Total interest cannot be negative.');
+    }
+
+    // Validar acciones garantizadas
+    const guaranteedStocks = stocks.filter((s) => s.is_guaranteed);
+    for (const stock of guaranteedStocks) {
+      if (!stock.guaranteed_yield || stock.guaranteed_yield <= 0) {
+        throw new BadRequestException(
+          `Guaranteed stock ${stock.type} must have a positive guaranteed yield.`,
+        );
+      }
+    }
+
+    this.logger.log(
+      `Revaluation context validated for meeting ${meetingId}: ${stocks.length} stocks, ${activeSubscriptions.length} active subscriptions, ${totalInterest} total interest`,
+    );
+  }
 
   private async _calculateRevaluationData(
     meetingId: string,
@@ -71,6 +117,15 @@ export class AssetRevaluationService {
 
     const stocks = await this.dataSource.manager.find(Stock);
     const subscriptions = await this.dataSource.manager.find(StockSubscription);
+
+    // Validar contexto antes de proceder
+    await this._validateRevaluationContext(
+      meetingId,
+      totalInterest,
+      stocks,
+      subscriptions,
+    );
+
     // Paso 1: Construir el contexto para la cadena
     const interestAvailableForDistribution = totalInterest;
     const guaranteedStocks = stocks.filter((s) => s.is_guaranteed);
@@ -84,6 +139,7 @@ export class AssetRevaluationService {
         Number(stock.value) * Number(stock.guaranteed_yield);
       totalRequiredGuaranteedGrowth += requiredGrowthPerShare * totalShares;
     }
+
     const context: DistributionContext = {
       totalInterest,
       totalStockContributions,
@@ -93,39 +149,31 @@ export class AssetRevaluationService {
       subscriptions,
       ledgerEntries,
     };
-    // Paso 2: Ejecutar la cadena de distribución en dos fases
-    // Fase 1: Garantizados
-    const guaranteedHandler = new GuaranteedGrowthHandler();
-    const guaranteedResult = guaranteedHandler.handle(totalInterest, context, {
-      assigned: {},
-      remaining: totalInterest,
-    });
-    // Remanente de intereses para dividendos y proporcionales
-    const interestRemainder = guaranteedResult.remaining;
-    // Fase 2: Dividendos y Proporcional
-    const dividendHandler = new DividendYieldStockGrowthHandler();
-    const proportionalHandler = new ProportionalGrowthHandler();
-    // El remanente va a proporcionales
-    const proportionalResult = proportionalHandler.handle(
-      interestRemainder,
-      context,
-      { assigned: {}, remaining: interestRemainder },
+
+    // Paso 2: Ejecutar la cadena de distribución con el orden correcto
+    // Orden de prioridad: 1. Garantizados, 2. Dividendos, 3. Proporcionales
+    const handlers = [
+      new GuaranteedGrowthHandler(),
+      new DividendYieldStockGrowthHandler(),
+      new ProportionalGrowthHandler(),
+    ];
+
+    this.logger.log(
+      `Executing distribution chain for meeting ${meetingId} with ${totalInterest} total interest`,
     );
-    // Unir los resultados de asignación de intereses
-    // Ejecutar dividendos primero
-    const dividendResult = dividendHandler.handle(
-      proportionalResult.remaining,
+
+    const distributionResult = runDistributionChain(
+      handlers,
+      totalInterest,
       context,
-      {
-        assigned: {},
-        remaining: proportionalResult.remaining,
-      },
     );
-    const assignedInterest: Record<string, number> = {
-      ...proportionalResult.updatedResult.assigned,
-      ...guaranteedResult.updatedResult.assigned,
-      ...dividendResult.updatedResult.assigned,
-    };
+
+    const assignedInterest = distributionResult.assigned;
+
+    this.logger.log(
+      `Distribution completed. Assigned: ${Object.keys(assignedInterest).length} stocks, Remaining: ${distributionResult.remaining}`,
+    );
+
     // Paso 3: Calcular detalles por stock
     // Calcular crecimiento por aportes exacto por acción
     const contributionsByStock: Record<string, number> = {};
@@ -136,16 +184,19 @@ export class AssetRevaluationService {
         if (!contributionsByStock[stockId]) contributionsByStock[stockId] = 0;
         contributionsByStock[stockId] += Math.abs(Number(e.amount));
       });
+
     // Proporción de intereses para la cadena
     const details: RevaluationDetailDto[] = stocks.map((stock) => {
       const totalShares = subscriptions
         .filter((sub) => sub.stock_id === stock.id)
         .reduce((sum, sub) => sum + Number(sub.quantity), 0);
+
       // Crecimiento por aportes: total aportado a la acción dividido entre acciones
       const growthFromContributions =
         totalShares > 0
           ? (contributionsByStock[stock.id] || 0) / totalShares
           : 0;
+
       // Si es DIVIDEND_YIELD, el asignado va a dividends_generated, no a growth_from_interest
       const isDividendYield = stock.behavior === StockBehavior.DIVIDEND_YIELD;
       const assigned = assignedInterest[stock.id] || 0;
@@ -155,6 +206,7 @@ export class AssetRevaluationService {
           ? assigned / totalShares
           : 0;
       const dividendsGenerated = isDividendYield ? assigned / totalShares : 0;
+
       return {
         stock_id: stock.id,
         type: stock.type,
@@ -170,7 +222,8 @@ export class AssetRevaluationService {
         dividends_generated: dividendsGenerated,
       };
     });
-    // Paso 4: Agrupar aportes obligatorios por tipo (igual que antes)
+
+    // Paso 4: Agrupar aportes obligatorios por tipo
     const mandatoryContributionMap: Record<
       string,
       { total: number; mandatory_contribution_id: string }
@@ -195,6 +248,7 @@ export class AssetRevaluationService {
     const mandatoryContributionsByType = Object.values(
       mandatoryContributionMap,
     );
+
     return {
       total_contributions: totalStockContributions,
       total_interest: totalInterest,

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import pandas as pd
 import uuid
 
@@ -82,14 +83,25 @@ meeting_sql = [
 
 # Crear préstamos por socio y operaciones/asientos
 
-def crear_prestamo_sql(member_id, loan_type, cuota_col, interes_col, tasa, member_name):
+def crear_prestamo_sql(row, member_id, loan_type, cuota_col, interes_col, tasa, member_name):
     cuota = row.get(cuota_col, 0)
     interes = row.get(interes_col, 0)
-    if pd.isna(cuota) or float(cuota) == 0 or pd.isna(interes) or float(interes) == 0:
+    
+    # Si no hay interés, no crear préstamo
+    if pd.isna(interes) or float(interes) == 0:
         return None, None, None, None
-    cuota = float(cuota)
+    
     interes = float(interes)
-    saldo = interes / tasa
+    
+    # Si hay interés pero no hay cuota (abono a capital), crear préstamo solo con interés
+    if pd.isna(cuota) or float(cuota) == 0:
+        # El socio solo está pagando interés, crear préstamo con saldo = interés / tasa
+        saldo = interes / tasa
+        cuota = interes  # La cuota será igual al interés
+    else:
+        # Hay tanto cuota como interés, calcular normalmente
+        cuota = float(cuota)
+        saldo = interes / tasa
     prestamo_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{member_id}-{loan_type}"))
     loan_sql = f"insert into public.loans (id, member_id, loan_type, approved_amount, disbursed_amount, outstanding_balance, monthly_payment_amount, interest_rate, status) values ('{prestamo_id}', '{member_id}', '{loan_type}', {saldo:.2f}, {saldo:.2f}, {saldo:.2f}, {cuota:.2f}, {tasa:.4f}, 'active');"
     # Operación de desembolso (sin amount)
@@ -164,7 +176,7 @@ for idx, row in tabla1.iterrows():
         continue
     member_id = member_ids[name]
     # Corriente
-    loan, op, ledger, subs_mod = crear_prestamo_sql(member_id, 'corriente', 'Cuota Corriente', 'Interes Corriente', 0.015, name)
+    loan, op, ledger, subs_mod = crear_prestamo_sql(row, member_id, 'corriente', 'Cuota Corriente', 'Interes Corriente', 0.015, name)
     if loan:
         loans_sql.append(loan)
         operations_sql.append(op)
@@ -172,7 +184,7 @@ for idx, row in tabla1.iterrows():
         if subs_mod:
             subs_mod_sql.extend(subs_mod)
     # Agil
-    loan, op, ledger, subs_mod = crear_prestamo_sql(member_id, 'agil', 'Cuota Agil', 'Interez Agil', 0.02, name)
+    loan, op, ledger, subs_mod = crear_prestamo_sql(row, member_id, 'agil', 'Cuota Agil', 'Interez Agil', 0.02, name)
     if loan:
         loans_sql.append(loan)
         operations_sql.append(op)
@@ -181,7 +193,7 @@ for idx, row in tabla1.iterrows():
             subs_mod_sql.extend(subs_mod)
     # Prioritario
     if 'Cuota Prioritario' in row and 'Interes Prioritario' in row:
-        loan, op, ledger, subs_mod = crear_prestamo_sql(member_id, 'prioritario', 'Cuota Prioritario', 'Interes Prioritario', 0.02, name)
+        loan, op, ledger, subs_mod = crear_prestamo_sql(row, member_id, 'prioritario', 'Cuota Prioritario', 'Interes Prioritario', 0.02, name)
         if loan:
             loans_sql.append(loan)
             operations_sql.append(op)
@@ -189,7 +201,7 @@ for idx, row in tabla1.iterrows():
             if subs_mod:
                 subs_mod_sql.extend(subs_mod)
     # Accion
-    loan, op, ledger, subs_mod = crear_prestamo_sql(member_id, 'accion', 'Abono Accion', 'Interes Accion', 0.015, name)
+    loan, op, ledger, subs_mod = crear_prestamo_sql(row, member_id, 'accion', 'Abono Accion', 'Interes Accion', 0.015, name)
     if loan:
         loans_sql.append(loan)
         operations_sql.append(op)

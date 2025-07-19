@@ -78,6 +78,7 @@ const initialStockState: Omit<Stock, 'id'> = {
   type: '',
   value: 0,
   monthly_contribution: 0,
+  behavior: 'CAPITAL_APPRECIATION'
 };
 
 const editableStock = ref({ ...initialStockState });
