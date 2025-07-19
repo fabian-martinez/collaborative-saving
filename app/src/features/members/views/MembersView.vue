@@ -76,7 +76,7 @@
               <td>
                 <span class="flex items-center gap-1">
                   <Calendar class="w-4 h-4 text-blue-400" />
-                  <span>{{ formatDate(member.createdAt) }}</span>
+                  <span>{{ formatDate(member.createdAt || '') }}</span>
                 </span>
               </td>
               <td class="flex items-center justify-center gap-2">
