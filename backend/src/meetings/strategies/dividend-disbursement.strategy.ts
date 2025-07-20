@@ -5,6 +5,10 @@ import { Operation } from '../../operations/entities/operation.entity';
 import { LedgerEntry } from '../../ledger-entries/entities/ledger-entry.entity';
 import { OperationType } from '../../common/enums/operation-type.enum';
 import { PendingMemberPayment } from '../entities/pending-member-payment.entity';
+import {
+  CASH_ACCOUNT,
+  DIVIDEND_EXPENSE_ACCOUNT,
+} from '../../common/constants/account-types';
 
 @Injectable()
 export class DividendDisbursementStrategy implements DisbursementStrategy {
@@ -57,13 +61,13 @@ export class DividendDisbursementStrategy implements DisbursementStrategy {
     const ledgerEntries: LedgerEntry[] = [
       queryRunner.manager.create(LedgerEntry, {
         operation_id: operation.id,
-        account_type: 'CASH_ACCOUNT',
+        account_type: CASH_ACCOUNT,
         amount: -item.amount,
         description,
       }),
       queryRunner.manager.create(LedgerEntry, {
         operation_id: operation.id,
-        account_type: 'DIVIDEND_EXPENSE_ACCOUNT',
+        account_type: DIVIDEND_EXPENSE_ACCOUNT,
         amount: item.amount,
         description,
       }),

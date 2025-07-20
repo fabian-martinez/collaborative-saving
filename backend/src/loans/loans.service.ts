@@ -524,6 +524,9 @@ export class LoansService {
       availableCapital: number;
       description: string;
     };
+    // TEMPORALMENTE DESHABILITADO: Validación de tope de endeudamiento
+    // TODO: Reimplementar cuando se mejore la lógica
+    /*
     if (
       normalCapacity.maxAmount !== null &&
       createLoanDto.approved_amount > normalCapacity.maxAmount
@@ -532,6 +535,7 @@ export class LoansService {
         `El monto solicitado (${createLoanDto.approved_amount}) excede el máximo permitido (${normalCapacity.maxAmount}).`,
       );
     }
+    */
     return this.createLoanBase(
       createLoanDto,
       queryRunner,
@@ -572,11 +576,15 @@ export class LoansService {
       0,
     );
     const totalAgilCapital = agilStockValue * agilStockTotalQuantity;
+    // TEMPORALMENTE DESHABILITADO: Validación de tope de endeudamiento para préstamos ágiles
+    // TODO: Reimplementar cuando se mejore la lógica
+    /*
     if (createLoanDto.approved_amount > totalAgilCapital) {
       throw new BadRequestException(
         `El monto solicitado (${createLoanDto.approved_amount}) excede el máximo permitido por sus acciones ágiles (${totalAgilCapital}).`,
       );
     }
+    */
     return this.createLoanBase(
       createLoanDto,
       queryRunner,

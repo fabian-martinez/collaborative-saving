@@ -4,6 +4,10 @@ import { DisbursementPlanItemDto } from '../dto/disbursement-plan.dto';
 import { Operation } from '../../operations/entities/operation.entity';
 import { LedgerEntry } from '../../ledger-entries/entities/ledger-entry.entity';
 import { OperationType } from '../../common/enums/operation-type.enum';
+import {
+  CASH_ACCOUNT,
+  OTHER_EXPENSES_ACCOUNT,
+} from '../../common/constants/account-types';
 
 @Injectable()
 export class OtherDisbursementStrategy implements DisbursementStrategy {
@@ -34,13 +38,13 @@ export class OtherDisbursementStrategy implements DisbursementStrategy {
     const ledgerEntries: LedgerEntry[] = [
       queryRunner.manager.create(LedgerEntry, {
         operation_id: operation.id,
-        account_type: 'CASH_ACCOUNT',
+        account_type: CASH_ACCOUNT,
         amount: -item.amount,
         description,
       }),
       queryRunner.manager.create(LedgerEntry, {
         operation_id: operation.id,
-        account_type: 'OTHER_EXPENSES_ACCOUNT',
+        account_type: OTHER_EXPENSES_ACCOUNT,
         amount: item.amount,
         description,
       }),
