@@ -25,6 +25,11 @@ export const MANDATORY_CONTRIBUTION_INCOME_ACCOUNT =
   'MANDATORY_CONTRIBUTION_INCOME'; // Ingresos por las cuotas obligatorias de los socios.
 export const INSURANCE_INCOME_ACCOUNT = 'INSURANCE_INCOME'; // Ingresos por el seguro de deuda.
 
+// --- GASTOS ---
+// Representan los gastos del fondo.
+export const DIVIDEND_EXPENSE_ACCOUNT = 'DIVIDEND_EXPENSE'; // Gastos por pago de dividendos a los socios.
+export const OTHER_EXPENSES_ACCOUNT = 'OTHER_EXPENSES'; // Otros gastos del fondo.
+
 // Cuenta temporal para transacciones no clasificadas durante el desarrollo
 export const PENDING_CLASSIFICATION_ACCOUNT = 'PENDING_CLASSIFICATION';
 

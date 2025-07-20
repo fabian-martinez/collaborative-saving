@@ -137,10 +137,14 @@ function onSubmit() {
     formError.value = 'El valor entregado no puede superar el valor aprobado.'
     return
   }
+  // TEMPORALMENTE DESHABILITADO: Validación de tope de endeudamiento en frontend
+  // TODO: Reimplementar cuando se mejore la lógica
+  /*
   if (form.value.approved > maxCapacity.value && form.value.type === 'corriente') {
     formError.value = 'El valor aprobado supera la capacidad máxima de endeudamiento.'
     return
   }
+  */
   emit('save', { ...form.value })
 }
 </script> 

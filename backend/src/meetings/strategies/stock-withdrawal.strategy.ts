@@ -5,6 +5,10 @@ import { LedgerEntry } from '../../ledger-entries/entities/ledger-entry.entity';
 import { StocksService } from '../../stocks/stocks.service';
 import { DisbursementPlanItemDto } from '../dto/disbursement-plan.dto';
 import { OperationType } from '../../common/enums/operation-type.enum';
+import {
+  CASH_ACCOUNT,
+  STOCK_CAPITAL_ACCOUNT,
+} from '../../common/constants/account-types';
 
 @Injectable()
 export class StockWithdrawalStrategy implements DisbursementStrategy {
@@ -76,13 +80,13 @@ export class StockWithdrawalStrategy implements DisbursementStrategy {
       queryRunner.manager.create(LedgerEntry, {
         operation_id: operation.id,
         stock_id: item.disbursementStockRequest?.stockId,
-        account_type: 'STOCK_CAPITAL_ACCOUNT',
+        account_type: STOCK_CAPITAL_ACCOUNT,
         amount: item.amount,
         description: 'Retiro de acciones',
       }),
       queryRunner.manager.create(LedgerEntry, {
         operation_id: operation.id,
-        account_type: 'CASH_ACCOUNT',
+        account_type: CASH_ACCOUNT,
         amount: -item.amount,
         description: 'Entrega de efectivo por retiro de acciones',
       }),
