@@ -72,7 +72,17 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
 -   **Backend**:
     -   [x] Configurar proyecto base de NestJS.
 
-### Módulo 2: Gestión de Socios (Completado)
+### Módulo 1.5: Dashboard (Completado Parcial)
+
+-   **Frontend**:
+    -   [x] `DashboardView.vue`: Interfaz implementada con componentes visuales.
+    -   [ ] **Implementar Lógica de Negocio**:
+        -   [ ] Cálculo en tiempo real de métricas del fondo
+        -   [ ] Integración con datos de reuniones activas
+        -   [ ] Alertas y notificaciones automáticas
+        -   [ ] Resúmenes ejecutivos personalizables
+
+### Módulo 2: Gestión de Socios (Completado Parcial)
 
 -   **Frontend**:
     -   [x] `MembersView.vue`: Desarrollar tabla de socios con búsqueda y filtros.
@@ -80,17 +90,27 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
         -   Estado de Cuenta.
         -   Acciones del socio.
         -   Historial de préstamos.
+    -   [ ] **Implementar Lógica de Negocio**:
+        -   [ ] Cálculo automático de saldos y estados de cuenta
+        -   [ ] Historial completo de transacciones por socio
+        -   [ ] Resumen de participación en el fondo
+        -   [ ] Indicadores de salud financiera del socio
 -   **Backend**:
     -   [x] Implementar CRUD completo para la entidad `Member`.
 -   **Testing**:
     -   [ ] **Backend**: Añadir pruebas unitarias y de integración para `MembersService`.
     -   [ ] **Frontend**: Añadir pruebas de componentes para las vistas de socios.
 
-### Módulo 3: Gestión de Acciones (Completado)
+### Módulo 3: Gestión de Acciones (Completado Parcial)
 
 -   **Frontend**:
     -   [x] `StocksSummaryView.vue`: Crear vista con el resumen del valor actual de cada tipo de acción, un gráfico de distribución y el historial de cambios de valor.
     -   [x] `StockDetailView.vue`: Mostrar los detalles de una acción específica.
+    -   [ ] **Implementar Lógica de Negocio**:
+        -   [ ] Cálculo automático de valor total por socio
+        -   [ ] Historial de transacciones de compra/venta
+        -   [ ] Gráficos de evolución del valor individual
+        -   [ ] Comparación con promedios del fondo
 -   **Backend**:
     -   [x] Implementar CRUD para `Stock` y `StockSubscription`.
     -   [x] Crear endpoints para obtener el historial de valor (`stock_value_history`).
@@ -220,6 +240,60 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
 
 **Estado Actual**: La implementación de los endpoints de desembolso está **incompleta** y presenta varios problemas críticos que deben resolverse.
 
+#### 4.7. Vista de Reunión Cerrada (Nuevo)
+
+**Objetivo**: Permitir la revisión completa de una reunión cerrada con todos sus detalles y resultados.
+
+**Frontend**:
+- [ ] `MeetingClosedView.vue`: Crear vista detallada para reuniones cerradas que incluya:
+  - [ ] **Sección 1: Resumen General de la Reunión**:
+    - [ ] Fecha, duración y participantes
+    - [ ] Totales consolidados: recaudo total, intereses generados, dinero desembolsado
+    - [ ] Estado final del efectivo disponible
+  - [ ] **Sección 2: Aportes por Socio**:
+    - [ ] Tabla con contribuciones obligatorias pagadas por cada socio
+    - [ ] Pagos de multas, seguros y abonos a préstamos
+    - [ ] Total individual por socio
+  - [ ] **Sección 3: Cambios en Valores de Acciones**:
+    - [ ] Historial de revalorización mostrando valores antes y después
+    - [ ] Dividendos generados por tipo de acción
+    - [ ] Gráfico de evolución de valores
+  - [ ] **Sección 4: Operaciones de Acciones**:
+    - [ ] Compras de acciones realizadas (efectivo y crédito)
+    - [ ] Modificaciones e intercambios entre socios
+    - [ ] Retiros de acciones solicitados
+  - [ ] **Sección 5: Desembolsos Realizados**:
+    - [ ] Préstamos nuevos creados y entregados
+    - [ ] Completación de desembolsos pendientes
+    - [ ] Entrega de dividendos y retiros de acciones
+    - [ ] Resumen por tipo de desembolso
+  - [ ] **Sección 6: Asientos Contables**:
+    - [ ] Lista de todos los asientos generados durante la reunión
+    - [ ] Filtros por tipo de operación y socio afectado
+- [ ] **Funcionalidades Adicionales**:
+  - [ ] Botón para exportar resumen de la reunión en PDF
+  - [ ] Botón para generar acta de la reunión
+  - [ ] Enlaces a vistas detalladas de socios, préstamos y acciones afectados
+
+**Backend**:
+- [ ] **Nuevos Endpoints**:
+  - [ ] `GET /meetings/:id/summary`: Obtener resumen consolidado de la reunión
+  - [ ] `GET /meetings/:id/contributions`: Obtener aportes detallados por socio
+  - [ ] `GET /meetings/:id/stock-operations`: Obtener operaciones de acciones realizadas
+  - [ ] `GET /meetings/:id/disbursements`: Obtener desembolsos realizados
+  - [ ] `GET /meetings/:id/ledger-entries`: Obtener asientos contables de la reunión
+- [ ] **Servicios de Resumen**:
+  - [ ] Crear `MeetingSummaryService` para consolidar datos de la reunión
+  - [ ] Implementar cálculos de totales y subtotales por categoría
+  - [ ] Generar reportes estructurados para exportación
+
+**Testing**:
+- [ ] **Backend**: Probar la generación de resúmenes para reuniones con diferentes tipos de operaciones
+- [ ] **Backend**: Probar exportación de PDFs y reportes
+- [ ] **Frontend**: Probar la visualización de todos los datos en las diferentes secciones
+- [ ] **Integración**: Verificar que los totales coincidan entre frontend y backend
+- [ ] **End-to-End**: Probar flujo completo desde reunión activa hasta vista de reunión cerrada
+
 **Decisión Arquitectónica**: Se ha adoptado la **Opción A** - crear préstamos directamente durante el proceso de desembolso en lugar de pre-crearlos en steps anteriores.
 
 **Problemas Identificados en la Implementación Actual**:
@@ -308,43 +382,147 @@ La estructura de rutas se mantiene según lo planeado originalmente para organiz
   - `'desembolso'`: Cuando se entrega dinero al socio
   - `'abono_capital'`: Cuando el socio paga capital
   - `'pago_interes'`: Cuando el socio paga intereses
+- [ ] **Nuevo**: Implementar generación de PDFs:
+  - [ ] Integrar librería de generación de PDFs (ej. Puppeteer, jsPDF)
+  - [ ] Crear templates para tabla de amortización
+  - [ ] Crear templates para historial de pagos
+  - [ ] Endpoints para generar y descargar PDFs
+- [ ] **Nuevo**: Implementar cálculos de amortización:
+  - [ ] Algoritmo de amortización francesa (cuota fija)
+  - [ ] Cálculo de intereses sobre saldo pendiente
+  - [ ] Generación de tabla completa de cuotas
 
 **Frontend**:
-- [ ] `LoansListView.vue`: Crear vista para listar todos los préstamos con filtros por estado y socio.
-- [ ] `LoanDetailView.vue`: Vista para ver el detalle de un préstamo, su tabla de amortización y el historial de pagos.
-- [ ] Actualizar vistas para mostrar el estado de desembolso
-- [ ] Mostrar diferencia entre monto aprobado y desembolsado
-- [ ] Agregar indicadores visuales para préstamos con desembolso pendiente
+- [ ] `LoansListView.vue`: Crear vista para listar todos los préstamos con filtros avanzados:
+  - [ ] Filtros por socio, tipo de préstamo (corriente, ágil) y estado
+  - [ ] Filtros por rango de fechas de aprobación y monto
+  - [ ] Búsqueda por texto en descripción o número de préstamo
+  - [ ] Tabla con paginación y ordenamiento por columnas
+  - [ ] Indicadores visuales para préstamos con desembolso pendiente
+  - [ ] Mostrar diferencia entre monto aprobado y desembolsado
+- [ ] `LoanDetailView.vue`: Vista detallada del préstamo con pestañas:
+  - [ ] **Pestaña 1: Información General**:
+    - [ ] Datos del préstamo, socio y términos
+    - [ ] Estado de desembolso y pagos
+    - [ ] Resumen de saldos pendientes
+  - [ ] **Pestaña 2: Tabla de Amortización**:
+    - [ ] Proyección completa de pagos mensuales
+    - [ ] Desglose de capital e intereses por cuota
+    - [ ] Fechas de vencimiento y montos
+  - [ ] **Pestaña 3: Historial de Transacciones**:
+    - [ ] Lista cronológica de todos los pagos realizados
+    - [ ] Detalle de cada transacción (fecha, monto, tipo)
+    - [ ] Filtros por tipo de transacción y rango de fechas
+  - [ ] **Pestaña 4: Documentos**:
+    - [ ] Botón para generar PDF de amortización
+    - [ ] Botón para generar PDF del historial de pagos
+    - [ ] Descarga de documentos en diferentes formatos
+- [ ] **Funcionalidades de Exportación**:
+  - [ ] Generar PDF con tabla de amortización completa
+  - [ ] Generar PDF con historial de pagos detallado
+  - [ ] Exportar datos en formato Excel/CSV
+  - [ ] Incluir gráficos de evolución del saldo pendiente
 
 **Testing**:
 - [ ] **Backend**: Probar la separación entre aprobación y desembolso
 - [ ] **Backend**: Probar el cálculo correcto de `outstanding_balance` con `disbursed_amount`
-- [ ] **Backend**: Añadir pruebas unitarias para `LoansService`.
-- [ ] **Frontend**: Añadir pruebas para las vistas de lista y detalle de préstamos.
+- [ ] **Backend**: Añadir pruebas unitarias para `LoansService`
+- [ ] **Backend**: Probar generación de PDFs y cálculos de amortización
+- [ ] **Frontend**: Añadir pruebas para las vistas de lista y detalle de préstamos
+- [ ] **Frontend**: Probar funcionalidades de exportación y generación de documentos
 
 ### Módulo 6: Libro Contable (Pendiente)
 
 -   **Frontend**:
-    -   [ ] `LedgerView.vue`: Desarrollar una tabla completa con todas las transacciones, con paginación.
-    -   [ ] Implementar filtros por rango de fechas, tipo de cuenta, socio y tipo de transacción.
+    -   [x] `LedgerView.vue`: Desarrollar una tabla completa con todas las transacciones, con paginación.
+    -   [x] Implementar filtros por rango de fechas, tipo de cuenta, socio y tipo de transacción.
 -   **Backend**:
-    -   [ ] **Detalle de Tareas de Implementación**:
-        -   [ ] Implementar `GET /ledger-entries` con parámetros de consulta para `startDate`, `endDate`, `accountId`, `memberId`.
-        -   [ ] Optimizar la consulta para manejar grandes volúmenes de datos de forma eficiente.
+    -   [x] **Detalle de Tareas de Implementación**:
+        -   [x] Implementar `GET /ledger-entries` con parámetros de consulta para `startDate`, `endDate`, `accountId`, `memberId`.
+        -   [x] Optimizar la consulta para manejar grandes volúmenes de datos de forma eficiente.
 -   **Testing**:
     -   [ ] **Backend**: Añadir pruebas para la consulta y filtrado de asientos contables.
 
 ### Módulo 7: Administración (Pendiente)
 
+#### 7.1. Configuración del Fondo
+
 -   **Frontend**:
-    -   [ ] `SettingsView.vue`: Formularios para editar parámetros globales del fondo.
-    -   [ ] `FundInfoView.vue`, `DocumentsView.vue`: Desarrollar las vistas administrativas estáticas.
+    -   [ ] `SettingsView.vue`: Formularios para editar parámetros globales del fondo:
+        -   [ ] **Sección 1: Reglas de Negocio**:
+            - [ ] Límite de préstamos según ahorro del socio (porcentaje o monto fijo)
+            - [ ] Tasas de interés por tipo de préstamo
+            - [ ] Cuotas mínimas y máximas
+            - [ ] Políticas de mora y penalizaciones
+        -   [ ] **Sección 2: Parámetros Financieros**:
+            - [ ] Tasa de contribución obligatoria mensual
+            - [ ] Porcentaje de distribución de intereses
+            - [ ] Límites de efectivo disponible
+        -   [ ] **Sección 3: Configuración de Reuniones**:
+            - [ ] Frecuencia de reuniones
+            - [ ] Duración máxima de reuniones
+            - [ ] Quórum mínimo requerido
 -   **Backend**:
-    -   [ ] **Detalle de Tareas de Implementación**:
-        -   [ ] Crear una entidad `Configuration` para almacenar parámetros clave-valor.
-        -   [ ] Implementar endpoints `GET /configuration` y `PATCH /configuration` para gestionar los ajustes.
+    -   [ ] **Entidad Configuration**:
+        -   [ ] Crear entidad `Configuration` para almacenar parámetros clave-valor
+        -   [ ] Implementar endpoints `GET /configuration` y `PATCH /configuration`
+        -   [ ] Validación de reglas de negocio en tiempo real
+    -   [ ] **Servicio de Reglas de Negocio**:
+        -   [ ] Implementar validaciones automáticas para límites de préstamos
+        -   [ ] Cálculo de capacidad de endeudamiento por socio
+        -   [ ] Aplicación de reglas en procesos de aprobación
+
+#### 7.2. Gestión de Backups
+
+-   **Frontend**:
+    -   [ ] `BackupManagementView.vue`: Vista para gestión de respaldos:
+        -   [ ] Lista de backups disponibles con fechas y tamaños
+        -   [ ] Botón para crear backup manual
+        -   [ ] Programación de backups automáticos
+        -   [ ] Descarga y restauración de backups
+        -   [ ] Logs de operaciones de backup
+-   **Backend**:
+    -   [ ] **Servicio de Backup**:
+        -   [ ] Endpoint para crear backup completo de la base de datos
+        -   [ ] Endpoint para listar backups disponibles
+        -   [ ] Endpoint para descargar backup específico
+        -   [ ] Programación automática con cron jobs
+        -   [ ] Compresión y encriptación de archivos de backup
+
+#### 7.3. Gestión de Documentos
+
+-   **Frontend**:
+    -   [ ] `DocumentsView.vue`: Vista para gestión de documentos:
+        -   [ ] **Sección 1: Repositorio de Documentos**:
+            - [ ] Árbol de carpetas para organizar documentos
+            - [ ] Subida de archivos con drag & drop
+            - [ ] Vista previa de documentos (PDF, imágenes)
+            - [ ] Búsqueda y filtros por tipo y fecha
+        -   [ ] **Sección 2: Actas de Reuniones**:
+            - [ ] Generación automática de actas
+            - [ ] Plantillas personalizables
+            - [ ] Firma digital de actas
+            - [ ] Historial de versiones
+        -   [ ] **Sección 3: Estatutos y Reglamentos**:
+            - [ ] Gestión de versiones de documentos
+            - [ ] Control de cambios y aprobaciones
+            - [ ] Notificaciones de actualizaciones
+-   **Backend**:
+    -   [ ] **Servicio de Documentos**:
+        -   [ ] Almacenamiento seguro de archivos
+        -   [ ] Endpoints para CRUD de documentos
+        -   [ ] Generación automática de actas
+        -   [ ] Sistema de versionado de documentos
+    -   [ ] **Servicio de Actas**:
+        -   [ ] Generación de actas desde datos de reunión
+        -   [ ] Plantillas personalizables en HTML/PDF
+        -   [ ] Sistema de aprobación y firma
+
 -   **Testing**:
-    -   [ ] **Backend**: Añadir pruebas para el guardado y recuperación de la configuración.
+    -   [ ] **Backend**: Añadir pruebas para el guardado y recuperación de la configuración
+    -   [ ] **Backend**: Probar validaciones de reglas de negocio
+    -   [ ] **Backend**: Probar creación y restauración de backups
+    -   [ ] **Frontend**: Probar interfaz de configuración y gestión de documentos
 
 ### Módulo 8: Revisiones Finales (Pendiente)
 
