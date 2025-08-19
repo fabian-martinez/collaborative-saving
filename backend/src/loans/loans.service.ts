@@ -26,7 +26,7 @@ import { MemberDue } from '../dues/entities/member-due.entity';
 import { StocksService } from '../stocks/stocks.service';
 import { StockSubscription } from 'src/stock-subscriptions/entities/stock-subscription.entity';
 import { Meeting } from 'src/meetings/entities/meeting.entity';
-import { Stock } from 'src/stocks/entities/stock.entity';
+// import { Stock } from 'src/stocks/entities/stock.entity';
 import { MeetingsService } from 'src/meetings/meetings.service';
 import { StockSubscriptionsService } from 'src/stock-subscriptions/stock-subscriptions.service';
 import { OperationType } from '../common/enums/operation-type.enum';
@@ -516,16 +516,16 @@ export class LoansService {
     createLoanDto: CreateLoanDto,
     queryRunner?: QueryRunner,
   ): Promise<Loan> {
-    const normalCapacity = (await this.getDebtCapacitiesByType(
-      createLoanDto.member_id,
-      'corriente',
-    )) as {
-      maxAmount: number;
-      availableCapital: number;
-      description: string;
-    };
     // TEMPORALMENTE DESHABILITADO: Validación de tope de endeudamiento
     // TODO: Reimplementar cuando se mejore la lógica
+    // const normalCapacity = (await this.getDebtCapacitiesByType(
+    //   createLoanDto.member_id,
+    //   'corriente',
+    // )) as {
+    //   maxAmount: number;
+    //   availableCapital: number;
+    //   description: string;
+    // };
     /*
     if (
       normalCapacity.maxAmount !== null &&
@@ -558,26 +558,26 @@ export class LoansService {
       throw new BadRequestException('No hay una reunión activa');
     }
     // Consultar el valor de las acciones 'agil'
-    const agilStocks: Stock[] =
-      await this.stocksService.getStocksByType('Bono Navideño');
-    const agilStockValue = agilStocks.reduce(
-      (sum, s) => sum + Number(s.value),
-      0,
-    );
+    // const agilStocks: Stock[] =
+    //   await this.stocksService.getStocksByType('Bono Navideño');
+    // const agilStockValue = agilStocks.reduce(
+    //   (sum, s) => sum + Number(s.value),
+    //   0,
+    // );
     // Consultar la cantidad total de suscripciones activas a acciones 'agil'
-    const agilStockIds = agilStocks.map((s) => s.id);
-    const allSubscriptions = await this.stockSubscriptionsService.findAll();
-    const agilActiveSubscriptions = allSubscriptions.filter(
-      (sub: StockSubscription) =>
-        agilStockIds.includes(sub.stock_id) && sub.status === 'active',
-    );
-    const agilStockTotalQuantity = agilActiveSubscriptions.reduce(
-      (sum, sub) => sum + Number(sub.quantity),
-      0,
-    );
-    const totalAgilCapital = agilStockValue * agilStockTotalQuantity;
+    // const agilStockIds = agilStocks.map((s) => s.id);
+    // const allSubscriptions = await this.stockSubscriptionsService.findAll();
+    // const agilActiveSubscriptions = allSubscriptions.filter(
+    //   (sub: StockSubscription) =>
+    //     agilStockIds.includes(sub.stock_id) && sub.status === 'active',
+    // );
     // TEMPORALMENTE DESHABILITADO: Validación de tope de endeudamiento para préstamos ágiles
     // TODO: Reimplementar cuando se mejore la lógica
+    // const agilStockTotalQuantity = agilActiveSubscriptions.reduce(
+    //   (sum, sub) => sum + Number(sub.quantity),
+    //   0,
+    // );
+    // const totalAgilCapital = agilStockValue * agilStockTotalQuantity;
     /*
     if (createLoanDto.approved_amount > totalAgilCapital) {
       throw new BadRequestException(
