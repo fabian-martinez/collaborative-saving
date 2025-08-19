@@ -3,15 +3,14 @@
   "include": [
     "vite.config.*",
     "vitest.config.*",
-    "cypress.config.*",
-    "nightwatch.conf.*",
-    "playwright.config.*",
-    "eslint.config.*"
+    "cypress.config.ESNext",
+    "nightwatch.conf.ESNext",
+    "playwright.config.ESNext",
+    "eslint.config.ESNext"
   ],
   "compilerOptions": {
+    "incremental": true,
     "noEmit": true,
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
-
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "types": ["node"]

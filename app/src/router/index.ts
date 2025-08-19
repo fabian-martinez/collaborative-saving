@@ -66,12 +66,12 @@ const router = createRouter({
     //   component: () => import('@/views/loans/LoansListView.vue'),
     //   meta: { title: 'Préstamos' }
     // },
-    // {
-    //   path: '/ledger',
-    //   name: 'ledger',
-    //   component: () => import('@/views/ledger/LedgerView.vue'),
-    //   meta: { title: 'Libro Contable' }
-    // },
+    {
+      path: '/ledger',
+      name: 'ledger',
+      component: () => import('@/features/ledger/views/LedgerView.vue'),
+      meta: { title: 'Libro Contable' }
+    },
 
     // --- Grupo: Administración ---
     // {

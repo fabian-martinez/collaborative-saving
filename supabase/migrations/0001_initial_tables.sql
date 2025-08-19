@@ -6,7 +6,7 @@
 -- ----------------------------------------------------------------
 -- ▤ Extensions
 -- ----------------------------------------------------------------
-create extension if not exists "uuid-ossp" with schema extensions;
+create extension if not exists "uuid-ossp" with schema public;
 
 -- ----------------------------------------------------------------
 -- ▤ Drop existing objects for a clean slate

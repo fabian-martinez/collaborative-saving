@@ -9,6 +9,7 @@ export const LOANS_RECEIVABLE_ACCOUNT = 'LOANS_RECEIVABLE'; // Dinero que los so
 
 // Inversiones
 export const INVESTMENT_IN_STOCKS_ACCOUNT = 'INVESTMENT_IN_STOCKS'; // Valor de las acciones que posee el fondo. Aumenta con la revalorización.
+export const DIVIDENDS_PAYABLE_ACCOUNT = 'DIVIDENDS_PAYABLE'; // Dividendos por pagar a los socios.
 
 // --- PATRIMONIO Y CAPITAL ---
 // Representan el valor que pertenece a los socios.
@@ -23,6 +24,11 @@ export const FEE_INCOME_ACCOUNT = 'FEE_INCOME'; // Ingresos por multas u otras t
 export const MANDATORY_CONTRIBUTION_INCOME_ACCOUNT =
   'MANDATORY_CONTRIBUTION_INCOME'; // Ingresos por las cuotas obligatorias de los socios.
 export const INSURANCE_INCOME_ACCOUNT = 'INSURANCE_INCOME'; // Ingresos por el seguro de deuda.
+
+// --- GASTOS ---
+// Representan los gastos del fondo.
+export const DIVIDEND_EXPENSE_ACCOUNT = 'DIVIDEND_EXPENSE'; // Gastos por pago de dividendos a los socios.
+export const OTHER_EXPENSES_ACCOUNT = 'OTHER_EXPENSES'; // Otros gastos del fondo.
 
 // Cuenta temporal para transacciones no clasificadas durante el desarrollo
 export const PENDING_CLASSIFICATION_ACCOUNT = 'PENDING_CLASSIFICATION';

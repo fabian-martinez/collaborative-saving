@@ -236,14 +236,14 @@ export class MeetingsService {
 
     try {
       // 1. Marcar como 'paid' todos los pagos pendientes de esta reunión
-              const pendingPayments = await queryRunner.manager
-          .getRepository(PendingMemberPayment)
-          .find({
-            where: {
-              meeting_id: id,
-              status: 'pending',
-            },
-          });
+      const pendingPayments = await queryRunner.manager
+        .getRepository(PendingMemberPayment)
+        .find({
+          where: {
+            meeting_id: id,
+            status: 'pending',
+          },
+        });
 
       if (pendingPayments.length > 0) {
         this.logger.log(
