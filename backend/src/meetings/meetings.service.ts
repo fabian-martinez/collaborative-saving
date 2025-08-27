@@ -507,7 +507,7 @@ export class MeetingsService {
     const operationRepo = this.dataSource.manager.getRepository(Operation);
     const operations = await operationRepo.find({
       where: { meeting_id: meetingId },
-      select: ['id'],
+      select: ['id', 'member_id', 'date'],
     });
     const operationIds = operations.map((op) => op.id);
     // Si se piden campos de 'meeting', incluir el objeto meeting
@@ -583,6 +583,63 @@ export class MeetingsService {
             'compra',
           );
           break;
+        case 'finalCashBalance': {
+          const totalDebits = await sumByAccountType(CASH_ACCOUNT, false);
+          // Créditos en caja son montos negativos en la cuenta CASH
+          const qb = repo
+            .createQueryBuilder('l')
+            .where('l.operation_id IN (:...operationIds)', { operationIds })
+            .andWhere('l.account_type = :accountType', {
+              accountType: CASH_ACCOUNT,
+            })
+            .andWhere('l.amount < 0');
+          const raw = (await qb.select('SUM(l.amount)', 'sum').getRawOne()) as {
+            sum: string | null;
+          };
+          const totalCreditsAbs =
+            raw && raw.sum ? Math.abs(Number(raw.sum)) : 0;
+          result.finalCashBalance =
+            Number(totalDebits) - Number(totalCreditsAbs);
+          break;
+        }
+        case 'totalDisbursed': {
+          // Dinero entregado: salidas de caja (créditos absolutos en CASH)
+          const qb = repo
+            .createQueryBuilder('l')
+            .where('l.operation_id IN (:...operationIds)', { operationIds })
+            .andWhere('l.account_type = :accountType', {
+              accountType: CASH_ACCOUNT,
+            })
+            .andWhere('l.amount < 0');
+          const raw = (await qb.select('SUM(l.amount)', 'sum').getRawOne()) as {
+            sum: string | null;
+          };
+          result.totalDisbursed =
+            raw && raw.sum ? Math.abs(Number(raw.sum)) : 0;
+          break;
+        }
+        case 'participantsCount': {
+          const uniqueMembers = new Set(
+            operations.map((op) => op.member_id).filter(Boolean),
+          );
+          result.participantsCount = uniqueMembers.size;
+          break;
+        }
+        case 'duration': {
+          const dates = operations.map((op) => op.date).filter(Boolean);
+          if (dates.length >= 2) {
+            const min = Math.min(...dates.map((d) => d.getTime()));
+            const max = Math.max(...dates.map((d) => d.getTime()));
+            const diffMs = max - min;
+            const minutes = Math.round(diffMs / 60000);
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            result.duration = `${hours}h ${mins}m`;
+          } else {
+            result.duration = '0h 0m';
+          }
+          break;
+        }
         default:
           break;
       }

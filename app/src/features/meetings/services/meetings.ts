@@ -4,6 +4,11 @@ import type {
   MemberDue,
   SimplifiedRecordTransactions,
   MeetingDetail,
+  ContributionsResponse,
+  DisbursementsResponse,
+  LedgerEntriesResponse,
+  StockChangesSectionData,
+  StockOperationsResponse,
 } from '../types';
 import type { Operation } from '@/features/operations/types';
 import type { StocksForPurchase } from '@/features/stocks/types';
@@ -69,7 +74,15 @@ class MeetingsService {
   /**
    * Obtiene el resumen de la reunión con los campos solicitados
    */
-  getMeetingSummary(meetingId: string, fields?: string[]): Promise<any> {
+  getMeetingSummary(meetingId: string, fields?: string[]): Promise<{
+    totalCollected?: number;
+    totalInterest?: number;
+    totalCash?: number;
+    finalCashBalance?: number;
+    totalDisbursed?: number;
+    participantsCount?: number;
+    duration?: string;
+  }> {
     let url = `/meetings/${meetingId}/summary`;
     if (fields && fields.length > 0) {
       const params = fields.map(f => `fields=${encodeURIComponent(f)}`).join('&');
@@ -79,41 +92,146 @@ class MeetingsService {
   }
 
   async getMeetingDetail(meetingId: string): Promise<MeetingDetail> {
-    // Obtener el resumen de la reunión (JSON plano)
-    const summary = await api.get<any>(`/meetings/${meetingId}/summary`);
-    // Obtener las operaciones asociadas a la reunión (JSON plano)
-    const operations = await api.get<any>(`/operations?meetingId=${meetingId}`);
+    // 1) Obtener resumen desde backend para MeetingSummarySection
+    const rawSummary: any = await this.getMeetingSummary(meetingId, [
+      'meeting.id',
+      'meeting.date',
+      'meeting.status',
+      'meeting.notes',
+      'totalCollected',
+      'totalInterest',
+      'finalCashBalance',
+      'totalDisbursed',
+      'participantsCount',
+      'duration',
+    ]);
 
-    // Mapear los datos al modelo MeetingDetail
-    return {
-      meeting: summary.meeting || {
-        id: '',
-        date: '',
-        status: '',
-        notes: '',
-      },
-      income: {
-        contributions: summary.totalCash ?? 0,
-        loanPayments: 0,
-        interest: summary.totalInterest ?? 0,
-        insurance: 0,
-        assets: 0,
-        purchases: 0,
-      },
-      withdrawals: {
-        loansGranted: { ordinary: 0, emergency: 0 },
-        dividendPayouts: summary.totalDividends ?? 0,
-        shareWithdrawals: 0,
-      },
-      transactions: (operations.data ?? operations).map((op: any) => ({
-        id: op.id,
-        type: op.type,
-        member: op.member?.name || '',
-        memberId: op.member?.id || '',
-        amount: (op.total_debit ?? 0) - (op.total_credit ?? 0),
-        details: op.description,
-      })),
+    const meeting = {
+      id: rawSummary?.meeting?.id ?? meetingId,
+      date: rawSummary?.meeting?.date ?? new Date().toISOString(),
+      status: (rawSummary?.meeting?.status as 'active' | 'closed') ?? 'closed',
+      notes: rawSummary?.meeting?.notes ?? undefined,
     };
+
+    const summary = {
+      totalCollected: Number(rawSummary?.totalCollected ?? 0),
+      totalInterest: Number(rawSummary?.totalInterest ?? 0),
+      totalDisbursed: Number(rawSummary?.totalDisbursed ?? 0),
+      finalCashBalance: Number(rawSummary?.finalCashBalance ?? 0),
+      duration: String(rawSummary?.duration ?? ''),
+      participantsCount: Number(rawSummary?.participantsCount ?? 0),
+    } satisfies MeetingDetail['summary'];
+
+    // 2) Mantener mocks en las demás secciones por ahora
+    const [contributions, stockChanges, stockOperations, disbursements, ledgerEntries] = await Promise.all([
+      this.getMeetingContributionsMock(meetingId),
+      this.getMeetingStockChangesMock(meetingId),
+      this.getMeetingStockOperationsMock(meetingId),
+      this.getMeetingDisbursementsMock(meetingId),
+      this.getMeetingLedgerEntriesMock(meetingId),
+    ]);
+
+    return { meeting, summary, contributions, stockChanges, stockOperations, disbursements, ledgerEntries };
+  }
+
+  // ---- Mock helpers for closed meeting detail ----
+  private async getMeetingSummaryMock(_: string): Promise<MeetingDetail['summary']> {
+    return {
+      totalCollected: 3_500_000,
+      totalInterest: 420_000,
+      totalDisbursed: 1_800_000,
+      finalCashBalance: 2_120_000,
+      duration: '2h 15m',
+      participantsCount: 18,
+    };
+  }
+
+  private async getMeetingContributionsMock(_: string): Promise<ContributionsResponse> {
+    const data = [
+      { memberId: 'm1', memberName: 'Ana Gómez', mandatoryContribution: 150_000, fees: 10_000, insurance: 5_000, loanPayments: 120_000, total: 285_000 },
+      { memberId: 'm2', memberName: 'Luis Pérez', mandatoryContribution: 150_000, fees: 0, insurance: 5_000, loanPayments: 80_000, total: 235_000 },
+      { memberId: 'm3', memberName: 'María Ruiz', mandatoryContribution: 150_000, fees: 5_000, insurance: 5_000, loanPayments: 0, total: 160_000 },
+    ];
+    const summary = data.reduce(
+      (acc, item) => {
+        acc.totalContributions += item.mandatoryContribution;
+        acc.totalFees += item.fees;
+        acc.totalInsurance += item.insurance;
+        acc.totalLoanPayments += item.loanPayments;
+        acc.grandTotal += item.total;
+        return acc;
+      },
+      { totalContributions: 0, totalFees: 0, totalInsurance: 0, totalLoanPayments: 0, grandTotal: 0 },
+    );
+    return { data, summary };
+  }
+
+  private async getMeetingStockChangesMock(_: string): Promise<StockChangesSectionData> {
+    return {
+      revaluationHistory: [
+        { stockType: 'Type A', previousValue: 10_000, newValue: 10_700, change: 700, changePercentage: 7 },
+        { stockType: 'Type B', previousValue: 20_000, newValue: 20_900, change: 900, changePercentage: 4.5 },
+      ],
+      dividendsGenerated: [
+        { stockType: 'Type A', amount: 350_000, beneficiaries: 15 },
+        { stockType: 'Type B', amount: 200_000, beneficiaries: 10 },
+      ],
+    };
+  }
+
+  private async getMeetingStockOperationsMock(_: string): Promise<StockOperationsResponse> {
+    const data: StockOperationsResponse['data'] = [
+      { id: 'op1', type: 'STOCK_PURCHASE', memberId: 'm2', memberName: 'Luis Pérez', stockType: 'Type A', quantity: 5, amount: 500_000, paymentMethod: 'cash', date: new Date().toISOString() },
+      { id: 'op2', type: 'STOCK_WITHDRAWAL', memberId: 'm4', memberName: 'Carlos Díaz', stockType: 'Type B', quantity: 3, amount: 300_000, paymentMethod: 'cash', date: new Date().toISOString() },
+      { id: 'op3', type: 'STOCK_MODIFICATION', memberId: 'm1', memberName: 'Ana Gómez', stockType: 'Type A', quantity: 2, amount: 0, paymentMethod: 'mixed', date: new Date().toISOString() },
+    ];
+    const summary = data.reduce(
+      (acc, item) => {
+        if (item.type === 'STOCK_PURCHASE') acc.totalPurchases += 1;
+        if (item.type === 'STOCK_WITHDRAWAL') acc.totalWithdrawals += 1;
+        if (item.type === 'STOCK_MODIFICATION') acc.totalModifications += 1;
+        return acc;
+      },
+      { totalPurchases: 0, totalWithdrawals: 0, totalModifications: 0 },
+    );
+    return { data, summary };
+  }
+
+  private async getMeetingDisbursementsMock(_: string): Promise<DisbursementsResponse> {
+    const data: DisbursementsResponse['data'] = [
+      { id: 'd1', type: 'LOAN', memberId: 'm5', memberName: 'Pedro López', amount: 1_200_000, description: 'Préstamo ordinario', status: 'completed', date: new Date().toISOString() },
+      { id: 'd2', type: 'DIVIDEND', memberId: 'm1', memberName: 'Ana Gómez', amount: 200_000, description: 'Distribución dividendos', status: 'completed', date: new Date().toISOString() },
+      { id: 'd3', type: 'WITHDRAWAL', memberId: 'm3', memberName: 'María Ruiz', amount: 100_000, description: 'Retiro de acciones', status: 'partial', date: new Date().toISOString() },
+    ];
+    const summary = data.reduce(
+      (acc, item) => {
+        if (item.type === 'LOAN') acc.totalLoans += item.amount;
+        else if (item.type === 'DIVIDEND') acc.totalDividends += item.amount;
+        else if (item.type === 'WITHDRAWAL') acc.totalWithdrawals += item.amount;
+        else acc.totalOther += item.amount;
+        acc.grandTotal += item.amount;
+        return acc;
+      },
+      { totalLoans: 0, totalDividends: 0, totalWithdrawals: 0, totalOther: 0, grandTotal: 0 },
+    );
+    return { data, summary };
+  }
+
+  private async getMeetingLedgerEntriesMock(_: string): Promise<LedgerEntriesResponse> {
+    const data: LedgerEntriesResponse['data'] = [
+      { id: 'le1', accountType: 'CASH', amount: 150_000, description: 'Aporte obligatorio Ana', memberId: 'm1', date: new Date().toISOString(), debit: 150_000, credit: 0 },
+      { id: 'le2', accountType: 'INTEREST_INCOME', amount: 80_000, description: 'Intereses de préstamos', date: new Date().toISOString(), debit: 80_000, credit: 0 },
+      { id: 'le3', accountType: 'LOAN_PORTFOLIO', amount: 1_200_000, description: 'Desembolso de préstamo Pedro', memberId: 'm5', date: new Date().toISOString(), debit: 0, credit: 1_200_000 },
+    ];
+    const totals = data.reduce(
+      (acc, item) => {
+        acc.totalDebits += item.debit ?? 0;
+        acc.totalCredits += item.credit ?? 0;
+        return acc;
+      },
+      { totalDebits: 0, totalCredits: 0 },
+    );
+    return { data, summary: { ...totals, balance: totals.totalDebits - totals.totalCredits } };
   }
 }
 

@@ -1,50 +1,45 @@
 <template>
-  <div>
-    <div v-if="loading">Cargando detalle de la reunión...</div>
-    <div v-else-if="error">{{ error }}</div>
-    <div v-else-if="meetingDetail">
-      <h1>Detalle de la Reunión</h1>
-      <div v-if="meetingDetail.meeting && meetingDetail.meeting.date">
-        <strong>Fecha:</strong> {{ formatDate(meetingDetail.meeting.date) }}<br />
-        <strong>Estado:</strong> {{ meetingDetail.meeting.status }}<br />
-        <strong>Notas:</strong> {{ meetingDetail.meeting.notes || 'Sin notas' }}
-      </div>
-      <div v-else class="alert alert-warning mb-4">
-        No hay datos de cabecera de la reunión disponibles. Solo se muestran los totales y transacciones.
-      </div>
-      <h2>Totales</h2>
-      <ul>
-        <li>Total en caja: {{ formatCurrency(meetingDetail.income.contributions) }}</li>
-        <li>Total intereses: {{ formatCurrency(meetingDetail.income.interest) }}</li>
-        <li>Total dividendos: {{ formatCurrency(meetingDetail.withdrawals.dividendPayouts) }}</li>
-      </ul>
-      <h2>Transacciones</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Miembro</th>
-            <th>Tipo</th>
-            <th>Monto</th>
-            <th>Detalle</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="tx in meetingDetail.transactions" :key="tx.id">
-            <td>
-              <router-link :to="{ name: 'member-details', params: { id: tx.memberId } }">
-                {{ tx.member }}
-              </router-link>
-            </td>
-            <td>{{ tx.type }}</td>
-            <td :class="{ 'text-success': tx.amount > 0, 'text-error': tx.amount < 0 }">
-              {{ formatCurrency(tx.amount) }}
-            </td>
-            <td>{{ tx.details }}</td>
-          </tr>
-        </tbody>
-      </table>
+  <div class="p-4 md:p-6">
+    <div v-if="loading" class="text-sm">Cargando detalle de la reunión...</div>
+    <div v-else-if="error" class="alert alert-error">{{ error }}</div>
+    <div v-else-if="meetingDetail" class="space-y-6">
+      <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <div>
+          <h1 class="text-2xl font-bold">Detalle de la Reunión</h1>
+          <p class="text-sm text-gray-500">
+            <strong>Fecha:</strong> {{ formatDate(meetingDetail.meeting.date) }} ·
+            <strong>Estado:</strong> {{ meetingDetail.meeting.status }} ·
+            <strong>Notas:</strong> {{ meetingDetail.meeting.notes || 'Sin notas' }}
+          </p>
+        </div>
+      </header>
+
+      <section>
+        <MeetingSummarySection :summary="meetingDetail.summary" />
+      </section>
+
+      <section>
+        <ContributionsSection :data="meetingDetail.contributions" />
+      </section>
+
+      <section>
+        <StockChangesSection :data="meetingDetail.stockChanges" />
+      </section>
+
+      <section>
+        <StockOperationsSection :data="meetingDetail.stockOperations" />
+      </section>
+
+      <section>
+        <DisbursementsSection :data="meetingDetail.disbursements" />
+      </section>
+
+      <section>
+        <LedgerEntriesSection :data="meetingDetail.ledgerEntries" />
+      </section>
     </div>
   </div>
+  
 </template>
 
 <script setup lang="ts">
@@ -52,6 +47,12 @@ import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import type { MeetingDetail } from '../types';
 import { meetingsService } from '../services/meetings';
+import MeetingSummarySection from '../components/MeetingSummarySection.vue';
+import ContributionsSection from '../components/ContributionsSection.vue';
+import StockChangesSection from '../components/StockChangesSection.vue';
+import StockOperationsSection from '../components/StockOperationsSection.vue';
+import DisbursementsSection from '../components/DisbursementsSection.vue';
+import LedgerEntriesSection from '../components/LedgerEntriesSection.vue';
 
 const route = useRoute();
 const meetingId = route.params.id as string;
@@ -68,22 +69,14 @@ onMounted(async () => {
   try {
     meetingDetail.value = await meetingsService.getMeetingDetail(meetingId);
     console.log(meetingDetail.value);
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error(e);
-    error.value = e?.message || 'Error al cargar el detalle de la reunión';
+    error.value = e instanceof Error ? e.message : 'Error al cargar el detalle de la reunión';
   } finally {
     loading.value = false;
   }
 });
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value);
-}
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
   return d.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -91,12 +84,4 @@ function formatDate(dateStr: string) {
 </script>
 
 <style scoped>
-.alert-warning {
-  background: #fffbe6;
-  color: #b45309;
-  border: 1px solid #facc15;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  margin-bottom: 1rem;
-}
 </style>
