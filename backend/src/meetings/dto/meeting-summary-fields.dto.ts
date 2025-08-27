@@ -8,6 +8,10 @@ export const MEETING_SUMMARY_FIELDS = [
   'totalCollected',
   'totalDividends',
   'totalStockInvestment',
+  'finalCashBalance',
+  'totalDisbursed',
+  'participantsCount',
+  'duration',
 ] as const;
 
 export type MeetingSummaryField = (typeof MEETING_SUMMARY_FIELDS)[number];

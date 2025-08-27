@@ -31,9 +31,132 @@ export interface SimplifiedRecordTransactions {
   payments: Payment[];
 }
 
-export type OperationType =
-  | 'LOAN_DISBURSEMENT'
-  | 'MONTHLY_PAYMENT';
+export type OperationType = 'LOAN_DISBURSEMENT' | 'MONTHLY_PAYMENT';
+
+// ---- Closed meeting detail model (per plan) ----
+
+export interface ContributionsResponse {
+  data: Array<{
+    memberId: string;
+    memberName: string;
+    mandatoryContribution: number;
+    fees: number;
+    insurance: number;
+    loanPayments: number;
+    total: number;
+  }>;
+  summary: {
+    totalContributions: number;
+    totalFees: number;
+    totalInsurance: number;
+    totalLoanPayments: number;
+    grandTotal: number;
+  };
+}
+
+export interface StockOperationsResponse {
+  data: Array<{
+    id: string;
+    type: 'STOCK_PURCHASE' | 'STOCK_WITHDRAWAL' | 'STOCK_MODIFICATION';
+    memberId: string;
+    memberName: string;
+    stockType: string;
+    quantity: number;
+    amount: number;
+    paymentMethod: 'cash' | 'credit' | 'mixed';
+    date: string;
+  }>;
+  summary: {
+    totalPurchases: number;
+    totalWithdrawals: number;
+    totalModifications: number;
+  };
+}
+
+export interface DisbursementsResponse {
+  data: Array<{
+    id: string;
+    type: 'LOAN' | 'DIVIDEND' | 'WITHDRAWAL' | 'OTHER';
+    memberId: string;
+    memberName: string;
+    amount: number;
+    description: string;
+    status: 'completed' | 'partial';
+    date: string;
+  }>;
+  summary: {
+    totalLoans: number;
+    totalDividends: number;
+    totalWithdrawals: number;
+    totalOther: number;
+    grandTotal: number;
+  };
+}
+
+export interface LedgerEntriesResponse {
+  data: Array<{
+    id: string;
+    accountType: string;
+    amount: number;
+    description: string;
+    memberId?: string;
+    loanId?: string;
+    stockId?: string;
+    date: string;
+    debit?: number;
+    credit?: number;
+  }>;
+  summary: {
+    totalDebits: number;
+    totalCredits: number;
+    balance: number;
+  };
+}
+
+export interface StockRevaluationHistoryItem {
+  stockType: string;
+  previousValue: number;
+  newValue: number;
+  change: number;
+  changePercentage: number;
+}
+
+export interface StockDividendItem {
+  stockType: string;
+  amount: number;
+  beneficiaries: number;
+}
+
+export interface StockChangesSectionData {
+  revaluationHistory: StockRevaluationHistoryItem[];
+  dividendsGenerated: StockDividendItem[];
+}
+
+export interface MeetingDetailSummary {
+  totalCollected: number;
+  totalInterest: number;
+  totalDisbursed: number;
+  finalCashBalance: number;
+  duration: string;
+  participantsCount: number;
+}
+
+export interface MeetingDetail {
+  meeting: {
+    id: string;
+    date: string;
+    status: 'active' | 'closed';
+    notes?: string;
+  };
+  summary: MeetingDetailSummary;
+  contributions: ContributionsResponse;
+  stockChanges: StockChangesSectionData;
+  stockOperations: StockOperationsResponse;
+  disbursements: DisbursementsResponse;
+  ledgerEntries: LedgerEntriesResponse;
+}
+
+// ---- Existing active meeting flow types (used elsewhere) ----
 
 export interface RevaluationPreviewResult {
   total_contributions: number;
@@ -82,34 +205,4 @@ export interface DisbursementPlan {
     interestRate: number;
     notes: string;
   };
-}
-
-export interface MeetingDetail {
-  meeting: {
-    id: string;
-    date: string;
-    status: 'active' | 'closed';
-    notes?: string;
-  };
-  income: {
-    contributions: number;
-    loanPayments: number;
-    interest: number;
-    insurance: number;
-    assets: number;
-    purchases: number;
-  };
-  withdrawals: {
-    loansGranted: { ordinary: number; emergency: number };
-    dividendPayouts: number;
-    shareWithdrawals: number;
-  };
-  transactions: Array<{
-    id: string;
-    type: string;
-    member: string;
-    memberId: string;
-    amount: number;
-    details: string;
-  }>;
 }
