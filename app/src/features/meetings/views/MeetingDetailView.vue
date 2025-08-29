@@ -27,6 +27,10 @@
       </section>
 
       <section>
+        <StockDividendsSection :dividends="meetingDetail.stockChanges.dividendsGenerated" />
+      </section>
+
+      <section>
         <StockOperationsSection :data="meetingDetail.stockOperations" />
       </section>
 
@@ -53,6 +57,7 @@ import StockChangesSection from '../components/StockChangesSection.vue';
 import StockOperationsSection from '../components/StockOperationsSection.vue';
 import DisbursementsSection from '../components/DisbursementsSection.vue';
 import LedgerEntriesSection from '../components/LedgerEntriesSection.vue';
+import StockDividendsSection from '../components/StockDividendsSection.vue';
 
 const route = useRoute();
 const meetingId = route.params.id as string;

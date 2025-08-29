@@ -13,6 +13,7 @@ import type {
 import type { Operation } from '@/features/operations/types';
 import type { StocksForPurchase } from '@/features/stocks/types';
 import { operationsService } from '@/features/operations/services/operationsService';
+import { assetRevaluationService } from '@/features/meetings/services/assetRevaluationService';
 
 class MeetingsService {
   // Methods related to meetings list and creation
@@ -125,7 +126,7 @@ class MeetingsService {
     // 2) Mantener mocks en las demás secciones por ahora
     const [contributions, stockChanges, stockOperations, disbursements, ledgerEntries] = await Promise.all([
       this.getMeetingContributionsMock(meetingId),
-      this.getMeetingStockChangesMock(meetingId),
+      this.getMeetingStockChanges(meetingId),
       this.getMeetingStockOperationsMock(meetingId),
       this.getMeetingDisbursementsMock(meetingId),
       this.getMeetingLedgerEntriesMock(meetingId),
@@ -135,6 +136,36 @@ class MeetingsService {
   }
 
   // ---- Mock helpers for closed meeting detail ----
+  private async getMeetingStockChanges(meetingId: string): Promise<StockChangesSectionData> {
+    const preview = await assetRevaluationService.getPreview(meetingId);
+    const revaluationHistory = (preview.details || []).map((d: any) => {
+      const previousValue = Number(d.previous_value || 0);
+      const newValue = Number(d.new_value || 0);
+      const change = newValue - previousValue;
+      const changePercentage = previousValue > 0 ? Number(((change / previousValue) * 100).toFixed(2)) : 0;
+      return {
+        stockType: String(d.type || ''),
+        previousValue,
+        newValue,
+        change,
+        changePercentage,
+        totalShares: typeof d.total_shares === 'number' ? d.total_shares : undefined,
+        previousTotalValue: typeof d.total_shares === 'number' ? previousValue * d.total_shares : undefined,
+        newTotalValue: typeof d.total_shares === 'number' ? newValue * d.total_shares : undefined,
+        totalChange: typeof d.total_shares === 'number' ? (newValue - previousValue) * d.total_shares : undefined,
+        totalChangePercentage: typeof d.total_shares === 'number' && previousValue > 0 ? Number(((((newValue - previousValue) * d.total_shares) / (previousValue * d.total_shares)) * 100).toFixed(2)) : undefined,
+      };
+    });
+    const dividendsGenerated = (preview.details || [])
+      .filter((d: any) => typeof d.dividends_generated === 'number' && d.dividends_generated > 0)
+      .map((d: any) => ({
+        stockType: String(d.type || ''),
+        amount: Number(d.dividends_generated || 0),
+        beneficiaries: 0,
+      }));
+    return { revaluationHistory, dividendsGenerated };
+  }
+
   private async getMeetingSummaryMock(_: string): Promise<MeetingDetail['summary']> {
     return {
       totalCollected: 3_500_000,
