@@ -6,7 +6,6 @@ const props = defineProps<{ data: StockChangesSectionData }>()
 
 const searchType = ref('')
 const filteredRevaluation = computed(() => props.data.revaluationHistory.filter(r => r.stockType.toLowerCase().includes(searchType.value.trim().toLowerCase())))
-const filteredDividends = computed(() => props.data.dividendsGenerated.filter(d => d.stockType.toLowerCase().includes(searchType.value.trim().toLowerCase())))
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('es-CO', {
@@ -22,7 +21,7 @@ function formatCurrency(value: number) {
   <div class="card bg-base-100 shadow">
     <div class="card-body">
       <h2 class="card-title">Cambios en Valores de Acciones</h2>
-      <div class="grid md:grid-cols-2 gap-6">
+      <div class="grid md:grid-cols-1 gap-6">
         <div>
           <h3 class="font-semibold mb-2">Revalorización</h3>
           <div class="overflow-x-auto">
@@ -37,11 +36,16 @@ function formatCurrency(value: number) {
                   <th class="text-right">Nuevo</th>
                   <th class="text-right">Cambio</th>
                   <th class="text-right">% Cambio</th>
+                  <th class="text-right">Cantidad</th>
+                  <th class="text-right">Total (antes)</th>
+                  <th class="text-right">Total (después)</th>
+                  <th class="text-right">Cambio Total</th>
+                  <th class="text-right">% Cambio Total</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-if="filteredRevaluation.length === 0">
-                  <td colspan="5" class="text-center text-sm text-base-content/60">No hay datos</td>
+                  <td colspan="10" class="text-center text-sm text-base-content/60">No hay datos</td>
                 </tr>
                 <tr v-for="row in filteredRevaluation" :key="row.stockType">
                   <td>{{ row.stockType }}</td>
@@ -49,30 +53,11 @@ function formatCurrency(value: number) {
                   <td class="text-right">{{ formatCurrency(row.newValue) }}</td>
                   <td class="text-right">{{ formatCurrency(row.change) }}</td>
                   <td class="text-right">{{ row.changePercentage }}%</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div>
-          <h3 class="font-semibold mb-2">Dividendos Generados</h3>
-          <div class="overflow-x-auto">
-            <table class="table table-sm">
-              <thead>
-                <tr>
-                  <th>Tipo</th>
-                  <th class="text-right">Monto</th>
-                  <th class="text-right">Beneficiarios</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-if="filteredDividends.length === 0">
-                  <td colspan="3" class="text-center text-sm text-base-content/60">No hay datos</td>
-                </tr>
-                <tr v-for="row in filteredDividends" :key="row.stockType">
-                  <td>{{ row.stockType }}</td>
-                  <td class="text-right">{{ formatCurrency(row.amount) }}</td>
-                  <td class="text-right">{{ row.beneficiaries }}</td>
+                  <td class="text-right">{{ row.totalShares ?? '-' }}</td>
+                  <td class="text-right">{{ row.previousTotalValue != null ? formatCurrency(row.previousTotalValue) : '-' }}</td>
+                  <td class="text-right">{{ row.newTotalValue != null ? formatCurrency(row.newTotalValue) : '-' }}</td>
+                  <td class="text-right">{{ row.totalChange != null ? formatCurrency(row.totalChange) : '-' }}</td>
+                  <td class="text-right">{{ row.totalChangePercentage != null ? row.totalChangePercentage + '%' : '-' }}</td>
                 </tr>
               </tbody>
             </table>

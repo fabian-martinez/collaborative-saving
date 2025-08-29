@@ -119,6 +119,12 @@ export interface StockRevaluationHistoryItem {
   newValue: number;
   change: number;
   changePercentage: number;
+  // Optional extended fields
+  totalShares?: number;
+  previousTotalValue?: number;
+  newTotalValue?: number;
+  totalChange?: number;
+  totalChangePercentage?: number;
 }
 
 export interface StockDividendItem {
