@@ -148,11 +148,11 @@ const selectedOperationId = ref<string | null>(null)
 
 // Filtros del ledger
 const ledgerFilters = ref<LedgerFilters>({
-  memberId: '',
-  accountType: '',
-  meetingId: '',
-  search: '',
-  operationType: ''
+  memberId: undefined,
+  accountType: undefined,
+  meetingId: undefined,
+  search: undefined,
+  operationType: undefined
 })
 
 // Detectar filtros activos
@@ -244,10 +244,10 @@ onMounted(async () => {
 watch(activeTab, (tab) => {
   // Al cambiar de pestaña, limpiar el filtro que no aplica
   if (tab === 'operations' && ledgerFilters.value.accountType) {
-    ledgerFilters.value.accountType = ''
+    ledgerFilters.value.accountType = undefined
   }
   if (tab === 'entries' && ledgerFilters.value.operationType) {
-    ledgerFilters.value.operationType = ''
+    ledgerFilters.value.operationType = undefined
   }
 })
 
@@ -282,11 +282,11 @@ function openOperationDetails(id: string) {
 
 function clearAllFilters() {
   ledgerFilters.value = {
-    memberId: '',
-    accountType: '',
-    meetingId: '',
-    search: '',
-    operationType: ''
+    memberId: undefined,
+    accountType: undefined,
+    meetingId: undefined,
+    search: undefined,
+    operationType: undefined
   }
   console.log('All filters cleared, reloading all data')
   

@@ -100,7 +100,7 @@ function formatCOP(value: number) {
 }
 
 function accountTypeLabel(accountType: string) {
-  return (ACCOUNT_TYPE_LABELS as any)[accountType] || accountType
+  return (ACCOUNT_TYPE_LABELS as Record<string, string>)[accountType] || accountType
 }
 </script>
 

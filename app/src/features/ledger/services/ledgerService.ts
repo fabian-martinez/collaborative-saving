@@ -359,7 +359,7 @@ export function groupEntries(mode: GroupingMode, entries: EntryRow[]): LedgerUIT
           ...entry,
           operationType: group.operation.type,
           operationDescription: group.operation.description,
-        })),
+        })) as EntryRow[],
         total: group.entries.reduce((sum, entry) => sum + entry.amount, 0),
       }))
     case 'byAccount':

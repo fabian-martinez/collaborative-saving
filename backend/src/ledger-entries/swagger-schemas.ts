@@ -74,8 +74,9 @@ export const LedgerEntriesSwaggerSchemas = {
       },
       amount: {
         type: 'number',
-        description: 'Monto del asiento (positivo para débitos, negativo para créditos)',
-        example: 150000.00,
+        description:
+          'Monto del asiento (positivo para débitos, negativo para créditos)',
+        example: 150000.0,
       },
       description: {
         type: 'string',
@@ -137,7 +138,8 @@ export const LedgerEntriesSwaggerSchemas = {
       },
       mandatoryContributionId: {
         type: 'string',
-        description: 'ID de la contribución obligatoria relacionada (si aplica)',
+        description:
+          'ID de la contribución obligatoria relacionada (si aplica)',
         example: 'g0eebc99-9c0b-4ef8-bb6d-6bb9bd380a17',
       },
       stockSubscriptionId: {

@@ -40,7 +40,7 @@
 <script setup lang="ts">
 import type { OperationView } from '@/features/ledger/types'
 
-const props = defineProps<{
+defineProps<{
   operations: OperationView[]
   loading: boolean
   error: string | null

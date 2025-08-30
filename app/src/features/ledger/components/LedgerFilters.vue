@@ -207,11 +207,11 @@ function emitFilters(source?: string) {
 // Función para resetear filtros
 function resetFilters() {
   Object.assign(localFilters, { 
-    memberId: '', 
-    accountType: '', 
-    meetingId: '', 
-    search: '',
-    operationType: ''
+    memberId: undefined, 
+    accountType: undefined, 
+    meetingId: undefined, 
+    search: undefined,
+    operationType: undefined
   })
   emitFilters('reset')
 }
@@ -233,7 +233,7 @@ function clearActiveFilters() {
   const filtersToClear = ['memberId', 'accountType', 'meetingId', 'operationType']
   filtersToClear.forEach(filter => {
     if (localFilters[filter as keyof LedgerFilters]) {
-      localFilters[filter as keyof LedgerFilters] = ''
+      localFilters[filter as keyof LedgerFilters] = localFilters[filter as keyof LedgerFilters] ?? undefined
     }
   })
   emitFilters('clearActive')

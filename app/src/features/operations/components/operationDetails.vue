@@ -35,7 +35,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { formatNumber } from '@/shared/formatters';
-import type { Operation, LedgerEntry } from '@/features/operations/types';
+import type { Operation } from '@/features/operations/types';
 import { CASH_ACCOUNT } from '@/shared/constants/account-types';
 
 const props = defineProps<{

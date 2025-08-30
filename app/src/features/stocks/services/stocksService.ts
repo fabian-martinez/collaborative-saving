@@ -46,7 +46,7 @@ export interface StockModificationRequest {
 export interface StockModificationResponse {
   operationId: string;
   message: string;
-  details: any;
+  details: unknown;
 }
 
 export const stocksService = {

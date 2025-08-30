@@ -58,7 +58,7 @@ class MeetingsService {
   /**
    * Compra de acciones para un socio existente
    */
-  buyStocks(meetingId: string, payload: StocksForPurchase): Promise<any> {
+  buyStocks(meetingId: string, payload: StocksForPurchase): Promise<unknown> {
     return api.post(`/meetings/${meetingId}/buy/stocks`, payload);
   }
 
@@ -94,7 +94,7 @@ class MeetingsService {
 
   async getMeetingDetail(meetingId: string): Promise<MeetingDetail> {
     // 1) Obtener resumen desde backend para MeetingSummarySection
-    const rawSummary: any = await this.getMeetingSummary(meetingId, [
+    const rawSummary = await this.getMeetingSummary(meetingId, [
       'meeting.id',
       'meeting.date',
       'meeting.status',
@@ -105,7 +105,15 @@ class MeetingsService {
       'totalDisbursed',
       'participantsCount',
       'duration',
-    ]);
+    ]) as {
+      meeting?: { id?: string; date?: string; status?: string; notes?: string };
+      totalCollected?: number;
+      totalInterest?: number;
+      totalDisbursed?: number;
+      finalCashBalance?: number;
+      duration?: string;
+      participantsCount?: number;
+    };
 
     const meeting = {
       id: rawSummary?.meeting?.id ?? meetingId,
@@ -125,11 +133,11 @@ class MeetingsService {
 
     // 2) Mantener mocks en las demás secciones por ahora
     const [contributions, stockChanges, stockOperations, disbursements, ledgerEntries] = await Promise.all([
-      this.getMeetingContributionsMock(meetingId),
+      this.getMeetingContributionsMock(),
       this.getMeetingStockChanges(meetingId),
-      this.getMeetingStockOperationsMock(meetingId),
-      this.getMeetingDisbursementsMock(meetingId),
-      this.getMeetingLedgerEntriesMock(meetingId),
+      this.getMeetingStockOperationsMock(),
+      this.getMeetingDisbursementsMock(),
+      this.getMeetingLedgerEntriesMock(),
     ]);
 
     return { meeting, summary, contributions, stockChanges, stockOperations, disbursements, ledgerEntries };
@@ -138,7 +146,7 @@ class MeetingsService {
   // ---- Mock helpers for closed meeting detail ----
   private async getMeetingStockChanges(meetingId: string): Promise<StockChangesSectionData> {
     const preview = await assetRevaluationService.getPreview(meetingId);
-    const revaluationHistory = (preview.details || []).map((d: any) => {
+    const revaluationHistory = (preview.details || []).map((d: { previous_value?: number; new_value?: number; type?: string; total_shares?: number; dividends_generated?: number }) => {
       const previousValue = Number(d.previous_value || 0);
       const newValue = Number(d.new_value || 0);
       const change = newValue - previousValue;
@@ -157,8 +165,8 @@ class MeetingsService {
       };
     });
     const dividendsGenerated = (preview.details || [])
-      .filter((d: any) => typeof d.dividends_generated === 'number' && d.dividends_generated > 0)
-      .map((d: any) => ({
+      .filter((d: { dividends_generated?: number }) => typeof d.dividends_generated === 'number' && d.dividends_generated > 0)
+      .map((d: { type?: string; dividends_generated?: number }) => ({
         stockType: String(d.type || ''),
         amount: Number(d.dividends_generated || 0),
         beneficiaries: 0,
@@ -166,7 +174,7 @@ class MeetingsService {
     return { revaluationHistory, dividendsGenerated };
   }
 
-  private async getMeetingSummaryMock(_: string): Promise<MeetingDetail['summary']> {
+  private async getMeetingSummaryMock(): Promise<MeetingDetail['summary']> {
     return {
       totalCollected: 3_500_000,
       totalInterest: 420_000,
@@ -177,7 +185,7 @@ class MeetingsService {
     };
   }
 
-  private async getMeetingContributionsMock(_: string): Promise<ContributionsResponse> {
+  private async getMeetingContributionsMock(): Promise<ContributionsResponse> {
     const data = [
       { memberId: 'm1', memberName: 'Ana Gómez', mandatoryContribution: 150_000, fees: 10_000, insurance: 5_000, loanPayments: 120_000, total: 285_000 },
       { memberId: 'm2', memberName: 'Luis Pérez', mandatoryContribution: 150_000, fees: 0, insurance: 5_000, loanPayments: 80_000, total: 235_000 },
@@ -197,7 +205,7 @@ class MeetingsService {
     return { data, summary };
   }
 
-  private async getMeetingStockChangesMock(_: string): Promise<StockChangesSectionData> {
+  private async getMeetingStockChangesMock(): Promise<StockChangesSectionData> {
     return {
       revaluationHistory: [
         { stockType: 'Type A', previousValue: 10_000, newValue: 10_700, change: 700, changePercentage: 7 },
@@ -210,7 +218,7 @@ class MeetingsService {
     };
   }
 
-  private async getMeetingStockOperationsMock(_: string): Promise<StockOperationsResponse> {
+  private async getMeetingStockOperationsMock(): Promise<StockOperationsResponse> {
     const data: StockOperationsResponse['data'] = [
       { id: 'op1', type: 'STOCK_PURCHASE', memberId: 'm2', memberName: 'Luis Pérez', stockType: 'Type A', quantity: 5, amount: 500_000, paymentMethod: 'cash', date: new Date().toISOString() },
       { id: 'op2', type: 'STOCK_WITHDRAWAL', memberId: 'm4', memberName: 'Carlos Díaz', stockType: 'Type B', quantity: 3, amount: 300_000, paymentMethod: 'cash', date: new Date().toISOString() },
@@ -228,7 +236,7 @@ class MeetingsService {
     return { data, summary };
   }
 
-  private async getMeetingDisbursementsMock(_: string): Promise<DisbursementsResponse> {
+  private async getMeetingDisbursementsMock(): Promise<DisbursementsResponse> {
     const data: DisbursementsResponse['data'] = [
       { id: 'd1', type: 'LOAN', memberId: 'm5', memberName: 'Pedro López', amount: 1_200_000, description: 'Préstamo ordinario', status: 'completed', date: new Date().toISOString() },
       { id: 'd2', type: 'DIVIDEND', memberId: 'm1', memberName: 'Ana Gómez', amount: 200_000, description: 'Distribución dividendos', status: 'completed', date: new Date().toISOString() },
@@ -248,7 +256,7 @@ class MeetingsService {
     return { data, summary };
   }
 
-  private async getMeetingLedgerEntriesMock(_: string): Promise<LedgerEntriesResponse> {
+  private async getMeetingLedgerEntriesMock(): Promise<LedgerEntriesResponse> {
     const data: LedgerEntriesResponse['data'] = [
       { id: 'le1', accountType: 'CASH', amount: 150_000, description: 'Aporte obligatorio Ana', memberId: 'm1', date: new Date().toISOString(), debit: 150_000, credit: 0 },
       { id: 'le2', accountType: 'INTEREST_INCOME', amount: 80_000, description: 'Intereses de préstamos', date: new Date().toISOString(), debit: 80_000, credit: 0 },

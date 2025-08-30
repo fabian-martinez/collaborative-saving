@@ -45,7 +45,7 @@
 <script setup lang="ts">
 import type { Member } from '@/features/members/types';
 import { ref, watch, computed } from 'vue'
-import { loansService, type DebtCapacitiesByType, type DebtCapacity } from '@/features/loans/services/loansService'
+import { loansService, type DebtCapacitiesByType } from '@/features/loans/services/loansService'
 import { formatNumber } from '@/shared/formatters';
 
 const props = defineProps<{
@@ -70,21 +70,22 @@ const loadingCapacity = ref(false)
 
 const interestRate = computed(() => form.value.type === 'corriente' ? 1.5 : 2)
 
-const maxCapacity = computed(() => {
-  if (!debtCapacities.value) return 0
-  // El backend puede devolver 'normal' para corriente/agil, pero si hay tipos separados, usar el que corresponda
-  const type = form.value.type
-  // Si existe la capacidad para el tipo, usarla, si no, usar 'normal' como fallback
-  const cap: DebtCapacity | undefined = debtCapacities.value[type] || debtCapacities.value['normal']
-  return cap?.maxAmount ?? 0
-})
+// Computed not used in current implementation
+// const calculatedMaxCapacity = computed(() => {
+//   if (!debtCapacities.value) return 0
+//   // El backend puede devolver 'normal' para corriente/agil, pero si hay tipos separados, usar el que corresponda
+//   const type = form.value.type
+//   // Si existe la capacidad para el tipo, usarla, si no, usar 'normal' como fallback
+//   const cap: DebtCapacity | undefined = debtCapacities.value[type] || debtCapacities.value['normal']
+//   return cap?.maxAmount ?? 0
+// })
 
 async function fetchDebtCapacities() {
   if (!props.member) return
   loadingCapacity.value = true
   try {
     debtCapacities.value = await loansService.getDebtCapacitiesByMember(props.member.id)
-  } catch (e) {
+  } catch {
     formError.value = 'No se pudo obtener la capacidad de endeudamiento.'
     debtCapacities.value = null
   } finally {
@@ -94,7 +95,7 @@ async function fetchDebtCapacities() {
 
 watch(
   () => [props.show, props.prevLoan, props.member],
-  ([show, prevLoan, member]) => {
+  ([show, prevLoan]) => {
     if (show) {
       if (
         prevLoan &&

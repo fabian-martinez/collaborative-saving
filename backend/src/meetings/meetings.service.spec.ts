@@ -1,23 +1,30 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MeetingsService } from './meetings.service';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Repository, QueryRunner } from 'typeorm';
 import { Operation } from 'src/operations/entities/operation.entity';
 import { PaymentStrategyFactory } from './strategies/payment-strategy.factory';
 import { Meeting } from './entities/meeting.entity';
 import { OperationsService } from 'src/operations/operations.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { CreateTransactionPaymentDto } from './dto/create-transaction-payment.dto';
+import { PaymentType } from '../common/enums/payment-type.enum';
 import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common/exceptions';
 
+// Interface para la estrategia de pago mock
+interface MockPaymentStrategy {
+  handle: jest.Mock;
+  process: jest.Mock;
+}
+
 describe('MeetingsService', () => {
   let service: MeetingsService;
-  let meetingRepository: jest.Mocked<Repository<Meeting>>;
+  // let meetingRepository: jest.Mocked<Repository<Meeting>>;
   let operationRepository: jest.Mocked<Repository<Operation>>;
   let paymentStrategyFactory: jest.Mocked<PaymentStrategyFactory>;
-  let operationsService: jest.Mocked<OperationsService>;
+  // let operationsService: jest.Mocked<OperationsService>;
   let dataSource: jest.Mocked<DataSource>;
 
   beforeEach(async () => {
@@ -61,10 +68,10 @@ describe('MeetingsService', () => {
     }).compile();
 
     service = module.get<MeetingsService>(MeetingsService);
-    meetingRepository = module.get(getRepositoryToken(Meeting));
+    // meetingRepository = module.get(getRepositoryToken(Meeting));
     operationRepository = module.get(getRepositoryToken(Operation));
     paymentStrategyFactory = module.get(PaymentStrategyFactory);
-    operationsService = module.get(OperationsService);
+    // operationsService = module.get(OperationsService);
     dataSource = module.get(DataSource);
   });
 
@@ -74,7 +81,7 @@ describe('MeetingsService', () => {
     const meetingId = 'active-meeting-id';
     const payments: CreateTransactionPaymentDto[] = [
       {
-        type: 'mandatory_contribution',
+        type: PaymentType.MANDATORY_CONTRIBUTION,
         amount: 1500,
         description: 'Aporte obligatorio del mes',
         referenceId: 'test-reference-id',
@@ -100,6 +107,7 @@ describe('MeetingsService', () => {
 
     const mockPaymentStrategy = {
       handle: jest.fn(),
+      process: jest.fn(),
     };
 
     // Esto se ejecuta antes de CADA caso de prueba en este conjunto.
@@ -108,13 +116,15 @@ describe('MeetingsService', () => {
       jest.clearAllMocks(); // Limpia el historial de llamadas de los mocks.
 
       // Le decimos a nuestros mocks cómo comportarse por defecto para estos tests:
-      dataSource.createQueryRunner.mockReturnValue(mockQueryRunner as any);
+      dataSource.createQueryRunner.mockReturnValue(
+        mockQueryRunner as unknown as QueryRunner,
+      );
       service.findActive = jest
         .fn()
-        .mockResolvedValue(mockActiveMeeting as any);
+        .mockResolvedValue(mockActiveMeeting as Meeting);
       operationRepository.count.mockResolvedValue(0); // Simulamos que el socio no ha pagado.
       paymentStrategyFactory.getStrategy.mockReturnValue(
-        mockPaymentStrategy as any,
+        mockPaymentStrategy as MockPaymentStrategy,
       );
     });
 
@@ -123,7 +133,9 @@ describe('MeetingsService', () => {
       // 1. Preparar (Arrange)
       // En este caso, el beforeEach ya hizo casi todo. Solo simulamos
       // que al guardar la operación, la base de datos nos devuelve un ID.
-      mockQueryRunner.manager.save.mockResolvedValue({ id: 'new-op-id' });
+      mockQueryRunner.manager.save.mockResolvedValue({
+        id: 'new-op-id',
+      });
 
       // 2. Ejecutar (Act)
       // Llamamos al método que queremos probar.
@@ -145,7 +157,7 @@ describe('MeetingsService', () => {
 
       // Verificamos que se usó la estrategia de pago correcta.
       expect(paymentStrategyFactory.getStrategy).toHaveBeenCalledWith(
-        'mandatory_contribution',
+        PaymentType.MANDATORY_CONTRIBUTION,
       );
       expect(mockPaymentStrategy.handle).toHaveBeenCalledTimes(1);
 
@@ -158,7 +170,7 @@ describe('MeetingsService', () => {
       service.findActive = jest.fn().mockResolvedValue(null);
 
       // Act
-      await expect(service.recordMonthlyPayment(payload)).rejects.toThrow(
+      await expect(() => service.recordMonthlyPayment(payload)).rejects.toThrow(
         NotFoundException,
       );
 
@@ -170,7 +182,7 @@ describe('MeetingsService', () => {
       operationRepository.count.mockResolvedValue(1);
 
       // Act
-      await expect(service.recordMonthlyPayment(payload)).rejects.toThrow(
+      await expect(() => service.recordMonthlyPayment(payload)).rejects.toThrow(
         BadRequestException,
       );
 

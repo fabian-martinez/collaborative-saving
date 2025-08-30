@@ -218,9 +218,10 @@ async function selectMember(member: Member) {
       referenceId: due.referenceId,
     }));
 
-  } catch (err: any) {
+  } catch (err: unknown) {
+     const error = err as { response?: { data?: { message?: string } } };
      console.error("Error fetching member dues:", err);
-     duesError.value = err.response?.data?.message || 'Error al cargar las deudas del socio.';
+     duesError.value = error.response?.data?.message || 'Error al cargar las deudas del socio.';
   } finally {
     isDuesLoading.value = false;
   }

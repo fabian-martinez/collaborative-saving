@@ -11,6 +11,7 @@ import { SimplifiedRecordTransactionsDto } from '../src/meetings/dto/simplified-
 import { Operation } from '../src/operations/entities/operation.entity';
 import { Loan } from '../src/loans/entities/loan.entity';
 import { Meeting } from '../src/meetings/entities/meeting.entity';
+import { PaymentType } from '../src/common/enums/payment-type.enum';
 
 describe('Business Use Case (e2e)', () => {
   let app: INestApplication;
@@ -103,10 +104,11 @@ describe('Business Use Case (e2e)', () => {
   describe('Phase 2: Record Meeting Transactions', () => {
     it('should setup prerequisites for member 1', async () => {
       // 1. Create a meeting
-      await request(app.getHttpServer())
+      const meetingRes = await request(app.getHttpServer())
         .post('/meetings')
         .send({ notes: 'Test Meeting' })
         .expect(201);
+      const meetingId = (meetingRes.body as Meeting).id;
 
       // 2. Get Member 1 and a stock
       const members = await request(app.getHttpServer())
@@ -136,8 +138,10 @@ describe('Business Use Case (e2e)', () => {
       // 4. Create a loan for Member 1
       const loanDto: CreateLoanDto = {
         member_id: member1Id,
+        meeting_id: meetingId,
         loan_type: 'corriente',
         approved_amount: 3000,
+        monthly_payment_amount: 300,
         interest_rate: 0.01,
         status: 'active',
       };
@@ -161,17 +165,17 @@ describe('Business Use Case (e2e)', () => {
         memberId: member1Id,
         payments: [
           {
-            type: 'mandatory_contribution',
+            type: PaymentType.MANDATORY_CONTRIBUTION,
             description: 'Aporte Administrativo',
             amount: 5,
           },
           {
-            type: 'stock_fee',
+            type: PaymentType.STOCK_FEE,
             description: 'Cuota de 2 Acciones Grandes',
             amount: 200,
           },
           {
-            type: 'loan_payment',
+            type: PaymentType.LOAN_PAYMENT,
             description: 'Abono a Crédito Corriente 1',
             amount: 100,
             referenceId: loanId,

@@ -1,13 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { StocksService } from './stocks.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Stock, StockBehavior } from './entities/stock.entity';
+import { Stock } from './entities/stock.entity';
 import { Repository } from 'typeorm';
 import { StockSubscription } from '../stock-subscriptions/entities/stock-subscription.entity';
 
 describe('StocksService', () => {
   let service: StocksService;
-  let stocksRepository: Repository<Stock>;
+  // let stocksRepository: Repository<Stock>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -31,7 +31,7 @@ describe('StocksService', () => {
     }).compile();
 
     service = module.get<StocksService>(StocksService);
-    stocksRepository = module.get<Repository<Stock>>(getRepositoryToken(Stock));
+    // stocksRepository = module.get<Repository<Stock>>(getRepositoryToken(Stock));
   });
 
   it('debería estar definido', () => {

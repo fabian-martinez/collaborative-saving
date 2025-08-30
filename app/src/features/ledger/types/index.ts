@@ -111,11 +111,11 @@ export interface LedgerOperationGroup {
 }
 
 export interface LedgerFilters {
-  memberId?: string | null
-  accountType?: AccountType | null
-  meetingId?: string | null
-  search?: string | null
-  operationType?: string | null
+  memberId?: string | undefined
+  accountType?: AccountType | undefined
+  meetingId?: string | undefined
+  search?: string | undefined
+  operationType?: string | undefined
   triggerError?: boolean
 }
 

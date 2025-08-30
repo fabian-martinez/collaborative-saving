@@ -12,7 +12,7 @@ class OperationsService {
   }
 
   async getOperations(filter?: {meetingId?: string, memberId?: string, operationType?: string }): Promise<PaginatedOperationsResponse> {
-    let params = new URLSearchParams()
+    const params = new URLSearchParams()
     if (filter?.meetingId) {
       params.append('meetingId', filter.meetingId)
     }
