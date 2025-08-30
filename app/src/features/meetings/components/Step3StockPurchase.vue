@@ -66,7 +66,7 @@
             </div>
             <div v-else>
               
-              <div v-if="memberRegisteredPurchases(selectedMember?.id).length > 0" class="space-y-2">
+              <div v-if="selectedMember && memberRegisteredPurchases(selectedMember.id).length > 0" class="space-y-2">
                 <div v-for="op in memberRegisteredPurchases(selectedMember.id)" :key="op.id" class="bg-base-100/50 p-2 rounded-md text-sm cursor-pointer hover:bg-primary/10 transition"
                   @click="showOperationDetail(op)">
                   <OperationDetails :operation="op" v-if="false" />
@@ -205,7 +205,9 @@ import EditBuyStockModal from './EditBuyStockModal.vue'
 import type { Stock, StocksForPurchase } from '@/features/stocks/types'
 import { stocksService } from '@/features/stocks/services/stocksService';
 import type { Operation } from '@/features/operations/types'
-import { operationsService } from '@/features/operations/services/operationsService'
+import type { Member } from '@/features/members/types'
+// Service not used in current implementation
+// import { operationsService } from '@/features/operations/services/operationsService'
 import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
 
 type LocalLine = StocksForPurchase & { id: string, creditAmount: number }
@@ -225,7 +227,7 @@ async function getRegisteredPurchases() {
 }
 
 // Estado de la UI de la compra de acciones
-const selectedMember = ref<any | null>(null)
+const selectedMember = ref<Member | null>(null)
 const errorMsg = ref('')
 // Cambia localLines a un objeto por miembro
 const localLinesByMember = ref<Record<string, LocalLine[]>>({})
@@ -266,7 +268,7 @@ const totalPurchasedShares = computed(() =>
 function memberRegisteredPurchases(memberId: string) {
   return registeredPurchases.value.filter(p => p.member_id === memberId)
 }
-function selectMemberAndReset(member: any) {
+function selectMemberAndReset(member: Member) {
   selectedMember.value = member
   selectedOperation.value = null
 }
@@ -297,7 +299,7 @@ async function confirmLocalOperation() {
   try {
     for (const line of localLines.value) {
       await meetingsService.buyStocks(meetingId, {
-        memberId: selectedMember.value.id,
+        memberId: selectedMember.value?.id || '',
         stockId: line.stockId,
         quantity: line.quantity,
         cashAmount: line.cashAmount,
@@ -308,7 +310,7 @@ async function confirmLocalOperation() {
     resetForm()
     registeredPurchases.value = await getRegisteredPurchases()
     alert('Compra(s) registrada(s) exitosamente.')
-  } catch (e) {
+  } catch {
     alert('Error al registrar la(s) compra(s).')
   } finally {
     isRegistering.value = false
@@ -365,7 +367,7 @@ function handleBuyModalSave(line: Partial<StocksForPurchase>) {
     loanDetails: line.loanDetails || undefined,
     quantity: line.quantity || 1,
     stockId: line.stockId || '',
-    memberId: selectedMember.value.id || '',
+    memberId: selectedMember.value?.id || '',
   }
   if (isEditingBuy.value && editingBuyIdx.value !== null) {
     const lines = [...localLines.value]
@@ -378,8 +380,8 @@ function handleBuyModalSave(line: Partial<StocksForPurchase>) {
 }
 
 // Estado para modal de detalle de operación
-const selectedOperation = ref<any>(null)
-function showOperationDetail(op: any) {
+const selectedOperation = ref<Operation | null>(null)
+function showOperationDetail(op: Operation) {
   selectedOperation.value = op
 }
 function closeOperationDetail() {
@@ -390,6 +392,7 @@ function hasPendingPurchase(memberId: string) {
   return (localLinesByMember.value[memberId]?.length > 0)
 }
 
-const members = computed(() => activeMeetingStore.members)
+// Members computed property not used in current implementation
+// const members = computed(() => activeMeetingStore.members)
 
 </script> 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 import type { Member } from '../types';
 // import { membersService } from '../services/membersService';
 
@@ -29,11 +29,12 @@ const transactions = ref([
   { id: 'txn-4', date: '2024-07-01', description: 'Pago de cuota de préstamo', amount: 2500 },
 ]);
 
-const route = useRoute();
+// Route not used in current implementation
+// const route = useRoute();
 const router = useRouter();
 
 onMounted(async () => {
-  const memberId = route.params.id as string;
+  // const memberId = route.params.id as string;
   // try {
   //   // Uncomment the following lines when the API is ready
   //   // member.value = await membersService.getMemberById(memberId);

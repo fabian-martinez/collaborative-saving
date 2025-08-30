@@ -8,7 +8,7 @@ export interface MemberDue {
     | 'novelty';
   description: string;
   amount: number;
-  referenceId: string;
+  referenceId?: string;
   details?: {
     interest: number;
     principal: number;

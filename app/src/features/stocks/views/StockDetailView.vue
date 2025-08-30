@@ -137,11 +137,11 @@ const chartOptions = {
     tooltip: {
       callbacks: {
         label: function(context: any) {
-          let label = context.dataset.label || '';
+          let label = context.dataset?.label || '';
           if (label) {
             label += ': ';
           }
-          if (context.parsed.y !== null) {
+          if (context.parsed?.y !== null && context.parsed?.y !== undefined) {
             label += new Intl.NumberFormat('es-BO', { style: 'currency', currency: 'BOB' }).format(context.parsed.y);
           }
           return label;

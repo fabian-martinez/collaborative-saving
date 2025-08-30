@@ -76,6 +76,11 @@ import { Bar, Line, Pie } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, PointElement, LineElement, ArcElement, type ChartOptions } from 'chart.js'
 import { ref } from 'vue'
 
+// Define component name to satisfy vue/multi-word-component-names rule
+defineOptions({
+  name: 'DashboardView'
+})
+
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, PointElement, LineElement, ArcElement)
 
 const collectionsByMeetingData = ref({

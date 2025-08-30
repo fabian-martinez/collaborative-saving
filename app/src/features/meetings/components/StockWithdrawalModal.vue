@@ -73,6 +73,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { formatNumber } from '@/shared/formatters'
+import type { Member } from '@/features/members/types'
 
 interface MemberStock {
   stockId: string;
@@ -87,7 +88,7 @@ interface Withdrawal {
 
 const props = defineProps<{
   show: boolean,
-  member: any,
+  member: Member,
   memberStocks?: MemberStock[]
 }>()
 const emits = defineEmits(['save', 'cancel'])

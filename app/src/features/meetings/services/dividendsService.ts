@@ -16,15 +16,16 @@ export interface GetDividendsParams {
   memberId?: string;
   meetingId?: string;
   status?: string;
+  [key: string]: string | undefined;
 }
 
-function buildQuery(params: Record<string, any>): string {
+function buildQuery(params: GetDividendsParams): string {
   const esc = encodeURIComponent;
   return (
     '?' +
     Object.entries(params)
       .filter(([, v]) => v !== undefined && v !== null && v !== '')
-      .map(([k, v]) => esc(k) + '=' + esc(v))
+      .map(([k, v]) => esc(k) + '=' + esc(v!))
       .join('&')
   );
 }

@@ -36,8 +36,9 @@ export const useActiveMeetingStore = defineStore('active-meeting', () => {
     membersError.value = null
     try {
       members.value = await membersService.getMembers()
-    } catch (err: any) {
-      membersError.value = err.message || 'Error al cargar los socios.'
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      membersError.value = error.message || 'Error al cargar los socios.'
     } finally {
       isMembersLoading.value = false
     }

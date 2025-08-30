@@ -61,7 +61,8 @@
 import { ref, onMounted, watch } from 'vue'
 import { useActiveMeetingStore } from '@/features/meetings/stores/activeMeeting'
 import { meetingsService } from '../services/meetings'
-import type { Operation } from '@/features/operations/types'
+// Type not used in current implementation
+// import type { Operation } from '@/features/operations/types'
 import Step1Collection from '../components/Step1Collection.vue'
 import Step2Revaluation from '../components/Step2Revaluation.vue'
 import Step3StockPurchase from '../components/Step3StockPurchase.vue'
@@ -70,7 +71,8 @@ import Step5Disbursements from '../components/Step5Disbursements.vue'
 import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
 
 const activeMeetingStore = useActiveMeetingStore()
-const operations = ref<Operation[]>([])
+// Operations not used in current implementation
+// const operations = ref<Operation[]>([])
 const availableCash = ref(0)
 const totalCollection = ref(0)
 const totalInterest = ref(0)
@@ -89,7 +91,7 @@ async function fetchMeetingSummary() {
       totalCollection.value = summary.totalCollected ?? 0
       availableCash.value = summary.totalCash ?? 0
       totalInterest.value = summary.totalInterest ?? 0
-    } catch (error) {
+    } catch {
       summaryError.value = 'Error al obtener el resumen de la reunión'
       totalCollection.value = 0
       availableCash.value = 0
@@ -138,13 +140,14 @@ function goToPreviousStep() {
   }
 }
 
-function finishMeeting() {
-  // Lógica para finalizar y archivar la reunión
-  alert('¡Reunión finalizada!')
-  // Potentially reset store and redirect
-  // activeMeetingStore.$reset()
-  // router.push('/meetings')
-}
+// Function not used in current implementation
+// function finishMeeting() {
+//   // Lógica para finalizar y archivar la reunión
+//   alert('¡Reunión finalizada!')
+//   // Potentially reset store and redirect
+//   // activeMeetingStore.$reset()
+//   // router.push('/meetings')
+// }
 </script>
 
 <style scoped>

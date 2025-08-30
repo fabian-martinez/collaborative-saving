@@ -146,7 +146,8 @@ import { ref, computed, watch } from 'vue';
 import type { Member } from '@/features/members/types';
 import type { MemberDue, Payment } from '../types';
 import { meetingsService } from '@/features/meetings/services/meetings';
-import { useActiveMeetingStore } from '../stores/activeMeeting';
+// Store not used in current implementation
+// import { useActiveMeetingStore } from '../stores/activeMeeting';
 import EditLoanPaymentModal from './EditLoanPaymentModal.vue';
 import EditFineModal from './EditFineModal.vue';
 import { formatNumber } from '@/shared/formatters'
@@ -158,7 +159,8 @@ const props = defineProps<{
 
 const emit = defineEmits(['success']);
 
-const activeMeetingStore = useActiveMeetingStore();
+// Store not used in current implementation
+// const activeMeetingStore = useActiveMeetingStore();
 
 const memberDues = ref<MemberDue[]>([]);
 const payments = ref<Payment[]>([]);
@@ -290,7 +292,7 @@ async function handleRecordTransaction() {
     }
     const due = memberDues.value[index];
     let description = payment.description;
-    let noveltyComment = payment.noveltyComment;
+    const noveltyComment = payment.noveltyComment;
     if (due) {
       if (due.type === 'stock_fee' && due.stockQuantity && due.monthlyContribution) {
         description = `${due.description}, ${Number(due.stockQuantity).toFixed(2)} uds. x ${due.monthlyContribution.toFixed(2)} c/u`;
@@ -314,11 +316,12 @@ async function handleRecordTransaction() {
   try {
     isSubmitting.value = true;
     submissionError.value = null;
-    await meetingsService.recordMonthlyPayment(payload as any);
+    await meetingsService.recordMonthlyPayment(payload);
     alert(`Pago de ${totalToPay.value.toFixed(2)} registrado para ${props.member.name}.`);
     emit('success');
-  } catch (err: any) {
-    submissionError.value = err.response?.data?.message || 'Error al registrar el pago.';
+  } catch (err: unknown) {
+    const error = err as { response?: { data?: { message?: string } } };
+    submissionError.value = error.response?.data?.message || 'Error al registrar el pago.';
     alert(`Error: ${submissionError.value}`);
   } finally {
     isSubmitting.value = false;
@@ -381,9 +384,10 @@ async function fetchDues(member: Member) {
       amount: due.amount,
       referenceId: due.referenceId,
     }));
-  } catch (err: any) {
+  } catch (err: unknown) {
+     const error = err as { response?: { data?: { message?: string } } };
      console.error("Error fetching member dues:", err);
-     duesError.value = err.response?.data?.message || 'Error al cargar las deudas del socio.';
+     duesError.value = error.response?.data?.message || 'Error al cargar las deudas del socio.';
   } finally {
     isDuesLoading.value = false;
   }

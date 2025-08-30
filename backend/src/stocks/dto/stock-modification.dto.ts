@@ -23,17 +23,22 @@ function IsValidTargetLoanId(validationOptions?: ValidationOptions) {
       propertyName: propertyName,
       options: validationOptions,
       validator: {
-        validate(value: any) {
+        validate(value: unknown) {
           if (!value) return true; // Permitir valores vacíos
 
           // Valores especiales permitidos
           const specialValues = ['new_action_loan', 'new_current_loan'];
-          if (specialValues.includes(value)) return true;
+          if (typeof value === 'string' && specialValues.includes(value))
+            return true;
 
           // Validar UUID
-          const uuidRegex =
-            /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-          return uuidRegex.test(value);
+          if (typeof value === 'string') {
+            const uuidRegex =
+              /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+            return uuidRegex.test(value);
+          }
+
+          return false;
         },
         defaultMessage(args: ValidationArguments) {
           return `${args.property} must be a valid UUID or one of the special values: new_action_loan, new_current_loan`;

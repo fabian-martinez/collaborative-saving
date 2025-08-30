@@ -539,9 +539,11 @@
               </label>
               <select v-model="modificationForm.targetLoanId" class="select select-bordered w-full">
                 <option value="">{{ difference > 0 ? 'Seleccione un crédito' : 'Seleccione tipo de crédito' }}</option>
-                <option v-if="difference > 0" v-for="loan in memberLoans" :key="loan.id" :value="loan.id">
-                  {{ loan.loan_type }} - Saldo: $<CopyOnDblClickNumber :value="loan.outstanding_balance" />
-                </option>
+                <template v-if="difference > 0">
+                  <option v-for="loan in memberLoans" :key="loan.id" :value="loan.id">
+                    {{ loan.loan_type }} - Saldo: $<CopyOnDblClickNumber :value="loan.outstanding_balance" />
+                  </option>
+                </template>
                 <option v-if="difference < 0" value="new_action_loan">Crédito de Acción (2% interés)</option>
                 <option v-if="difference < 0" value="new_current_loan">Crédito Corriente (2% interés)</option>
               </select>
