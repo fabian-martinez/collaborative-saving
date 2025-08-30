@@ -294,9 +294,7 @@ export class StocksService {
     }
   }
 
-  async processStockModification(
-    dto: StockModificationDto,
-  ): Promise<{
+  async processStockModification(dto: StockModificationDto): Promise<{
     operationId: string;
     message: string;
     details: any;
@@ -334,17 +332,28 @@ export class StocksService {
     message: string;
     details: any;
   }> {
-    if (!dto.fromSubscriptionId || !dto.fromQuantity || !dto.toStockId || !dto.toQuantity) {
-      throw new BadRequestException('Faltan datos requeridos para el intercambio de acciones');
+    if (
+      !dto.fromSubscriptionId ||
+      !dto.fromQuantity ||
+      !dto.toStockId ||
+      !dto.toQuantity
+    ) {
+      throw new BadRequestException(
+        'Faltan datos requeridos para el intercambio de acciones',
+      );
     }
 
     // Validar suscripción origen
-    const fromSubscription = await this.stockSubscriptionsService.findOne(dto.fromSubscriptionId);
+    const fromSubscription = await this.stockSubscriptionsService.findOne(
+      dto.fromSubscriptionId,
+    );
     if (!fromSubscription || fromSubscription.member_id !== dto.memberId) {
       throw new BadRequestException('Suscripción de origen no válida');
     }
     if (Number(fromSubscription.quantity) < dto.fromQuantity) {
-      throw new BadRequestException('Cantidad insuficiente en la suscripción de origen');
+      throw new BadRequestException(
+        'Cantidad insuficiente en la suscripción de origen',
+      );
     }
 
     // Obtener acciones origen y destino
@@ -366,7 +375,8 @@ export class StocksService {
     await queryRunner.manager.save(operation);
 
     // Actualizar suscripción origen
-    const newFromQuantity = Number(fromSubscription.quantity) - dto.fromQuantity;
+    const newFromQuantity =
+      Number(fromSubscription.quantity) - dto.fromQuantity;
     if (newFromQuantity > 0) {
       await queryRunner.manager.update(
         'stock_subscriptions',
@@ -394,7 +404,7 @@ export class StocksService {
 
     // Crear asientos contables
     const ledgerEntries: LedgerEntry[] = [];
-    
+
     // Disminuir capital de acciones origen
     ledgerEntries.push(
       queryRunner.manager.create(LedgerEntry, {
@@ -425,7 +435,7 @@ export class StocksService {
           // Aplicar diferencia a crédito existente
           const loan = await this.loansService.findOne(dto.targetLoanId);
           const newBalance = Number(loan.outstanding_balance) - difference;
-          
+
           await queryRunner.manager.update(
             'loans',
             { id: dto.targetLoanId },
@@ -443,7 +453,8 @@ export class StocksService {
           );
         } else {
           // Crear nuevo crédito para financiar la diferencia
-          const loanType = dto.targetLoanId === 'new_action_loan' ? 'accion' : 'corriente';
+          const loanType =
+            dto.targetLoanId === 'new_action_loan' ? 'accion' : 'corriente';
           await this.loansService.create(
             {
               member_id: dto.memberId,
@@ -510,17 +521,27 @@ export class StocksService {
     message: string;
     details: any;
   }> {
-    if (!dto.transferSubscriptionId || !dto.transferQuantity || !dto.toMemberId) {
-      throw new BadRequestException('Faltan datos requeridos para la transferencia');
+    if (
+      !dto.transferSubscriptionId ||
+      !dto.transferQuantity ||
+      !dto.toMemberId
+    ) {
+      throw new BadRequestException(
+        'Faltan datos requeridos para la transferencia',
+      );
     }
 
     // Validar suscripción origen
-    const fromSubscription = await this.stockSubscriptionsService.findOne(dto.transferSubscriptionId);
+    const fromSubscription = await this.stockSubscriptionsService.findOne(
+      dto.transferSubscriptionId,
+    );
     if (!fromSubscription || fromSubscription.member_id !== dto.memberId) {
       throw new BadRequestException('Suscripción de origen no válida');
     }
     if (Number(fromSubscription.quantity) < dto.transferQuantity) {
-      throw new BadRequestException('Cantidad insuficiente en la suscripción de origen');
+      throw new BadRequestException(
+        'Cantidad insuficiente en la suscripción de origen',
+      );
     }
 
     // Comentado temporalmente: Validar que no tenga crédito asociado
@@ -528,21 +549,33 @@ export class StocksService {
     //   throw new BadRequestException('No se pueden transferir acciones con crédito asociado');
     // }
 
-    // Obtener acción
+    // Obtener acción y socios para trazabilidad
     const stock = await this.findOne(fromSubscription.stock_id);
+    const fromMember = await this.membersService.findOne(dto.memberId);
+    const toMember = await this.membersService.findOne(dto.toMemberId);
     const transferValue = stock.value * dto.transferQuantity;
 
-    // Crear operación
-    const operation = queryRunner.manager.create(Operation, {
+    // Crear operación ORIGEN (socio que transfiere)
+    const fromOperation = queryRunner.manager.create(Operation, {
       member_id: dto.memberId,
       meeting_id: dto.meetingId,
-      description: `Transferencia ${dto.transferQuantity} ${stock.type} a socio`,
+      description: `Transferencia de ${dto.transferQuantity} ${stock.type} a ${toMember.name}`,
       type: OperationType.STOCK_TRANSFER,
     });
-    await queryRunner.manager.save(operation);
+    await queryRunner.manager.save(fromOperation);
+
+    // Crear operación DESTINO (socio que recibe)
+    const toOperation = queryRunner.manager.create(Operation, {
+      member_id: dto.toMemberId,
+      meeting_id: dto.meetingId,
+      description: `Recepción de ${dto.transferQuantity} ${stock.type} desde ${fromMember.name}`,
+      type: OperationType.STOCK_TRANSFER,
+    });
+    await queryRunner.manager.save(toOperation);
 
     // Actualizar suscripción origen
-    const newFromQuantity = Number(fromSubscription.quantity) - dto.transferQuantity;
+    const newFromQuantity =
+      Number(fromSubscription.quantity) - dto.transferQuantity;
     if (newFromQuantity > 0) {
       await queryRunner.manager.update(
         'stock_subscriptions',
@@ -568,44 +601,52 @@ export class StocksService {
       queryRunner,
     );
 
-    // Crear asientos contables
-    const ledgerEntries: LedgerEntry[] = [];
-    
+    // Crear asientos contables para la operación ORIGEN
+    const fromLedgerEntries: LedgerEntry[] = [];
+
     // Disminuir capital del socio origen
-    ledgerEntries.push(
+    fromLedgerEntries.push(
       queryRunner.manager.create(LedgerEntry, {
-        operation_id: operation.id,
+        operation_id: fromOperation.id,
         stock_id: fromSubscription.stock_id,
         stock_subscription_id: dto.transferSubscriptionId,
         account_type: STOCK_CAPITAL_ACCOUNT,
         amount: transferValue,
-        description: `Transferencia de ${dto.transferQuantity} ${stock.type}`,
+        description: `Transferencia de ${dto.transferQuantity} ${stock.type} a ${toMember.name}`,
       }),
     );
 
+    // Crear asientos contables para la operación DESTINO
+    const toLedgerEntries: LedgerEntry[] = [];
+
     // Aumentar capital del socio destino
-    ledgerEntries.push(
+    toLedgerEntries.push(
       queryRunner.manager.create(LedgerEntry, {
-        operation_id: operation.id,
+        operation_id: toOperation.id,
         stock_id: fromSubscription.stock_id,
         account_type: STOCK_CAPITAL_ACCOUNT,
         amount: -transferValue,
-        description: `Recepción de ${dto.transferQuantity} ${stock.type}`,
+        description: `Recepción de ${dto.transferQuantity} ${stock.type} desde ${fromMember.name}`,
       }),
     );
 
-    await queryRunner.manager.save(ledgerEntries);
+    // Guardar todos los asientos contables
+    await queryRunner.manager.save([...fromLedgerEntries, ...toLedgerEntries]);
     await queryRunner.commitTransaction();
 
     return {
-      operationId: operation.id,
+      operationId: fromOperation.id, // Retornamos la operación principal (origen)
       message: 'Transferencia de acciones procesada exitosamente',
       details: {
         stockType: stock.type,
         quantity: dto.transferQuantity,
         value: transferValue,
         fromMemberId: dto.memberId,
+        fromMemberName: fromMember.name,
         toMemberId: dto.toMemberId,
+        toMemberName: toMember.name,
+        fromOperationId: fromOperation.id,
+        toOperationId: toOperation.id,
       },
     };
   }
@@ -618,12 +659,20 @@ export class StocksService {
     message: string;
     details: any;
   }> {
-    if (!dto.loanPaymentSubscriptionId || !dto.loanPaymentQuantity || !dto.loanId) {
-      throw new BadRequestException('Faltan datos requeridos para el pago con acciones');
+    if (
+      !dto.loanPaymentSubscriptionId ||
+      !dto.loanPaymentQuantity ||
+      !dto.loanId
+    ) {
+      throw new BadRequestException(
+        'Faltan datos requeridos para el pago con acciones',
+      );
     }
 
     // Validar suscripción
-    const subscription = await this.stockSubscriptionsService.findOne(dto.loanPaymentSubscriptionId);
+    const subscription = await this.stockSubscriptionsService.findOne(
+      dto.loanPaymentSubscriptionId,
+    );
     if (!subscription || subscription.member_id !== dto.memberId) {
       throw new BadRequestException('Suscripción no válida');
     }
@@ -639,7 +688,7 @@ export class StocksService {
     // Obtener acción y crédito
     const stock = await this.findOne(subscription.stock_id);
     const loan = await this.loansService.findOne(dto.loanId);
-    
+
     if (loan.member_id !== dto.memberId) {
       throw new BadRequestException('El crédito no pertenece al socio');
     }
@@ -681,7 +730,7 @@ export class StocksService {
 
     // Crear asientos contables
     const ledgerEntries: LedgerEntry[] = [];
-    
+
     // Disminuir capital de acciones
     ledgerEntries.push(
       queryRunner.manager.create(LedgerEntry, {
