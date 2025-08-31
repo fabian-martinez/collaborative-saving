@@ -16,6 +16,7 @@ export const DIVIDENDS_PAYABLE_ACCOUNT = 'DIVIDENDS_PAYABLE'; // Dividendos por 
 export const STOCK_CAPITAL_ACCOUNT = 'STOCK_CAPITAL'; // Capital aportado por los socios al comprar acciones.
 export const REVALUATION_SURPLUS_ACCOUNT = 'REVALUATION_SURPLUS'; // Ganancias no realizadas por el aumento de valor de los activos.
 export const MEMBER_EQUITY_ACCOUNT = 'MEMBER_EQUITY'; // Capital/patrimonio del socio para préstamos sin afectar efectivo.
+export const ACCUMULATED_SURPLUS_ACCOUNT = 'ACCUMULATED_SURPLUS'; // Superávit acumulado de reuniones anteriores.
 
 // --- INGRESOS ---
 // Representan las ganancias del fondo.
