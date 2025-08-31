@@ -27,6 +27,12 @@ describe('DuesService', () => {
           useValue: {
             manager: {
               find: jest.fn(),
+              createQueryBuilder: jest.fn().mockReturnValue({
+                innerJoin: jest.fn().mockReturnThis(),
+                where: jest.fn().mockReturnThis(),
+                andWhere: jest.fn().mockReturnThis(),
+                getExists: jest.fn().mockResolvedValue(false),
+              }),
             },
           },
         },
@@ -106,7 +112,7 @@ describe('DuesService', () => {
       mandatoryContributionsService.findAll.mockResolvedValue([
         { id: 'mc-1', asset_type: 'Fondo de Bienestar', value: 1000 },
       ] as any);
-      (dataSource.manager.find as jest.Mock).mockResolvedValue([
+      stockSubscriptionsService.findActiveByMember.mockResolvedValue([
         {
           id: 'ss-1',
           member_id: memberId,
@@ -144,7 +150,7 @@ describe('DuesService', () => {
       meetingsService.findActive.mockResolvedValue(activeMeeting as any);
       membersService.findOne.mockResolvedValue(member as any);
       mandatoryContributionsService.findAll.mockResolvedValue([]);
-      (dataSource.manager.find as jest.Mock).mockResolvedValue([]);
+      stockSubscriptionsService.findActiveByMember.mockResolvedValue([]);
       loansService.findActiveByMember.mockResolvedValue([]);
 
       const dues = await service.getMemberDuesForActiveMeeting(memberId);
@@ -155,7 +161,7 @@ describe('DuesService', () => {
       meetingsService.findActive.mockResolvedValue(activeMeeting as any);
       membersService.findOne.mockResolvedValue(member as any);
       mandatoryContributionsService.findAll.mockResolvedValue([]);
-      (dataSource.manager.find as jest.Mock).mockResolvedValue([]);
+      stockSubscriptionsService.findActiveByMember.mockResolvedValue([]);
       loansService.findActiveByMember.mockResolvedValue([
         {
           id: 'loan-1',
@@ -163,6 +169,14 @@ describe('DuesService', () => {
           outstanding_balance: 100000,
         },
       ] as any);
+
+      // Mock createQueryBuilder para simular que ya se pagó el interés
+      (dataSource.manager.createQueryBuilder as jest.Mock).mockReturnValue({
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getExists: jest.fn().mockResolvedValue(true), // Ya se pagó el interés
+      });
 
       const dues = await service.getMemberDuesForActiveMeeting(memberId);
       expect(dues.some((due) => due.type === 'loan_payment')).toBe(false);

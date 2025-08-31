@@ -2,12 +2,20 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { StocksService } from './stocks.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Stock } from './entities/stock.entity';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { StockSubscription } from '../stock-subscriptions/entities/stock-subscription.entity';
+import { MembersService } from '../members/members.service';
+import { LoansService } from '../loans/loans.service';
+import { StockSubscriptionsService } from '../stock-subscriptions/stock-subscriptions.service';
 
 describe('StocksService', () => {
   let service: StocksService;
-  // let stocksRepository: Repository<Stock>;
+  let stocksRepository: jest.Mocked<Repository<Stock>>;
+  let stockSubscriptionsRepository: jest.Mocked<Repository<StockSubscription>>;
+  let dataSource: jest.Mocked<DataSource>;
+  let membersService: jest.Mocked<MembersService>;
+  let loansService: jest.Mocked<LoansService>;
+  let stockSubscriptionsService: jest.Mocked<StockSubscriptionsService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -15,23 +23,55 @@ describe('StocksService', () => {
         StocksService,
         {
           provide: getRepositoryToken(Stock),
-          useClass: Repository,
+          useValue: {
+            create: jest.fn(),
+            save: jest.fn(),
+            find: jest.fn(),
+            findOne: jest.fn(),
+            findOneBy: jest.fn(),
+          },
         },
         {
           provide: getRepositoryToken(StockSubscription),
-          useClass: Repository,
+          useValue: {
+            find: jest.fn(),
+            findOne: jest.fn(),
+          },
         },
-        // Mocks mínimos para dependencias
-        { provide: 'DataSource', useValue: {} },
-        { provide: 'OperationsService', useValue: {} },
-        { provide: 'MembersService', useValue: {} },
-        { provide: 'LoansService', useValue: {} },
-        { provide: 'StockSubscriptionsService', useValue: {} },
+        {
+          provide: DataSource,
+          useValue: {
+            createQueryRunner: jest.fn(),
+          },
+        },
+        {
+          provide: MembersService,
+          useValue: {
+            findOne: jest.fn(),
+          },
+        },
+        {
+          provide: LoansService,
+          useValue: {
+            findOne: jest.fn(),
+          },
+        },
+        {
+          provide: StockSubscriptionsService,
+          useValue: {
+            findAllWithDetails: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<StocksService>(StocksService);
-    // stocksRepository = module.get<Repository<Stock>>(getRepositoryToken(Stock));
+    stocksRepository = module.get(getRepositoryToken(Stock));
+    stockSubscriptionsRepository = module.get(getRepositoryToken(StockSubscription));
+    dataSource = module.get(DataSource);
+    membersService = module.get(MembersService);
+    loansService = module.get(LoansService);
+    stockSubscriptionsService = module.get(StockSubscriptionsService);
   });
 
   it('debería estar definido', () => {

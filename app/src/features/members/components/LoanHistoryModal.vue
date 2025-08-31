@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { X } from 'iconoir-vue/regular';
+import { Xmark } from 'iconoir-vue/regular';
 
 interface LoanInstallment {
   id: string;
   installmentNumber: number;
-  dueDate: string;
-  paymentDate?: string;
+  dueDate: Date | string;
+  paymentDate?: Date | string;
   principal: number;
   interest: number;
   total: number;
-  status: 'Pagada' | 'Pendiente' | 'Vencida';
+  status: string;
 }
 
 interface Props {
@@ -72,7 +72,7 @@ const getStatusBadgeClass = (status: string) => {
           <p class="text-base-content/70 text-sm">Detalle completo del préstamo por {{ formatCurrency(loanAmount) }}</p>
         </div>
         <button @click="closeModal" class="btn btn-sm btn-square btn-ghost">
-          <X class="w-5 h-5" />
+          <Xmark class="w-5 h-5" />
         </button>
       </div>
 

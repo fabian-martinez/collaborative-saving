@@ -9,6 +9,7 @@ import { OperationsModule } from '../operations/operations.module';
 import { LedgerEntriesModule } from '../ledger-entries/ledger-entries.module';
 import { StocksModule } from '../stocks/stocks.module';
 import { MeetingsModule } from '../meetings/meetings.module';
+import { MembersModule } from '../members/members.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { MeetingsModule } from '../meetings/meetings.module';
     forwardRef(() => OperationsModule),
     LedgerEntriesModule,
     forwardRef(() => StocksModule),
+    MembersModule,
   ],
   controllers: [LoansController],
   providers: [LoansService],

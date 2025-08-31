@@ -14,9 +14,9 @@ import { MandatoryContribution } from '../mandatory-contributions/entities/manda
 import { StockSubscription } from '../stock-subscriptions/entities/stock-subscription.entity';
 import { Loan } from '../loans/entities/loan.entity';
 import { MembersService } from '../members/members.service';
-import { Stock } from 'src/stocks/entities/stock.entity';
-import { Operation } from 'src/operations/entities/operation.entity';
-import { LoanTransactionDetail } from 'src/loans/entities/loan-transaction-detail.entity';
+import { Stock } from '../stocks/entities/stock.entity';
+import { Operation } from '../operations/entities/operation.entity';
+import { LoanTransactionDetail } from '../loans/entities/loan-transaction-detail.entity';
 import { TransactionType } from '../common/enums/transaction-type.enum';
 
 @Injectable()

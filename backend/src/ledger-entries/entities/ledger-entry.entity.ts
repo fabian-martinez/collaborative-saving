@@ -29,6 +29,14 @@ export class LedgerEntry {
   operation_id: string;
 
   @ApiProperty({
+    description: 'The ID of the member this entry affects',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    nullable: true,
+  })
+  @Column({ type: 'uuid', nullable: true })
+  member_id: string;
+
+  @ApiProperty({
     description: 'The type of account affected (e.g., cash, loan_portfolio)',
     example: 'cash',
   })

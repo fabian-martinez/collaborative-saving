@@ -69,37 +69,43 @@ describe('AssetRevaluationService', () => {
       type: 'REGULAR', // Añadido para evitar error en sort
     };
     const mockSubscriptions = [
-      { stock_id: 'stock-g', quantity: 10 },
-      { stock_id: 'stock-r', quantity: 20 },
+      { stock_id: 'stock-g', quantity: 10, status: 'active' },
+      { stock_id: 'stock-r', quantity: 20, status: 'active' },
     ];
     const mockInterestLedgerEntry = {
       account_type: INTEREST_INCOME_ACCOUNT,
       amount: 20000,
+      operation: { meeting_id: meetingId, type: 'MONTHLY_PAYMENT' },
     };
     const mockContributionLedgerEntry = {
       account_type: STOCK_CAPITAL_ACCOUNT,
       amount: 50000,
+      stock_id: 'stock-r',
+      operation: { meeting_id: meetingId, type: 'MONTHLY_PAYMENT' },
     };
 
     it('should calculate revaluation preview correctly for base scenario', async () => {
       meetingRepository.findOneBy.mockResolvedValue(mockMeeting as any);
-      (dataSource.manager.find as jest.Mock).mockImplementation(
-        (entity: any) => {
-          if (entity === LedgerEntry) {
-            return Promise.resolve([
-              mockInterestLedgerEntry,
-              mockContributionLedgerEntry,
-            ]);
-          }
-          if (entity === Stock) {
-            return Promise.resolve([mockGuaranteedStock, mockRegularStock]);
-          }
-          if (entity === StockSubscription) {
-            return Promise.resolve(mockSubscriptions);
-          }
-          return Promise.resolve([]);
-        },
-      );
+      
+      // Mock the entire dataSource.manager.find method
+      const mockFind = jest.fn();
+      mockFind.mockImplementation((entity: any, options: any) => {
+        if (entity === LedgerEntry) {
+          return Promise.resolve([
+            mockInterestLedgerEntry,
+            mockContributionLedgerEntry,
+          ]);
+        }
+        if (entity === Stock) {
+          return Promise.resolve([mockGuaranteedStock, mockRegularStock]);
+        }
+        if (entity === StockSubscription) {
+          return Promise.resolve(mockSubscriptions);
+        }
+        return Promise.resolve([]);
+      });
+      
+      dataSource.manager.find = mockFind;
 
       const result = await service.getRevaluationPreview(meetingId);
 
@@ -292,7 +298,7 @@ describe('AssetRevaluationService', () => {
             ]);
           }
           if (entity === StockSubscription) {
-            return Promise.resolve([{ stock_id: 'stock-1', quantity: 1 }]);
+            return Promise.resolve([{ stock_id: 'stock-1', quantity: 1, status: 'active' }]);
           }
           return Promise.resolve([]);
         },

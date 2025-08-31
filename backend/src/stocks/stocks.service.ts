@@ -22,7 +22,7 @@ import {
   LOANS_RECEIVABLE_ACCOUNT,
   STOCK_CAPITAL_ACCOUNT,
 } from '../common/constants/account-types';
-import { StockSubscription } from 'src/stock-subscriptions/entities/stock-subscription.entity';
+import { StockSubscription } from '../stock-subscriptions/entities/stock-subscription.entity';
 import { OperationType } from '../common/enums/operation-type.enum';
 import { StockModificationDto } from './dto/stock-modification.dto';
 
@@ -767,6 +767,159 @@ export class StocksService {
         previousBalance: loan.outstanding_balance,
         newBalance,
       },
+    };
+  }
+
+  /**
+   * Get stock summary for a specific member using LedgerEntry for transactions
+   */
+  async getMemberStockSummary(memberId: string): Promise<{
+    memberId: string;
+    memberName: string;
+    stocks: Array<{
+      id: string;
+      name: string;
+      quantity: number;
+      value: number;
+      nominalValue: number;
+      requiredContribution: number;
+      lastTransactionDate?: Date;
+    }>;
+    totalValue: number;
+    totalMonthlyContribution: number;
+  }> {
+    // Get member
+    const member = await this.membersService.findOne(memberId);
+
+    // Get stock subscriptions for the member
+    const stockSubscriptions = await this.stockSubscriptionsRepository.find({
+      where: { member_id: memberId },
+      relations: ['stock'],
+    });
+
+    // Get stock transactions from LedgerEntry
+    const stockTransactions = await this.dataSource
+      .getRepository(LedgerEntry)
+      .createQueryBuilder('entry')
+      .leftJoinAndSelect('entry.operation', 'operation')
+      .leftJoinAndSelect('entry.stock', 'stock')
+      .where('entry.member_id = :memberId', { memberId })
+      .andWhere('entry.stock_id IS NOT NULL')
+      .andWhere('operation.type IN (:...types)', {
+        types: [
+          OperationType.STOCK_PURCHASE,
+          OperationType.STOCK_FEE,
+          OperationType.STOCK_WITHDRAWAL,
+        ],
+      })
+      .orderBy('entry.created_at', 'DESC')
+      .getMany();
+
+    // Calculate stock values and contributions
+    const stocks = stockSubscriptions.map((subscription) => {
+      const stock = subscription.stock;
+      const quantity = Number(subscription.quantity);
+      const value = stock.value * quantity;
+
+      // Find last transaction for this stock
+      const lastTransaction = stockTransactions.find(
+        (t) => t.stock_id === stock.id,
+      );
+
+      return {
+        id: stock.id,
+        name: stock.type,
+        quantity,
+        value,
+        nominalValue: stock.value,
+        requiredContribution: stock.monthly_contribution || 0,
+        lastTransactionDate: lastTransaction?.created_at,
+      };
+    });
+
+    const totalValue = stocks.reduce((sum, stock) => sum + stock.value, 0);
+    const totalMonthlyContribution = stocks.reduce(
+      (sum, stock) => sum + stock.requiredContribution,
+      0,
+    );
+
+    return {
+      memberId,
+      memberName: member.name,
+      stocks,
+      totalValue,
+      totalMonthlyContribution,
+    };
+  }
+
+  /**
+   * Get stock transaction history for a specific stock and member
+   */
+  async getStockTransactionHistory(
+    stockId: string,
+    memberId: string,
+  ): Promise<{
+    stockId: string;
+    stockName: string;
+    memberId: string;
+    memberName: string;
+    transactions: Array<{
+      id: string;
+      date: Date;
+      period: string;
+      description: string;
+      amount: number;
+      status: string;
+      operationType: string;
+    }>;
+    totalAmount: number;
+  }> {
+    // Get member and stock
+    const member = await this.membersService.findOne(memberId);
+    const stock = await this.findOne(stockId);
+
+    // Get stock transactions from LedgerEntry
+    const transactions = await this.dataSource
+      .getRepository(LedgerEntry)
+      .createQueryBuilder('entry')
+      .leftJoinAndSelect('entry.operation', 'operation')
+      .where('entry.member_id = :memberId', { memberId })
+      .andWhere('entry.stock_id = :stockId', { stockId })
+      .andWhere('operation.type IN (:...types)', {
+        types: [
+          OperationType.STOCK_FEE,
+          OperationType.STOCK_WITHDRAWAL,
+          OperationType.STOCK_PURCHASE,
+        ],
+      })
+      .orderBy('entry.created_at', 'DESC')
+      .getMany();
+
+    // Map transactions to DTO format
+    const transactionDtos = transactions.map((entry) => {
+      const date = new Date(entry.created_at);
+      const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+      return {
+        id: entry.id,
+        date: entry.created_at,
+        period,
+        description: entry.description || `Transacción de ${stock.type}`,
+        amount: Math.abs(Number(entry.amount)),
+        status: entry.amount > 0 ? 'paid' : 'pending',
+        operationType: entry.operation.type,
+      };
+    });
+
+    const totalAmount = transactionDtos.reduce((sum, t) => sum + t.amount, 0);
+
+    return {
+      stockId,
+      stockName: stock.type,
+      memberId,
+      memberName: member.name,
+      transactions: transactionDtos,
+      totalAmount,
     };
   }
 }

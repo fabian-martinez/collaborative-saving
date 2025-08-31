@@ -132,8 +132,8 @@ const filteredMembers = computed(() => {
   const s = search.value.toLowerCase()
   return members.value.filter(m =>
     m.name.toLowerCase().includes(s) ||
-    m.email.toLowerCase().includes(s) ||
-    m.identificationNumber.toLowerCase().includes(s)
+    (m.email?.toLowerCase() || '').includes(s) ||
+    (m.identificationNumber?.toLowerCase() || '').includes(s)
   )
 })
 

@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { X } from 'iconoir-vue/regular';
+import { Xmark } from 'iconoir-vue/regular';
 
 interface StockTransaction {
   id: string;
-  date: string;
+  date: Date | string;
   period: string;
   description: string;
   amount: number;
-  status: 'Pagado' | 'Pendiente' | 'Vencido';
+  status: string;
 }
 
 interface Props {
@@ -67,7 +67,7 @@ const getStatusBadgeClass = (status: string) => {
           <p class="text-base-content/70 text-sm">Historial completo de aportes para {{ stockName }}</p>
         </div>
         <button @click="closeModal" class="btn btn-sm btn-square btn-ghost">
-          <X class="w-5 h-5" />
+          <Xmark class="w-5 h-5" />
         </button>
       </div>
 

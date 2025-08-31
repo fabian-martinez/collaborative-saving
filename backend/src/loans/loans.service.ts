@@ -24,13 +24,14 @@ import { PendingPaymentType } from '../common/enums/pending-payment-type.enum';
 import { DisbursementPlanItemDto } from '../meetings/dto/disbursement-plan.dto';
 import { MemberDue } from '../dues/entities/member-due.entity';
 import { StocksService } from '../stocks/stocks.service';
-import { StockSubscription } from 'src/stock-subscriptions/entities/stock-subscription.entity';
-import { Meeting } from 'src/meetings/entities/meeting.entity';
-// import { Stock } from 'src/stocks/entities/stock.entity';
-import { MeetingsService } from 'src/meetings/meetings.service';
-import { StockSubscriptionsService } from 'src/stock-subscriptions/stock-subscriptions.service';
+import { StockSubscription } from '../stock-subscriptions/entities/stock-subscription.entity';
+import { Meeting } from '../meetings/entities/meeting.entity';
+// import { Stock } from '../stocks/entities/stock.entity';
+import { MeetingsService } from '../meetings/meetings.service';
+import { StockSubscriptionsService } from '../stock-subscriptions/stock-subscriptions.service';
 import { OperationType } from '../common/enums/operation-type.enum';
 import { TransactionType } from '../common/enums/transaction-type.enum';
+import { MembersService } from '../members/members.service';
 
 @Injectable()
 export class LoansService {
@@ -44,6 +45,7 @@ export class LoansService {
     private readonly stockSubscriptionsService: StockSubscriptionsService,
     @Inject(forwardRef(() => MeetingsService))
     private readonly meetingService: MeetingsService,
+    private readonly membersService: MembersService,
   ) {}
 
   /**
@@ -807,5 +809,216 @@ export class LoansService {
     if (result.affected === 0) {
       throw new NotFoundException(`Loan with ID "${id}" not found`);
     }
+  }
+
+  /**
+   * Get loan summary for a specific member using LedgerEntry for transactions
+   */
+  async getMemberLoanSummary(memberId: string): Promise<{
+    memberId: string;
+    memberName: string;
+    loans: Array<{
+      id: string;
+      loanType: string;
+      approvedAmount: number;
+      monthlyPaymentAmount: number;
+      outstandingBalance: number;
+      interestRate: number;
+      term: number;
+      status: string;
+      creationDate: string;
+      lastPaymentDate?: Date;
+    }>;
+    totalApprovedAmount: number;
+    totalOutstandingBalance: number;
+    totalMonthlyPayment: number;
+  }> {
+    // Get member
+    const member = await this.membersService.findOne(memberId);
+
+    // Get loans for the member
+    const loans = await this.loanRepository.find({
+      where: { member_id: memberId },
+    });
+
+    // Get loan transactions from LedgerEntry
+    const loanTransactions = await this.dataSource
+      .getRepository(LedgerEntry)
+      .createQueryBuilder('entry')
+      .leftJoinAndSelect('entry.operation', 'operation')
+      .leftJoinAndSelect('entry.loan', 'loan')
+      .where('entry.member_id = :memberId', { memberId })
+      .andWhere('entry.loan_id IS NOT NULL')
+      .andWhere('operation.type IN (:...types)', {
+        types: [OperationType.LOAN_PAYMENT, OperationType.LOAN_DISBURSEMENT],
+      })
+      .orderBy('entry.created_at', 'DESC')
+      .getMany();
+
+    // Map loans to DTO format
+    const loanDtos = loans.map((loan) => {
+      // Find last payment transaction for this loan
+      const lastPaymentTransaction = loanTransactions.find(
+        (t) =>
+          t.loan_id === loan.id &&
+          t.operation.type === OperationType.LOAN_PAYMENT,
+      );
+
+      return {
+        id: loan.id,
+        loanType: loan.loan_type,
+        approvedAmount: Number(loan.approved_amount),
+        monthlyPaymentAmount: Number(loan.monthly_payment_amount),
+        outstandingBalance: Number(loan.outstanding_balance),
+        interestRate: Number(loan.interest_rate),
+        term: loan.term || 24,
+        status: loan.status,
+        creationDate: loan.creation_date,
+        lastPaymentDate: lastPaymentTransaction?.created_at,
+      };
+    });
+
+    const totalApprovedAmount = loanDtos.reduce(
+      (sum, loan) => sum + loan.approvedAmount,
+      0,
+    );
+    const totalOutstandingBalance = loanDtos.reduce(
+      (sum, loan) => sum + loan.outstandingBalance,
+      0,
+    );
+    const totalMonthlyPayment = loanDtos.reduce(
+      (sum, loan) => sum + loan.monthlyPaymentAmount,
+      0,
+    );
+
+    return {
+      memberId,
+      memberName: member.name,
+      loans: loanDtos,
+      totalApprovedAmount,
+      totalOutstandingBalance,
+      totalMonthlyPayment,
+    };
+  }
+
+  /**
+   * Get loan installments for a specific loan using LedgerEntry for transactions
+   */
+  async getLoanInstallments(loanId: string): Promise<{
+    loanId: string;
+    memberId: string;
+    memberName: string;
+    loanAmount: number;
+    term: number;
+    interestRate: number;
+    installments: Array<{
+      id: string;
+      installmentNumber: number;
+      dueDate: Date;
+      paymentDate?: Date;
+      principal: number;
+      interest: number;
+      total: number;
+      status: string;
+      amountPaid?: number;
+    }>;
+    totalPaid: number;
+    totalPending: number;
+    outstandingBalance: number;
+  }> {
+    // Get loan with member
+    const loan = await this.findOne(loanId);
+    const member = await this.membersService.findOne(loan.member_id);
+
+    // Get loan transactions from LedgerEntry
+    const transactions = await this.dataSource
+      .getRepository(LedgerEntry)
+      .createQueryBuilder('entry')
+      .leftJoinAndSelect('entry.operation', 'operation')
+      .where('entry.loan_id = :loanId', { loanId })
+      .andWhere('operation.type IN (:...types)', {
+        types: [OperationType.LOAN_PAYMENT, OperationType.LOAN_DISBURSEMENT],
+      })
+      .orderBy('entry.created_at', 'ASC')
+      .getMany();
+
+    // Calculate installments based on loan terms
+    const term = loan.term || 24;
+    const monthlyPayment = Number(loan.monthly_payment_amount);
+    const totalAmount = Number(loan.approved_amount);
+
+    // Generate installment schedule
+    const installments: Array<{
+      id: string;
+      installmentNumber: number;
+      dueDate: Date;
+      paymentDate?: Date;
+      principal: number;
+      interest: number;
+      total: number;
+      status: 'paid' | 'pending';
+      amountPaid?: number;
+    }> = [];
+
+    for (let i = 1; i <= term; i++) {
+      const dueDate = new Date(loan.creation_date);
+      dueDate.setMonth(dueDate.getMonth() + i);
+
+      const installment: {
+        id: string;
+        installmentNumber: number;
+        dueDate: Date;
+        paymentDate?: Date;
+        principal: number;
+        interest: number;
+        total: number;
+        status: 'paid' | 'pending';
+        amountPaid?: number;
+      } = {
+        id: `installment-${loanId}-${i}`,
+        installmentNumber: i,
+        dueDate,
+        principal: totalAmount / term,
+        interest: (totalAmount * Number(loan.interest_rate)) / 12,
+        total: monthlyPayment,
+        status: 'pending',
+      };
+
+      // Check if this installment was paid
+      const paymentTransaction = transactions.find(
+        (t) =>
+          t.operation.type === OperationType.LOAN_PAYMENT &&
+          new Date(t.created_at).getMonth() === dueDate.getMonth() &&
+          new Date(t.created_at).getFullYear() === dueDate.getFullYear(),
+      );
+
+      if (paymentTransaction) {
+        installment.paymentDate = paymentTransaction.created_at;
+        installment.status = 'paid';
+        installment.amountPaid = Math.abs(Number(paymentTransaction.amount));
+      }
+
+      installments.push(installment);
+    }
+
+    const totalPaid = installments
+      .filter((i) => i.status === 'paid')
+      .reduce((sum, i) => sum + (i.amountPaid || 0), 0);
+    const totalPending = installments
+      .filter((i) => i.status === 'pending')
+      .reduce((sum, i) => sum + i.total, 0);
+
+    return {
+      loanId,
+      memberId: loan.member_id,
+      memberName: member.name,
+      loanAmount: totalAmount,
+      term,
+      interestRate: Number(loan.interest_rate),
+      installments,
+      totalPaid,
+      totalPending,
+      outstandingBalance: Number(loan.outstanding_balance),
+    };
   }
 }
