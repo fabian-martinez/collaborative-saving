@@ -275,9 +275,9 @@ export class MembersService {
     // Get stock transactions from LedgerEntry
     const transactions = await this.ledgerEntryRepository.find({
       where: {
-        member_id: memberId,
         stock_id: stockId,
         operation: {
+          member_id: memberId,
           type: In([
             OperationType.STOCK_FEE,
             OperationType.STOCK_WITHDRAWAL,
