@@ -121,8 +121,8 @@ import LedgerFiltersComponent from '@/features/ledger/components/LedgerFilters.v
 import LedgerOperationsTable from '@/features/ledger/components/LedgerOperationsTable.vue'
 import LedgerEntriesTable from '@/features/ledger/components/LedgerEntriesTable.vue'
 import LedgerOperationDetailsModal from '@/features/ledger/components/LedgerOperationDetailsModal.vue'
-import type { MemberOption, MeetingOption, EntryRow, OperationView, LedgerFilters } from '@/features/ledger/types'
-import { getMembers, getMeetings, getAccountTypeOptions, listOperations, listEntries, getOperationTypes } from '@/features/ledger/services/ledgerService'
+import type { MeetingOption, EntryRow, OperationView, LedgerFilters, MemberOption } from '@/features/ledger/types'
+import { getMeetings, getAccountTypeOptions, listOperations, listEntries, getOperationTypes, getMembers } from '@/features/ledger/services/ledgerService'
 
 const activeTab = ref<'operations' | 'entries'>('operations')
 

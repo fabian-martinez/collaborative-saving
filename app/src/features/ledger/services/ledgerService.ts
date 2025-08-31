@@ -240,50 +240,6 @@ export function groupEntriesByOperation(entries: EntryRow[]): LedgerOperationGro
   return Array.from(groups.values())
 }
 
-export function calculateSummary(entries: EntryRow[]): LedgerSummary {
-  const accountTypeTotals: Record<AccountType, number> = {} as Record<AccountType, number>
-  let incomeTotal = 0
-  let expenseTotal = 0
-  
-  for (const entry of entries) {
-    const currentTotal = accountTypeTotals[entry.accountType] || 0
-    accountTypeTotals[entry.accountType] = currentTotal + entry.amount
-    
-    if (entry.amount > 0) {
-      incomeTotal += entry.amount
-    } else {
-      expenseTotal += Math.abs(entry.amount)
-    }
-  }
-  
-  return {
-    accountTypeTotals,
-    incomeTotal,
-    expenseTotal,
-  }
-}
-
-export function groupEntriesByAccount(entries: EntryRow[]): LedgerUITableGroup[] {
-  const groups = new Map<AccountType, LedgerUITableGroup>()
-  
-  for (const entry of entries) {
-    if (!groups.has(entry.accountType)) {
-      groups.set(entry.accountType, {
-        id: entry.accountType,
-        title: entry.accountType, // Assuming ACCOUNT_TYPE_LABELS is not defined here, so use raw value
-        entries: [],
-        total: 0,
-      })
-    }
-    
-    const group = groups.get(entry.accountType)!
-    group.entries.push(entry)
-    group.total += entry.amount
-  }
-  
-  return Array.from(groups.values())
-}
-
 export function groupEntriesByMember(entries: EntryRow[]): LedgerUITableGroup[] {
   const groups = new Map<string, LedgerUITableGroup>()
   
@@ -373,6 +329,50 @@ export function groupEntries(mode: GroupingMode, entries: EntryRow[]): LedgerUIT
     default:
       return []
   }
+}
+
+export function calculateSummary(entries: EntryRow[]): LedgerSummary {
+  const accountTypeTotals: Record<AccountType, number> = {} as Record<AccountType, number>
+  let incomeTotal = 0
+  let expenseTotal = 0
+  
+  for (const entry of entries) {
+    const currentTotal = accountTypeTotals[entry.accountType] || 0
+    accountTypeTotals[entry.accountType] = currentTotal + entry.amount
+    
+    if (entry.amount > 0) {
+      incomeTotal += entry.amount
+    } else {
+      expenseTotal += Math.abs(entry.amount)
+    }
+  }
+  
+  return {
+    accountTypeTotals,
+    incomeTotal,
+    expenseTotal,
+  }
+}
+
+export function groupEntriesByAccount(entries: EntryRow[]): LedgerUITableGroup[] {
+  const groups = new Map<AccountType, LedgerUITableGroup>()
+  
+  for (const entry of entries) {
+    if (!groups.has(entry.accountType)) {
+      groups.set(entry.accountType, {
+        id: entry.accountType,
+        title: entry.accountType, // Assuming ACCOUNT_TYPE_LABELS is not defined here, so use raw value
+        entries: [],
+        total: 0,
+      })
+    }
+    
+    const group = groups.get(entry.accountType)!
+    group.entries.push(entry)
+    group.total += entry.amount
+  }
+  
+  return Array.from(groups.values())
 }
 
 
