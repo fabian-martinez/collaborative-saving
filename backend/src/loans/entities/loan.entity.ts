@@ -71,6 +71,13 @@ export class Loan {
   interest_rate: number;
 
   @ApiProperty({
+    description: 'The term of the loan in months',
+    example: 24,
+  })
+  @Column({ type: 'integer', nullable: false })
+  term: number;
+
+  @ApiProperty({
     description: 'El monto total desembolsado del préstamo',
     example: 0.0,
   })

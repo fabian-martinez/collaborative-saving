@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MeetingsService } from './meetings.service';
 import { DataSource, Repository, QueryRunner } from 'typeorm';
-import { Operation } from 'src/operations/entities/operation.entity';
+import { Operation } from '../operations/entities/operation.entity';
 import { PaymentStrategyFactory } from './strategies/payment-strategy.factory';
 import { Meeting } from './entities/meeting.entity';
-import { OperationsService } from 'src/operations/operations.service';
+import { OperationsService } from '../operations/operations.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { CreateTransactionPaymentDto } from './dto/create-transaction-payment.dto';
 import { PaymentType } from '../common/enums/payment-type.enum';
@@ -12,6 +12,8 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common/exceptions';
+import { StocksService } from '../stocks/stocks.service';
+import { DisbursementStrategyFactory } from './strategies/disbursement-strategy.factory';
 
 // Interface para la estrategia de pago mock
 interface MockPaymentStrategy {
@@ -21,11 +23,13 @@ interface MockPaymentStrategy {
 
 describe('MeetingsService', () => {
   let service: MeetingsService;
-  // let meetingRepository: jest.Mocked<Repository<Meeting>>;
+  let meetingRepository: jest.Mocked<Repository<Meeting>>;
   let operationRepository: jest.Mocked<Repository<Operation>>;
   let paymentStrategyFactory: jest.Mocked<PaymentStrategyFactory>;
   // let operationsService: jest.Mocked<OperationsService>;
   let dataSource: jest.Mocked<DataSource>;
+  let stocksService: jest.Mocked<StocksService>;
+  let disbursementStrategyFactory: jest.Mocked<DisbursementStrategyFactory>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -62,17 +66,37 @@ describe('MeetingsService', () => {
           provide: DataSource,
           useValue: {
             createQueryRunner: jest.fn(),
+            manager: {
+              getRepository: jest.fn().mockReturnValue({
+                findOne: jest.fn(),
+              }),
+              findOne: jest.fn().mockResolvedValue(null),
+            },
+          },
+        },
+        {
+          provide: StocksService,
+          useValue: {
+            findOne: jest.fn(),
+          },
+        },
+        {
+          provide: DisbursementStrategyFactory,
+          useValue: {
+            getStrategy: jest.fn(),
           },
         },
       ],
     }).compile();
 
     service = module.get<MeetingsService>(MeetingsService);
-    // meetingRepository = module.get(getRepositoryToken(Meeting));
+    meetingRepository = module.get(getRepositoryToken(Meeting));
     operationRepository = module.get(getRepositoryToken(Operation));
     paymentStrategyFactory = module.get(PaymentStrategyFactory);
     // operationsService = module.get(OperationsService);
     dataSource = module.get(DataSource);
+    stocksService = module.get(StocksService);
+    disbursementStrategyFactory = module.get(DisbursementStrategyFactory);
   });
 
   describe('recordMonthlyPayment', () => {
@@ -92,6 +116,11 @@ describe('MeetingsService', () => {
       payments,
     };
     const mockActiveMeeting = { id: meetingId, status: 'active' };
+    const mockMember = {
+      id: 'member-1',
+      name: 'John Doe',
+      email: 'john@example.com',
+    };
 
     // --- Preparación de nuestras simulaciones (Mocks) ---
     const mockQueryRunner = {
@@ -102,12 +131,14 @@ describe('MeetingsService', () => {
       release: jest.fn(),
       manager: {
         save: jest.fn(),
+        create: jest.fn().mockReturnValue({ id: 'mock-operation-id', type: 'MEMBER_PAYMENT' }),
+        find: jest.fn().mockResolvedValue([]),
       },
     };
 
     const mockPaymentStrategy = {
       handle: jest.fn(),
-      process: jest.fn(),
+      process: jest.fn().mockReturnValue([]),
     };
 
     // Esto se ejecuta antes de CADA caso de prueba en este conjunto.
@@ -119,13 +150,14 @@ describe('MeetingsService', () => {
       dataSource.createQueryRunner.mockReturnValue(
         mockQueryRunner as unknown as QueryRunner,
       );
-      service.findActive = jest
-        .fn()
-        .mockResolvedValue(mockActiveMeeting as Meeting);
+      meetingRepository.findOne.mockResolvedValue(mockActiveMeeting as Meeting);
       operationRepository.count.mockResolvedValue(0); // Simulamos que el socio no ha pagado.
       paymentStrategyFactory.getStrategy.mockReturnValue(
         mockPaymentStrategy as MockPaymentStrategy,
       );
+      
+      // Mock del payment strategy para que procese correctamente
+      mockPaymentStrategy.process.mockResolvedValue([]);
     });
 
     // --- Nuestro Primer Caso de Prueba ---
@@ -159,15 +191,15 @@ describe('MeetingsService', () => {
       expect(paymentStrategyFactory.getStrategy).toHaveBeenCalledWith(
         PaymentType.MANDATORY_CONTRIBUTION,
       );
-      expect(mockPaymentStrategy.handle).toHaveBeenCalledTimes(1);
+      expect(mockPaymentStrategy.process).toHaveBeenCalledTimes(1);
 
       // Verificamos que el resultado final del método es el esperado.
-      expect(result).toHaveProperty('id', 'new-op-id');
+      expect(result).toHaveProperty('operation.id', 'mock-operation-id');
     });
 
     it('should throw NotFoundException if no active meeting is found', async () => {
       // Arrange
-      service.findActive = jest.fn().mockResolvedValue(null);
+      meetingRepository.findOne.mockResolvedValue(null);
 
       // Act
       await expect(() => service.recordMonthlyPayment(payload)).rejects.toThrow(
@@ -179,7 +211,13 @@ describe('MeetingsService', () => {
     });
     it('should throw BadRequestException if the member has already paid', async () => {
       // Arrange
-      operationRepository.count.mockResolvedValue(1);
+               // Mock que ya existe un pago previo
+         (dataSource.manager.getRepository as jest.Mock).mockReturnValue({
+           findOne: jest.fn().mockResolvedValue({
+             id: 'existing-operation-id',
+             type: 'MONTHLY_PAYMENT',
+           }),
+         });
 
       // Act
       await expect(() => service.recordMonthlyPayment(payload)).rejects.toThrow(

@@ -233,7 +233,7 @@ function clearActiveFilters() {
   const filtersToClear = ['memberId', 'accountType', 'meetingId', 'operationType']
   filtersToClear.forEach(filter => {
     if (localFilters[filter as keyof LedgerFilters]) {
-      localFilters[filter as keyof LedgerFilters] = localFilters[filter as keyof LedgerFilters] ?? undefined
+      localFilters[filter as keyof LedgerFilters] = undefined
     }
   })
   emitFilters('clearActive')

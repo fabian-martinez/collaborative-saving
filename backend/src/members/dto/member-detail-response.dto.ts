@@ -1,57 +1,41 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  DeleteDateColumn,
-  CreateDateColumn,
-} from 'typeorm';
 
-@Entity({ name: 'members' })
-export class Member {
+export class MemberDetailResponseDto {
   @ApiProperty({
     description: 'The unique identifier for the member',
     example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
   })
-  @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @ApiProperty({
     description: "The member's full name",
     example: 'Fabian Martinez',
   })
-  @Column({ type: 'text' })
   name: string;
 
   @ApiProperty({
     description: "The member's email address",
     example: 'fabian@example.com',
   })
-  @Column({ type: 'text', unique: true })
   email: string;
 
   @ApiProperty({
     description: "The member's identification number",
     example: '123456789',
   })
-  @Column({ type: 'text', unique: true, name: 'identification_number' })
   identificationNumber: string;
 
   @ApiProperty({
     description: "The member's role",
     example: 'member',
-    default: 'member',
   })
-  @Column({ type: 'text', default: 'member', nullable: false })
   role: string;
 
   @ApiProperty({
     description: "The member's status",
     example: 'active',
     enum: ['active', 'inactive'],
-    default: 'active',
   })
-  @Column({ type: 'text', default: 'active', nullable: false })
   status: string;
 
   @ApiProperty({
@@ -59,7 +43,6 @@ export class Member {
     example: 'Calle Principal 123, Ciudad',
     nullable: true,
   })
-  @Column({ type: 'text', nullable: true })
   address: string;
 
   @ApiProperty({
@@ -67,7 +50,6 @@ export class Member {
     example: '+1234567890',
     nullable: true,
   })
-  @Column({ type: 'text', nullable: true })
   phone: string;
 
   @ApiProperty({
@@ -75,16 +57,11 @@ export class Member {
     example: 'María Martínez',
     nullable: true,
   })
-  @Column({ type: 'text', nullable: true })
   beneficiary: string;
 
   @ApiProperty({
     description: "The member's registration date",
     example: '2023-01-15',
   })
-  @CreateDateColumn({ type: 'date', name: 'registration_date' })
   registrationDate: Date;
-
-  @DeleteDateColumn({ name: 'deleted_at' })
-  deletedAt: Date;
 }

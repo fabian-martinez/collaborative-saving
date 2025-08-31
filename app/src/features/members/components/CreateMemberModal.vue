@@ -68,7 +68,7 @@ const emit = defineEmits(['update:modelValue', 'member-created', 'member-updated
 
 const modalElement = ref<HTMLDialogElement | null>(null)
 const isSubmitting = ref(false)
-const memberData = ref({
+const memberData = ref<Partial<Member>>({
   name: '',
   email: '',
   identificationNumber: '',
