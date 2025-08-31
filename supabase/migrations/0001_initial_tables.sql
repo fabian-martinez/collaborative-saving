@@ -1,6 +1,7 @@
 -- =================================================================
 -- ▤ 0001: Initial Tables, Types, and Seed Data
 -- This script reflects the current production schema in Supabase.
+-- Includes Phase 1 member and loan fields.
 -- =================================================================
 
 -- ----------------------------------------------------------------
@@ -36,6 +37,11 @@ create table public.members (
     email text unique,
     identification_number text unique,
     role text default 'member' not null,
+    status text default 'active' not null,
+    address text,
+    phone text,
+    beneficiary text,
+    registration_date date default current_date not null,
     created_at timestamp with time zone default now() not null,
     deleted_at timestamp with time zone
 );
@@ -84,6 +90,7 @@ create table public.loans (
     outstanding_balance numeric(12, 2) not null default 0,
     monthly_payment_amount numeric(12, 2) not null,
     interest_rate numeric(4, 4) not null,
+    term integer not null default 24,
     status text default 'pending' not null,
     creation_date date default current_date not null,
     guaranteed_stock_id uuid references public.stocks(id) on delete set null -- Relación con acción garantizada
