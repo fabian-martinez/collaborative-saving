@@ -16,6 +16,7 @@ import {
   LOANS_RECEIVABLE_ACCOUNT,
   NOVELTY_LOSS_ACCOUNT,
   STOCK_CAPITAL_ACCOUNT,
+  ACCUMULATED_SURPLUS_ACCOUNT,
 } from '../common/constants/account-types';
 import { Meeting } from './entities/meeting.entity';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
@@ -214,8 +215,80 @@ export class MeetingsService {
       );
     }
 
-    const meeting = this.meetingRepository.create(createMeetingDto);
-    return this.meetingRepository.save(meeting);
+    // Crear la reunión y el balance inicial en una transacción
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 1. Crear la reunión
+      const meeting = this.meetingRepository.create(createMeetingDto);
+      const savedMeeting = await queryRunner.manager.save(meeting);
+
+      // 2. Calcular el balance de CASH de reuniones anteriores
+      const previousCashBalance = await queryRunner.manager
+        .getRepository(LedgerEntry)
+        .createQueryBuilder('ledger')
+        .where('ledger.account_type = :accountType', {
+          accountType: CASH_ACCOUNT,
+        })
+        .select('SUM(ledger.amount)', 'total')
+        .getRawOne()
+        .then((result: { total: string | null } | undefined) =>
+          Number(result?.total || 0),
+        );
+
+      this.logger.log(
+        `Balance de reuniones anteriores: ${previousCashBalance}`,
+      );
+
+      // Solo crear la operación de balance inicial si hay efectivo previo
+      if (previousCashBalance !== 0) {
+        // 3. Crear operación de balance inicial
+        const initialBalanceOperation = queryRunner.manager.create(Operation, {
+          meeting_id: savedMeeting.id,
+          member_id: undefined, // No asociado a un miembro específico
+          description: `Efectivo excedente de reuniones anteriores: ${previousCashBalance}`,
+          type: OperationType.INITIAL_CASH_BALANCE,
+        });
+        await queryRunner.manager.save(initialBalanceOperation);
+
+        // 4. Crear entradas contables balanceadas (débito y crédito)
+        const ledgerEntries = [
+          // Débito: Aumento de efectivo en la reunión actual
+          queryRunner.manager.create(LedgerEntry, {
+            operation_id: initialBalanceOperation.id,
+            account_type: CASH_ACCOUNT,
+            amount: previousCashBalance,
+            description: `Efectivo disponible de reuniones anteriores`,
+          }),
+          // Crédito: Disminución del superávit acumulado
+          queryRunner.manager.create(LedgerEntry, {
+            operation_id: initialBalanceOperation.id,
+            account_type: ACCUMULATED_SURPLUS_ACCOUNT,
+            amount: -previousCashBalance,
+            description: `Transferencia de superávit a reunión actual`,
+          }),
+        ];
+        await queryRunner.manager.save(ledgerEntries);
+
+        this.logger.log(
+          `Reunión creada con efectivo inicial de reuniones anteriores: ${previousCashBalance}`,
+        );
+      } else {
+        this.logger.log('Reunión creada sin efectivo previo');
+      }
+
+      await queryRunner.commitTransaction();
+
+      return savedMeeting;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.logger.error('Error al crear reunión con balance inicial:', error);
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async close(id: string): Promise<Meeting> {
