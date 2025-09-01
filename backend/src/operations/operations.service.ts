@@ -1,11 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Operation } from './entities/operation.entity';
 import { FindOperationsDto } from './dto/find-operations.dto';
 
+
 @Injectable()
 export class OperationsService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    @InjectRepository(Operation)
+    private operationsRepository: Repository<Operation>,
+  ) {}
 
   async findOne(id: string): Promise<Operation> {
     const operation = await this.dataSource.manager
@@ -59,4 +65,6 @@ export class OperationsService {
     const [data, total] = await qb.getManyAndCount();
     return { data, total };
   }
+
+
 }

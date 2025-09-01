@@ -101,11 +101,21 @@ export class AssetRevaluationService {
 
     const ledgerEntries = await this.dataSource.manager.find(LedgerEntry, {
       where: { operation: { meeting_id: meetingId } },
-      relations: ['operation'],
+      relations: ['operation', 'loan'],
     });
 
+    // Calcular intereses total y específicamente de préstamos ágiles y prioritarios
     const totalInterest = ledgerEntries
       .filter((e) => [INTEREST_INCOME_ACCOUNT].includes(e.account_type))
+      .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
+
+    const agilePriorityInterest = ledgerEntries
+      .filter(
+        (e) =>
+          [INTEREST_INCOME_ACCOUNT].includes(e.account_type) &&
+          e.loan &&
+          ['agil', 'prioritario'].includes(e.loan.loan_type),
+      )
       .reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
 
     const totalStockContributions = ledgerEntries
@@ -150,6 +160,7 @@ export class AssetRevaluationService {
       totalStockContributions,
       interestAvailableForDistribution,
       totalRequiredGuaranteedGrowth,
+      agilePriorityInterest,
       stocks,
       subscriptions,
       ledgerEntries,
@@ -329,7 +340,7 @@ export class AssetRevaluationService {
       LedgerEntry,
       {
         where: { operation: { meeting_id: meetingId } },
-        relations: ['operation'],
+        relations: ['operation', 'loan'],
       },
     );
 

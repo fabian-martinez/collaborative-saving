@@ -24,6 +24,8 @@ export class GuaranteedGrowthHandler implements DistributionHandler {
       };
     }
 
+    // Usar los intereses de préstamos ágiles y prioritarios para el cálculo
+    const availableFromAgilePriority = context.agilePriorityInterest;
     // Calcular el total requerido para cubrir el crecimiento garantizado (valor*yield*acciones)
     let totalRequired = 0;
     const requiredByStock: Record<string, number> = {};
@@ -46,18 +48,24 @@ export class GuaranteedGrowthHandler implements DistributionHandler {
       };
     }
 
-    // Si el disponible alcanza, asignar todo; si no, asignar proporcionalmente a valor*acciones*yield
+    // Usar intereses de préstamos ágiles y prioritarios como límite
+    // Si los intereses ágiles/prioritarios >= requerido → usar requerido
+    // Si los intereses ágiles/prioritarios < requerido → usar solo los intereses ágiles/prioritarios
     const assignedByStock: Record<string, number> = {};
     let totalAssigned = 0;
     for (const stock of guaranteedStocks) {
       const required = requiredByStock[stock.id] || 0;
       if (required === 0) continue;
+
       let assign = 0;
-      if (available >= totalRequired) {
+      if (availableFromAgilePriority >= totalRequired) {
+        // Los intereses ágiles/prioritarios cubren todo lo requerido → usar el requerido completo
         assign = required;
       } else {
-        assign = (required / totalRequired) * available;
+        // Los intereses ágiles/prioritarios no cubren todo → usar proporcionalmente de los ágiles/prioritarios
+        assign = (required / totalRequired) * availableFromAgilePriority;
       }
+
       // Nunca asignar menos de cero
       assign = Math.max(assign, 0);
       assignedByStock[stock.id] = assign;
