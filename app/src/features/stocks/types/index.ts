@@ -5,8 +5,34 @@ export interface Stock {
   type: string;
   value: number;
   monthly_contribution: number;
-  behavior: StockBehavior;
-} 
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string;
+}
+
+export interface StockHistoryPoint {
+  date: string;
+  meetingId: string;
+  stockType: string;
+  quantity: number;
+  change: number;
+  operations: string[];
+  changeDescription: string;
+}
+
+export interface StockHistoryData {
+  stockType: string;
+  history: StockHistoryPoint[];
+  currentQuantity: number;
+  totalOperations: number;
+  initialQuantity: number;
+}
+
+export interface StockHistoryRequest {
+  stockType?: string;
+  includeTransfers?: boolean;
+  includeLoanPayments?: boolean;
+}
 
 export interface StocksForPurchase {
   memberId: string;

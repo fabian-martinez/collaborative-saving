@@ -45,13 +45,11 @@
         </div>
       </div>
 
-      <!-- Chart 2: Stock value history -->
+      <!-- Chart 2: Stock History Analysis -->
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
-          <h2 class="card-title">Valor de la Acción (Histórico)</h2>
-          <div style="height: 400px;">
-            <Line :data="stockHistoryData" :options="chartOptions" />
-          </div>
+          <h2 class="card-title">Análisis Cronológico de Acciones</h2>
+          <StockHistoryChart />
         </div>
       </div>
     </div>
@@ -75,6 +73,7 @@
 import { Bar, Line, Pie } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, PointElement, LineElement, ArcElement, type ChartOptions } from 'chart.js'
 import { ref } from 'vue'
+import StockHistoryChart from '../../stocks/components/StockHistoryChart.vue'
 
 // Define component name to satisfy vue/multi-word-component-names rule
 defineOptions({
@@ -94,23 +93,7 @@ const collectionsByMeetingData = ref({
   ]
 })
 
-const stockHistoryData = ref({
-  labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio'],
-  datasets: [
-    {
-      label: 'Acción A',
-      borderColor: '#42A5F5',
-      backgroundColor: 'rgba(66, 165, 245, 0.5)',
-      data: [120, 125, 122, 130, 145, 150.25]
-    },
-    {
-      label: 'Acción B',
-      borderColor: '#FF7043',
-      backgroundColor: 'rgba(255, 112, 67, 0.5)',
-      data: [80, 82, 85, 83, 88, 85.50]
-    }
-  ]
-})
+
 
 const assetDistributionData = ref({
     labels: ['Préstamos Activos', 'Caja', 'Inversiones'],

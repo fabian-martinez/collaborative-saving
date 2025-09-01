@@ -1,5 +1,5 @@
 import { api } from '@/services/api';
-import type { Stock } from '../types';
+import type { Stock, StockHistoryData, StockHistoryRequest } from '../types';
 
 // Helper to ensure numeric fields are numbers, as the backend sends them as strings.
 const transformStock = (
@@ -144,5 +144,24 @@ export const stocksService = {
       loanId: params.loanId,
       notes: params.notes,
     });
+  },
+
+  getStockHistory: async (params?: StockHistoryRequest): Promise<StockHistoryData[]> => {
+    const queryParams = new URLSearchParams();
+    
+    if (params?.stockType) {
+      queryParams.append('stockType', params.stockType);
+    }
+    if (params?.includeTransfers !== undefined) {
+      queryParams.append('includeTransfers', params.includeTransfers.toString());
+    }
+    if (params?.includeLoanPayments !== undefined) {
+      queryParams.append('includeLoanPayments', params.includeLoanPayments.toString());
+    }
+
+    const queryString = queryParams.toString();
+    const url = queryString ? `/stocks/history?${queryString}` : '/stocks/history';
+    
+    return api.get<StockHistoryData[]>(url);
   },
 }; 

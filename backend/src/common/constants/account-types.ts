@@ -14,6 +14,7 @@ export const DIVIDENDS_PAYABLE_ACCOUNT = 'DIVIDENDS_PAYABLE'; // Dividendos por 
 // --- PATRIMONIO Y CAPITAL ---
 // Representan el valor que pertenece a los socios.
 export const STOCK_CAPITAL_ACCOUNT = 'STOCK_CAPITAL'; // Capital aportado por los socios al comprar acciones.
+export const STOCK_TRANSFER_ACCOUNT = 'STOCK_TRANSFER'; // Cuenta puente para transferencias de acciones entre socios.
 export const REVALUATION_SURPLUS_ACCOUNT = 'REVALUATION_SURPLUS'; // Ganancias no realizadas por el aumento de valor de los activos.
 export const MEMBER_EQUITY_ACCOUNT = 'MEMBER_EQUITY'; // Capital/patrimonio del socio para préstamos sin afectar efectivo.
 export const ACCUMULATED_SURPLUS_ACCOUNT = 'ACCUMULATED_SURPLUS'; // Superávit acumulado de reuniones anteriores.

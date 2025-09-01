@@ -9,10 +9,11 @@ import { LoansModule } from '../loans/loans.module';
 import { StockSubscriptionsModule } from '../stock-subscriptions/stock-subscriptions.module';
 import { StockSubscription } from '../stock-subscriptions/entities/stock-subscription.entity';
 import { MembersModule } from '../members/members.module';
+import { Operation } from '../operations/entities/operation.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Stock, StockValueHistory, StockSubscription]),
+    TypeOrmModule.forFeature([Stock, StockValueHistory, StockSubscription, Operation]),
     forwardRef(() => OperationsModule),
     forwardRef(() => LoansModule),
     StockSubscriptionsModule,

@@ -10,6 +10,7 @@ import { OperationsService } from './operations.service';
 import { Operation } from './entities/operation.entity';
 import { FindOperationsDto } from './dto/find-operations.dto';
 
+
 @ApiTags('operations')
 @Controller('operations')
 export class OperationsController {
@@ -101,4 +102,6 @@ export class OperationsController {
   findOne(@Param('id') id: string) {
     return this.operationsService.findOne(id);
   }
+
+
 }

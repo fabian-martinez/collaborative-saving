@@ -21,6 +21,7 @@ import { StocksService } from './stocks.service';
 import { Stock } from './entities/stock.entity';
 import { MemberStocksResponseDto } from '../members/dto/member-stocks-response.dto';
 import { StockTransactionHistoryDto } from '../members/dto/stock-transaction-history.dto';
+import { StockHistoryRequestDto, StockHistoryResponseDto } from './dto/stock-history.dto';
 
 @ApiTags('Stocks')
 @Controller('stocks')
@@ -40,6 +41,42 @@ export class StocksController {
   async findAll(): Promise<Stock[]> {
     try {
       return await this.stocksService.findAll();
+    } catch (error) {
+      throw new HttpException(
+        'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('history')
+  @ApiOperation({ summary: 'Obtener historial cronológico inverso de acciones' })
+  @ApiResponse({
+    status: 200,
+    description: 'Historial cronológico de cantidades de acciones por tipo',
+    type: [StockHistoryResponseDto],
+  })
+  @ApiQuery({
+    name: 'stockType',
+    required: false,
+    type: String,
+    description: 'Filtrar por tipo de acción específico',
+  })
+  @ApiQuery({
+    name: 'includeTransfers',
+    required: false,
+    type: Boolean,
+    description: 'Incluir operaciones de transferencia (por defecto true)',
+  })
+  @ApiQuery({
+    name: 'includeLoanPayments',
+    required: false,
+    type: Boolean,
+    description: 'Incluir operaciones de pago con acciones (por defecto true)',
+  })
+  async getStockChronologicalHistory(@Query() query: StockHistoryRequestDto) {
+    try {
+      return await this.stocksService.getStockChronologicalHistory(query);
     } catch (error) {
       throw new HttpException(
         'Internal server error',
