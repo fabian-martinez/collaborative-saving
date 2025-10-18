@@ -26,10 +26,6 @@ import {
 import { StockSubscription } from '../stock-subscriptions/entities/stock-subscription.entity';
 import { OperationType } from '../common/enums/operation-type.enum';
 import { StockModificationDto } from './dto/stock-modification.dto';
-import {
-  StockHistoryResponseDto,
-  StockHistoryRequestDto,
-} from './dto/stock-history.dto';
 
 @Injectable()
 export class StocksService {
@@ -57,6 +53,34 @@ export class StocksService {
     return this.stocksRepository.find({
       withDeleted: withDeleted,
     });
+  }
+
+  async findAllWithSubscriptionCount(
+    withDeleted = false,
+  ): Promise<Array<Stock & { subscriptionCount: number }>> {
+    const stocks = await this.stocksRepository.find({
+      withDeleted: withDeleted,
+    });
+
+    const stocksWithCount = await Promise.all(
+      stocks.map(async (stock) => {
+        const result = await this.stockSubscriptionsRepository
+          .createQueryBuilder('subscription')
+          .select('SUM(subscription.quantity)', 'totalQuantity')
+          .where('subscription.stock_id = :stockId', { stockId: stock.id })
+          .andWhere('subscription.quantity > 0')
+          .getRawOne<{ totalQuantity: string | null }>();
+
+        const subscriptionCount = Number(result?.totalQuantity) || 0;
+
+        return {
+          ...stock,
+          subscriptionCount,
+        };
+      }),
+    );
+
+    return stocksWithCount;
   }
 
   findOnlyDeleted(): Promise<Stock[]> {
@@ -908,13 +932,14 @@ export class StocksService {
     const member = await this.membersService.findOne(memberId);
     const stock = await this.findOne(stockId);
 
-    // Get stock transactions from LedgerEntry
+    // Get stock transactions from LedgerEntry through stock_subscription relationship
     const transactions = await this.dataSource
       .getRepository(LedgerEntry)
       .createQueryBuilder('entry')
       .leftJoinAndSelect('entry.operation', 'operation')
-      .where('entry.member_id = :memberId', { memberId })
-      .andWhere('entry.stock_id = :stockId', { stockId })
+      .leftJoinAndSelect('entry.stock_subscription', 'stock_subscription')
+      .where('stock_subscription.member_id = :memberId', { memberId })
+      .andWhere('stock_subscription.stock_id = :stockId', { stockId })
       .andWhere('operation.type IN (:...types)', {
         types: [
           OperationType.STOCK_FEE,
@@ -936,7 +961,7 @@ export class StocksService {
         period,
         description: entry.description || `Transacción de ${stock.type}`,
         amount: Math.abs(Number(entry.amount)),
-        status: entry.amount > 0 ? 'paid' : 'pending',
+        status: entry.amount > 0 ? 'Pagado' : 'Pendiente',
         operationType: entry.operation.type,
       };
     });
@@ -953,226 +978,298 @@ export class StocksService {
     };
   }
 
-  async getStockChronologicalHistory(
-    request: StockHistoryRequestDto,
-  ): Promise<StockHistoryResponseDto[]> {
-    const { stockType, includeTransfers = true, includeLoanPayments = true } = request;
-
-    // Obtener todas las operaciones de STOCK_CAPITAL ordenadas cronológicamente
-    const query = `
-      SELECT 
-        o.id as operation_id,
-        o.date,
-        o.type as operation_type,
-        o.description,
-        m.id as meeting_id,
-        m.date as meeting_date,
-        s.type as stock_type,
-        le.amount,
-        le.stock_subscription_id,
-        mem.name as member_name
-      FROM operations o
-      JOIN ledger_entries le ON o.id = le.operation_id
-      LEFT JOIN meetings m ON o.meeting_id = m.id
-      LEFT JOIN stock_subscriptions ss ON le.stock_subscription_id = ss.id
-      LEFT JOIN members mem ON ss.member_id = mem.id
-      LEFT JOIN stocks s ON ss.stock_id = s.id
-      WHERE le.account_type = 'STOCK_CAPITAL'
-      AND o.type != 'MONTHLY_PAYMENT'
-      ${stockType ? 'AND s.type = $1' : ''}
-      ${!includeTransfers ? "AND o.type != 'STOCK_TRANSFER'" : ''}
-      ${!includeLoanPayments ? "AND o.type != 'STOCK_LOAN_PAYMENT'" : ''}
-      ORDER BY o.date DESC, o.id
-    `;
-
-    const params = stockType ? [stockType] : [];
-    const operations = await this.operationsRepository.query(query, params);
-
-    // Obtener estado actual de stock_subscriptions
-    const currentStateQuery = `
-      SELECT 
-        s.type as stock_type,
-        COUNT(ss.id) as subscription_count,
-        SUM(ss.quantity) as total_quantity
-      FROM stock_subscriptions ss
-      JOIN stocks s ON ss.stock_id = s.id
-      WHERE ss.status = 'active'
-      ${stockType ? "AND s.type = $1" : ""}
-      GROUP BY s.type
-      ORDER BY s.type
-    `;
-
-    const currentState = await this.operationsRepository.query(currentStateQuery, params);
-
-    // Agrupar operaciones por tipo de acción
-    const operationsByStockType = this.groupOperationsByStockType(operations);
-
-    // Generar historial cronológico para cada tipo de acción
-    const results: StockHistoryResponseDto[] = [];
-
-    for (const [stockTypeKey, stockOperations] of Object.entries(operationsByStockType)) {
-      const currentStock = currentState.find(s => s.stock_type === stockTypeKey);
-      const currentQuantity = currentStock ? parseFloat(currentStock.total_quantity) : 0;
-
-      const history = await this.generateChronologicalHistory(stockOperations, currentQuantity);
-      
-      results.push({
-        stockType: stockTypeKey,
-        history,
-        currentQuantity,
-        totalOperations: stockOperations.length,
-        initialQuantity: history.length > 0 ? history[history.length - 1].quantity : 0,
-      });
+  /**
+   * Get stock operations for a specific member in a specific meeting
+   */
+  async getStockOperationsForMemberInMeeting(
+    memberId: string,
+    meetingId: string,
+  ): Promise<
+    Array<{
+      id: string;
+      type: string;
+      description: string;
+      date: Date;
+      details: any;
+    }>
+  > {
+    // Validate that member exists
+    const member = await this.membersService.findOne(memberId);
+    if (!member) {
+      throw new NotFoundException(`Member with ID ${memberId} not found`);
     }
 
-    return results;
+    // Get stock operations from the operations table
+    const operations = await this.operationsRepository
+      .createQueryBuilder('operation')
+      .leftJoinAndSelect('operation.member', 'member')
+      .leftJoinAndSelect('operation.meeting', 'meeting')
+      .where('operation.member_id = :memberId', { memberId })
+      .andWhere('operation.meeting_id = :meetingId', { meetingId })
+      .andWhere('operation.type IN (:...types)', {
+        types: [
+          OperationType.STOCK_MODIFICATION,
+          OperationType.STOCK_TRANSFER,
+          OperationType.STOCK_LOAN_PAYMENT,
+        ],
+      })
+      .orderBy('operation.date', 'DESC')
+      .getMany();
+
+    // Get additional details from ledger entries for each operation
+    const operationsWithDetails = await Promise.all(
+      operations.map(async (operation) => {
+        const ledgerEntries = await this.dataSource
+          .getRepository(LedgerEntry)
+          .createQueryBuilder('entry')
+          .leftJoinAndSelect('entry.stock', 'stock')
+          .leftJoinAndSelect('entry.loan', 'loan')
+          .where('entry.operation_id = :operationId', {
+            operationId: operation.id,
+          })
+          .getMany();
+
+        // Extract relevant details based on operation type
+        let details: any = {};
+
+        switch (operation.type) {
+          case OperationType.STOCK_MODIFICATION:
+            details = this.extractStockModificationDetails(
+              ledgerEntries,
+              operation.description,
+            );
+            break;
+          case OperationType.STOCK_TRANSFER:
+            details = this.extractStockTransferDetails(
+              ledgerEntries,
+              operation.description,
+            );
+            break;
+          case OperationType.STOCK_LOAN_PAYMENT:
+            details = this.extractStockLoanPaymentDetails(
+              ledgerEntries,
+              operation.description,
+            );
+            break;
+        }
+
+        return {
+          id: operation.id,
+          type: operation.type,
+          description: operation.description,
+          date: operation.date,
+          details,
+        };
+      }),
+    );
+
+    return operationsWithDetails;
   }
 
-  private groupOperationsByStockType(operations: any[]): Record<string, any[]> {
-    const grouped: Record<string, any[]> = {};
-    
-    for (const operation of operations) {
-      if (operation.stock_type) {
-        if (!grouped[operation.stock_type]) {
-          grouped[operation.stock_type] = [];
-        }
-        grouped[operation.stock_type].push(operation);
-      }
-    }
+  /**
+   * Get all stock operations for a specific meeting
+   */
+  async getAllStockOperationsForMeeting(
+    meetingId: string,
+  ): Promise<
+    Array<{
+      id: string;
+      type: string;
+      description: string;
+      date: Date;
+      details: any;
+      memberId: string;
+      memberName: string;
+    }>
+  > {
+    // Get all stock operations from the operations table for the meeting
+    const operations = await this.operationsRepository
+      .createQueryBuilder('operation')
+      .leftJoinAndSelect('operation.member', 'member')
+      .leftJoinAndSelect('operation.meeting', 'meeting')
+      .where('operation.meeting_id = :meetingId', { meetingId })
+      .andWhere('operation.type IN (:...types)', {
+        types: [
+          OperationType.STOCK_MODIFICATION,
+          OperationType.STOCK_TRANSFER,
+          OperationType.STOCK_LOAN_PAYMENT,
+        ],
+      })
+      .orderBy('operation.date', 'DESC')
+      .getMany();
 
-    return grouped;
+    // Get additional details from ledger entries for each operation
+    const operationsWithDetails = await Promise.all(
+      operations.map(async (operation) => {
+        const ledgerEntries = await this.dataSource
+          .getRepository(LedgerEntry)
+          .createQueryBuilder('entry')
+          .leftJoinAndSelect('entry.stock', 'stock')
+          .leftJoinAndSelect('entry.loan', 'loan')
+          .where('entry.operation_id = :operationId', {
+            operationId: operation.id,
+          })
+          .getMany();
+
+        // Extract relevant details based on operation type
+        let details: any = {};
+
+        switch (operation.type) {
+          case OperationType.STOCK_MODIFICATION:
+            details = this.extractStockModificationDetails(
+              ledgerEntries,
+              operation.description,
+            );
+            break;
+          case OperationType.STOCK_TRANSFER:
+            details = this.extractStockTransferDetails(
+              ledgerEntries,
+              operation.description,
+            );
+            break;
+          case OperationType.STOCK_LOAN_PAYMENT:
+            details = this.extractStockLoanPaymentDetails(
+              ledgerEntries,
+              operation.description,
+            );
+            break;
+        }
+
+        return {
+          id: operation.id,
+          type: operation.type,
+          description: operation.description,
+          date: operation.date,
+          details,
+          memberId: operation.member_id,
+          memberName: operation.member?.name || 'Unknown',
+        };
+      }),
+    );
+
+    return operationsWithDetails;
   }
 
-  private async generateChronologicalHistory(
-    operations: any[],
-    currentQuantity: number,
-  ): Promise<any[]> {
-    const history: any[] = [];
-    let runningQuantity = currentQuantity;
-    let lastMeetingDate = null;
-    let lastMeetingId = null;
-    let operationsInMeeting: string[] = [];
-    let totalChangeInMeeting = 0;
+  /**
+   * Extract details for stock modification operations
+   */
+  private extractStockModificationDetails(
+    ledgerEntries: LedgerEntry[],
+    description: string,
+  ): any {
+    const stockEntries = ledgerEntries.filter((entry) => entry.stock_id);
+    const stockCapitalEntries = stockEntries.filter(
+      (entry) => entry.account_type === STOCK_CAPITAL_ACCOUNT,
+    );
 
-    // Procesar operaciones en orden cronológico inverso
-    for (const operation of operations) {
-      const meetingDate = operation.meeting_date;
-      const meetingId = operation.meeting_id;
+    // Extract stock types and amounts from ledger entries
+    const stockDetails = stockCapitalEntries.map((entry) => ({
+      stockType: entry.stock?.type || 'Unknown',
+      amount: Number(entry.amount),
+      description: entry.description,
+    }));
 
-      // Si es una nueva reunión, guardar el punto anterior
-      if (lastMeetingDate && meetingDate !== lastMeetingDate) {
-        if (operationsInMeeting.length > 0) {
-          history.unshift({
-            date: lastMeetingDate,
-            meetingId: lastMeetingId,
-            stockType: operation.stock_type,
-            quantity: runningQuantity,
-            change: totalChangeInMeeting,
-            operations: operationsInMeeting,
-            changeDescription: this.generateChangeDescription(totalChangeInMeeting, operationsInMeeting.length),
-          });
-        }
-        operationsInMeeting = [];
-        totalChangeInMeeting = 0;
-      }
-
-      // Calcular el cambio inverso
-      let change = 0;
-      const amount = parseFloat(operation.amount);
-      
-      // Obtener la cantidad real de la operación
-      let operationQuantity = 1; // Valor por defecto
-      
-      if (operation.operation_type === 'STOCK_PURCHASE' || operation.operation_type === 'STOCK_MODIFICATION') {
-        // Para STOCK_PURCHASE y STOCK_MODIFICATION, calcular basado en el amount y valor de la acción
-        if (operation.stock_type) {
-          const stockQuery = `
-            SELECT value FROM stocks 
-            WHERE type = $1
-          `;
-          const stockResult = await this.operationsRepository.query(stockQuery, [operation.stock_type]);
-          if (stockResult.length > 0) {
-            const stockValue = parseFloat(stockResult[0].value);
-            if (stockValue > 0) {
-              operationQuantity = Math.abs(amount) / stockValue;
-            }
-          }
-        }
-      }
-      
-      switch (operation.operation_type) {
-        case 'STOCK_PURCHASE':
-          // Compra: amount < 0 (CRÉDITO a STOCK_CAPITAL)
-          // Para revertir: quitar la cantidad comprada
-          change = -operationQuantity;
-          break;
-        case 'STOCK_MODIFICATION':
-          // STOCK_MODIFICATION puede ser reducción o adquisición
-          // amount > 0 = DÉBITO (reducción de capital) → para revertir: agregar de vuelta
-          // amount < 0 = CRÉDITO (aumento de capital) → para revertir: agregar de vuelta (porque estamos revirtiendo)
-          if (amount > 0) {
-            // Reducción - agregar de vuelta
-            change = operationQuantity;
-          } else {
-            // Adquisición - agregar de vuelta (revertir la adquisición)
-            change = operationQuantity;
-          }
-          break;
-        case 'STOCK_LOAN_PAYMENT':
-          // Pago con acciones: amount > 0 (DÉBITO a STOCK_CAPITAL)
-          // Para revertir: agregar de vuelta la acción
-          change = 1;
-          break;
-        case 'STOCK_TRANSFER':
-          // Transferencia: amount > 0 (DÉBITO a STOCK_CAPITAL del origen)
-          // Para revertir: agregar de vuelta al origen
-          change = 1;
-          break;
-      }
-
-      runningQuantity += change;
-      totalChangeInMeeting += change;
-      operationsInMeeting.push(operation.operation_id);
-
-      lastMeetingDate = meetingDate;
-      lastMeetingId = meetingId;
+    // Try to parse from description if available
+    const fromMatch = description.match(
+      /Intercambio (\d+) ([^→]+) → (\d+) (.+)/,
+    );
+    if (fromMatch) {
+      return {
+        fromQuantity: parseInt(fromMatch[1]),
+        fromStockType: fromMatch[2].trim(),
+        toQuantity: parseInt(fromMatch[3]),
+        toStockType: fromMatch[4].trim(),
+        stockDetails,
+      };
     }
 
-    // Agregar el último punto si hay operaciones
-    if (operationsInMeeting.length > 0) {
-      history.unshift({
-        date: lastMeetingDate,
-        meetingId: lastMeetingId,
-        stockType: operations[0].stock_type,
-        quantity: runningQuantity,
-        change: totalChangeInMeeting,
-        operations: operationsInMeeting,
-        changeDescription: this.generateChangeDescription(totalChangeInMeeting, operationsInMeeting.length),
-      });
-    }
-
-    // Agregar punto inicial si no hay operaciones
-    if (history.length === 0) {
-      history.push({
-        date: null,
-        meetingId: null,
-        stockType: operations[0]?.stock_type || 'Unknown',
-        quantity: currentQuantity,
-        change: 0,
-        operations: [],
-        changeDescription: 'Estado inicial',
-      });
-    }
-
-    return history;
+    return { stockDetails };
   }
 
-  private generateChangeDescription(change: number, operationCount: number): string {
-    if (change === 0) return 'Sin cambios';
-    
-    const changeText = change > 0 ? `+${change.toFixed(2)}` : change.toFixed(2);
-    const operationText = operationCount === 1 ? 'operación' : 'operaciones';
-    
-    return `${changeText} acciones (${operationCount} ${operationText})`;
+  /**
+   * Extract details for stock transfer operations
+   */
+  private extractStockTransferDetails(
+    ledgerEntries: LedgerEntry[],
+    description: string,
+  ): any {
+    const stockEntries = ledgerEntries.filter((entry) => entry.stock_id);
+    const stockCapitalEntries = stockEntries.filter(
+      (entry) => entry.account_type === STOCK_CAPITAL_ACCOUNT,
+    );
+
+    const stockDetails = stockCapitalEntries.map((entry) => ({
+      stockType: entry.stock?.type || 'Unknown',
+      amount: Number(entry.amount),
+      description: entry.description,
+    }));
+
+    // Try to parse from description if available
+    const transferMatch = description.match(
+      /Transferencia de (\d+) ([^a]+) a (.+)/,
+    );
+    const receptionMatch = description.match(
+      /Recepción de (\d+) ([^d]+) desde (.+)/,
+    );
+
+    if (transferMatch) {
+      return {
+        quantity: parseInt(transferMatch[1]),
+        stockType: transferMatch[2].trim(),
+        toMemberName: transferMatch[3].trim(),
+        stockDetails,
+      };
+    } else if (receptionMatch) {
+      return {
+        quantity: parseInt(receptionMatch[1]),
+        stockType: receptionMatch[2].trim(),
+        fromMemberName: receptionMatch[3].trim(),
+        stockDetails,
+      };
+    }
+
+    return { stockDetails };
+  }
+
+  /**
+   * Extract details for stock loan payment operations
+   */
+  private extractStockLoanPaymentDetails(
+    ledgerEntries: LedgerEntry[],
+    description: string,
+  ): any {
+    const stockEntries = ledgerEntries.filter((entry) => entry.stock_id);
+    const loanEntries = ledgerEntries.filter((entry) => entry.loan_id);
+    const stockCapitalEntries = stockEntries.filter(
+      (entry) => entry.account_type === STOCK_CAPITAL_ACCOUNT,
+    );
+    const loanReceivableEntries = loanEntries.filter(
+      (entry) => entry.account_type === LOANS_RECEIVABLE_ACCOUNT,
+    );
+
+    const stockDetails = stockCapitalEntries.map((entry) => ({
+      stockType: entry.stock?.type || 'Unknown',
+      amount: Number(entry.amount),
+      description: entry.description,
+    }));
+
+    const loanDetails = loanReceivableEntries.map((entry) => ({
+      loanType: entry.loan?.loan_type || 'Unknown',
+      amount: Number(entry.amount),
+      description: entry.description,
+    }));
+
+    // Try to parse from description if available
+    const paymentMatch = description.match(/Pago de crédito con (\d+) (.+)/);
+    if (paymentMatch) {
+      return {
+        quantity: parseInt(paymentMatch[1]),
+        stockType: paymentMatch[2].trim(),
+        stockDetails,
+        loanDetails,
+      };
+    }
+
+    return { stockDetails, loanDetails };
   }
 }
