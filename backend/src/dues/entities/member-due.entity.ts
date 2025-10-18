@@ -17,4 +17,5 @@ export interface MemberDue {
   monthlyContribution?: number;
   stockQuantity?: number;
   noveltyComment?: string;
+  creationDate?: string;
 }

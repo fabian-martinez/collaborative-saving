@@ -93,7 +93,7 @@ export class LoansService {
       meeting_id: meetingId,
       loan_type: item.newLoanRequest.loanType,
       approved_amount: item.newLoanRequest.approvedAmount,
-      outstanding_balance: item.amount,
+      outstanding_balance: item.newLoanRequest.approvedAmount,
       disbursed_amount: item.amount,
       monthly_payment_amount: item.newLoanRequest.monthlyPaymentAmount,
       interest_rate: item.newLoanRequest.interestRate,

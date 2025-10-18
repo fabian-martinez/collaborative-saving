@@ -3,14 +3,16 @@ import type { Stock, StockHistoryData, StockHistoryRequest } from '../types';
 
 // Helper to ensure numeric fields are numbers, as the backend sends them as strings.
 const transformStock = (
-  stock: Omit<Stock, 'value' | 'monthly_contribution'> & {
+  stock: Omit<Stock, 'value' | 'monthly_contribution' | 'subscriptionCount'> & {
     value: string | number;
     monthly_contribution: string | number;
+    subscriptionCount?: string | number;
   }
 ): Stock => ({
   ...stock,
   value: Number(stock.value),
   monthly_contribution: Number(stock.monthly_contribution),
+  subscriptionCount: stock.subscriptionCount ? Number(stock.subscriptionCount) : undefined,
 });
 
 export interface StockSubscription {
@@ -163,5 +165,41 @@ export const stocksService = {
     const url = queryString ? `/stocks/history?${queryString}` : '/stocks/history';
     
     return api.get<StockHistoryData[]>(url);
+  },
+
+  getStockOperationsForMemberInMeeting: async (memberId: string, meetingId: string): Promise<Array<{
+    id: string;
+    type: string;
+    description: string;
+    date: string;
+    details: any;
+  }>> => {
+    return api.get<Array<{
+      id: string;
+      type: string;
+      description: string;
+      date: string;
+      details: any;
+    }>>(`/stocks/operations/member/${memberId}/meeting/${meetingId}`);
+  },
+
+  getAllStockOperationsForMeeting: async (meetingId: string): Promise<Array<{
+    id: string;
+    type: string;
+    description: string;
+    date: string;
+    details: any;
+    memberId: string;
+    memberName: string;
+  }>> => {
+    return api.get<Array<{
+      id: string;
+      type: string;
+      description: string;
+      date: string;
+      details: any;
+      memberId: string;
+      memberName: string;
+    }>>(`/stocks/operations/meeting/${meetingId}`);
   },
 }; 

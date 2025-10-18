@@ -757,6 +757,22 @@ const availableStocks = ref<Stock[]>([])
 // Operaciones registradas
 const registeredOperations = ref<RegisteredOperation[]>([])
 const selectedOperation = ref<RegisteredOperation | null>(null)
+const existingOperations = ref<Array<{
+  id: string;
+  type: string;
+  description: string;
+  date: string;
+  details: Record<string, unknown>;
+}>>([])
+const allOperations = ref<Array<{
+  id: string;
+  type: string;
+  description: string;
+  date: string;
+  details: Record<string, unknown>;
+  memberId: string;
+  memberName: string;
+}>>([])
 
 // Estados de modales
 const showTransferModal = ref(false)
@@ -909,14 +925,89 @@ const totalModifications = computed(() =>
   registeredOperations.value.filter(op => op.type === 'STOCK_MODIFICATION').length
 )
 
-const memberOperations = computed(() => 
-  selectedMember.value ? registeredOperations.value.filter(op => op.memberId === selectedMember.value!.id) : []
-)
+const memberOperations = computed(() => {
+  if (showAllOperations.value) {
+    // Mostrar todas las operaciones de la reunión
+    const currentSessionOps = registeredOperations.value
+    const convertedAllOps: RegisteredOperation[] = allOperations.value.map(op => ({
+      id: op.id,
+      type: op.type as 'TRANSFER' | 'LOAN_PAYMENT' | 'STOCK_MODIFICATION',
+      description: op.description,
+      memberId: op.memberId,
+      memberName: op.memberName,
+      stockType: 'N/A',
+      quantity: 0,
+      unitValue: 0,
+      totalValue: 0,
+      timestamp: new Date(op.date),
+      // Agregar detalles específicos según el tipo
+      ...(op.type === 'STOCK_MODIFICATION' && {
+        fromStockType: op.details?.fromStockType as string,
+        fromQuantity: op.details?.fromQuantity as number,
+        toStockType: op.details?.toStockType as string,
+        toQuantity: op.details?.toQuantity as number,
+      }),
+      ...(op.type === 'STOCK_TRANSFER' && {
+        toMemberName: op.details?.toMemberName as string,
+        fromMemberName: op.details?.fromMemberName as string,
+      }),
+      ...(op.type === 'STOCK_LOAN_PAYMENT' && {
+        loanType: (op.details?.loanDetails as any)?.[0]?.loanType as string,
+      })
+    }))
+    
+    return [...currentSessionOps, ...convertedAllOps]
+  } else {
+    // Mostrar solo operaciones del socio seleccionado
+    if (!selectedMember.value) return []
+    
+    const currentSessionOps = registeredOperations.value.filter(op => op.memberId === selectedMember.value!.id)
+    const existingOps = existingOperations.value
+    
+    const convertedExistingOps: RegisteredOperation[] = existingOps.map(op => ({
+      id: op.id,
+      type: op.type as 'TRANSFER' | 'LOAN_PAYMENT' | 'STOCK_MODIFICATION',
+      description: op.description,
+      memberId: selectedMember.value!.id,
+      memberName: selectedMember.value!.name,
+      stockType: 'N/A',
+      quantity: 0,
+      unitValue: 0,
+      totalValue: 0,
+      timestamp: new Date(op.date),
+      // Agregar detalles específicos según el tipo
+      ...(op.type === 'STOCK_MODIFICATION' && {
+        fromStockType: op.details?.fromStockType as string,
+        fromQuantity: op.details?.fromQuantity as number,
+        toStockType: op.details?.toStockType as string,
+        toQuantity: op.details?.toQuantity as number,
+      }),
+      ...(op.type === 'STOCK_TRANSFER' && {
+        toMemberName: op.details?.toMemberName as string,
+        fromMemberName: op.details?.fromMemberName as string,
+      }),
+      ...(op.type === 'STOCK_LOAN_PAYMENT' && {
+        loanType: (op.details?.loanDetails as any)?.[0]?.loanType as string,
+      })
+    }))
+    
+    return [...currentSessionOps, ...convertedExistingOps]
+  }
+})
 
 // Métodos
 onMounted(async () => {
   await activeMeetingStore.fetchMembers()
   availableStocks.value = await stocksService.getStocks()
+  
+  // Cargar todas las operaciones de la reunión al inicializar
+  if (activeMeetingStore.meetingId) {
+    try {
+      allOperations.value = await stocksService.getAllStockOperationsForMeeting(activeMeetingStore.meetingId)
+    } catch (err) {
+      console.error('Error al cargar todas las operaciones:', err)
+    }
+  }
 })
 
 function getOperationTypeColor(type: string) {
@@ -946,12 +1037,14 @@ async function selectMember(member: { id: string; name: string }) {
   
   try {
     isLoading.value = true
-    const [subscriptions, loans] = await Promise.all([
+    const [subscriptions, loans, operations] = await Promise.all([
       stocksService.getStockSubscriptionsByMember(member.id),
-      loansService.getActiveLoansByMember(member.id)
+      loansService.getActiveLoansByMember(member.id),
+      activeMeetingStore.meetingId ? stocksService.getStockOperationsForMemberInMeeting(member.id, activeMeetingStore.meetingId) : Promise.resolve([])
     ])
     memberSubscriptions.value = subscriptions.filter(sub => sub.status === 'active')
     memberLoans.value = loans.filter(loan => loan.outstanding_balance > 0)
+    existingOperations.value = operations
   } catch (err) {
     error.value = 'Error al cargar datos del socio'
     console.error(err)
@@ -961,7 +1054,8 @@ async function selectMember(member: { id: string; name: string }) {
 }
 
 function hasOperations(memberId: string): boolean {
-  return registeredOperations.value.some(op => op.memberId === memberId)
+  return registeredOperations.value.some(op => op.memberId === memberId) || 
+         allOperations.value.some(op => op.memberId === memberId)
 }
 
 function showOperationDetail(operation: RegisteredOperation) {
@@ -1075,8 +1169,17 @@ async function confirmModification() {
     
     registeredOperations.value.push(operation)
     
-    // Actualizar las suscripciones del socio
+    // Actualizar las suscripciones del socio y recargar operaciones
     await selectMember(selectedMember.value)
+    
+    // Recargar todas las operaciones de la reunión
+    if (activeMeetingStore.meetingId) {
+      try {
+        allOperations.value = await stocksService.getAllStockOperationsForMeeting(activeMeetingStore.meetingId)
+      } catch (err) {
+        console.error('Error al recargar todas las operaciones:', err)
+      }
+    }
     
     showModificationReceipt.value = false
     alert(response.message)
@@ -1161,8 +1264,17 @@ async function confirmTransfer() {
     
     registeredOperations.value.push(operation)
     
-    // Actualizar las suscripciones del socio
+    // Actualizar las suscripciones del socio y recargar operaciones
     await selectMember(selectedMember.value)
+    
+    // Recargar todas las operaciones de la reunión
+    if (activeMeetingStore.meetingId) {
+      try {
+        allOperations.value = await stocksService.getAllStockOperationsForMeeting(activeMeetingStore.meetingId)
+      } catch (err) {
+        console.error('Error al recargar todas las operaciones:', err)
+      }
+    }
     
     showTransferReceipt.value = false
     alert(response.message)
@@ -1257,8 +1369,17 @@ async function confirmLoanPayment() {
     
     registeredOperations.value.push(operation)
     
-    // Actualizar las suscripciones y préstamos del socio
+    // Actualizar las suscripciones y préstamos del socio y recargar operaciones
     await selectMember(selectedMember.value)
+    
+    // Recargar todas las operaciones de la reunión
+    if (activeMeetingStore.meetingId) {
+      try {
+        allOperations.value = await stocksService.getAllStockOperationsForMeeting(activeMeetingStore.meetingId)
+      } catch (err) {
+        console.error('Error al recargar todas las operaciones:', err)
+      }
+    }
     
     showLoanPaymentReceipt.value = false
     alert(response.message)

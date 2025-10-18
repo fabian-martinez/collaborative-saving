@@ -32,8 +32,8 @@
           <div v-for="due in stockDues" :key="due.originalIndex" class="flex items-baseline py-3">
             <div class="flex-shrink-0">
               <p class="font-semibold text-xl">{{ due.description }}</p>
-              <p v-if="due.monthlyContribution && due.stockQuantity" class="text-sm text-base-content/70">
-                {{ formatNumber(Number(due.stockQuantity || 0)) }} uds. x {{ formatNumber(due.monthlyContribution) }} c/u
+              <p v-if="due.stockQuantity" class="text-sm text-base-content/70">
+                {{ formatNumber(Number(due.stockQuantity || 0)) }} uds. x {{ formatNumber(due.monthlyContribution || 0) }} c/u
               </p>
             </div>
             <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
@@ -59,6 +59,7 @@
               <div class="flex justify-between"><span>Saldo actual:</span> <span>{{ formatNumber(due.details.outstanding_balance) }}</span></div>
               <div class="flex justify-between"><span>Abono Capital:</span> <span>{{ formatNumber(payments[due.originalIndex].amount - due.details.interest) }}</span></div>
               <div class="flex justify-between"><span>Intereses:</span> <span class="font-semibold text-accent">{{ formatNumber(due.details.interest) }}</span></div>
+              <div v-if="due.creationDate" class="flex justify-between text-sm text-base-content/60"><span>Fecha préstamo:</span> <span>{{ formatDate(due.creationDate) }}</span></div>
             </div>
           </div>
         </div>
@@ -131,8 +132,14 @@
         </div>
       </div>
       
-      <div class="mt-8 text-right">
-        <button type="submit" class="btn btn-primary btn-lg" :disabled="isSubmitting || payments.length === 0">
+      <div class="mt-8 flex justify-between items-center">
+        <button type="button" @click="printReceipt" class="btn btn-outline btn-secondary no-print">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+          </svg>
+          Imprimir Recibo
+        </button>
+        <button type="submit" class="btn btn-primary btn-lg no-print" :disabled="isSubmitting || payments.length === 0">
           <span v-if="isSubmitting" class="loading loading-spinner"></span>
           Confirmar Pago
         </button>
@@ -151,6 +158,17 @@ import { meetingsService } from '@/features/meetings/services/meetings';
 import EditLoanPaymentModal from './EditLoanPaymentModal.vue';
 import EditFineModal from './EditFineModal.vue';
 import { formatNumber } from '@/shared/formatters'
+
+// Función para formatear fecha
+function formatDate(dateString: string): string {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+}
 import NoveltyModal from './NoveltyModal.vue';
 
 const props = defineProps<{
@@ -428,4 +446,79 @@ function deleteNovelty(idx: number) {
   const toDelete = allNovelty.find(n => n.idx === idx);
   if (toDelete) payments.value.splice(toDelete.i, 1);
 }
-</script> 
+
+function printReceipt() {
+  const currentDate = new Date().toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+  const originalTitle = document.title;
+  document.title = `Recibo_${props.member.name.replace(/\s+/g, '_')}_${currentDate.replace(/\//g, '-')}`;
+  
+  window.print();
+  
+  // Restaurar el título original después de la impresión
+  setTimeout(() => {
+    document.title = originalTitle;
+  }, 1000);
+}
+</script>
+
+<style>
+@media print {
+  /* Ocultar elementos que no deben imprimirse */
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Optimizar el layout para impresión */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Mostrar solo el componente PaymentForm */
+  .bg-base-100, .bg-base-100 * {
+    visibility: visible;
+  }
+  
+  /* Ajustar el contenedor para impresión */
+  .bg-base-100 {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    box-shadow: none !important;
+    margin: 0;
+    padding: 20px;
+  }
+  
+  /* Mejorar legibilidad en impresión */
+  .text-base-content\/80,
+  .text-base-content\/70,
+  .text-base-content\/60,
+  .text-base-content\/50 {
+    color: #000 !important;
+  }
+  
+  /* Asegurar que los bordes se vean bien */
+  .border-base-300\/70,
+  .border-base-300\/50,
+  .border-base-300\/80 {
+    border-color: #ccc !important;
+  }
+  
+  .border-error\/40 {
+    border-color: #f87171 !important;
+  }
+  
+  /* Ajustar tamaños de fuente para impresión */
+  .text-2xl {
+    font-size: 1.25rem !important;
+  }
+  
+  .text-xl {
+    font-size: 1.125rem !important;
+  }
+}
+</style> 

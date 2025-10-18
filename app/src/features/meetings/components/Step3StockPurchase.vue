@@ -10,6 +10,7 @@
             <a :class="[ 'transition', selectedMember && selectedMember.id === member.id ? 'bg-primary/20 font-bold text-primary' : 'hover:bg-base-300/40' ]">
               {{ member.name }}
               <span v-if="hasPendingPurchase(member.id)" class="badge badge-warning badge-sm ml-2">Pendiente</span>
+              <span v-if="hasCompletedPurchase(member.id)" class="badge badge-success badge-sm ml-2">Con compras</span>
             </a>
           </li>
         </ul>
@@ -390,6 +391,11 @@ function closeOperationDetail() {
 function hasPendingPurchase(memberId: string) {
   // Muestra la etiqueta si hay líneas en el recibo local, sin importar compras previas
   return (localLinesByMember.value[memberId]?.length > 0)
+}
+
+function hasCompletedPurchase(memberId: string) {
+  // Muestra la etiqueta si el socio ya ha realizado compras registradas en la reunión
+  return memberRegisteredPurchases(memberId).length > 0
 }
 
 // Members computed property not used in current implementation

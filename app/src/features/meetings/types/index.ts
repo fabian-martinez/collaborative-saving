@@ -16,6 +16,7 @@ export interface MemberDue {
   };
   monthlyContribution?: number;
   stockQuantity?: number;
+  creationDate?: string;
 }
 
 export interface Payment {

@@ -1,6 +1,8 @@
 import {
   Controller,
   Get,
+  Post,
+  Body,
   Param,
   ParseUUIDPipe,
   HttpStatus,
@@ -13,15 +15,16 @@ import {
   ApiResponse,
   ApiParam,
   ApiQuery,
-  ApiBadRequestResponse,
   ApiNotFoundResponse,
-  ApiInternalServerErrorResponse,
+  ApiBody,
 } from '@nestjs/swagger';
 import { StocksService } from './stocks.service';
 import { Stock } from './entities/stock.entity';
 import { MemberStocksResponseDto } from '../members/dto/member-stocks-response.dto';
 import { StockTransactionHistoryDto } from '../members/dto/stock-transaction-history.dto';
-import { StockHistoryRequestDto, StockHistoryResponseDto } from './dto/stock-history.dto';
+import { StockWithSubscriptionsDto } from './dto/stock-with-subscriptions.dto';
+import { StockModificationDto } from './dto/stock-modification.dto';
+// import { StockHistoryRequestDto, StockHistoryResponseDto } from './dto/stock-history.dto';
 
 @ApiTags('Stocks')
 @Controller('stocks')
@@ -31,55 +34,60 @@ export class StocksController {
   @Get()
   @ApiOperation({
     summary: 'Get all stocks',
-    description: 'Retrieve all available stocks in the system',
+    description:
+      'Retrieve all available stocks in the system with subscription counts',
   })
   @ApiResponse({
     status: 200,
-    description: 'Stocks retrieved successfully',
-    type: [Stock],
+    description: 'Stocks retrieved successfully with subscription counts',
+    type: [StockWithSubscriptionsDto],
   })
-  async findAll(): Promise<Stock[]> {
-    try {
-      return await this.stocksService.findAll();
-    } catch (error) {
-      throw new HttpException(
-        'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+  async findAll(): Promise<StockWithSubscriptionsDto[]> {
+    return await this.stocksService.findAllWithSubscriptionCount();
   }
 
-  @Get('history')
-  @ApiOperation({ summary: 'Obtener historial cronológico inverso de acciones' })
+  @Post('modify')
+  @ApiOperation({
+    summary: 'Process stock modification',
+    description:
+      'Process stock modifications including exchanges, transfers, and loan payments',
+  })
+  @ApiBody({ type: StockModificationDto })
   @ApiResponse({
     status: 200,
-    description: 'Historial cronológico de cantidades de acciones por tipo',
-    type: [StockHistoryResponseDto],
+    description: 'Stock modification processed successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        operationId: {
+          type: 'string',
+          example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+        },
+        message: {
+          type: 'string',
+          example: 'Stock modification processed successfully',
+        },
+        details: { type: 'object' },
+      },
+    },
   })
-  @ApiQuery({
-    name: 'stockType',
-    required: false,
-    type: String,
-    description: 'Filtrar por tipo de acción específico',
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - Invalid modification data',
   })
-  @ApiQuery({
-    name: 'includeTransfers',
-    required: false,
-    type: Boolean,
-    description: 'Incluir operaciones de transferencia (por defecto true)',
-  })
-  @ApiQuery({
-    name: 'includeLoanPayments',
-    required: false,
-    type: Boolean,
-    description: 'Incluir operaciones de pago con acciones (por defecto true)',
-  })
-  async getStockChronologicalHistory(@Query() query: StockHistoryRequestDto) {
+  async processStockModification(@Body() dto: StockModificationDto): Promise<{
+    operationId: string;
+    message: string;
+    details: any;
+  }> {
     try {
-      return await this.stocksService.getStockChronologicalHistory(query);
-    } catch (error) {
+      return await this.stocksService.processStockModification(dto);
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
-        'Internal server error',
+        error instanceof Error ? error.message : 'Internal server error',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -127,7 +135,8 @@ export class StocksController {
   @Get('member/:memberId/summary')
   @ApiOperation({
     summary: 'Get member stocks summary',
-    description: 'Retrieve a summary of all stocks owned by a specific member using LedgerEntry data',
+    description:
+      'Retrieve a summary of all stocks owned by a specific member using LedgerEntry data',
   })
   @ApiParam({
     name: 'memberId',
@@ -147,8 +156,8 @@ export class StocksController {
   ): Promise<MemberStocksResponseDto> {
     try {
       return await this.stocksService.getMemberStockSummary(memberId);
-    } catch (error) {
-      if (error.message.includes('not found')) {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message?.includes('not found')) {
         throw new HttpException(
           `Member with ID ${memberId} not found`,
           HttpStatus.NOT_FOUND,
@@ -164,7 +173,8 @@ export class StocksController {
   @Get(':id/member/:memberId/history')
   @ApiOperation({
     summary: 'Get stock transaction history for member',
-    description: 'Retrieve detailed transaction history for a specific stock owned by a specific member using LedgerEntry data',
+    description:
+      'Retrieve detailed transaction history for a specific stock owned by a specific member using LedgerEntry data',
   })
   @ApiParam({
     name: 'id',
@@ -226,12 +236,15 @@ export class StocksController {
         );
       }
 
-      return await this.stocksService.getStockTransactionHistory(stockId, memberId);
-    } catch (error) {
+      return await this.stocksService.getStockTransactionHistory(
+        stockId,
+        memberId,
+      );
+    } catch (error: unknown) {
       if (error instanceof HttpException) {
         throw error;
       }
-      if (error.message.includes('not found')) {
+      if (error instanceof Error && error.message?.includes('not found')) {
         throw new HttpException(
           'Stock or member not found',
           HttpStatus.NOT_FOUND,
@@ -247,7 +260,8 @@ export class StocksController {
   @Get('organization/summary')
   @ApiOperation({
     summary: 'Get organization stocks summary',
-    description: 'Retrieve aggregated statistics for all stocks across the organization',
+    description:
+      'Retrieve aggregated statistics for all stocks across the organization',
   })
   @ApiResponse({
     status: 200,
@@ -270,7 +284,7 @@ export class StocksController {
       },
     },
   })
-  async getOrganizationStocksSummary() {
+  getOrganizationStocksSummary() {
     try {
       // For now, return a placeholder response
       // In the future, implement actual aggregation logic
@@ -283,9 +297,140 @@ export class StocksController {
         averageMonthlyContribution: 0,
         message: 'Organization stocks summary not yet implemented',
       };
-    } catch (error) {
+    } catch {
       throw new HttpException(
         'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('operations/member/:memberId/meeting/:meetingId')
+  @ApiOperation({
+    summary: 'Get stock operations for member in meeting',
+    description:
+      'Retrieve all stock-related operations (modifications, transfers, loan payments) for a specific member in a specific meeting',
+  })
+  @ApiParam({
+    name: 'memberId',
+    description: 'The unique identifier of the member',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiParam({
+    name: 'meetingId',
+    description: 'The unique identifier of the meeting',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Stock operations retrieved successfully',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+          },
+          type: {
+            type: 'string',
+            example: 'STOCK_MODIFICATION',
+          },
+          description: {
+            type: 'string',
+            example: 'Intercambio 1 Accion Fenix → 1 Accion Mini',
+          },
+          date: { type: 'string', format: 'date-time' },
+          details: { type: 'object' },
+        },
+      },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: 'Member or meeting not found',
+  })
+  async getStockOperationsForMemberInMeeting(
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @Param('meetingId', ParseUUIDPipe) meetingId: string,
+  ) {
+    try {
+      return await this.stocksService.getStockOperationsForMemberInMeeting(
+        memberId,
+        meetingId,
+      );
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('operations/meeting/:meetingId')
+  @ApiOperation({
+    summary: 'Get all stock operations for meeting',
+    description:
+      'Retrieve all stock-related operations (modifications, transfers, loan payments) for all members in a specific meeting',
+  })
+  @ApiParam({
+    name: 'meetingId',
+    description: 'The unique identifier of the meeting',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'All stock operations for meeting retrieved successfully',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+          },
+          type: {
+            type: 'string',
+            example: 'STOCK_MODIFICATION',
+          },
+          description: {
+            type: 'string',
+            example: 'Intercambio 1 Accion Fenix → 1 Accion Mini',
+          },
+          date: { type: 'string', format: 'date-time' },
+          details: { type: 'object' },
+          memberId: {
+            type: 'string',
+            example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+          },
+          memberName: {
+            type: 'string',
+            example: 'Juan Pérez',
+          },
+        },
+      },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: 'Meeting not found',
+  })
+  async getAllStockOperationsForMeeting(
+    @Param('meetingId', ParseUUIDPipe) meetingId: string,
+  ) {
+    try {
+      return await this.stocksService.getAllStockOperationsForMeeting(
+        meetingId,
+      );
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Internal server error',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -294,7 +439,8 @@ export class StocksController {
   @Get('performance/analysis')
   @ApiOperation({
     summary: 'Get stocks performance analysis',
-    description: 'Retrieve performance analysis for all stocks including yield, growth, and trends',
+    description:
+      'Retrieve performance analysis for all stocks including yield, growth, and trends',
   })
   @ApiQuery({
     name: 'period',
@@ -327,7 +473,7 @@ export class StocksController {
       },
     },
   })
-  async getStocksPerformanceAnalysis(@Query('period') period?: string) {
+  getStocksPerformanceAnalysis(@Query('period') period?: string) {
     try {
       const validPeriods = ['monthly', 'quarterly', 'yearly'];
       if (period && !validPeriods.includes(period)) {
