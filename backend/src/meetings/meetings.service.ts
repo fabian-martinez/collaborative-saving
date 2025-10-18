@@ -553,6 +553,7 @@ export class MeetingsService {
       await queryRunner.commitTransaction();
       return { success: true };
     } catch (err) {
+      console.log('executeDisbursementPlan error', err);
       await queryRunner.rollbackTransaction();
       throw err;
     } finally {

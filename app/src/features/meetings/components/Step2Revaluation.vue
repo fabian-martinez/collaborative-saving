@@ -87,8 +87,9 @@
                 <td class="text-right text-info">
                   +<CopyOnDblClickNumber :value="detail.growth_from_contributions" /> ({{ Number(detail.estimated_growth_from_contributions).toLocaleString() }})
                 </td>
-                <td class="text-right text-info">
-                  +<CopyOnDblClickNumber :value="detail.growth_from_interest" />
+                <td class="text-right text-success">
+                  $<CopyOnDblClickNumber :value="detail.growth_from_interest" /> 
+                  <span class="text-sm text-accent">({{ calculateInterestRate(detail.growth_from_interest, detail.previous_value) }}%)</span>
                 </td>
                 <td class="text-right font-bold text-success">
                   +<CopyOnDblClickNumber :value="detail.total_growth_per_share" />
@@ -176,6 +177,13 @@ const mandatoryContributions = ref<MandatoryContribution[]>([])
 
 const activeMeetingStore = useActiveMeetingStore()
 const emit = defineEmits(['completed'])
+
+// Calculate interest rate percentage
+function calculateInterestRate(interestGained: number, previousValue: number): string {
+  if (previousValue === 0) return '0.00'
+  const rate = (interestGained / previousValue) * 100
+  return rate.toFixed(2)
+}
 
 async function fetchPreview() {
   if (!activeMeetingStore.meetingId) {

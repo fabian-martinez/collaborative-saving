@@ -125,7 +125,7 @@ export class DuesService {
     // Agrupar subscripciones por stock.id
     const grouped = subscriptions.reduce(
       (acc, sub) => {
-        if (sub.stock && Number(sub.stock.monthly_contribution) > 0) {
+        if (sub.stock) {
           const stockId = sub.stock.id;
           if (!acc[stockId]) {
             acc[stockId] = {
@@ -145,14 +145,16 @@ export class DuesService {
       >,
     );
 
-    return Object.values(grouped).map((group) => ({
-      type: 'stock_fee',
-      description: `Cuota de acción: ${group.stock.type}`,
-      amount: group.quantity * group.monthlyContribution,
-      referenceId: group.stock.id,
-      monthlyContribution: group.monthlyContribution,
-      stockQuantity: Number(group.quantity),
-    }));
+    return Object.values(grouped)
+      .filter((group) => group.quantity > 0)
+      .map((group) => ({
+        type: 'stock_fee',
+        description: `Cuota de acción: ${group.stock.type}`,
+        amount: group.quantity * group.monthlyContribution,
+        referenceId: group.stock.id,
+        monthlyContribution: group.monthlyContribution,
+        stockQuantity: Number(group.quantity),
+      }));
   }
 
   private calculateLoanPaymentDues(loans: Loan[]): MemberDue[] {
@@ -168,6 +170,7 @@ export class DuesService {
           description: `Cuota préstamo: ${loan.loan_type}`,
           amount: principalComponent + interestComponent,
           referenceId: loan.id,
+          creationDate: loan.creation_date,
           details: {
             interest: interestComponent,
             principal: principalComponent,

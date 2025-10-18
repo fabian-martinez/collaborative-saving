@@ -124,6 +124,43 @@ export class LoansController {
     }
   }
 
+  @Get('member/:memberId/active')
+  @ApiOperation({
+    summary: 'Get active loans for a member',
+    description: 'Retrieve all active loans for a specific member',
+  })
+  @ApiParam({
+    name: 'memberId',
+    description: 'The unique identifier of the member',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Active loans retrieved successfully',
+    type: [Loan],
+  })
+  @ApiNotFoundResponse({
+    description: 'Member not found',
+  })
+  async findActiveByMember(
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+  ): Promise<Loan[]> {
+    try {
+      return await this.loansService.findActiveByMember(memberId);
+    } catch (error) {
+      if (error.message.includes('not found')) {
+        throw new HttpException(
+          `Member with ID ${memberId} not found`,
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      throw new HttpException(
+        'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Get(':id/installments')
   @ApiOperation({
     summary: 'Get loan installments',

@@ -12,20 +12,20 @@
     </div>
 
     <!-- Tarjetas de resumen -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
       <div class="stat bg-white shadow rounded-xl border border-blue-100">
         <div class="stat-figure text-green-600">
           <PiggyBank class="w-7 h-7" />
         </div>
         <div class="stat-title text-gray-500">Valor Total</div>
-        <div class="stat-value text-blue-900">{{ formatCurrency(totalValue) }}</div>
+        <div class="stat-value text-blue-900 text-2xl" :title="formatCurrency(totalValue)">{{ formatCompactCurrency(totalValue) }}</div>
       </div>
       <div class="stat bg-white shadow rounded-xl border border-blue-100">
         <div class="stat-figure text-blue-500">
           <StatsUpSquare class="w-7 h-7" />
         </div>
         <div class="stat-title text-gray-500">Aporte Mensual Total</div>
-        <div class="stat-value text-blue-700">{{ formatCurrency(totalMonthlyContribution) }}</div>
+        <div class="stat-value text-blue-700 text-2xl" :title="formatCurrency(totalMonthlyContribution)">{{ formatCompactCurrency(totalMonthlyContribution) }}</div>
       </div>
       <div class="stat bg-white shadow rounded-xl border border-blue-100">
         <div class="stat-figure text-purple-600">
@@ -33,6 +33,13 @@
         </div>
         <div class="stat-title text-gray-500">Tipos de Acciones</div>
         <div class="stat-value text-purple-700">{{ filteredStocks.length }}</div>
+      </div>
+      <div class="stat bg-white shadow rounded-xl border border-blue-100">
+        <div class="stat-figure text-orange-600">
+          <Group class="w-7 h-7" />
+        </div>
+        <div class="stat-title text-gray-500">Total Suscripciones</div>
+        <div class="stat-value text-orange-700 text-2xl" :title="totalSubscriptions.toLocaleString()">{{ formatCompactNumber(totalSubscriptions) }}</div>
       </div>
     </div>
 
@@ -55,25 +62,31 @@
             <th>Tipo/Nombre</th>
             <th>Valor Actual (Bs.)</th>
             <th>Aporte Mensual (Bs.)</th>
+            <th class="text-center">Suscripciones</th>
             <th class="text-center">Acciones</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="4" class="text-center p-4">
+            <td colspan="5" class="text-center p-4">
               <span class="loading loading-lg"></span>
             </td>
           </tr>
           <tr v-else-if="error">
-            <td colspan="4" class="text-center text-error p-4">{{ error }}</td>
+            <td colspan="5" class="text-center text-error p-4">{{ error }}</td>
           </tr>
           <tr v-else-if="filteredStocks.length === 0">
-            <td colspan="4" class="text-center p-4">No hay tipos de acciones registrados.</td>
+            <td colspan="5" class="text-center p-4">No hay tipos de acciones registrados.</td>
           </tr>
           <tr v-for="stock in filteredStocks" :key="stock.id">
             <td class="font-semibold">{{ stock.type }}</td>
             <td>{{ formatCurrency(stock.value) }}</td>
             <td>{{ formatCurrency(stock.monthly_contribution) }}</td>
+            <td class="text-center">
+              <span class="badge badge-info badge-lg">
+                {{ stock.subscriptionCount ?? 0 }}
+              </span>
+            </td>
             <td class="flex items-center justify-center gap-2">
               <RouterLink :to="{ name: 'stock-details', params: { id: stock.id } }" class="btn btn-ghost btn-xs flex items-center gap-1" title="Ver Detalles">
                 <Page class="w-5 h-5 text-blue-700" /> Ver
@@ -103,7 +116,7 @@ import { ref, computed, onMounted } from 'vue';
 import { stocksService } from '../services/stocksService';
 import type { Stock } from '../types';
 import StockFormModal from '../components/StockFormModal.vue';
-import { Plus, PiggyBank, StatsUpSquare, Clock, Page, EditPencil, Trash } from 'iconoir-vue/regular';
+import { Plus, PiggyBank, StatsUpSquare, Clock, Page, EditPencil, Trash, Group } from 'iconoir-vue/regular';
 
 const stocks = ref<Stock[]>([]);
 const loading = ref(false);
@@ -123,14 +136,53 @@ const filteredStocks = computed(() => {
 });
 
 const totalValue = computed(() =>
-  filteredStocks.value.reduce((sum, stock) => sum + stock.value, 0)
+  filteredStocks.value.reduce((sum, stock) => {
+    const subscriptions = stock.subscriptionCount ?? 0;
+    return sum + (stock.value * subscriptions);
+  }, 0)
 );
 const totalMonthlyContribution = computed(() =>
-  filteredStocks.value.reduce((sum, stock) => sum + stock.monthly_contribution, 0)
+  filteredStocks.value.reduce((sum, stock) => {
+    const subscriptions = stock.subscriptionCount ?? 0;
+    return sum + (stock.monthly_contribution * subscriptions);
+  }, 0)
+);
+const totalSubscriptions = computed(() =>
+  filteredStocks.value.reduce((sum, stock) => sum + (stock.subscriptionCount ?? 0), 0)
 );
 
 function formatCurrency(value: number) {
   return value.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2 });
+}
+
+function formatCompactCurrency(value: number) {
+  if (value === 0) return '$0';
+  
+  const absValue = Math.abs(value);
+  const sign = value < 0 ? '-' : '';
+  
+  if (absValue >= 1e6) {
+    return `${sign}$${(absValue / 1e6).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}M`;
+  } else if (absValue >= 1e3) {
+    return `${sign}$${(absValue / 1e3).toFixed(1)}K`;
+  } else {
+    return formatCurrency(value);
+  }
+}
+
+function formatCompactNumber(value: number) {
+  if (value === 0) return '0';
+  
+  const absValue = Math.abs(value);
+  const sign = value < 0 ? '-' : '';
+  
+  if (absValue >= 1e6) {
+    return `${sign}${(absValue / 1e6).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}M`;
+  } else if (absValue >= 1e3) {
+    return `${sign}${(absValue / 1e3).toFixed(1)}K`;
+  } else {
+    return value.toLocaleString();
+  }
 }
 
 async function fetchStocks() {

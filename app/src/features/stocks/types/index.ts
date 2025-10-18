@@ -8,6 +8,7 @@ export interface Stock {
   created_at: string;
   updated_at: string;
   deleted_at?: string;
+  subscriptionCount?: number;
 }
 
 export interface StockHistoryPoint {

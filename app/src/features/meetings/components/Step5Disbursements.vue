@@ -76,8 +76,8 @@
               <div v-for="(pending, idx) in pendingTransactions" :key="`pending-${idx}`" class="py-4 rounded opacity-95">
                 <div class="flex items-baseline">
                   <div class="flex-shrink-0">
-                    <p class="font-semibold text-lg text-yellow-800">{{ pending.description }} (Pendiente)</p>
-                    <p class="text-sm text-yellow-700">Monto original: <CopyOnDblClickNumber :value="pending.originalAmount" /></p>
+                    <p class="font-semibold text-lg text-yellow-800">{{ pending.description || 'Sin descripción' }} (Pendiente)</p>
+                    <p class="text-sm text-yellow-700">Monto original: <CopyOnDblClickNumber :value="pending.originalAmount || 0" /></p>
                   </div>
                   <div class="flex-grow border-b-2 border-dotted border-yellow-300 mx-4"></div>
                   <div class="flex-shrink-0 flex items-center gap-2">
@@ -87,7 +87,7 @@
                   </div>
                 </div>
                 <div class="pl-4 mt-2 space-y-1 text-md text-yellow-700 border-l-2 border-yellow-300 flex gap-4 items-center">
-                  <span><b>Tipo:</b> {{ pending.type === 'loan' ? 'Préstamo' : 'Retiro de Acciones' }}</span>
+                  <span><b>Tipo:</b> {{ (pending.type === 'loan') ? 'Préstamo' : 'Retiro de Acciones' }}</span>
                   <span><b>Estado:</b> <span class="text-yellow-800">Pendiente de entrega</span></span>
                 </div>
               </div>
@@ -97,7 +97,7 @@
                 <div class="flex items-baseline">
                   <div class="flex-shrink-0">
                     <p class="font-semibold text-lg text-green-800">Prestamo tipo:{{ loan.type }}</p>
-                    <p class="text-sm text-green-700">Aprobado: <CopyOnDblClickNumber :value="loan.approved" /></p>
+                    <p class="text-sm text-green-700">Aprobado: <CopyOnDblClickNumber :value="loan.approved || 0" /></p>
                   </div>
                   <div class="flex-grow border-b-2 border-dotted border-green-300 mx-4"></div>
                   <div class="flex-shrink-0 flex items-center gap-2">
@@ -118,7 +118,7 @@
                 <div class="flex items-baseline">
                   <div class="flex-shrink-0">
                     <p class="font-semibold text-lg text-green-800">Retiro de Acciones {{ withdrawal.stockType }}</p>
-                    <p class="text-sm text-green-700">Cantidad: {{ withdrawal.quantity }} | Valor estimado: <CopyOnDblClickNumber :value="withdrawal.estimatedValue" /></p>
+                    <p class="text-sm text-green-700">Cantidad: {{ withdrawal.quantity }} | Valor estimado: <CopyOnDblClickNumber :value="withdrawal.estimatedValue || 0" /></p>
                   </div>
                   <div class="flex-grow border-b-2 border-dotted border-green-300 mx-4"></div>
                   <div class="flex-shrink-0 flex items-center gap-2">
@@ -127,7 +127,7 @@
                   </div>
                 </div>
                 <div class="pl-4 mt-2 space-y-1 text-md text-green-700 border-l-2 border-green-300 flex gap-4 items-center">
-                  <span><b>Valor por acción:</b> <span><CopyOnDblClickNumber :value="withdrawal.quantity ? withdrawal.estimatedValue / withdrawal.quantity : 0" /></span></span>
+                  <span><b>Valor por acción:</b> <span><CopyOnDblClickNumber :value="withdrawal.quantity ? (withdrawal.estimatedValue || 0) / withdrawal.quantity : 0" /></span></span>
                   <span><b>Pendiente por entregar:</b> <span class="text-green-800"><CopyOnDblClickNumber :value="withdrawal.pending ?? 0" /></span></span>
                 </div>
               </div>
@@ -189,7 +189,7 @@
               <div class="flex items-baseline">
                 <div class="flex-shrink-0">
                   <p class="font-semibold text-lg">Retiro de Acciones {{ withdrawal.stockType }}</p>
-                  <p class="text-sm text-base-content/70">Cantidad: {{ withdrawal.quantity }} | Valor estimado: <CopyOnDblClickNumber :value="withdrawal.estimatedValue" /></p>
+                  <p class="text-sm text-base-content/70">Cantidad: {{ withdrawal.quantity }} | Valor estimado: <CopyOnDblClickNumber :value="withdrawal.estimatedValue || 0" /></p>
                 </div>
                 <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
                 <div class="flex-shrink-0 flex items-center gap-2">
@@ -198,7 +198,7 @@
                 </div>
               </div>
               <div class="pl-4 mt-2 space-y-1 text-md text-base-content/80 border-l-2 border-base-300/80">
-                <div class="flex justify-between"><span>Valor por acción:</span> <span><CopyOnDblClickNumber :value="withdrawal.quantity ? withdrawal.estimatedValue / withdrawal.quantity : 0" /></span></div>
+                <div class="flex justify-between"><span>Valor por acción:</span> <span><CopyOnDblClickNumber :value="withdrawal.quantity ? (withdrawal.estimatedValue || 0) / withdrawal.quantity : 0" /></span></div>
                 <div class="flex justify-between"><span>Pendiente por entregar:</span> <span class="text-warning"><CopyOnDblClickNumber :value="withdrawal.pending ?? 0" /></span></div>
               </div>
             </div>
@@ -206,8 +206,8 @@
             <div v-for="(pending, idx) in pendingTransactions" :key="`pending-${idx}`" class="py-4 opacity-75">
               <div class="flex items-baseline">
                 <div class="flex-shrink-0">
-                  <p class="font-semibold text-lg text-warning">{{ pending.description }} (Pendiente)</p>
-                  <p class="text-sm text-base-content/70">Monto original: <CopyOnDblClickNumber :value="pending.originalAmount" /></p>
+                  <p class="font-semibold text-lg text-warning">{{ pending.description || 'Sin descripción' }} (Pendiente)</p>
+                  <p class="text-sm text-base-content/70">Monto original: <CopyOnDblClickNumber :value="pending.originalAmount || 0" /></p>
                 </div>
                 <div class="flex-grow border-b-2 border-dotted border-warning/30 mx-4"></div>
                 <div class="flex-shrink-0 flex items-center gap-2">
@@ -216,7 +216,7 @@
                 </div>
               </div>
               <div class="pl-4 mt-2 space-y-1 text-md text-base-content/60 border-l-2 border-warning/30">
-                <div class="flex justify-between"><span>Tipo:</span> <span>{{ pending.type === 'loan' ? 'Préstamo' : 'Retiro de Acciones' }}</span></div>
+                <div class="flex justify-between"><span>Tipo:</span> <span>{{ (pending.type === 'loan') ? 'Préstamo' : 'Retiro de Acciones' }}</span></div>
                 <div class="flex justify-between"><span>Estado:</span> <span class="text-warning">Pendiente de entrega</span></div>
               </div>
             </div>
@@ -247,7 +247,7 @@
       :show="showModal"
       :member="selectedMember"
       :maxCapacity="maxCapacity"
-      :prevLoan="getPrevLoanData()"
+      :prevLoan="prevLoanDataComputed"
       @save="handleSaveLoan"
       @cancel="closeModal"
     />
@@ -283,6 +283,7 @@ import LoanFormModal from './LoanFormModal.vue'
 import StockWithdrawalModal from './StockWithdrawalModal.vue'
 import { stocksService, type StockSubscription } from '@/features/stocks/services/stocksService'
 import { loansService } from '@/features/loans/services/loansService'
+import { api } from '@/services/api'
 import type { Member } from '@/features/members/types'
 import { useRouter } from 'vue-router'
 import { meetingsService } from '@/features/meetings/services/meetings'
@@ -298,6 +299,7 @@ interface PendingTransaction {
   amount: number
   originalAmount: number
   memberId: string
+  loanId?: string
 }
 
 interface Dividend {
@@ -306,6 +308,14 @@ interface Dividend {
   stockType: string
   amount: number
   memberId: string
+}
+
+interface LoanData {
+  type: string
+  approved: number
+  delivered: number
+  interestRate?: number
+  loanId?: string
 }
 
 interface Loan {
@@ -391,7 +401,17 @@ onMounted(async () => {
         if (!pendingTransactionsByMember.value[item.memberId]) {
           pendingTransactionsByMember.value[item.memberId] = []
         }
-        pendingTransactionsByMember.value[item.memberId].push(item)
+        // Mapear los datos del endpoint a la estructura esperada
+        const pendingTransaction: PendingTransaction = {
+          id: item.id || '',
+          type: item.type as 'loan' | 'withdrawal',
+          description: (item as unknown as Record<string, unknown>).notes as string || (item as unknown as Record<string, unknown>).description as string || 'Sin descripción',
+          amount: item.amount || 0,
+          originalAmount: (item as unknown as Record<string, unknown>).originalAmount as number || item.amount || 0,
+          memberId: item.memberId,
+          loanId: (item as unknown as Record<string, unknown>).loanId as string // Agregar loanId para obtener más detalles
+        }
+        pendingTransactionsByMember.value[item.memberId].push(pendingTransaction)
       }
     }
   } catch (e: unknown) {
@@ -447,7 +467,7 @@ const totalPrestado = computed(() => {
 
 const efectivoDisponibleNeto = computed(() => {
   const totalAEntregar = members.value.reduce((sum, member) => sum + getTotalToDeliver(member.id), 0)
-  return efectivoDisponible.value - totalAEntregar
+  return (efectivoDisponible.value || 0) - totalAEntregar
 })
 
 function selectMember(member: Member) {
@@ -553,37 +573,55 @@ function handleSaveStockWithdrawal(withdrawalData: { deliveredAmount: number; es
   localWithdrawals.value = withdrawals
   closeStockWithdrawalModal()
 }
-function editPendingTransaction(pending: { type: 'loan' | 'withdrawal'; description: string; amount: number; originalAmount: number }, idx: number) {
+async function editPendingTransaction(pending: { type?: 'loan' | 'withdrawal'; description?: string; amount?: number; originalAmount?: number; loanId?: string }, idx: number) {
   if (!selectedMember.value) return
   editingPendingIdx.value = idx
-  editingPendingType.value = pending.type
+  editingPendingType.value = pending.type || null
+  
   if (pending.type === 'loan') {
+    // Cargar datos del préstamo si está disponible
+    if (pending.loanId) {
+      isLoadingLoanData.value = true
+      try {
+        const loanDetails = await api.get(`/loans/${pending.loanId}`) as Record<string, unknown>
+        
+        prevLoanData.value = {
+          type: (loanDetails.loan_type as string) === 'agil' ? 'agil' : 'corriente',
+          approved: (loanDetails.approved_amount as number) || pending.originalAmount || 0,
+          delivered: pending.amount || 0,
+          interestRate: (loanDetails.interest_rate as number) || ((loanDetails.loan_type as string) === 'agil' ? 1.5 : 1.0),
+          loanId: pending.loanId
+        }
+      } catch (error) {
+        console.error('Error al obtener detalles del préstamo:', error)
+        // Fallback a datos básicos
+        prevLoanData.value = {
+          type: (pending.description && pending.description.includes('Ágil')) ? 'agil' : 'corriente',
+          approved: pending.originalAmount || 0,
+          delivered: pending.amount || 0
+        }
+      } finally {
+        isLoadingLoanData.value = false
+      }
+    } else {
+      // Datos básicos sin loanId
+      prevLoanData.value = {
+        type: (pending.description && pending.description.includes('Ágil')) ? 'agil' : 'corriente',
+        approved: pending.originalAmount || 0,
+        delivered: pending.amount || 0
+      }
+    }
     showModal.value = true
   } else {
     showStockWithdrawalModal.value = true
   }
 }
-function getPrevLoanData() {
-  if (editingPendingIdx.value !== null && editingPendingType.value === 'loan') {
-    const pending = pendingTransactions.value[editingPendingIdx.value]
-    const loanType = pending.description.includes('Ágil') ? 'agil' : 'corriente'
-    return {
-      type: loanType,
-      approved: pending.originalAmount,
-      delivered: pending.amount
-    }
-  }
-  if (editingLoanIdx.value !== null && editingLoanIdx.value >= 0) {
-    return localLoans.value[editingLoanIdx.value]
-  }
-  return null
-}
 function getTotalToDeliver(memberId: string) {
-  const loans = localLoansByMember.value[memberId]?.reduce((sum: number, l: { delivered: number }) => sum + l.delivered, 0) || 0
-  const withdrawals = localWithdrawalsByMember.value[memberId]?.reduce((sum: number, w: { deliveredAmount: number }) => sum + w.deliveredAmount, 0) || 0
-  const pending = pendingTransactionsByMember.value[memberId]?.reduce((sum: number, t: { amount: number }) => sum + t.amount, 0) || 0
-  const dividends = dividendsByMember.value[memberId]?.reduce((sum: number, d: { amount: number }) => sum + d.amount, 0) || 0
-  const others = localOtherDisbursementsByMember.value[memberId]?.reduce((sum: number, o: { amount: number }) => sum + o.amount, 0) || 0
+  const loans = localLoansByMember.value[memberId]?.reduce((sum: number, l: { delivered: number }) => sum + (l.delivered || 0), 0) || 0
+  const withdrawals = localWithdrawalsByMember.value[memberId]?.reduce((sum: number, w: { deliveredAmount: number }) => sum + (w.deliveredAmount || 0), 0) || 0
+  const pending = pendingTransactionsByMember.value[memberId]?.reduce((sum: number, t: { amount: number }) => sum + (t.amount || 0), 0) || 0
+  const dividends = dividendsByMember.value[memberId]?.reduce((sum: number, d: { amount: number }) => sum + (d.amount || 0), 0) || 0
+  const others = localOtherDisbursementsByMember.value[memberId]?.reduce((sum: number, o: { amount: number }) => sum + (o.amount || 0), 0) || 0
   return loans + withdrawals + pending + dividends + others
 }
 const deliverySummary = computed(() => {
@@ -762,6 +800,20 @@ async function aplicarDesembolsos() {
 const showOtherDisbursementModal = ref(false)
 const editingOtherDisbursementIdx = ref<number|null>(null)
 const localOtherDisbursementsByMember = ref<Record<string, Array<{ description: string; amount: number }>>>({})
+
+const prevLoanData = ref<LoanData | null>(null)
+const isLoadingLoanData = ref(false)
+
+// Computed property para cargar datos del préstamo cuando sea necesario
+const prevLoanDataComputed = computed(() => {
+  if (editingPendingIdx.value !== null && editingPendingType.value === 'loan') {
+    return prevLoanData.value
+  }
+  if (editingLoanIdx.value !== null && editingLoanIdx.value >= 0) {
+    return localLoans.value[editingLoanIdx.value]
+  }
+  return null
+})
 
 const localOtherDisbursements = computed<Array<{ description: string; amount: number }>>({
   get() {
