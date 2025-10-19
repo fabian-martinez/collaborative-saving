@@ -26,6 +26,8 @@ import {
 import { StockSubscription } from '../stock-subscriptions/entities/stock-subscription.entity';
 import { OperationType } from '../common/enums/operation-type.enum';
 import { StockModificationDto } from './dto/stock-modification.dto';
+import { LoanTransactionDetail } from '../loans/entities/loan-transaction-detail.entity';
+import { TransactionType } from '../common/enums/transaction-type.enum';
 
 @Injectable()
 export class StocksService {
@@ -808,6 +810,21 @@ export class StocksService {
     );
 
     await queryRunner.manager.save(ledgerEntries);
+
+    // Crear registro en loan_transactions_detail para trazabilidad
+    const loanTransactionDetail = queryRunner.manager.create(
+      LoanTransactionDetail,
+      {
+        loan_id: dto.loanId,
+        transaction_type: TransactionType.PRINCIPAL_PAYMENT,
+        amount: paymentValue,
+        transaction_date: new Date().toISOString().split('T')[0],
+        notes: `Pago con ${dto.loanPaymentQuantity} ${stock.type} (valor: ${paymentValue})`,
+        operation_id: operation.id,
+      },
+    );
+    await queryRunner.manager.save(loanTransactionDetail);
+
     await queryRunner.commitTransaction();
 
     return {
@@ -820,6 +837,7 @@ export class StocksService {
         loanType: loan.loan_type,
         previousBalance: loan.outstanding_balance,
         newBalance,
+        transactionDetailId: loanTransactionDetail.id,
       },
     };
   }

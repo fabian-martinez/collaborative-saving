@@ -450,10 +450,20 @@ export class MeetingsService {
       .getRepository(PendingMemberPayment)
       .find({
         where: { status: 'pending' },
+        relations: ['member', 'meeting'],
       });
     // 2. Calcular efectivo disponible
     const availableCash = await this.calculateCashInMeeting(meetingId);
     const plan: DisbursementPlanItemDto[] = pendingPayments.map((p) => {
+      console.log('Processing pending payment:', {
+        id: p.id,
+        type: p.type,
+        member_id: p.member_id,
+        loan_id: p.loan_id,
+        amount: p.amount,
+        status: p.status,
+      });
+
       const disbursementStockRequest = p.stock_subscription_id
         ? {
             stockId: p.stock_subscription_id,
@@ -480,7 +490,14 @@ export class MeetingsService {
           disbursementType = DisbursementType.OTHER;
       }
 
-      return {
+      // Validar que si es un préstamo pendiente, debe tener loan_id
+      if (p.type === PendingPaymentType.LOAN && !p.loan_id) {
+        throw new BadRequestException(
+          `El pago pendiente ${p.id} es de tipo préstamo pero no tiene loan_id asociado. Los préstamos pendientes deben tener un préstamo asociado.`,
+        );
+      }
+
+      const result = {
         memberId: p.member_id,
         type: disbursementType,
         amount: Number(p.amount),
@@ -488,8 +505,12 @@ export class MeetingsService {
         notes: p.notes,
         stockSubscriptionId: p.stock_subscription_id || undefined,
         loanId: p.loan_id || undefined,
+        pendingMemberPaymentId: p.id,
         disbursementStockRequest,
       };
+
+      console.log('Created plan item:', result);
+      return result;
     });
     // 3. Agregar préstamos nuevos al plan si se reciben
     if (newLoanRequests && Array.isArray(newLoanRequests)) {
