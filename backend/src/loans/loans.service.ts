@@ -13,13 +13,13 @@ import { Loan } from './entities/loan.entity';
 import { LoanTransactionDetail } from './entities/loan-transaction-detail.entity';
 import { Operation } from '../operations/entities/operation.entity';
 import { LedgerEntry } from '../ledger-entries/entities/ledger-entry.entity';
+import { PendingMemberPayment } from '../meetings/entities/pending-member-payment.entity';
 import {
   CASH_ACCOUNT,
   LOANS_RECEIVABLE_ACCOUNT,
   MEMBER_EQUITY_ACCOUNT,
   INTEREST_INCOME_ACCOUNT,
 } from '../common/constants/account-types';
-import { PendingMemberPayment } from '../meetings/entities/pending-member-payment.entity';
 import { PendingPaymentType } from '../common/enums/pending-payment-type.enum';
 import { DisbursementPlanItemDto } from '../meetings/dto/disbursement-plan.dto';
 import { MemberDue } from '../dues/entities/member-due.entity';
@@ -62,13 +62,13 @@ export class LoansService {
       return this.processNewLoanDisbursement(queryRunner, meetingId, item);
     }
 
-    // Si es un desembolso pendiente
+    // Si es un desembolso pendiente con loanId
     if (item.loanId) {
       return this.processPendingLoanDisbursement(queryRunner, meetingId, item);
     }
 
     throw new BadRequestException(
-      'Debe especificar loanId o newLoanRequest para el desembolso',
+      'Debe especificar loanId o newLoanRequest para el desembolso de préstamo',
     );
   }
 

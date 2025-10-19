@@ -9,6 +9,14 @@ export default {
   // Ejecuta el plan de desembolso
   async executeDisbursementPlan(meetingId: string, plan: DisbursementPlan[]) {
     console.log('plan', plan)
+    console.log('plan items details:', plan.map((item, index) => ({
+      index,
+      memberId: item.memberId,
+      type: item.type,
+      amount: item.amount,
+      pendingMemberPaymentId: item.pendingMemberPaymentId,
+      loanId: item.loanId
+    })))
     return api.post(`/meetings/${meetingId}/disbursement-plan/execute`, { plan })
   },
 } 

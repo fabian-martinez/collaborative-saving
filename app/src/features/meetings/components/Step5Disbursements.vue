@@ -302,6 +302,30 @@ interface PendingTransaction {
   loanId?: string
 }
 
+interface BackendPlanItem {
+  memberId: string
+  type: string
+  amount: number
+  status?: string
+  notes?: string
+  loanId?: string
+  stockSubscriptionId?: string
+  pendingMemberPaymentId?: string
+  disbursementStockRequest?: {
+    stockId: string
+    stockWithdrawalQuantity?: number
+  }
+  newLoanRequest?: {
+    memberId: string
+    amount: number
+    loanType: string
+    approvedAmount: number
+    monthlyPaymentAmount: number
+    interestRate: number
+    notes: string
+  }
+}
+
 interface Dividend {
   id: string
   type: 'dividend'
@@ -383,8 +407,9 @@ onMounted(async () => {
   error.value = ''
   try {
     // Obtener el plan de desembolso y efectivo disponible
-    const resp = await disbursementsService.getDisbursementPlanPreview(meetingId.value) as { plan?: (PendingTransaction | Dividend)[], availableCash?: number }
-    const plan: (PendingTransaction | Dividend)[] = resp.plan || []
+    const resp = await disbursementsService.getDisbursementPlanPreview(meetingId.value) as { plan?: BackendPlanItem[], availableCash?: number }
+    const plan: BackendPlanItem[] = resp.plan || []
+    console.log('Backend response plan:', plan)
     efectivoDisponible.value = resp.availableCash || 0
     // Agrupar pendientes y dividendos por miembro
     pendingTransactionsByMember.value = {}
@@ -395,7 +420,14 @@ onMounted(async () => {
         if (!dividendsByMember.value[item.memberId]) {
           dividendsByMember.value[item.memberId] = []
         }
-        dividendsByMember.value[item.memberId].push(item)
+        const dividend: Dividend = {
+          id: item.pendingMemberPaymentId || '',
+          type: 'dividend',
+          stockType: 'accion', // Valor por defecto
+          amount: item.amount || 0,
+          memberId: item.memberId
+        }
+        dividendsByMember.value[item.memberId].push(dividend)
       } else {
         // Agrupar otros pendientes (retiros, préstamos, etc.)
         if (!pendingTransactionsByMember.value[item.memberId]) {
@@ -403,13 +435,13 @@ onMounted(async () => {
         }
         // Mapear los datos del endpoint a la estructura esperada
         const pendingTransaction: PendingTransaction = {
-          id: item.id || '',
+          id: item.pendingMemberPaymentId || '',
           type: item.type as 'loan' | 'withdrawal',
-          description: (item as unknown as Record<string, unknown>).notes as string || (item as unknown as Record<string, unknown>).description as string || 'Sin descripción',
+          description: item.notes || 'Sin descripción',
           amount: item.amount || 0,
-          originalAmount: (item as unknown as Record<string, unknown>).originalAmount as number || item.amount || 0,
+          originalAmount: item.amount || 0,
           memberId: item.memberId,
-          loanId: (item as unknown as Record<string, unknown>).loanId as string // Agregar loanId para obtener más detalles
+          loanId: item.loanId // Agregar loanId para obtener más detalles
         }
         pendingTransactionsByMember.value[item.memberId].push(pendingTransaction)
       }
@@ -735,19 +767,23 @@ async function aplicarDesembolsos() {
       // Pendientes
       if (pendingTransactionsByMember.value[member.id]) {
         for (const pending of pendingTransactionsByMember.value[member.id]) {
+          console.log('Processing pending transaction:', pending)
           let typeApi = 'otro';
           const amountApi = Number(pending.amount || 0);
           if (pending.type === 'loan') typeApi = 'loan';
           else if (pending.type === 'withdrawal') typeApi = 'retiro_accion';
           else if (pending.type === 'dividend') typeApi = 'dividend';
-          plan.push({
-            ...pending,
-            pendingMemberPaymentId: pending.id,
+          const planItem = {
             memberId: member.id,
             type: typeApi as 'loan' | 'withdrawal' | 'dividend' | 'other',
             amount: amountApi,
-            status: 'pending'
-          })
+            status: 'pending' as 'pending' | 'approved' | 'delivered',
+            notes: pending.description,
+            loanId: pending.loanId,
+            ...(pending.id && pending.id !== '' && { pendingMemberPaymentId: pending.id })
+          }
+          console.log('Created plan item:', planItem)
+          plan.push(planItem)
         }
       }
       // Dividendos
