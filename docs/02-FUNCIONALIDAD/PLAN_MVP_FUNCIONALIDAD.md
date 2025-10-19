@@ -192,10 +192,23 @@ GET    /meetings/:id/summary               // Resumen de reunión
 ### **FASE 0: Diseño de Arquitectura Hexagonal (2-3 semanas)**
 
 #### Semana 1: Diseño de Dominio
+- [ ] **Analizar código existente y patrones duplicados (CRÍTICO)**
+  - **Operaciones contables**: 8+ servicios con código duplicado
+  - **Transacciones de base de datos**: Patrón repetido 8+ veces  
+  - **Creación de LedgerEntries**: Patrón repetido 14+ veces
+  - **Estrategias de pago**: 6+ estrategias con estructura similar
+  - **Esfuerzo**: 3-4 días
+
 - [ ] **Definir entidades de dominio**
   - Member, Stock, Loan, Meeting, Operation
   - Value Objects: Money, StockValue, DebtCapacity
   - **Esfuerzo**: 5-7 días
+
+- [ ] **Definir patrones base para eliminar duplicación**
+  - **Decoradores**: @Transactional(), @ValidateOperation()
+  - **Factories**: OperationFactory, LedgerEntryBuilder
+  - **Interceptors**: Validaciones transversales
+  - **Esfuerzo**: 2-3 días
 
 - [ ] **Definir reglas de negocio**
   - Servicios de dominio
@@ -208,11 +221,22 @@ GET    /meetings/:id/summary               // Resumen de reunión
   - DTOs y interfaces
   - **Esfuerzo**: 5-7 días
 
+- [ ] **Diseñar servicios transversales**
+  - **OperationService**: Manejo centralizado de operaciones
+  - **LedgerService**: Manejo centralizado de entradas contables
+  - **TransactionService**: Manejo centralizado de transacciones DB
+  - **Esfuerzo**: 2-3 días
+
 #### Semana 3: Diseño de Infraestructura
 - [ ] **Definir interfaces de infraestructura**
   - Repositorios, servicios externos
   - Estrategia de migración de datos
   - **Esfuerzo**: 3-5 días
+
+- [ ] **Implementar patrones base**
+  - Decoradores, factories, interceptors
+  - Validación con casos de prueba
+  - **Esfuerzo**: 2-3 días
 
 ### **FASE 1: Implementar Infraestructura Base (2-3 semanas)**
 
