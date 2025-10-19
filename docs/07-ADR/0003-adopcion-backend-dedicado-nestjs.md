@@ -11,9 +11,20 @@ La preocupación principal que surgió es la mantenibilidad y la curva de aprend
 
 ## Decisión
 
-Se ha decidido pivotar desde el uso de `Supabase Functions` hacia la implementación de un **servidor de backend dedicado utilizando el framework NestJS (Node.js/TypeScript)**.
+Se ha decidido pivotar desde el uso de `Supabase Functions` hacia la implementación de un **servidor de backend dedicado utilizando el framework NestJS (Node.js/TypeScript)** con **arquitectura hexagonal**.
 
 Este backend se ejecutará como un servicio independiente y será el único responsable de toda la lógica de negocio. Se comunicará con la base de datos PostgreSQL de Supabase y utilizará `Supabase Auth` para la gestión de la autenticación, pero no dependerá de las `Supabase Functions`.
+
+### Actualización: Migración a Arquitectura Hexagonal (ADR-0010)
+
+**Fecha de actualización**: $(date)
+
+El sistema ha evolucionado hacia una **arquitectura hexagonal (Ports and Adapters)** para resolver problemas de mantenibilidad, escalabilidad y calidad del código identificados en el análisis arquitectónico.
+
+**Nueva estructura del backend:**
+- **Domain Layer**: Entidades, Value Objects, reglas de negocio
+- **Application Layer**: Use Cases, DTOs, servicios de aplicación  
+- **Infrastructure Layer**: Repositorios, Controllers, servicios externos
 
 **Componentes de la Arquitectura Final:**
 
