@@ -39,6 +39,45 @@ import { Email } from '../value-objects/email.value-object';
 
 ---
 
+### ❌ Importar entidades de dominio en lugar de entidades TypeORM legacy
+
+**Problema**: En mappers y repositorios, confundir la entidad de dominio con la entidad TypeORM legacy.
+
+```typescript
+// ❌ INCORRECTO
+// infrastructure/typeorm/mappers/meeting.mapper.ts
+import { Meeting } from '@domain/entities/meeting.entity';
+import { Meeting as MeetingEntity } from '@domain/entities/meeting.entity';  // ❌ Esto es la misma entidad!
+
+// ❌ INCORRECTO
+// infrastructure/typeorm/repositories/typeorm-meeting.repository.ts
+import { Meeting as MeetingEntity } from '@domain/entities/meeting.entity';  // ❌ No es la entidad TypeORM
+```
+
+**Solución**: Los mappers y repositorios deben importar la entidad TypeORM legacy para persistencia, y la entidad de dominio para el modelo de dominio.
+
+```typescript
+// ✅ CORRECTO
+// infrastructure/typeorm/mappers/meeting.mapper.ts
+import { Meeting } from '@domain/entities/meeting.entity';  // Entidad de dominio
+import { Meeting as MeetingEntity } from '../../../meetings/entities/meeting.entity';  // ✅ Entidad TypeORM legacy
+
+// ✅ CORRECTO
+// infrastructure/typeorm/repositories/typeorm-meeting.repository.ts
+import { Meeting as MeetingDomain } from '@domain/entities/meeting.entity';  // Entidad de dominio
+import { Meeting as MeetingEntity } from '../../../meetings/entities/meeting.entity';  // ✅ Entidad TypeORM legacy
+import { MeetingMapper } from '../mappers/meeting.mapper';
+```
+
+**Regla**: 
+- Las entidades TypeORM legacy (`src/{feature}/entities/`) solo se importan en:
+  - Mappers (`infrastructure/typeorm/mappers/`)
+  - Repositorios TypeORM (`infrastructure/typeorm/repositories/`)
+  - Módulos NestJS para `TypeOrmModule.forFeature()`
+- **NUNCA** importar entidades legacy en `domain/` o `application/`
+
+---
+
 ### ❌ Use Cases dependiendo de implementaciones concretas
 
 **Problema**: Use Case importando repositorio TypeORM en lugar de interface.

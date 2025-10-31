@@ -3,11 +3,104 @@
 ## 🎯 Objetivo General
 Reorganizar la documentación existente y reenfocar el desarrollo en la funcionalidad del MVP, priorizando la construcción de características funcionales antes que atributos no funcionales como seguridad.
 
+### 🚨 Conflicto de Documentos Resuelto
+Los documentos `PLAN_MVP_FUNCIONALIDAD.md` y `ROADMAP_FUNCIONALIDADES.md` presentaban cronogramas contradictorios y no paralelizables. Este documento **unifica y prioriza** el trabajo en un solo plan coherente.
+
 ## 📊 Estado Actual
 - **Documentación**: 30+ archivos dispersos en múltiples carpetas
 - **Enfoque anterior**: Seguridad y atributos no funcionales como prioridad
 - **Enfoque nuevo**: Funcionalidad del MVP como prioridad
 - **Entorno**: Local con base de datos local y un único usuario
+
+## 🎯 PRIORIZACIÓN UNIFICADA DEL TRABAJO
+
+### Problema Identificado
+Los documentos `PLAN_MVP_FUNCIONALIDAD.md` (12-16 semanas) y `ROADMAP_FUNCIONALIDADES.md` (similares semanas) presentaban:
+- **Sobrepoblación de semanas**: Fases que se solapaban sin claridad
+- **Falta de claridad**: No era evidente qué hacer PRIMERO
+- **Conflicto de prioridades**: ¿Arquitectura vs Funcionalidades vs Calidad?
+
+### Solución: Arquitectura es Calidad
+
+**Insight clave**: Trabajar en arquitectura hexagonal **resuelve directamente** los problemas de calidad identificados:
+- **Duplicación de código** (1,300+ líneas): Se elimina con repositorios y servicios base
+- **Servicios sobrecargados**: Se resuelve separando responsabilidades en casos de uso
+- **Falta de testing**: Se resuelve con TDD desde el inicio
+- **Violaciones de SRP**: Se resuelve con separación de capas
+
+### Plan de Priorización Revisado
+
+#### 🔴 **PRIORIDAD CRÍTICA - MES 1-3 (ARQUITECTURA HEXAGONAL)**
+
+Esta es la prioridad porque:
+1. **Resuelve problemas de calidad** de manera definitiva
+2. **Mejora mantenibilidad** del sistema existente
+3. **Evita deuda técnica futura** al crear patrones correctos
+4. **Facilita testing** con TDD desde el inicio
+
+**Cronograma**:
+```
+Semana 1-2: Diseño de arquitectura hexagonal ✅ COMPLETADO
+  ✅ Analizar duplicación existente
+  ✅ Definir entidades de dominio
+  ✅ Diseñar casos de uso
+  ✅ Crear diagramas arquitectónicos (C4, ERD, State, Sequence)
+  ✅ Documentar estructura de capas (Domain, Application, Infrastructure)
+  ✅ Definir DTOs y contratos de repositorios
+
+Semana 3-4: Implementar infraestructura base
+  - [ ] Repositorios base (interfaces en domain/ports, implementaciones en infrastructure/typeorm)
+  - [ ] Servicios transversales (EventBus, TransactionManager)
+  - [ ] Estructura hexagonal (crear carpetas y configuración base)
+  - [ ] Tests base (estructura para TDD)
+
+Semana 5-10: Migrar funcionalidades existentes
+  - [ ] Gestión de Socios
+  - [ ] Gestión de Acciones
+  - [ ] Gestión de Préstamos
+  - [ ] Gestión de Reuniones
+  - [ ] Sistema Contable
+
+Semana 11-12: Implementar funcionalidades faltantes CON nueva arquitectura
+  - [ ] Cuadro de Pagos del Socio
+  - [ ] Asistente de Planificación de Pagos
+```
+
+#### 🟡 **PRIORIDAD ALTA - DURANTE MIGRACIÓN (TDD Y CALIDAD)**
+
+Se aplica **durante** la migración arquitectónica:
+- Tests unitarios para cada entidad de dominio
+- Tests de integración para cada caso de uso
+- Validación de que funcionalidad actual se mantiene
+
+### ¿Por Qué Arquitectura Primero?
+
+**Razón técnica**: 
+- Los **1,300+ líneas duplicadas** se eliminan con patrón correcto
+- Los **servicios sobrecargados** (673-1079 líneas) se dividen en casos de uso
+- El **8% de cobertura** sube a 90%+ con TDD
+- **Una vez implementado**, todas las funcionalidades futuras heredan la arquitectura
+
+**Razón práctica**:
+- **Funcionalidades no restrictivas**: Las 2 faltantes son "nice to have"
+- **Calidad es bloqueante**: El código duplicado genera bugs y dificulta cambios
+- **Inversión temprana**: Mejor arquitectura ahora = menos trabajo después
+
+### Cronograma Unificado Realista
+
+| Período | Tarea Principal | Trabajo Paralelo | Resultado | Estado |
+|---------|-----------------|------------------|-----------|--------|
+| **Semana 1-2** | Diseño arquitectónico | - | Arquitectura definida | ✅ COMPLETADO |
+| **Semana 3-4** | Infraestructura base | Tests con TDD | Base implementada | ⏳ PENDIENTE |
+| **Semana 5-10** | Migrar funcionalidades | TDD en cada migración | Sistema migrado + tests | ⏳ PENDIENTE |
+| **Semana 11-12** | Implementar faltantes | Con arquitectura correcta | MVP 100% | ⏳ PENDIENTE |
+
+### Estrategia de Implementación
+
+**No es paralelización de tareas**, sino **aplicación de TDD durante la migración**:
+- Cada caso de uso se implementa con test primero
+- Cada migración valida que funcionalidad actual funciona
+- Tests de integración continuos validan no regresiones
 
 ## 🗂️ Estructura de Documentación Propuesta
 
@@ -79,24 +172,24 @@ docs/
 ### **FASE 1: Reorganización de Documentación (1-2 días)**
 
 #### Día 1: Estructura y Movimiento
-- [ ] **Crear nueva estructura de carpetas**
+- [x] **Crear nueva estructura de carpetas**
   - Crear carpetas 01-ARQUITECTURA, 02-FUNCIONALIDAD, etc.
   - Mover archivos existentes a carpetas correspondientes
   - Renombrar archivos si es necesario para claridad
 
-- [ ] **Reorganizar archivos principales**
+- [x] **Reorganizar archivos principales**
   - Mover `ANALISIS_SEGURIDAD.md` a `05-SEGURIDAD/`
   - Mover `ANALISIS_DEPLOYMENT_DEVOPS.md` a `06-DEPLOYMENT/`
   - Mover `run-local-plan.md` a `06-DEPLOYMENT/`
   - Mover archivos de `archive/` a `08-ARCHIVE/`
 
 #### Día 2: Documentos Nuevos
-- [ ] **Crear documentos de referencia**
+- [x] **Crear documentos de referencia**
   - `INDICE_DOCUMENTACION.md`: Índice completo de toda la documentación
   - `GLOSARIO.md`: Definiciones de términos técnicos y de negocio
   - `CONVENCIONES.md`: Convenciones para mantener documentación
 
-- [ ] **Crear documentos de planificación**
+- [x] **Crear documentos de planificación**
   - `PLAN_MVP_FUNCIONALIDAD.md`: Plan específico para MVP
   - `ROADMAP_FUNCIONALIDADES.md`: Roadmap de funcionalidades
 
@@ -119,19 +212,35 @@ docs/
   - Establecer criterios de aceptación
   - Crear plan de desarrollo
 
-### **FASE 3: Plan de Mejoras Arquitectónicas (2-3 días)**
+#### Día 4-5 (paralelo): Buenas prácticas Frontend (Vue 3)
+- [ ] Auditar manejo de errores y estados de carga (loader/toasts)
+- [ ] Estandarizar `defineProps`/`defineEmits` con tipos en componentes clave
+- [ ] Diseñar composable `useApi` y plan de migración progresiva de servicios
+- [ ] Mejorar `useUserStore` (auth/roles/permisos/persistencia)
+- [ ] Integrar validación de formularios (vee-validate + yup) en formularios principales
+- [ ] Optimizar performance (virtualización de listas/tablas, memoización de cálculos)
 
-#### Día 6: Revisión de Plan de Mejoras
-- [ ] **Revisar plan de mejoras existente**
-  - Separar mejoras críticas vs futuras
-  - Reenfocar en funcionalidad vs seguridad
-  - Actualizar prioridades
+### **FASE 3: Plan de Mejoras Arquitectónicas (2-3 días)** ✅ COMPLETADO
 
-#### Día 7: Roadmap de Implementación
-- [ ] **Crear roadmap detallado**
-  - Timeline de implementación
-  - Dependencias entre tareas
-  - Criterios de éxito
+#### Día 6: Revisión de Plan de Mejoras ✅
+- [x] **Revisar plan de mejoras existente**
+  - Separar mejoras críticas vs futuras ✅
+  - Reenfocar en funcionalidad vs seguridad ✅
+  - Actualizar prioridades ✅
+
+#### Día 7: Roadmap de Implementación ✅
+- [x] **Crear roadmap detallado**
+  - Timeline de implementación ✅ (documentado en ARQUITECTURA_V2.md)
+  - Dependencias entre tareas ✅ (estructura de capas definida)
+  - Criterios de éxito ✅ (documentado en ARQUITECTURA_V2.md)
+
+#### Tareas concretas Frontend (Vue 3)
+- [ ] Implementar manejador de errores global (composable + patrón de uso en vistas)
+- [ ] Estandarizar `defineProps`/`defineEmits` tipados en componentes priorizados
+- [ ] Crear `useApi` y definir estrategia de adopción gradual en `features/*/services`
+- [ ] Reforzar `useUserStore` con autenticación, roles, permisos y persistencia (localStorage)
+- [ ] Integrar validación con `vee-validate`/`yup` en formularios de miembros, reuniones y operaciones
+- [ ] Aplicar virtualización en tablas/listas grandes y memoizar cálculos costosos en vistas (ej. reuniones activas)
 
 ## 📋 Checklist de Tareas
 
@@ -156,12 +265,12 @@ docs/
 - [ ] Estimar esfuerzo
 - [ ] Definir timeline
 
-### ✅ Plan de Mejoras
-- [ ] Revisar mejoras existentes
-- [ ] Separar críticas vs futuras
-- [ ] Reenfocar en funcionalidad
-- [ ] Crear roadmap de implementación
-- [ ] Establecer métricas de éxito
+### ✅ Plan de Mejoras - COMPLETADO
+- [x] Revisar mejoras existentes
+- [x] Separar críticas vs futuras
+- [x] Reenfocar en funcionalidad
+- [x] Crear roadmap de implementación
+- [x] Establecer métricas de éxito
 
 ## 🎯 Entregables Esperados
 
@@ -223,16 +332,60 @@ Semana 2:
 └── Día 7: Roadmap de implementación
 ```
 
-## 🎯 Próximos Pasos
+## 🎯 Estado Actual y Próximos Pasos
 
-1. **Aprobar plan de trabajo**
-2. **Comenzar Fase 1: Reorganización**
-3. **Validar estructura propuesta**
-4. **Continuar con análisis de funcionalidad**
+### ✅ Completado
+- **Fase 1**: Reorganización de documentación ✅
+- **Fase 3**: Plan de mejoras arquitectónicas ✅
+- **Semana 1-2**: Diseño de arquitectura hexagonal ✅
+
+Ver [ESTADO_DISEÑO.md](./01-ARQUITECTURA/ESTADO_DISEÑO.md) para detalles completos del diseño.
+
+### 📋 Próximos Pasos
+
+1. **Semana 3-4**: Implementar infraestructura base
+   - Crear estructura de carpetas
+   - Implementar repositorios base
+   - Implementar servicios transversales
+   - Setup de TDD
+
+2. **Semana 5-10**: Migrar funcionalidades existentes
+   - Empezar por Gestión de Socios (más simple)
+   - Seguir con Stocks, Loans, Meetings, Accounting
+
+3. **Semana 11-12**: Implementar funcionalidades faltantes
+   - Cuadro de Pagos del Socio
+   - Asistente de Planificación de Pagos
 
 ---
 
 **Fecha de creación**: $(date)
-**Versión**: 1.0
-**Estado**: Plan de trabajo propuesto
-**Próxima revisión**: Al completar Fase 1
+**Versión**: 2.1 - **DISEÑO ARQUITECTÓNICO COMPLETADO**
+**Estado**: Diseño arquitectónico v2 completado. Listo para implementación.
+**Última actualización**: Semana 1-2 completada ✅
+**Próxima revisión**: Al completar Semana 3-4 (Infraestructura base)
+
+## 📌 Nota sobre Documentos Relacionados
+
+### Documentos de Referencia (NO son cronogramas activos)
+
+- **`PLAN_MVP_FUNCIONALIDAD.md`**: Contiene el análisis detallado de las 10 funcionalidades principales y su estado actual. Úsalo como **referencia técnica**, no como cronograma.
+
+- **`ROADMAP_FUNCIONALIDADES.md`**: Contiene la estrategia de migración arquitectónica. Úsalo como **referencia arquitectónica** para el futuro, no como plan inmediato.
+
+### Cronograma Activo
+
+- **Este documento** (`PLAN_TRABAJO_REORGANIZACION.md`): Es el **único cronograma activo** que debes seguir.
+
+### Decisión Tomada
+
+Después de revisión, se confirmó que:
+1. **Arquitectura ES calidad**: Migrar a arquitectura hexagonal resuelve directamente los problemas de calidad (duplicación, SRP, testing)
+2. **Funcionalidades no restrictivas**: Las 2 funcionalidades faltantes son "nice to have", no críticas
+3. **Inversión temprana**: Mejor hacer arquitectura ahora y heredarla a funcionalidades futuras
+
+Por lo tanto, el plan es **12 semanas de migración arquitectónica con TDD**, que incluye:
+- Semana 1-10: Migrar funcionalidades existentes con arquitectura hexagonal
+- Semana 11-12: Implementar 2 funcionalidades faltantes CON la nueva arquitectura
+
+**Resultado**: Sistema con arquitectura robusta + todas las funcionalidades (existentes + faltantes) + alta cobertura de tests.

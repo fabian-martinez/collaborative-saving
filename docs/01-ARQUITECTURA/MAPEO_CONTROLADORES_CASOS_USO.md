@@ -5,7 +5,7 @@
 
 ## 📋 Resumen Ejecutivo
 
-Este documento mapea **50+ endpoints** de **11 controladores** a **23 casos de uso** identificados en la arquitectura v2, además de endpoints de consulta que requieren Query Handlers.
+Este documento mapea **50+ endpoints** de **11 controladores** a **21 casos de uso** identificados en la arquitectura v2, además de endpoints de consulta que requieren Query Handlers.
 
 ### Clasificación de Endpoints
 
@@ -32,11 +32,9 @@ Este documento mapea **50+ endpoints** de **11 controladores** a **23 casos de u
 | `POST /members` | Write | Command | ✅ `CreateMemberUseCase` | ⏳ Pendiente | **Alta** |
 | `PATCH /members/:id` | Write | Command | ✅ `UpdateMemberUseCase` | ⏳ Pendiente | **Alta** |
 | `DELETE /members/:id` | Write | Command | ✅ `DeleteMemberUseCase` (borrado lógico) | ⏳ Pendiente | **Alta** |
-| `POST /members/:id/deactivate` | Write | Command | ✅ `DeactivateMemberUseCase` | ⏳ Pendiente | Media |
-| `POST /members/:id/reactivate` | Write | Command | ✅ `ReactivateMemberUseCase` | ⏳ Pendiente | Media |
 
-**Endpoints sin mapeo directo**: 0  
-**Casos de uso necesarios**: 5 (Create, Update, Delete lógico, Deactivate, Reactivate)  
+**Endpoints sin mapeo directo**: 2 (`POST /members/:id/deactivate`, `POST /members/:id/reactivate` - no se implementarán en v2)  
+**Casos de uso necesarios**: 3 (Create, Update, Delete lógico)  
 **Query handlers necesarios**: 10
 
 ---
@@ -227,26 +225,28 @@ Este documento mapea **50+ endpoints** de **11 controladores** a **23 casos de u
 
 ## 📊 Resumen Consolidado
 
-### Casos de Uso Mapeados (23 casos de uso definidos)
+### Casos de Uso Mapeados (21 casos de uso definidos)
 
 | Dominio | Casos de Uso | Endpoints Mapeados | Prioridad Alta |
 |---------|--------------|-------------------|----------------|
-| **Members** | 4 | 4 | ✅ 2 (Create, Update) |
+| **Members** | 3 | 3 | ✅ 3 (Create, Update, Delete) |
 | **Meetings** | 6 | 6 | ✅ 6 (todos) |
 | **Loans** | 5 | 5 | ✅ 3 (Create, Disburse, RecordPayment) |
 | **Stocks** | 7 | 6 | ✅ 1 (Create) |
 | **Pending Payments** | 2 | 2 (dividends, otros) | ✅ 2 (Create, Settle) |
 | **Accounting** | 1 | 1 | ✅ 1 (RecordOperation) |
-| **Total** | **25** | **24** | **15** |
+| **Total** | **23** | **22** | **15** |
 
 ### Endpoints sin Mapeo Directo
 
-1. `POST /dues` - Registrar due (probablemente parte de RecordMonthlyPayments)
-2. `POST /mandatory-contributions` - CRUD de configuración
-3. `PATCH /mandatory-contributions/:id` - CRUD de configuración
-4. `DELETE /mandatory-contributions/:id` - CRUD de configuración
+1. `POST /members/:id/deactivate` - No se implementará en v2 (usar DELETE para borrado lógico)
+2. `POST /members/:id/reactivate` - No se implementará en v2
+3. `POST /dues` - Registrar due (probablemente parte de RecordMonthlyPayments)
+4. `POST /mandatory-contributions` - CRUD de configuración
+5. `PATCH /mandatory-contributions/:id` - CRUD de configuración
+6. `DELETE /mandatory-contributions/:id` - CRUD de configuración
 
-**Total**: 4 endpoints (probablemente configuración, no requieren casos de uso complejos)
+**Total**: 6 endpoints (2 de members no implementados + 4 de configuración)
 
 ### Query Handlers Necesarios (≈40+)
 
@@ -361,19 +361,7 @@ Todos los endpoints `GET` requieren Query Handlers siguiendo el patrón CQRS.
 - **Output**: `DeleteMemberResponseDto` (memberId, status: 'inactive')
 - **Puertos**: `MemberRepository`
 - **Endpoints mapeados**: `DELETE /members/:id`
-- **Notas**: Borrado lógico equivale a desactivar; si no hay endpoint DELETE, usar `POST /members/:id/deactivate` durante la transición
-
-#### DeactivateMemberUseCase
-- **Input**: `DeactivateMemberDto` (memberId)
-- **Output**: `DeactivateMemberResponseDto` (memberId, status)
-- **Puertos**: `MemberRepository`
-- **Endpoints mapeados**: `POST /members/:id/deactivate`
-
-#### ReactivateMemberUseCase
-- **Input**: `ReactivateMemberDto` (memberId)
-- **Output**: `ReactivateMemberResponseDto` (memberId, status)
-- **Puertos**: `MemberRepository`
-- **Endpoints mapeados**: `POST /members/:id/reactivate`
+- **Notas**: El borrado lógico marca el miembro como eliminado (soft delete) y lo pone en estado inactive. Los endpoints `/members/:id/deactivate` y `/members/:id/reactivate` no se implementarán en la arquitectura v2.
 
 ### Módulo: Meetings
 

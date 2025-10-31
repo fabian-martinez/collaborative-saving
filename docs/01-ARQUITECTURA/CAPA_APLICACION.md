@@ -34,8 +34,6 @@ backend/src/application/
 │   └── members/
 │       ├── create-member.use-case.ts
 │       ├── update-member.use-case.ts
-│       ├── deactivate-member.use-case.ts
-│       └── reactivate-member.use-case.ts
 └── dto/
     ├── stocks/
     ├── loans/
@@ -359,13 +357,6 @@ class CreateStockSubscriptionUseCase implements UseCase<CreateStockSubscriptionD
   lastName?: string;
   email?: string;
   phone?: string;
-}
-```
-
-**DeactivateMemberDto / ReactivateMemberDto**
-```typescript
-{
-  memberId: string;
 }
 ```
 

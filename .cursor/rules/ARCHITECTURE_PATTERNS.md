@@ -27,6 +27,44 @@ Infrastructure → Application → Domain
 
 **CRÍTICO**: Las dependencias siempre apuntan hacia adentro. El domain NO puede importar de application ni infrastructure.
 
+### ⚠️ Regla crítica sobre imports de arquitectura legacy
+
+**NUNCA importar de la arquitectura anterior** (directorios `src/{feature}/` como `src/members/`, `src/stocks/`, `src/meetings/`, etc.) en código de la nueva arquitectura hexagonal (`domain/`, `application/`, `infrastructure/`).
+
+```typescript
+// ❌ INCORRECTO - Importar de arquitectura legacy
+// infrastructure/typeorm/mappers/meeting.mapper.ts
+import { Meeting } from '@domain/entities/meeting.entity';  // ❌ Esto importa del dominio, no de la entidad TypeORM legacy
+
+// ❌ INCORRECTO - Importar entidad legacy directamente en lugar de usar la entidad TypeORM
+import { Meeting as MeetingEntity } from '@domain/entities/meeting.entity';
+
+// ✅ CORRECTO - Importar de la entidad TypeORM legacy cuando sea necesario para mappers
+// infrastructure/typeorm/mappers/meeting.mapper.ts
+import { Meeting } from '@domain/entities/meeting.entity';
+import { Meeting as MeetingEntity } from '../../../meetings/entities/meeting.entity';  // ✅ Entidad TypeORM legacy
+
+// ✅ CORRECTO - En repositorios TypeORM
+// infrastructure/typeorm/repositories/typeorm-meeting.repository.ts
+import { Meeting as MeetingDomain } from '@domain/entities/meeting.entity';
+import { Meeting as MeetingEntity } from '../../../meetings/entities/meeting.entity';  // ✅ Entidad TypeORM legacy
+import { MeetingMapper } from '../mappers/meeting.mapper';
+
+// ✅ CORRECTO - En módulos NestJS
+// infrastructure/nestjs/http/modules/meetings-v2.module.ts
+import { Meeting } from '../../../../meetings/entities/meeting.entity';  // ✅ Solo para TypeOrmModule.forFeature()
+```
+
+**Nota importante**: Las entidades TypeORM legacy (`src/{feature}/entities/`) solo pueden ser importadas en:
+- Mappers de TypeORM (`infrastructure/typeorm/mappers/`)
+- Repositorios TypeORM (`infrastructure/typeorm/repositories/`)
+- Módulos NestJS para `TypeOrmModule.forFeature()` (`infrastructure/nestjs/http/modules/`)
+
+**NUNCA** deben ser importadas en:
+- ❌ Domain (`domain/`)
+- ❌ Application (`application/`)
+- ❌ Entidades de dominio (`domain/entities/`)
+
 ### Estructura de directorios
 
 ```
