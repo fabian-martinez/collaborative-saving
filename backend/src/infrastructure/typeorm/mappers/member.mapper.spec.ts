@@ -1,6 +1,6 @@
 import { MemberMapper } from './member.mapper';
 import { Member } from '@domain/entities/member.entity';
-import { Member as MemberEntity } from '../../../members/entities/member.entity';
+import { Member as MemberEntity } from '../entities/member.entity';
 
 describe('MemberMapper', () => {
   describe('toDomain', () => {
@@ -17,7 +17,7 @@ describe('MemberMapper', () => {
         beneficiary: 'John Doe',
         registrationDate: new Date('2024-01-15'),
         createdAt: new Date('2024-01-15'),
-        deletedAt: null as any,
+        deletedAt: null as unknown as Date,
       };
 
       const domain = MemberMapper.toDomain(entity);
@@ -41,13 +41,13 @@ describe('MemberMapper', () => {
         email: 'minimal@example.com',
         role: 'member',
         status: 'active',
-        identificationNumber: null as any,
-        address: null as any,
-        phone: null as any,
-        beneficiary: null as any,
+        identificationNumber: null as unknown as string,
+        address: null as unknown as string,
+        phone: null as unknown as string,
+        beneficiary: null as unknown as string,
         registrationDate: new Date('2024-01-15'),
         createdAt: new Date('2024-01-15'),
-        deletedAt: null as any,
+        deletedAt: null as unknown as Date,
       };
 
       const domain = MemberMapper.toDomain(entity);
@@ -67,11 +67,11 @@ describe('MemberMapper', () => {
         status: 'active',
         registrationDate: new Date('2024-01-15'),
         createdAt: new Date('2024-01-15'),
-        deletedAt: null as any,
-        identificationNumber: null as any,
-        address: null as any,
-        phone: null as any,
-        beneficiary: null as any,
+        deletedAt: null as unknown as Date,
+        identificationNumber: null as unknown as string,
+        address: null as unknown as string,
+        phone: null as unknown as string,
+        beneficiary: null as unknown as string,
       };
 
       expect(() => MemberMapper.toDomain(entity)).toThrow(
@@ -88,11 +88,11 @@ describe('MemberMapper', () => {
         status: 'invalid-status',
         registrationDate: new Date('2024-01-15'),
         createdAt: new Date('2024-01-15'),
-        deletedAt: null as any,
-        identificationNumber: null as any,
-        address: null as any,
-        phone: null as any,
-        beneficiary: null as any,
+        deletedAt: null as unknown as Date,
+        identificationNumber: null as unknown as string,
+        address: null as unknown as string,
+        phone: null as unknown as string,
+        beneficiary: null as unknown as string,
       };
 
       expect(() => MemberMapper.toDomain(entity)).toThrow(
@@ -111,19 +111,18 @@ describe('MemberMapper', () => {
         status: 'active',
         registrationDate: new Date('2024-01-15'),
         createdAt: new Date('2024-01-15'),
-        deletedAt: null as any,
-        identificationNumber: null as any,
-        address: null as any,
-        phone: null as any,
-        beneficiary: null as any,
+        deletedAt: null as unknown as Date,
+        identificationNumber: null as unknown as string,
+        address: null as unknown as string,
+        phone: null as unknown as string,
+        beneficiary: null as unknown as string,
       };
 
       // Spy on Member.fromPersistence and make it throw a string (non-Error)
-      const originalFromPersistence = Member.fromPersistence;
       const spyFromPersistence = jest
         .spyOn(Member, 'fromPersistence')
         .mockImplementation(() => {
-          throw 'String error instead of Error object';
+          throw new Error('String error instead of Error object');
         });
 
       try {
@@ -279,7 +278,8 @@ describe('MemberMapper', () => {
         phone: '+1234567890',
         beneficiary: 'John Doe',
       });
-      const persistenceWithValues = MemberMapper.toPersistence(domainWithValues);
+      const persistenceWithValues =
+        MemberMapper.toPersistence(domainWithValues);
       expect(persistenceWithValues.identificationNumber).toBe('123456789');
       expect(persistenceWithValues.address).toBe('123 Main St');
       expect(persistenceWithValues.phone).toBe('+1234567890');

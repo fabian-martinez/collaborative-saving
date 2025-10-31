@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
 import { Member as MemberDomain } from '@domain/entities/member.entity';
-import { Member as MemberEntity } from '../../../members/entities/member.entity';
+import { Member as MemberEntity } from '../entities/member.entity';
 import { MemberMapper } from '../mappers/member.mapper';
 
 @Injectable()

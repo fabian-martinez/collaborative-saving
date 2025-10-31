@@ -7,7 +7,7 @@ import { CreateMemberUseCase } from '@application/use-cases/members/create-membe
 import { UpdateMemberUseCase } from '@application/use-cases/members/update-member.use-case';
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
 import { TypeOrmMemberRepository } from '@infrastructure/typeorm/repositories/typeorm-member.repository';
-import { Member } from '../../../../members/entities/member.entity';
+import { Member } from '@infrastructure/typeorm/entities/member.entity';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
 
 const MEMBER_REPOSITORY = Symbol('MemberRepository');

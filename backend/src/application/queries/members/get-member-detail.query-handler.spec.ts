@@ -5,6 +5,7 @@ import { Member } from '@domain/entities/member.entity';
 describe('GetMemberDetailQueryHandler', () => {
   let queryHandler: GetMemberDetailQueryHandler;
   let memberRepository: jest.Mocked<MemberRepository>;
+  let findByIdSpy: jest.SpyInstance;
 
   beforeEach(() => {
     memberRepository = {
@@ -13,6 +14,8 @@ describe('GetMemberDetailQueryHandler', () => {
       save: jest.fn(),
       softDelete: jest.fn(),
     } as unknown as jest.Mocked<MemberRepository>;
+
+    findByIdSpy = jest.spyOn(memberRepository, 'findById');
 
     queryHandler = new GetMemberDetailQueryHandler(memberRepository);
   });
@@ -28,11 +31,11 @@ describe('GetMemberDetailQueryHandler', () => {
       registrationDate: new Date(),
     });
 
-    memberRepository.findById.mockResolvedValue(member);
+    findByIdSpy.mockResolvedValue(member);
 
     const result = await queryHandler.execute(memberId);
 
-    expect(memberRepository.findById).toHaveBeenCalledWith(memberId);
+    expect(findByIdSpy).toHaveBeenCalledWith(memberId);
     expect(result).toEqual({
       id: member.id,
       name: member.name,
@@ -51,13 +54,13 @@ describe('GetMemberDetailQueryHandler', () => {
   it('should throw error when member not found', async () => {
     const memberId = '550e8400-e29b-41d4-a716-446655440000';
 
-    memberRepository.findById.mockResolvedValue(null);
+    findByIdSpy.mockResolvedValue(null);
 
     await expect(queryHandler.execute(memberId)).rejects.toThrow(
       'Member not found',
     );
 
-    expect(memberRepository.findById).toHaveBeenCalledWith(memberId);
+    expect(findByIdSpy).toHaveBeenCalledWith(memberId);
   });
 
   it('should return member with all optional fields', async () => {
@@ -75,7 +78,7 @@ describe('GetMemberDetailQueryHandler', () => {
       registrationDate: new Date(),
     });
 
-    memberRepository.findById.mockResolvedValue(member);
+    findByIdSpy.mockResolvedValue(member);
 
     const result = await queryHandler.execute(memberId);
 
@@ -103,7 +106,7 @@ describe('GetMemberDetailQueryHandler', () => {
       registrationDate: new Date(),
     });
 
-    memberRepository.findById.mockResolvedValue(member);
+    findByIdSpy.mockResolvedValue(member);
 
     const result = await queryHandler.execute(memberId);
 

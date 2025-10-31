@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TypeOrmMemberRepository } from './typeorm-member.repository';
-import { Member as MemberEntity } from '../../../members/entities/member.entity';
+import { Member as MemberEntity } from '../entities/member.entity';
 import { Member as MemberDomain } from '@domain/entities/member.entity';
 
 describe('TypeOrmMemberRepository', () => {
@@ -43,11 +43,11 @@ describe('TypeOrmMemberRepository', () => {
         status: 'active',
         registrationDate: new Date('2024-01-15'),
         createdAt: new Date('2024-01-15'),
-        deletedAt: null as any,
-        identificationNumber: null as any,
-        address: null as any,
-        phone: null as any,
-        beneficiary: null as any,
+        deletedAt: null as unknown as Date,
+        identificationNumber: null as unknown as string,
+        address: null as unknown as string,
+        phone: null as unknown as string,
+        beneficiary: null as unknown as string,
       };
 
       typeOrmRepo.findOne.mockResolvedValue(entity);
@@ -55,7 +55,7 @@ describe('TypeOrmMemberRepository', () => {
       const result = await repository.findById(memberId);
 
       expect(typeOrmRepo.findOne).toHaveBeenCalledWith({
-        where: { id: memberId, deletedAt: expect.anything() },
+        where: { id: memberId, deletedAt: expect.any(Date) as Date },
       });
       expect(result).toBeInstanceOf(MemberDomain);
       expect(result?.id).toBe(memberId);
@@ -82,11 +82,11 @@ describe('TypeOrmMemberRepository', () => {
           status: 'active',
           registrationDate: new Date(),
           createdAt: new Date(),
-          deletedAt: null as any,
-          identificationNumber: null as any,
-          address: null as any,
-          phone: null as any,
-          beneficiary: null as any,
+          deletedAt: null as unknown as Date,
+          identificationNumber: null as unknown as string,
+          address: null as unknown as string,
+          phone: null as unknown as string,
+          beneficiary: null as unknown as string,
         },
         {
           id: '2',
@@ -96,11 +96,11 @@ describe('TypeOrmMemberRepository', () => {
           status: 'active',
           registrationDate: new Date(),
           createdAt: new Date(),
-          deletedAt: null as any,
-          identificationNumber: null as any,
-          address: null as any,
-          phone: null as any,
-          beneficiary: null as any,
+          deletedAt: null as unknown as Date,
+          identificationNumber: null as unknown as string,
+          address: null as unknown as string,
+          phone: null as unknown as string,
+          beneficiary: null as unknown as string,
         },
       ];
 
@@ -109,7 +109,7 @@ describe('TypeOrmMemberRepository', () => {
       const result = await repository.findActive();
 
       expect(typeOrmRepo.find).toHaveBeenCalledWith({
-        where: { deletedAt: expect.anything(), status: 'active' },
+        where: { deletedAt: expect.any(Date) as Date, status: 'active' },
       });
       expect(result).toHaveLength(2);
       expect(result[0]).toBeInstanceOf(MemberDomain);
@@ -140,11 +140,11 @@ describe('TypeOrmMemberRepository', () => {
         status: domainMember.status,
         registrationDate: domainMember.registrationDate,
         createdAt: domainMember.createdAt,
-        deletedAt: null as any,
-        identificationNumber: null as any,
-        address: null as any,
-        phone: null as any,
-        beneficiary: null as any,
+        deletedAt: null as unknown as Date,
+        identificationNumber: null as unknown as string,
+        address: null as unknown as string,
+        phone: null as unknown as string,
+        beneficiary: null as unknown as string,
       };
 
       typeOrmRepo.findOne.mockResolvedValueOnce(null); // Check if exists
@@ -174,11 +174,11 @@ describe('TypeOrmMemberRepository', () => {
         status: 'active',
         registrationDate: new Date(),
         createdAt: new Date(),
-        deletedAt: null as any,
-        identificationNumber: null as any,
-        address: null as any,
-        phone: null as any,
-        beneficiary: null as any,
+        deletedAt: null as unknown as Date,
+        identificationNumber: null as unknown as string,
+        address: null as unknown as string,
+        phone: null as unknown as string,
+        beneficiary: null as unknown as string,
       };
 
       const updatedEntity: MemberEntity = {
@@ -216,11 +216,11 @@ describe('TypeOrmMemberRepository', () => {
         status: 'active',
         registrationDate: new Date(),
         createdAt: new Date(),
-        deletedAt: null as any,
-        identificationNumber: null as any,
-        address: null as any,
-        phone: null as any,
-        beneficiary: null as any,
+        deletedAt: null as unknown as Date,
+        identificationNumber: null as unknown as string,
+        address: null as unknown as string,
+        phone: null as unknown as string,
+        beneficiary: null as unknown as string,
       };
 
       typeOrmRepo.findOne
@@ -279,11 +279,11 @@ describe('TypeOrmMemberRepository', () => {
         status: 'active',
         registrationDate: new Date(),
         createdAt: new Date(),
-        deletedAt: null as any,
-        identificationNumber: null as any,
-        address: null as any,
-        phone: null as any,
-        beneficiary: null as any,
+        deletedAt: null as unknown as Date,
+        identificationNumber: null as unknown as string,
+        address: null as unknown as string,
+        phone: null as unknown as string,
+        beneficiary: null as unknown as string,
       };
 
       typeOrmRepo.findOne.mockResolvedValue(entity);
@@ -308,10 +308,10 @@ describe('TypeOrmMemberRepository', () => {
         registrationDate: new Date(),
         createdAt: new Date(),
         deletedAt: new Date(),
-        identificationNumber: null as any,
-        address: null as any,
-        phone: null as any,
-        beneficiary: null as any,
+        identificationNumber: null as unknown as string,
+        address: null as unknown as string,
+        phone: null as unknown as string,
+        beneficiary: null as unknown as string,
       };
 
       typeOrmRepo.findOne.mockResolvedValue(entity);

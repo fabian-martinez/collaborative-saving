@@ -16,6 +16,8 @@ import { AssetRevaluationModule } from './asset-revaluation/asset-revaluation.mo
 import { DuesModule } from './dues/dues.module';
 import { DividendsModule } from './dividends/dividends.module';
 import { MembersV2Module } from './infrastructure/nestjs/http/modules/members-v2.module';
+import { StocksV2Module } from './infrastructure/nestjs/http/modules/stocks-v2.module';
+import { MeetingsV2Module } from './infrastructure/nestjs/http/modules/meetings-v2.module';
 
 @Module({
   imports: [
@@ -41,6 +43,8 @@ import { MembersV2Module } from './infrastructure/nestjs/http/modules/members-v2
     DuesModule,
     DividendsModule,
     MembersV2Module,
+    StocksV2Module,
+    MeetingsV2Module,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,5 +1,5 @@
 import { Member } from '@domain/entities/member.entity';
-import { Member as MemberEntity } from '../../../members/entities/member.entity';
+import { Member as MemberEntity } from '../entities/member.entity';
 
 export class MemberMapper {
   static toDomain(persistence: MemberEntity): Member {
