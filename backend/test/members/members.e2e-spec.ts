@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
@@ -76,11 +77,13 @@ describe('Members E2E Tests (Hexagonal Architecture)', () => {
         .get('/v2/members')
         .expect(200);
 
-      expect(response.body).toBeInstanceOf(Array);
-      expect(response.body.length).toBeGreaterThanOrEqual(2);
+      expect(Array.isArray(response.body)).toBe(true);
+      expect((response.body as unknown[]).length).toBeGreaterThanOrEqual(2);
 
       // Verify only active members are returned
-      const memberNames = response.body.map((m: Member) => m.name);
+      const memberNames = (response.body as { name: string }[]).map(
+        (m) => m.name,
+      );
       expect(memberNames).toContain('Active Member 1');
       expect(memberNames).toContain('Active Member 2');
       expect(memberNames).not.toContain('Inactive Member');
@@ -104,8 +107,11 @@ describe('Members E2E Tests (Hexagonal Architecture)', () => {
         .get('/v2/members')
         .expect(200);
 
-      expect(response.body).toHaveLength(1);
-      const member = response.body[0];
+      expect(Array.isArray(response.body)).toBe(true);
+      expect((response.body as unknown[]).length).toBe(1);
+      const member: Record<string, unknown> = (
+        response.body as Record<string, unknown>[]
+      )[0];
 
       expect(member).toHaveProperty('id');
       expect(member).toHaveProperty('name', 'Test Member');
@@ -118,6 +124,175 @@ describe('Members E2E Tests (Hexagonal Architecture)', () => {
       expect(member).toHaveProperty('beneficiary', 'Test Beneficiary');
       expect(member).toHaveProperty('registrationDate');
       expect(member).toHaveProperty('createdAt');
+    });
+  });
+
+  describe('POST /v2/members', () => {
+    it('should create a member with minimal required fields', async () => {
+      const createDto = {
+        name: 'New Member',
+        email: 'newmember@example.com',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/v2/members')
+        .send(createDto)
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('name', 'New Member');
+      expect(response.body).toHaveProperty('email', 'newmember@example.com');
+      expect(response.body).toHaveProperty('status', 'active');
+      expect(response.body).toHaveProperty('role', 'member');
+      expect(response.body).toHaveProperty('registrationDate');
+      expect(response.body).toHaveProperty('createdAt');
+
+      // Verify member can be retrieved
+      const getResponse = await request(app.getHttpServer())
+        .get(`/v2/members/${(response.body as { id: string }).id}`)
+        .expect(200);
+
+      expect(getResponse.body).toHaveProperty(
+        'id',
+        (response.body as { id: string }).id,
+      );
+      expect(getResponse.body).toHaveProperty('name', 'New Member');
+    });
+
+    it('should create a member with all fields', async () => {
+      const createDto = {
+        name: 'Complete Member',
+        email: 'complete@example.com',
+        identificationNumber: '987654321',
+        role: 'admin',
+        address: '123 Main Street',
+        phone: '+1234567890',
+        beneficiary: 'John Doe',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/v2/members')
+        .send(createDto)
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('name', 'Complete Member');
+      expect(response.body).toHaveProperty('email', 'complete@example.com');
+      expect(response.body).toHaveProperty('identificationNumber', '987654321');
+      expect(response.body).toHaveProperty('role', 'admin');
+      expect(response.body).toHaveProperty('address', '123 Main Street');
+      expect(response.body).toHaveProperty('phone', '+1234567890');
+      expect(response.body).toHaveProperty('beneficiary', 'John Doe');
+      expect(response.body).toHaveProperty('status', 'active');
+    });
+
+    it('should return 400 when name is missing', async () => {
+      await request(app.getHttpServer())
+        .post('/v2/members')
+        .send({
+          email: 'test@example.com',
+        })
+        .expect(400);
+    });
+
+    it('should return 400 when email is missing', async () => {
+      await request(app.getHttpServer())
+        .post('/v2/members')
+        .send({
+          name: 'Test Member',
+        })
+        .expect(400);
+    });
+
+    it('should return 400 when email format is invalid', async () => {
+      await request(app.getHttpServer())
+        .post('/v2/members')
+        .send({
+          name: 'Test Member',
+          email: 'invalid-email',
+        })
+        .expect(400);
+    });
+
+    it('should return 400 when role is invalid', async () => {
+      await request(app.getHttpServer())
+        .post('/v2/members')
+        .send({
+          name: 'Test Member',
+          email: 'test@example.com',
+          role: 'invalid-role',
+        })
+        .expect(400);
+    });
+
+    it('should set default role to "member" when not provided', async () => {
+      const createDto = {
+        name: 'Default Role Member',
+        email: 'defaultrole@example.com',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/v2/members')
+        .send(createDto)
+        .expect(201);
+
+      expect(response.body).toHaveProperty('role', 'member');
+    });
+
+    it('should set default status to "active"', async () => {
+      const createDto = {
+        name: 'Active Member',
+        email: 'active@example.com',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/v2/members')
+        .send(createDto)
+        .expect(201);
+
+      expect(response.body).toHaveProperty('status', 'active');
+    });
+
+    it('should accept valid roles (member, admin, treasurer)', async () => {
+      const roles = ['member', 'admin', 'treasurer'] as const;
+
+      for (const role of roles) {
+        const createDto = {
+          name: `Member ${role}`,
+          email: `${role}@example.com`,
+          role,
+        };
+
+        const response = await request(app.getHttpServer())
+          .post('/v2/members')
+          .send(createDto)
+          .expect(201);
+
+        expect(response.body).toHaveProperty('role', role);
+      }
+    });
+
+    it('should create member that appears in GET /v2/members list', async () => {
+      const createDto = {
+        name: 'List Member',
+        email: 'list@example.com',
+      };
+
+      const createResponse = await request(app.getHttpServer())
+        .post('/v2/members')
+        .send(createDto)
+        .expect(201);
+
+      const memberId = (createResponse.body as { id: string }).id;
+
+      const listResponse = await request(app.getHttpServer())
+        .get('/v2/members')
+        .expect(200);
+
+      const memberIds = (listResponse.body as { id: string }[]).map(
+        (m) => m.id,
+      );
+      expect(memberIds).toContain(memberId);
     });
   });
 
@@ -309,7 +484,12 @@ describe('Members E2E Tests (Hexagonal Architecture)', () => {
         .get('/v2/members')
         .expect(200);
 
-      const memberIds = membersResponse.body.map((m: Member) => m.id);
+      // Ensure the response is an array of members with valid shape
+      expect(Array.isArray(membersResponse.body)).toBe(true);
+
+      const memberIds = (membersResponse.body as { id: string }[]).map(
+        (m) => m.id,
+      );
       expect(memberIds).not.toContain(testMemberId);
 
       // Verify member still exists in DB but is marked as deleted
