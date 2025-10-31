@@ -221,7 +221,8 @@ export class MembersController {
   @Get(':id/summary')
   @ApiOperation({
     summary: 'Get complete member summary',
-    description: 'Retrieve a consolidated summary of all member information including stocks, loans, and debt capacity',
+    description:
+      'Retrieve a consolidated summary of all member information including stocks, loans, and debt capacity',
   })
   @ApiParam({
     name: 'id',
@@ -258,7 +259,8 @@ export class MembersController {
   @Get(':id/stocks/:stockId/history')
   @ApiOperation({
     summary: 'Get stock transaction history',
-    description: 'Retrieve detailed transaction history for a specific stock owned by a member',
+    description:
+      'Retrieve detailed transaction history for a specific stock owned by a member',
   })
   @ApiParam({
     name: 'id',
@@ -283,7 +285,10 @@ export class MembersController {
     @Param('stockId', ParseUUIDPipe) stockId: string,
   ): Promise<StockTransactionHistoryDto> {
     try {
-      return await this.membersService.getStockTransactionHistory(stockId, memberId);
+      return await this.membersService.getStockTransactionHistory(
+        stockId,
+        memberId,
+      );
     } catch (error) {
       if (error.message.includes('not found')) {
         throw new HttpException(
@@ -301,7 +306,8 @@ export class MembersController {
   @Get(':id/loans/:loanId/installments')
   @ApiOperation({
     summary: 'Get loan installments',
-    description: 'Retrieve detailed installments information for a specific loan',
+    description:
+      'Retrieve detailed installments information for a specific loan',
   })
   @ApiParam({
     name: 'id',
@@ -341,10 +347,6 @@ export class MembersController {
     }
   }
 
-
-
-
-
   @Get('debt-capacity/summary')
   @ApiOperation({
     summary: 'Get debt capacity summary for multiple members',
@@ -354,7 +356,8 @@ export class MembersController {
     name: 'memberIds',
     required: true,
     description: 'Comma-separated list of member IDs',
-    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11,b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12',
+    example:
+      'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11,b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12',
   })
   @ApiResponse({
     status: 200,
@@ -375,10 +378,11 @@ export class MembersController {
         );
       }
 
-      const ids = memberIds.split(',').map(id => id.trim());
-      
+      const ids = memberIds.split(',').map((id) => id.trim());
+
       // Validate UUID format
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
       for (const id of ids) {
         if (!uuidRegex.test(id)) {
           throw new HttpException(
@@ -403,7 +407,8 @@ export class MembersController {
   @Get('debt-capacity/organization-stats')
   @ApiOperation({
     summary: 'Get organization debt capacity statistics',
-    description: 'Retrieve aggregated debt capacity statistics for the entire organization',
+    description:
+      'Retrieve aggregated debt capacity statistics for the entire organization',
   })
   @ApiResponse({
     status: 200,

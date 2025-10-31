@@ -9,7 +9,3 @@ export class StockWithSubscriptionsDto extends Stock {
   })
   subscriptionCount: number;
 }
-
-
-
-

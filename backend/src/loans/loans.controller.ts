@@ -90,7 +90,8 @@ export class LoansController {
   @Get('member/:memberId/summary')
   @ApiOperation({
     summary: 'Get member loans summary',
-    description: 'Retrieve a summary of all loans for a specific member using LedgerEntry data',
+    description:
+      'Retrieve a summary of all loans for a specific member using LedgerEntry data',
   })
   @ApiParam({
     name: 'memberId',
@@ -164,7 +165,8 @@ export class LoansController {
   @Get(':id/installments')
   @ApiOperation({
     summary: 'Get loan installments',
-    description: 'Retrieve detailed installments information for a specific loan using LedgerEntry data',
+    description:
+      'Retrieve detailed installments information for a specific loan using LedgerEntry data',
   })
   @ApiParam({
     name: 'id',
@@ -209,7 +211,8 @@ export class LoansController {
   @Get('organization/summary')
   @ApiOperation({
     summary: 'Get organization loans summary',
-    description: 'Retrieve aggregated statistics for all loans across the organization',
+    description:
+      'Retrieve aggregated statistics for all loans across the organization',
   })
   @ApiResponse({
     status: 200,
@@ -267,7 +270,8 @@ export class LoansController {
   @Get('performance/analysis')
   @ApiOperation({
     summary: 'Get loans performance analysis',
-    description: 'Retrieve performance analysis for all loans including default rates, payment trends, and risk assessment',
+    description:
+      'Retrieve performance analysis for all loans including default rates, payment trends, and risk assessment',
   })
   @ApiQuery({
     name: 'period',
@@ -352,7 +356,8 @@ export class LoansController {
   @Get('risk/assessment')
   @ApiOperation({
     summary: 'Get loans risk assessment',
-    description: 'Retrieve comprehensive risk assessment for all loans including credit scores, collateral analysis, and default probability',
+    description:
+      'Retrieve comprehensive risk assessment for all loans including credit scores, collateral analysis, and default probability',
   })
   @ApiResponse({
     status: 200,

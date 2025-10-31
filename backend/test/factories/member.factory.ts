@@ -14,6 +14,7 @@ export class MemberFactory {
       phone: faker.phone.number(),
       beneficiary: faker.person.fullName(),
       registrationDate: faker.date.past(),
+      createdAt: new Date(),
       deletedAt: null,
       ...overrides,
     } as Member;
