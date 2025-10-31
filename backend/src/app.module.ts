@@ -15,6 +15,7 @@ import { MandatoryContributionsModule } from './mandatory-contributions/mandator
 import { AssetRevaluationModule } from './asset-revaluation/asset-revaluation.module';
 import { DuesModule } from './dues/dues.module';
 import { DividendsModule } from './dividends/dividends.module';
+import { MembersV2Module } from './infrastructure/nestjs/http/modules/members-v2.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { DividendsModule } from './dividends/dividends.module';
     AssetRevaluationModule,
     DuesModule,
     DividendsModule,
+    MembersV2Module,
   ],
   controllers: [AppController],
   providers: [AppService],
