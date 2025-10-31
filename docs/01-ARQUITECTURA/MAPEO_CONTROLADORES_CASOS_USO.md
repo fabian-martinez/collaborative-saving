@@ -1,0 +1,522 @@
+# Mapeo: Controladores → Casos de Uso
+
+**Fecha**: 2025-01-20  
+**Objetivo**: Mapear cada endpoint de controladores actuales a casos de uso de la arquitectura hexagonal v2
+
+## 📋 Resumen Ejecutivo
+
+Este documento mapea **50+ endpoints** de **11 controladores** a **23 casos de uso** identificados en la arquitectura v2, además de endpoints de consulta que requieren Query Handlers.
+
+### Clasificación de Endpoints
+
+- **Comandos (Write)**: Mapean directamente a casos de uso
+- **Consultas (Read)**: Requieren Query Handlers (CQRS pattern)
+- **Migración**: Priorizada por complejidad y dependencias
+
+## 🗺️ Mapeo por Controlador
+
+### 1. MembersController (10 endpoints)
+
+| Endpoint | Método | Tipo | Caso de Uso / Query Handler | Estado | Prioridad |
+|----------|--------|------|------------------------------|--------|-----------|
+| `GET /members` | Read | Query | `GetMembersQueryHandler` | ⏳ Pendiente | Media |
+| `GET /members/:id` | Read | Query | `GetMemberDetailQueryHandler` | ⏳ Pendiente | Alta |
+| `GET /members/:id/stocks` | Read | Query | `GetMemberStocksQueryHandler` | ⏳ Pendiente | Media |
+| `GET /members/:id/loans` | Read | Query | `GetMemberLoansQueryHandler` | ⏳ Pendiente | Media |
+| `GET /members/:id/debt-capacity` | Read | Query | `GetMemberDebtCapacityQueryHandler` | ⏳ Pendiente | Alta |
+| `GET /members/:id/summary` | Read | Query | `GetMemberSummaryQueryHandler` | ⏳ Pendiente | Alta |
+| `GET /members/:id/stocks/:stockId/history` | Read | Query | `GetMemberStockHistoryQueryHandler` | ⏳ Pendiente | Baja |
+| `GET /members/:id/loans/:loanId/installments` | Read | Query | `GetMemberLoanInstallmentsQueryHandler` | ⏳ Pendiente | Media |
+| `GET /members/debt-capacity/summary` | Read | Query | `GetOrganizationDebtCapacityQueryHandler` | ⏳ Pendiente | Baja |
+| `GET /members/debt-capacity/organization-stats` | Read | Query | `GetOrganizationDebtStatsQueryHandler` | ⏳ Pendiente | Baja |
+| `POST /members` | Write | Command | ✅ `CreateMemberUseCase` | ⏳ Pendiente | **Alta** |
+| `PATCH /members/:id` | Write | Command | ✅ `UpdateMemberUseCase` | ⏳ Pendiente | **Alta** |
+| `DELETE /members/:id` | Write | Command | ✅ `DeleteMemberUseCase` (borrado lógico) | ⏳ Pendiente | **Alta** |
+| `POST /members/:id/deactivate` | Write | Command | ✅ `DeactivateMemberUseCase` | ⏳ Pendiente | Media |
+| `POST /members/:id/reactivate` | Write | Command | ✅ `ReactivateMemberUseCase` | ⏳ Pendiente | Media |
+
+**Endpoints sin mapeo directo**: 0  
+**Casos de uso necesarios**: 5 (Create, Update, Delete lógico, Deactivate, Reactivate)  
+**Query handlers necesarios**: 10
+
+---
+
+### 2. MeetingsController (12 endpoints)
+
+| Endpoint | Método | Tipo | Caso de Uso / Query Handler | Estado | Prioridad |
+|----------|--------|------|------------------------------|--------|-----------|
+| `GET /meetings` | Read | Query | `GetMeetingsQueryHandler` | ⏳ Pendiente | Baja |
+| `GET /meetings/active` | Read | Query | `GetActiveMeetingQueryHandler` | ⏳ Pendiente | Alta |
+| `GET /meetings/:id/summary` | Read | Query | `GetMeetingSummaryQueryHandler` | ⏳ Pendiente | Alta |
+| `GET /meetings/:id/monthly-payments` | Read | Query | `GetMeetingMonthlyPaymentsQueryHandler` | ⏳ Pendiente | Media |
+| `POST /meetings` | Write | Command | ✅ `OpenMeetingUseCase` | ⏳ Pendiente | **Alta** |
+| `POST /meetings/active/record-monthly-payment` | Write | Command | ✅ `RecordMonthlyPaymentsUseCase` | ⏳ Pendiente | **Alta** |
+| `POST /meetings/:meetingId/buy/stocks` | Write | Command | ✅ `CreateStockSubscriptionUseCase` | ⏳ Pendiente | **Alta** |
+| `POST /meetings/:meetingId/withdraw/stocks` | Write | Command | ✅ `ModifyStockSubscriptionUseCase` (con withdraw) | ⏳ Pendiente | **Alta** |
+| `GET /meetings/:id/disbursement-plan/preview` | Read | Query | ✅ `PreviewDisbursementPlanUseCase` | ⏳ Pendiente | **Alta** |
+| `POST /meetings/:id/disbursement-plan/execute` | Write | Command | ✅ `ExecuteDisbursementPlanUseCase` | ⏳ Pendiente | **Alta** |
+| `PATCH /meetings/:id/close` | Write | Command | ✅ `CloseMeetingUseCase` | ⏳ Pendiente | **Alta** |
+
+**Endpoints sin mapeo directo**: 0  
+**Casos de uso necesarios**: 6 (Open, RecordPayments, CreateStockSubscription, ModifyStockSubscription, Preview/ExecuteDisbursement, Close)  
+**Query handlers necesarios**: 4
+
+**Nota**: `buy/stocks` y `withdraw/stocks` son variantes del mismo caso de uso con diferentes parámetros.
+
+---
+
+### 3. StocksController (7 endpoints)
+
+| Endpoint | Método | Tipo | Caso de Uso / Query Handler | Estado | Prioridad |
+|----------|--------|------|------------------------------|--------|-----------|
+| `GET /stocks` | Read | Query | `GetStocksQueryHandler` | ⏳ Pendiente | Baja |
+| `GET /stocks/:id` | Read | Query | `GetStockDetailQueryHandler` | ⏳ Pendiente | Media |
+| `GET /stocks/member/:memberId/summary` | Read | Query | `GetMemberStocksSummaryQueryHandler` | ⏳ Pendiente | Media |
+| `GET /stocks/organization/summary` | Read | Query | `GetOrganizationStocksSummaryQueryHandler` | ⏳ Pendiente | Baja |
+| `GET /stocks/performance/analysis` | Read | Query | `GetStocksPerformanceAnalysisQueryHandler` | ⏳ Pendiente | Baja |
+| `POST /stocks` | Write | Command | ✅ `CreateStockUseCase` | ⏳ Pendiente | **Alta** |
+| `PATCH /stocks/:id` | Write | Command | ✅ `UpdateStockUseCase` | ⏳ Pendiente | **Alta** |
+| `POST /stocks/:id/revaluation/preview` | Write | Query | ✅ `PreviewMonthlyRevaluationUseCase` | ⏳ Pendiente | Media |
+| `POST /stocks/:id/revaluation/approve` | Write | Command | ✅ `ApproveMonthlyRevaluationUseCase` | ⏳ Pendiente | Media |
+| `POST /stocks/:id/revaluation/record` | Write | Command | ✅ `RecordMonthlyRevaluationUseCase` | ⏳ Pendiente | Media |
+
+**Endpoints sin mapeo directo**: 0  
+**Casos de uso necesarios**: 5 (Create, Update, Preview, Approve, Record revaluation)  
+**Query handlers necesarios**: 5
+
+---
+
+### 4. LoansController (6 endpoints)
+
+| Endpoint | Método | Tipo | Caso de Uso / Query Handler | Estado | Prioridad |
+|----------|--------|------|------------------------------|--------|-----------|
+| `GET /loans` | Read | Query | `GetLoansQueryHandler` | ⏳ Pendiente | Baja |
+| `GET /loans/:id` | Read | Query | `GetLoanDetailQueryHandler` | ⏳ Pendiente | Alta |
+| `GET /loans/member/:memberId/summary` | Read | Query | `GetMemberLoansSummaryQueryHandler` | ⏳ Pendiente | Media |
+| `GET /loans/organization/summary` | Read | Query | `GetOrganizationLoansSummaryQueryHandler` | ⏳ Pendiente | Baja |
+| `GET /loans/performance/analysis` | Read | Query | `GetLoansPerformanceAnalysisQueryHandler` | ⏳ Pendiente | Baja |
+| `GET /loans/risk/assessment` | Read | Query | `GetLoansRiskAssessmentQueryHandler` | ⏳ Pendiente | Media |
+| `POST /loans` | Write | Command | ✅ `CreateLoanUseCase` | ⏳ Pendiente | **Alta** |
+| `POST /loans/:id/disburse` | Write | Command | ✅ `DisburseLoanUseCase` | ⏳ Pendiente | **Alta** |
+| `POST /loans/:id/payment` | Write | Command | ✅ `RecordLoanPaymentUseCase` | ⏳ Pendiente | **Alta** |
+| `POST /loans/:id/default` | Write | Command | ✅ `MarkLoanDefaultedUseCase` | ⏳ Pendiente | Media |
+| `POST /loans/merge` | Write | Command | ✅ `MergeLoansUseCase` | ⏳ Pendiente | Baja |
+
+**Endpoints sin mapeo directo**: 0  
+**Casos de uso necesarios**: 5 (Create, Disburse, RecordPayment, MarkDefaulted, Merge)  
+**Query handlers necesarios**: 7
+
+---
+
+### 5. LedgerEntriesController (4 endpoints)
+
+| Endpoint | Método | Tipo | Caso de Uso / Query Handler | Estado | Prioridad |
+|----------|--------|------|------------------------------|--------|-----------|
+| `GET /ledger-entries` | Read | Query | `GetLedgerEntriesQueryHandler` | ⏳ Pendiente | Media |
+| `GET /ledger-entries/account-types` | Read | Query | `GetAccountTypesQueryHandler` | ⏳ Pendiente | Baja |
+| `GET /ledger-entries/meeting/:meetingId` | Read | Query | `GetMeetingLedgerEntriesQueryHandler` | ⏳ Pendiente | Alta |
+| `GET /ledger-entries/account-type/:accountType` | Read | Query | `GetLedgerEntriesByAccountTypeQueryHandler` | ⏳ Pendiente | Media |
+
+**Endpoints sin mapeo directo**: 0  
+**Casos de uso necesarios**: 0 (solo consultas)  
+**Query handlers necesarios**: 4
+
+**Nota**: LedgerEntries se crean indirectamente a través de `RecordOperationUseCase`, no tienen endpoints de creación directa.
+
+---
+
+### 6. OperationsController (2 endpoints)
+
+| Endpoint | Método | Tipo | Caso de Uso / Query Handler | Estado | Prioridad |
+|----------|--------|------|------------------------------|--------|-----------|
+| `GET /operations` | Read | Query | `GetOperationsQueryHandler` | ⏳ Pendiente | Media |
+| `GET /operations/:id` | Read | Query | `GetOperationDetailQueryHandler` | ⏳ Pendiente | Media |
+| `POST /operations` | Write | Command | ✅ `RecordOperationUseCase` | ⏳ Pendiente | **Alta** |
+
+**Endpoints sin mapeo directo**: 0  
+**Casos de uso necesarios**: 1 (RecordOperation)  
+**Query handlers necesarios**: 2
+
+---
+
+### 7. StockSubscriptionsController (4 endpoints)
+
+| Endpoint | Método | Tipo | Caso de Uso / Query Handler | Estado | Prioridad |
+|----------|--------|------|------------------------------|--------|-----------|
+| `GET /stock-subscriptions` | Read | Query | `GetStockSubscriptionsQueryHandler` | ⏳ Pendiente | Baja |
+| `GET /stock-subscriptions/:id` | Read | Query | `GetStockSubscriptionDetailQueryHandler` | ⏳ Pendiente | Media |
+| `POST /stock-subscriptions` | Write | Command | ✅ `CreateStockSubscriptionUseCase` | ⏳ Pendiente | **Alta** |
+| `POST /stock-subscriptions/:id/modify` | Write | Command | ✅ `ModifyStockSubscriptionUseCase` | ⏳ Pendiente | Media |
+| `POST /stock-subscriptions/transfer` | Write | Command | ✅ `TransferStockSubscriptionUseCase` | ⏳ Pendiente | Media |
+
+**Endpoints sin mapeo directo**: 0  
+**Casos de uso necesarios**: 3 (Create, Modify, Transfer)  
+**Query handlers necesarios**: 2
+
+---
+
+### 8. DuesController (2 endpoints)
+
+| Endpoint | Método | Tipo | Caso de Uso / Query Handler | Estado | Prioridad |
+|----------|--------|------|------------------------------|--------|-----------|
+| `GET /dues` | Read | Query | `GetDuesQueryHandler` | ⏳ Pendiente | Baja |
+| `POST /dues` | Write | Command | ⚠️ **No existe en arquitectura v2** | ⏳ Pendiente | Media |
+
+**Endpoints sin mapeo directo**: 1  
+**Casos de uso necesarios**: 0 (probablemente parte de `RecordMonthlyPaymentsUseCase`)  
+**Query handlers necesarios**: 1
+
+**Observación**: Las dues podrían ser parte del flujo de `RecordMonthlyPaymentsUseCase` o requerir `RecordDuePaymentUseCase`.
+
+---
+
+### 9. DividendsController (2 endpoints)
+
+| Endpoint | Método | Tipo | Caso de Uso / Query Handler | Estado | Prioridad |
+|----------|--------|------|------------------------------|--------|-----------|
+| `GET /dividends` | Read | Query | `GetDividendsQueryHandler` | ⏳ Pendiente | Baja |
+| `POST /dividends` | Write | Command | ⚠️ **Puede ser parte de** `CreatePendingMemberPaymentUseCase` | ⏳ Pendiente | Media |
+
+**Endpoints sin mapeo directo**: 1  
+**Casos de uso necesarios**: Probablemente parte de `CreatePendingMemberPaymentUseCase`  
+**Query handlers necesarios**: 1
+
+---
+
+### 10. LoanTransactionsController (2 endpoints)
+
+| Endpoint | Método | Tipo | Caso de Uso / Query Handler | Estado | Prioridad |
+|----------|--------|------|------------------------------|--------|-----------|
+| `GET /loan-transactions` | Read | Query | `GetLoanTransactionsQueryHandler` | ⏳ Pendiente | Media |
+| `GET /loan-transactions/loan/:loanId` | Read | Query | `GetLoanTransactionsByLoanQueryHandler` | ⏳ Pendiente | Media |
+
+**Endpoints sin mapeo directo**: 0  
+**Casos de uso necesarios**: 0 (se crean indirectamente con `RecordLoanPaymentUseCase`)  
+**Query handlers necesarios**: 2
+
+---
+
+### 11. AssetRevaluationController (2 endpoints)
+
+| Endpoint | Método | Tipo | Caso de Uso / Query Handler | Estado | Prioridad |
+|----------|--------|------|------------------------------|--------|-----------|
+| `GET /asset-revaluation/:meetingId/preview` | Read | Query | ✅ `PreviewMonthlyRevaluationUseCase` | ⏳ Pendiente | Media |
+| `POST /asset-revaluation/:meetingId/execute` | Write | Command | ✅ `RecordMonthlyRevaluationUseCase` | ⏳ Pendiente | Media |
+
+**Endpoints sin mapeo directo**: 0  
+**Casos de uso necesarios**: 2 (Preview, Record)  
+**Query handlers necesarios**: 0 (Preview es query pero usa caso de uso)
+
+---
+
+### 12. MandatoryContributionsController (5 endpoints)
+
+| Endpoint | Método | Tipo | Caso de Uso / Query Handler | Estado | Prioridad |
+|----------|--------|------|------------------------------|--------|-----------|
+| `GET /mandatory-contributions` | Read | Query | `GetMandatoryContributionsQueryHandler` | ⏳ Pendiente | Baja |
+| `GET /mandatory-contributions/:id` | Read | Query | `GetMandatoryContributionDetailQueryHandler` | ⏳ Pendiente | Baja |
+| `POST /mandatory-contributions` | Write | Command | ⚠️ **No existe en arquitectura v2** | ⏳ Pendiente | Baja |
+| `PATCH /mandatory-contributions/:id` | Write | Command | ⚠️ **No existe en arquitectura v2** | ⏳ Pendiente | Baja |
+| `DELETE /mandatory-contributions/:id` | Write | Command | ⚠️ **No existe en arquitectura v2** | ⏳ Pendiente | Baja |
+
+**Endpoints sin mapeo directo**: 3  
+**Casos de uso necesarios**: Probablemente configuración, no requiere casos de uso complejos  
+**Query handlers necesarios**: 2
+
+---
+
+## 📊 Resumen Consolidado
+
+### Casos de Uso Mapeados (23 casos de uso definidos)
+
+| Dominio | Casos de Uso | Endpoints Mapeados | Prioridad Alta |
+|---------|--------------|-------------------|----------------|
+| **Members** | 4 | 4 | ✅ 2 (Create, Update) |
+| **Meetings** | 6 | 6 | ✅ 6 (todos) |
+| **Loans** | 5 | 5 | ✅ 3 (Create, Disburse, RecordPayment) |
+| **Stocks** | 7 | 6 | ✅ 1 (Create) |
+| **Pending Payments** | 2 | 2 (dividends, otros) | ✅ 2 (Create, Settle) |
+| **Accounting** | 1 | 1 | ✅ 1 (RecordOperation) |
+| **Total** | **25** | **24** | **15** |
+
+### Endpoints sin Mapeo Directo
+
+1. `POST /dues` - Registrar due (probablemente parte de RecordMonthlyPayments)
+2. `POST /mandatory-contributions` - CRUD de configuración
+3. `PATCH /mandatory-contributions/:id` - CRUD de configuración
+4. `DELETE /mandatory-contributions/:id` - CRUD de configuración
+
+**Total**: 4 endpoints (probablemente configuración, no requieren casos de uso complejos)
+
+### Query Handlers Necesarios (≈40+)
+
+Todos los endpoints `GET` requieren Query Handlers siguiendo el patrón CQRS.
+
+---
+
+## 🎯 Plan de Migración Priorizado
+
+### Fase 1: Fundaciones (Sprint 1-2)
+
+**Objetivo**: Establecer infraestructura base y módulos más simples
+
+1. **Members (Create, Update, Delete lógico)**
+   - `CreateMemberUseCase` ✅
+   - `UpdateMemberUseCase` ✅
+   - `DeleteMemberUseCase` ✅ (alias de borrado lógico: desactivación)
+   - Prioridad: **Alta** (base para otros módulos)
+
+2. **Meetings (Open, Close)**
+   - `OpenMeetingUseCase` ✅
+   - `CloseMeetingUseCase` ✅
+   - Prioridad: **Alta** (contexto para todas las operaciones)
+
+3. **Stocks (Create, Update)**
+   - `CreateStockUseCase` ✅
+   - `UpdateStockUseCase` ✅
+   - Prioridad: **Alta** (necesario para crear suscripciones después)
+
+### Fase 2: Operaciones Core (Sprint 3-4)
+
+**Objetivo**: Habilitar flujos principales de negocio
+
+3. **Stocks (Create Subscription)**
+   - `CreateStockSubscriptionUseCase` ✅
+   - Prioridad: **Alta**
+
+4. **Loans (Create, Disburse)**
+   - `CreateLoanUseCase` ✅
+   - `DisburseLoanUseCase` ✅
+   - Prioridad: **Alta**
+
+5. **Meetings (Record Payments)**
+   - `RecordMonthlyPaymentsUseCase` ✅
+   - Prioridad: **Alta**
+
+### Fase 3: Operaciones Complejas (Sprint 5-6)
+
+6. **Stocks (Modify, Transfer)**
+   - `ModifyStockSubscriptionUseCase` ✅
+   - `TransferStockSubscriptionUseCase` ✅
+   - Prioridad: Media
+
+7. **Loans (Payment, Default)**
+   - `RecordLoanPaymentUseCase` ✅
+   - `MarkLoanDefaultedUseCase` ✅
+   - Prioridad: Media
+
+8. **Meetings (Disbursement Plan)**
+   - `PreviewDisbursementPlanUseCase` ✅
+   - `ExecuteDisbursementPlanUseCase` ✅
+   - Prioridad: **Alta**
+
+### Fase 4: Operaciones Financieras (Sprint 7-8)
+
+9. **Accounting**
+   - `RecordOperationUseCase` ✅
+   - Prioridad: **Alta** (base para contabilidad)
+
+10. **Pending Payments**
+    - `CreatePendingMemberPaymentUseCase` ✅
+    - `SettlePendingMemberPaymentUseCase` ✅
+    - Prioridad: Media
+
+### Fase 5: Revaluación y Análisis (Sprint 9-10)
+
+11. **Stocks (Revaluation)**
+    - `PreviewMonthlyRevaluationUseCase` ✅
+    - `ApproveMonthlyRevaluationUseCase` ✅
+    - `RecordMonthlyRevaluationUseCase` ✅
+    - Prioridad: Media
+
+12. **Loans (Merge)**
+    - `MergeLoansUseCase` ✅
+    - Prioridad: Baja
+
+### Fase 6: Consultas (Sprint 11+)
+
+13. **Query Handlers** (implementar según necesidad)
+    - Prioridad: Media/Baja (según uso)
+
+---
+
+## 📝 Contratos por Caso de Uso
+
+### Módulo: Members
+
+#### CreateMemberUseCase
+- **Input**: `CreateMemberDto` (identificationNumber, firstName, lastName, email?, phone?, registrationDate)
+- **Output**: `CreateMemberResponseDto` (memberId)
+- **Puertos**: `MemberRepository`
+- **Endpoints mapeados**: `POST /members`
+
+#### UpdateMemberUseCase
+- **Input**: `UpdateMemberDto` (memberId, firstName?, lastName?, email?, phone?)
+- **Output**: `UpdateMemberResponseDto` (memberId, updatedFields)
+- **Puertos**: `MemberRepository`
+- **Endpoints mapeados**: `PATCH /members/:id`
+
+#### DeleteMemberUseCase (borrado lógico)
+- **Input**: `DeleteMemberDto` (memberId)
+- **Output**: `DeleteMemberResponseDto` (memberId, status: 'inactive')
+- **Puertos**: `MemberRepository`
+- **Endpoints mapeados**: `DELETE /members/:id`
+- **Notas**: Borrado lógico equivale a desactivar; si no hay endpoint DELETE, usar `POST /members/:id/deactivate` durante la transición
+
+#### DeactivateMemberUseCase
+- **Input**: `DeactivateMemberDto` (memberId)
+- **Output**: `DeactivateMemberResponseDto` (memberId, status)
+- **Puertos**: `MemberRepository`
+- **Endpoints mapeados**: `POST /members/:id/deactivate`
+
+#### ReactivateMemberUseCase
+- **Input**: `ReactivateMemberDto` (memberId)
+- **Output**: `ReactivateMemberResponseDto` (memberId, status)
+- **Puertos**: `MemberRepository`
+- **Endpoints mapeados**: `POST /members/:id/reactivate`
+
+### Módulo: Meetings
+
+#### OpenMeetingUseCase
+- **Input**: `OpenMeetingDto` (date?)
+- **Output**: `OpenMeetingResponseDto` (meetingId, date, status)
+- **Puertos**: `MeetingRepository`, `EventBus`
+- **Endpoints mapeados**: `POST /meetings`
+
+#### RecordMonthlyPaymentsUseCase
+- **Input**: `RecordMonthlyPaymentsDto` (meetingId, memberId, payments[])
+- **Output**: `RecordMonthlyPaymentsResponseDto` (operationId, ledgerEntryIds[])
+- **Puertos**: `MeetingRepository`, `MemberRepository`, `OperationRepository`, `LedgerEntryRepository`, `MandatoryContributionRepository`
+- **Endpoints mapeados**: `POST /meetings/active/record-monthly-payment`
+
+#### PreviewDisbursementPlanUseCase
+- **Input**: `PreviewDisbursementPlanDto` (meetingId, newLoanRequests?)
+- **Output**: `PreviewDisbursementPlanResponseDto` (plan[], availableCash, totalToDisburse)
+- **Puertos**: `MeetingRepository`, `PendingMemberPaymentRepository`, `CashBalanceCalculator` (domain service)
+- **Endpoints mapeados**: `GET /meetings/:id/disbursement-plan/preview`
+
+#### ExecuteDisbursementPlanUseCase
+- **Input**: `ExecuteDisbursementPlanDto` (meetingId, plan[])
+- **Output**: `ExecuteDisbursementPlanResponseDto` (executedItems[], totalDisbursed)
+- **Puertos**: `MeetingRepository`, `PendingMemberPaymentRepository`, `OperationRepository`, `LedgerEntryRepository`, `LoanRepository`, `StockSubscriptionRepository`
+- **Endpoints mapeados**: `POST /meetings/:id/disbursement-plan/execute`
+
+#### CloseMeetingUseCase
+- **Input**: `CloseMeetingDto` (meetingId)
+- **Output**: `CloseMeetingResponseDto` (meetingId, closedAt)
+- **Puertos**: `MeetingRepository`, `EventBus`
+- **Endpoints mapeados**: `PATCH /meetings/:id/close`
+
+### Módulo: Loans
+
+#### CreateLoanUseCase
+- **Input**: `CreateLoanDto` (memberId, loanType, approvedAmount, monthlyPaymentAmount, interestRate, term, guaranteedStockId?)
+- **Output**: `CreateLoanResponseDto` (loanId, status)
+- **Puertos**: `LoanRepository`, `MemberRepository`, `StockRepository`, `DebtCapacityService` (domain service)
+- **Endpoints mapeados**: `POST /loans`
+
+#### DisburseLoanUseCase
+- **Input**: `DisburseLoanDto` (loanId, amount, meetingId, notes?)
+- **Output**: `DisburseLoanResponseDto` (loanId, disbursedAmount, operationId)
+- **Puertos**: `LoanRepository`, `MeetingRepository`, `OperationRepository`, `LedgerEntryRepository`
+- **Endpoints mapeados**: `POST /loans/:id/disburse`
+
+#### RecordLoanPaymentUseCase
+- **Input**: `RecordLoanPaymentDto` (loanId, principal?, interest?, meetingId)
+- **Output**: `RecordLoanPaymentResponseDto` (loanId, transactionId, remainingBalance)
+- **Puertos**: `LoanRepository`, `LoanTransactionDetailRepository`, `MeetingRepository`, `OperationRepository`, `LedgerEntryRepository`
+- **Endpoints mapeados**: `POST /loans/:id/payment`
+
+#### MarkLoanDefaultedUseCase
+- **Input**: `MarkLoanDefaultedDto` (loanId, reason?, occurredAt?)
+- **Output**: `MarkLoanDefaultedResponseDto` (loanId, status, defaultedAt)
+- **Puertos**: `LoanRepository`, `EventBus`
+- **Endpoints mapeados**: `POST /loans/:id/default`
+
+#### MergeLoansUseCase
+- **Input**: `MergeLoansDto` (memberId, loanIds[], policy)
+- **Output**: `MergeLoansResponseDto` (mergedLoanId, consolidatedBalance)
+- **Puertos**: `LoanRepository`, `LoanTransactionDetailRepository`
+- **Endpoints mapeados**: `POST /loans/merge`
+
+### Módulo: Stocks
+
+#### CreateStockUseCase
+- **Input**: `CreateStockDto` (type, value, monthly_contribution, behavior?)
+  - `type`: string - Tipo o nombre de la acción (ej: "preferential")
+  - `value`: number - Valor inicial de una unidad de acción (≥ 0)
+  - `monthly_contribution`: number - Contribución mensual obligatoria (≥ 0)
+  - `behavior?`: StockBehavior - Comportamiento (CAPITAL_APPRECIATION | DIVIDENDS, default: CAPITAL_APPRECIATION)
+- **Output**: `CreateStockResponseDto` (stockId, type, value, monthly_contribution, behavior)
+- **Puertos**: `StockRepository`
+- **Endpoints mapeados**: `POST /stocks`
+
+#### UpdateStockUseCase
+- **Input**: `UpdateStockDto` (stockId, type?, value?, monthly_contribution?, behavior?)
+- **Output**: `UpdateStockResponseDto` (stockId, updatedFields)
+- **Puertos**: `StockRepository`
+- **Endpoints mapeados**: `PATCH /stocks/:id`
+
+#### CreateStockSubscriptionUseCase
+- **Input**: `CreateStockSubscriptionDto` (memberId, stockId, quantity, meetingId, paymentMethod)
+- **Output**: `CreateStockSubscriptionResponseDto` (subscriptionId, operationId, ledgerEntryIds[], historyId?)
+- **Puertos**: `StockSubscriptionRepository`, `MemberRepository`, `StockRepository`, `MeetingRepository`, `OperationRepository`, `LedgerEntryRepository`, `StockValueHistoryRepository`, `OperationBalanceValidator` (domain service)
+- **Endpoints mapeados**: 
+  - `POST /stock-subscriptions`
+  - `POST /meetings/:meetingId/buy/stocks`
+
+#### ModifyStockSubscriptionUseCase
+- **Input**: `ModifyStockSubscriptionDto` (memberId, meetingId, fromSubscriptionId, fromQuantity, toStockId?, toQuantity?, transferSubscriptionId?, toMemberId?, notes?)
+- **Output**: `ModifyStockSubscriptionResponseDto` (modifiedSubscriptionId, newSubscriptionId?, operationId)
+- **Puertos**: `StockSubscriptionRepository`, `MemberRepository`, `StockRepository`, `MeetingRepository`, `OperationRepository`, `LedgerEntryRepository`
+- **Endpoints mapeados**: 
+  - `POST /stock-subscriptions/:id/modify`
+  - `POST /meetings/:meetingId/withdraw/stocks`
+
+#### TransferStockSubscriptionUseCase
+- **Input**: `TransferStockSubscriptionDto` (fromMemberId, toMemberId, stockId, quantity, meetingId, fromSubscriptionId?)
+- **Output**: `TransferStockSubscriptionResponseDto` (transferSubscriptionId, operationId)
+- **Puertos**: `StockSubscriptionRepository`, `MemberRepository`, `StockRepository`, `MeetingRepository`, `OperationRepository`, `LedgerEntryRepository`
+- **Endpoints mapeados**: `POST /stock-subscriptions/transfer`
+
+#### PreviewMonthlyRevaluationUseCase
+- **Input**: `PreviewMonthlyRevaluationDto` (meetingId)
+- **Output**: `PreviewMonthlyRevaluationResponseDto` (total_contributions, total_interest, total_to_distribute, details[])
+- **Puertos**: `StockRepository`, `StockSubscriptionRepository`, `StockValueHistoryRepository`, `AssetRevaluationService` (domain service)
+- **Endpoints mapeados**: 
+  - `GET /asset-revaluation/:meetingId/preview`
+  - `POST /stocks/:id/revaluation/preview`
+
+#### ApproveMonthlyRevaluationUseCase
+- **Input**: `ApproveMonthlyRevaluationDto` (meetingId, approvalBy, notes?)
+- **Output**: `ApproveMonthlyRevaluationResponseDto` (meetingId, approvedAt)
+- **Puertos**: `MeetingRepository`, `StockValueHistoryRepository`
+- **Endpoints mapeados**: `POST /stocks/:id/revaluation/approve`
+
+#### RecordMonthlyRevaluationUseCase
+- **Input**: `RecordMonthlyRevaluationDto` (meetingId, revaluationDetails[])
+- **Output**: `RecordMonthlyRevaluationResponseDto` (historyIds[], operationId)
+- **Puertos**: `MeetingRepository`, `StockValueHistoryRepository`, `StockSubscriptionRepository`, `OperationRepository`, `LedgerEntryRepository`, `AssetRevaluationService` (domain service)
+- **Endpoints mapeados**: 
+  - `POST /asset-revaluation/:meetingId/execute`
+  - `POST /stocks/:id/revaluation/record`
+
+### Módulo: Pending Payments
+
+#### CreatePendingMemberPaymentUseCase
+- **Input**: `CreatePendingMemberPaymentDto` (memberId, meetingId, type, amount, notes?, loanId?, stockId?, stockSubscriptionId?, referenceMeetingId?, disbursementType?)
+- **Output**: `CreatePendingMemberPaymentResponseDto` (pendingId, status)
+- **Puertos**: `PendingMemberPaymentRepository`, `MemberRepository`, `MeetingRepository`
+- **Endpoints mapeados**: 
+  - `POST /dividends` (si es tipo dividend)
+
+#### SettlePendingMemberPaymentUseCase
+- **Input**: `SettlePendingMemberPaymentDto` (originalPendingId, amountOrQuantity, meetingId)
+- **Output**: `SettlePendingMemberPaymentResponseDto` (settledId, remainingAmount)
+- **Puertos**: `PendingMemberPaymentRepository`, `MeetingRepository`, `OperationRepository`, `LedgerEntryRepository`
+- **Endpoints mapeados**: Implícito en `ExecuteDisbursementPlanUseCase`
+
+### Módulo: Accounting
+
+#### RecordOperationUseCase
+- **Input**: `
