@@ -161,12 +161,20 @@ describe('MembersService', () => {
     }).compile();
 
     service = module.get<MembersService>(MembersService);
-    memberRepository = module.get<Repository<Member>>(getRepositoryToken(Member));
-    ledgerEntryRepository = module.get<Repository<LedgerEntry>>(getRepositoryToken(LedgerEntry));
-    stockSubscriptionRepository = module.get<Repository<StockSubscription>>(getRepositoryToken(StockSubscription));
+    memberRepository = module.get<Repository<Member>>(
+      getRepositoryToken(Member),
+    );
+    ledgerEntryRepository = module.get<Repository<LedgerEntry>>(
+      getRepositoryToken(LedgerEntry),
+    );
+    stockSubscriptionRepository = module.get<Repository<StockSubscription>>(
+      getRepositoryToken(StockSubscription),
+    );
     loanRepository = module.get<Repository<Loan>>(getRepositoryToken(Loan));
     stockRepository = module.get<Repository<Stock>>(getRepositoryToken(Stock));
-    operationRepository = module.get<Repository<Operation>>(getRepositoryToken(Operation));
+    operationRepository = module.get<Repository<Operation>>(
+      getRepositoryToken(Operation),
+    );
   });
 
   it('should be defined', () => {
@@ -196,14 +204,18 @@ describe('MembersService', () => {
     it('should throw NotFoundException when member not found', async () => {
       jest.spyOn(memberRepository, 'findOneBy').mockResolvedValue(null);
 
-      await expect(service.getMemberDetail('non-existent')).rejects.toThrow(NotFoundException);
+      await expect(service.getMemberDetail('non-existent')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('getMemberStocks', () => {
     it('should return member stocks summary', async () => {
       jest.spyOn(memberRepository, 'findOneBy').mockResolvedValue(mockMember);
-      jest.spyOn(stockSubscriptionRepository, 'find').mockResolvedValue([mockStockSubscription]);
+      jest
+        .spyOn(stockSubscriptionRepository, 'find')
+        .mockResolvedValue([mockStockSubscription]);
 
       const result = await service.getMemberStocks('member-1');
 
@@ -259,7 +271,9 @@ describe('MembersService', () => {
   describe('calculateMemberDebtCapacity', () => {
     it('should calculate debt capacity correctly', async () => {
       jest.spyOn(memberRepository, 'findOneBy').mockResolvedValue(mockMember);
-      jest.spyOn(stockSubscriptionRepository, 'find').mockResolvedValue([mockStockSubscription]);
+      jest
+        .spyOn(stockSubscriptionRepository, 'find')
+        .mockResolvedValue([mockStockSubscription]);
       jest.spyOn(loanRepository, 'find').mockResolvedValue([mockLoan]);
 
       const result = await service.calculateMemberDebtCapacity('member-1');
@@ -281,7 +295,9 @@ describe('MembersService', () => {
   describe('getMemberSummary', () => {
     it('should return complete member summary', async () => {
       jest.spyOn(memberRepository, 'findOneBy').mockResolvedValue(mockMember);
-      jest.spyOn(stockSubscriptionRepository, 'find').mockResolvedValue([mockStockSubscription]);
+      jest
+        .spyOn(stockSubscriptionRepository, 'find')
+        .mockResolvedValue([mockStockSubscription]);
       jest.spyOn(loanRepository, 'find').mockResolvedValue([mockLoan]);
 
       const result = await service.getMemberSummary('member-1');
@@ -312,9 +328,14 @@ describe('MembersService', () => {
     it('should return stock transaction history', async () => {
       jest.spyOn(memberRepository, 'findOneBy').mockResolvedValue(mockMember);
       jest.spyOn(stockRepository, 'findOneBy').mockResolvedValue(mockStock);
-      jest.spyOn(ledgerEntryRepository, 'find').mockResolvedValue([mockLedgerEntry]);
+      jest
+        .spyOn(ledgerEntryRepository, 'find')
+        .mockResolvedValue([mockLedgerEntry]);
 
-      const result = await service.getStockTransactionHistory('stock-1', 'member-1');
+      const result = await service.getStockTransactionHistory(
+        'stock-1',
+        'member-1',
+      );
 
       expect(result).toEqual({
         stockId: 'stock-1',
@@ -342,14 +363,18 @@ describe('MembersService', () => {
       jest.spyOn(memberRepository, 'findOneBy').mockResolvedValue(mockMember);
       jest.spyOn(stockRepository, 'findOneBy').mockResolvedValue(null);
 
-      await expect(service.getStockTransactionHistory('non-existent', 'member-1')).rejects.toThrow(NotFoundException);
+      await expect(
+        service.getStockTransactionHistory('non-existent', 'member-1'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('getLoanInstallments', () => {
     it('should return loan installments', async () => {
       const mockLoanWithMember = { ...mockLoan, member: mockMember };
-      jest.spyOn(loanRepository, 'findOne').mockResolvedValue(mockLoanWithMember);
+      jest
+        .spyOn(loanRepository, 'findOne')
+        .mockResolvedValue(mockLoanWithMember);
       jest.spyOn(ledgerEntryRepository, 'find').mockResolvedValue([]);
 
       const result = await service.getLoanInstallments('loan-1');
@@ -377,14 +402,18 @@ describe('MembersService', () => {
     it('should throw NotFoundException when loan not found', async () => {
       jest.spyOn(loanRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.getLoanInstallments('non-existent')).rejects.toThrow(NotFoundException);
+      await expect(service.getLoanInstallments('non-existent')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('getMemberTransactions', () => {
     it('should return member transactions', async () => {
       jest.spyOn(memberRepository, 'findOneBy').mockResolvedValue(mockMember);
-      jest.spyOn(ledgerEntryRepository, 'find').mockResolvedValue([mockLedgerEntry]);
+      jest
+        .spyOn(ledgerEntryRepository, 'find')
+        .mockResolvedValue([mockLedgerEntry]);
 
       const result = await service.getMemberTransactions('member-1');
 

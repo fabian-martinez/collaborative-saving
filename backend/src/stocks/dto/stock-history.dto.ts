@@ -44,9 +44,15 @@ export class StockHistoryRequestDto {
   @ApiProperty({ description: 'Tipo de acción específico (opcional)' })
   stockType?: string;
 
-  @ApiProperty({ description: 'Incluir operaciones de transferencia', default: true })
+  @ApiProperty({
+    description: 'Incluir operaciones de transferencia',
+    default: true,
+  })
   includeTransfers?: boolean;
 
-  @ApiProperty({ description: 'Incluir operaciones de pago con acciones', default: true })
+  @ApiProperty({
+    description: 'Incluir operaciones de pago con acciones',
+    default: true,
+  })
   includeLoanPayments?: boolean;
 }

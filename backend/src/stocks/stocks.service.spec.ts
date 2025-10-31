@@ -67,7 +67,9 @@ describe('StocksService', () => {
 
     service = module.get<StocksService>(StocksService);
     stocksRepository = module.get(getRepositoryToken(Stock));
-    stockSubscriptionsRepository = module.get(getRepositoryToken(StockSubscription));
+    stockSubscriptionsRepository = module.get(
+      getRepositoryToken(StockSubscription),
+    );
     dataSource = module.get(DataSource);
     membersService = module.get(MembersService);
     loansService = module.get(LoansService);

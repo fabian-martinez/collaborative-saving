@@ -13,7 +13,12 @@ import { Operation } from '../operations/entities/operation.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Stock, StockValueHistory, StockSubscription, Operation]),
+    TypeOrmModule.forFeature([
+      Stock,
+      StockValueHistory,
+      StockSubscription,
+      Operation,
+    ]),
     forwardRef(() => OperationsModule),
     forwardRef(() => LoansModule),
     StockSubscriptionsModule,

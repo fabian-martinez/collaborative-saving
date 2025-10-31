@@ -1087,9 +1087,7 @@ export class StocksService {
   /**
    * Get all stock operations for a specific meeting
    */
-  async getAllStockOperationsForMeeting(
-    meetingId: string,
-  ): Promise<
+  async getAllStockOperationsForMeeting(meetingId: string): Promise<
     Array<{
       id: string;
       type: string;

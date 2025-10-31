@@ -4,7 +4,6 @@ import { Repository, DataSource } from 'typeorm';
 import { Operation } from './entities/operation.entity';
 import { FindOperationsDto } from './dto/find-operations.dto';
 
-
 @Injectable()
 export class OperationsService {
   constructor(
@@ -65,6 +64,4 @@ export class OperationsService {
     const [data, total] = await qb.getManyAndCount();
     return { data, total };
   }
-
-
 }

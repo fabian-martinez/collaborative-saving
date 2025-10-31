@@ -157,14 +157,17 @@ export class MeetingsController {
     @Body() dto: ExecuteDisbursementPlanDto,
   ) {
     console.log('executeDisbursementPlan', dto);
-    console.log('plan items:', dto.plan.map((item, index) => ({
-      index,
-      memberId: item.memberId,
-      type: item.type,
-      amount: item.amount,
-      pendingMemberPaymentId: item.pendingMemberPaymentId,
-      loanId: item.loanId
-    })));
+    console.log(
+      'plan items:',
+      dto.plan.map((item, index) => ({
+        index,
+        memberId: item.memberId,
+        type: item.type,
+        amount: item.amount,
+        pendingMemberPaymentId: item.pendingMemberPaymentId,
+        loanId: item.loanId,
+      })),
+    );
     return this.meetingsService.executeDisbursementPlan(meetingId, dto);
   }
 

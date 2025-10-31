@@ -85,6 +85,9 @@ export class Member {
   @CreateDateColumn({ type: 'date', name: 'registration_date' })
   registrationDate: Date;
 
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  createdAt: Date;
+
   @DeleteDateColumn({ name: 'deleted_at' })
   deletedAt: Date;
 }

@@ -131,7 +131,9 @@ describe('MeetingsService', () => {
       release: jest.fn(),
       manager: {
         save: jest.fn(),
-        create: jest.fn().mockReturnValue({ id: 'mock-operation-id', type: 'MEMBER_PAYMENT' }),
+        create: jest
+          .fn()
+          .mockReturnValue({ id: 'mock-operation-id', type: 'MEMBER_PAYMENT' }),
         find: jest.fn().mockResolvedValue([]),
       },
     };
@@ -155,7 +157,7 @@ describe('MeetingsService', () => {
       paymentStrategyFactory.getStrategy.mockReturnValue(
         mockPaymentStrategy as MockPaymentStrategy,
       );
-      
+
       // Mock del payment strategy para que procese correctamente
       mockPaymentStrategy.process.mockResolvedValue([]);
     });
@@ -211,13 +213,13 @@ describe('MeetingsService', () => {
     });
     it('should throw BadRequestException if the member has already paid', async () => {
       // Arrange
-               // Mock que ya existe un pago previo
-         (dataSource.manager.getRepository as jest.Mock).mockReturnValue({
-           findOne: jest.fn().mockResolvedValue({
-             id: 'existing-operation-id',
-             type: 'MONTHLY_PAYMENT',
-           }),
-         });
+      // Mock que ya existe un pago previo
+      (dataSource.manager.getRepository as jest.Mock).mockReturnValue({
+        findOne: jest.fn().mockResolvedValue({
+          id: 'existing-operation-id',
+          type: 'MONTHLY_PAYMENT',
+        }),
+      });
 
       // Act
       await expect(() => service.recordMonthlyPayment(payload)).rejects.toThrow(

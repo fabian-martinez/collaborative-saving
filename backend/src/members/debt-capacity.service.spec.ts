@@ -94,8 +94,12 @@ describe('DebtCapacityService', () => {
     }).compile();
 
     service = module.get<DebtCapacityService>(DebtCapacityService);
-    memberRepository = module.get<Repository<Member>>(getRepositoryToken(Member));
-    stockSubscriptionRepository = module.get<Repository<StockSubscription>>(getRepositoryToken(StockSubscription));
+    memberRepository = module.get<Repository<Member>>(
+      getRepositoryToken(Member),
+    );
+    stockSubscriptionRepository = module.get<Repository<StockSubscription>>(
+      getRepositoryToken(StockSubscription),
+    );
     loanRepository = module.get<Repository<Loan>>(getRepositoryToken(Loan));
   });
 
@@ -106,7 +110,9 @@ describe('DebtCapacityService', () => {
   describe('calculateDebtCapacity', () => {
     it('should calculate debt capacity for member with savings and loans', async () => {
       jest.spyOn(memberRepository, 'findOneBy').mockResolvedValue(mockMember);
-      jest.spyOn(stockSubscriptionRepository, 'find').mockResolvedValue([mockStockSubscription]);
+      jest
+        .spyOn(stockSubscriptionRepository, 'find')
+        .mockResolvedValue([mockStockSubscription]);
       jest.spyOn(loanRepository, 'find').mockResolvedValue([mockLoan]);
 
       const result = await service.calculateDebtCapacity('member-1');
@@ -126,7 +132,9 @@ describe('DebtCapacityService', () => {
 
     it('should calculate debt capacity for member with only savings', async () => {
       jest.spyOn(memberRepository, 'findOneBy').mockResolvedValue(mockMember);
-      jest.spyOn(stockSubscriptionRepository, 'find').mockResolvedValue([mockStockSubscription]);
+      jest
+        .spyOn(stockSubscriptionRepository, 'find')
+        .mockResolvedValue([mockStockSubscription]);
       jest.spyOn(loanRepository, 'find').mockResolvedValue([]);
 
       const result = await service.calculateDebtCapacity('member-1');
@@ -147,7 +155,9 @@ describe('DebtCapacityService', () => {
     it('should calculate debt capacity for member with moderate utilization', async () => {
       const moderateLoan = { ...mockLoan, outstanding_balance: 1000 };
       jest.spyOn(memberRepository, 'findOneBy').mockResolvedValue(mockMember);
-      jest.spyOn(stockSubscriptionRepository, 'find').mockResolvedValue([mockStockSubscription]);
+      jest
+        .spyOn(stockSubscriptionRepository, 'find')
+        .mockResolvedValue([mockStockSubscription]);
       jest.spyOn(loanRepository, 'find').mockResolvedValue([moderateLoan]);
 
       const result = await service.calculateDebtCapacity('member-1');
@@ -168,7 +178,9 @@ describe('DebtCapacityService', () => {
     it('should throw error when member not found', async () => {
       jest.spyOn(memberRepository, 'findOneBy').mockResolvedValue(null);
 
-      await expect(service.calculateDebtCapacity('non-existent')).rejects.toThrow('Member #non-existent not found');
+      await expect(
+        service.calculateDebtCapacity('non-existent'),
+      ).rejects.toThrow('Member #non-existent not found');
     });
 
     it('should handle member with no stock subscriptions', async () => {
@@ -194,48 +206,71 @@ describe('DebtCapacityService', () => {
 
   describe('getDebtCapacitySummary', () => {
     it('should return debt capacity summary for multiple members', async () => {
-      const mockMember2 = { ...mockMember, id: 'member-2', name: 'Test Member 2' };
-      
-      jest.spyOn(memberRepository, 'findOneBy')
+      const mockMember2 = {
+        ...mockMember,
+        id: 'member-2',
+        name: 'Test Member 2',
+      };
+
+      jest
+        .spyOn(memberRepository, 'findOneBy')
         .mockResolvedValueOnce(mockMember)
         .mockResolvedValueOnce(mockMember2);
-      
-      jest.spyOn(stockSubscriptionRepository, 'find')
+
+      jest
+        .spyOn(stockSubscriptionRepository, 'find')
         .mockResolvedValueOnce([mockStockSubscription])
         .mockResolvedValueOnce([mockStockSubscription]);
-      
-      jest.spyOn(loanRepository, 'find')
+
+      jest
+        .spyOn(loanRepository, 'find')
         .mockResolvedValueOnce([mockLoan])
         .mockResolvedValueOnce([]);
 
-      const result = await service.getDebtCapacitySummary(['member-1', 'member-2']);
+      const result = await service.getDebtCapacitySummary([
+        'member-1',
+        'member-2',
+      ]);
 
       expect(result).toHaveLength(2);
-      expect(result[0]).toEqual(expect.objectContaining({
-        memberId: 'member-1',
-        creditStatus: 'high',
-      }));
-      expect(result[1]).toEqual(expect.objectContaining({
-        memberId: 'member-2',
-        creditStatus: 'excellent',
-      }));
+      expect(result[0]).toEqual(
+        expect.objectContaining({
+          memberId: 'member-1',
+          creditStatus: 'high',
+        }),
+      );
+      expect(result[1]).toEqual(
+        expect.objectContaining({
+          memberId: 'member-2',
+          creditStatus: 'excellent',
+        }),
+      );
     });
   });
 
   describe('getOrganizationDebtCapacityStats', () => {
     it('should return organization debt capacity statistics', async () => {
-      const mockMember2 = { ...mockMember, id: 'member-2', name: 'Test Member 2' };
-      
-      jest.spyOn(memberRepository, 'find').mockResolvedValue([mockMember, mockMember2]);
-      jest.spyOn(memberRepository, 'findOneBy')
+      const mockMember2 = {
+        ...mockMember,
+        id: 'member-2',
+        name: 'Test Member 2',
+      };
+
+      jest
+        .spyOn(memberRepository, 'find')
+        .mockResolvedValue([mockMember, mockMember2]);
+      jest
+        .spyOn(memberRepository, 'findOneBy')
         .mockResolvedValueOnce(mockMember)
         .mockResolvedValueOnce(mockMember2);
-      
-      jest.spyOn(stockSubscriptionRepository, 'find')
+
+      jest
+        .spyOn(stockSubscriptionRepository, 'find')
         .mockResolvedValueOnce([mockStockSubscription])
         .mockResolvedValueOnce([mockStockSubscription]);
-      
-      jest.spyOn(loanRepository, 'find')
+
+      jest
+        .spyOn(loanRepository, 'find')
         .mockResolvedValueOnce([mockLoan])
         .mockResolvedValueOnce([]);
 
