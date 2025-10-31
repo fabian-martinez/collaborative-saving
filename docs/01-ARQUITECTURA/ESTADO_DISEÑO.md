@@ -31,8 +31,8 @@
 - ✅ **Meetings**: 5 casos de uso (Open, Record Payments, Preview/Execute Disbursement, Close)
 - ✅ **Pending Payments**: 2 casos de uso (Create, Settle)
 - ✅ **Accounting**: 1 caso de uso (Record Operation)
-- ✅ **Members**: 4 casos de uso (Create, Update, Deactivate, Reactivate)
-- **Total**: 23 casos de uso con contratos completos (Input/Pre/Post/Output)
+- ✅ **Members**: 3 casos de uso (Create, Update, Delete)
+- **Total**: 21 casos de uso con contratos completos (Input/Pre/Post/Output)
 
 #### 3. Diagramas Arquitectónicos ✅
 - ✅ **C4 Context Diagram**: Diagrama de contexto del sistema

@@ -685,6 +685,93 @@ Al implementar tests para un nuevo módulo, verificar:
 
 ---
 
+## Error Recurrente: Unbound Methods en Tests
+
+### Problema
+
+ESLint reporta error `@typescript-eslint/unbound-method` al usar métodos de mocks directamente en assertions:
+
+```typescript
+// ❌ INCORRECTO - Genera error de linting
+expect(stockRepository.findByType).toHaveBeenCalledWith('preferential');
+expect(stockRepository.save).toHaveBeenCalledTimes(1);
+```
+
+**Error**: `Avoid referencing unbound methods which may cause unintentional scoping of 'this'`
+
+### Solución: Usar Spies
+
+Crear spies en `beforeEach` para evitar problemas de scoping. Esta es la solución **recomendada** y más limpia.
+
+```typescript
+describe('CreateStockUseCase', () => {
+  let useCase: CreateStockUseCase;
+  let stockRepository: jest.Mocked<StockRepository>;
+  let findByTypeSpy: jest.SpyInstance;
+  let saveSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    stockRepository = {
+      findById: jest.fn(),
+      findByType: jest.fn(),
+      findAll: jest.fn(),
+      findActive: jest.fn(),
+      save: jest.fn(),
+      findGuaranteed: jest.fn(),
+    } as unknown as jest.Mocked<StockRepository>;
+
+    // Create spies to avoid 'this' scoping issues
+    findByTypeSpy = jest.spyOn(stockRepository, 'findByType');
+    saveSpy = jest.spyOn(stockRepository, 'save');
+
+    useCase = new CreateStockUseCase(stockRepository);
+  });
+
+  it('should create a stock successfully', async () => {
+    // ARRANGE
+    const createDto = { type: 'preferential', value: 100, monthlyContribution: 50 };
+    stockRepository.findByType.mockResolvedValue(null);
+    stockRepository.save.mockResolvedValue(Stock.create(createDto));
+
+    // ACT
+    const result = await useCase.execute(createDto);
+
+    // ASSERT - Usar spies en lugar de métodos directos
+    expect(findByTypeSpy).toHaveBeenCalledWith('preferential');
+    expect(findByTypeSpy).toHaveBeenCalledTimes(1);
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+    expect(result.type).toBe('preferential');
+  });
+});
+```
+
+### Cuándo aplicar
+
+- **Siempre** cuando uses `toHaveBeenCalledWith()`, `toHaveBeenCalledTimes()`, `not.toHaveBeenCalled()` con mocks
+- **Crear spies** en `beforeEach` para cada método del mock que vayas a verificar
+- **Usar los spies** en lugar de los métodos del mock directamente
+
+### Ventajas de usar Spies
+
+1. ✅ **No requiere deshabilitar ESLint**
+2. ✅ **Más explícito** - deja claro qué métodos se están verificando
+3. ✅ **Mejor legibilidad** - nombres de spies descriptivos (`findByTypeSpy`, `saveSpy`)
+4. ✅ **Patrón consistente** - igual que en tests de controladores
+
+### Alternativa (NO recomendada)
+
+Si por alguna razón no puedes usar spies, puedes deshabilitar ESLint temporalmente, pero **no es la solución recomendada**:
+
+```typescript
+// ⚠️ NO RECOMENDADO - Solo si spies no son opción
+// eslint-disable-next-line @typescript-eslint/unbound-method
+expect(stockRepository.findByType).toHaveBeenCalledWith('preferential');
+```
+
+**Regla**: Siempre preferir spies sobre deshabilitar ESLint.
+
+---
+
 **Última actualización**: 2025-10-31  
 **Referencia**: Members V2 (100% cobertura)  
 **Próximos módulos**: Stocks, Loans, Meetings

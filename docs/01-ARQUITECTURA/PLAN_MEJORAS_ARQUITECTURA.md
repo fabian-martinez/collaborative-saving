@@ -379,7 +379,7 @@ Ver [CAPA_APLICACION.md](./CAPA_APLICACION.md) para el diseño detallado de la c
   - Output: { operationId, ledgerEntryIds[] }
 
 ### Members
-- CreateMember / UpdateMember / DeactivateMember / ReactivateMember
+- CreateMember / UpdateMember / DeleteMember (borrado lógico)
   - Inputs: datos del socio
   - Pre: validaciones básicas (unicidad email/identification_number)
   - Post: estado y datos actualizados; eventos opcionales (MemberCreated/Updated/StatusChanged)
