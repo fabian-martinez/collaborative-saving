@@ -5,6 +5,7 @@ import { Member } from '@domain/entities/member.entity';
 describe('GetMembersQueryHandler', () => {
   let queryHandler: GetMembersQueryHandler;
   let memberRepository: jest.Mocked<MemberRepository>;
+  let findActiveSpy: jest.SpyInstance;
 
   beforeEach(() => {
     memberRepository = {
@@ -14,15 +15,17 @@ describe('GetMembersQueryHandler', () => {
       softDelete: jest.fn(),
     } as unknown as jest.Mocked<MemberRepository>;
 
+    findActiveSpy = jest.spyOn(memberRepository, 'findActive');
+
     queryHandler = new GetMembersQueryHandler(memberRepository);
   });
 
   it('should return empty array when no members exist', async () => {
-    memberRepository.findActive.mockResolvedValue([]);
+    findActiveSpy.mockResolvedValue([]);
 
     const result = await queryHandler.execute();
 
-    expect(memberRepository.findActive).toHaveBeenCalledTimes(1);
+    expect(findActiveSpy).toHaveBeenCalledTimes(1);
     expect(result).toEqual([]);
   });
 
@@ -36,11 +39,11 @@ describe('GetMembersQueryHandler', () => {
       email: 'member2@example.com',
     });
 
-    memberRepository.findActive.mockResolvedValue([member1, member2]);
+    findActiveSpy.mockResolvedValue([member1, member2]);
 
     const result = await queryHandler.execute();
 
-    expect(memberRepository.findActive).toHaveBeenCalledTimes(1);
+    expect(findActiveSpy).toHaveBeenCalledTimes(1);
     expect(result).toHaveLength(2);
     expect(result[0]).toEqual({
       id: member1.id,
@@ -81,7 +84,7 @@ describe('GetMembersQueryHandler', () => {
       beneficiary: 'John Doe',
     });
 
-    memberRepository.findActive.mockResolvedValue([member]);
+    findActiveSpy.mockResolvedValue([member]);
 
     const result = await queryHandler.execute();
 
