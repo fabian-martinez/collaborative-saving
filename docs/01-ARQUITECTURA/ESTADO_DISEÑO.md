@@ -23,7 +23,8 @@
 - ✅ **Domain Events**: 13 eventos documentados en 6 categorías
 - ✅ **Puertos (Interfaces)**: 
   - 11 interfaces de repositorios
-  - 2 interfaces de servicios transversales (EventBus, TransactionManager)
+  - 1 interface de servicios transversales (TransactionManager)
+  - ⏸️ EventBus: No se implementará en el corto plazo
 
 #### 2. Casos de Uso ✅
 - ✅ **Stocks**: 6 casos de uso (Create, Modify, Transfer, Preview/Approve Revaluation, Record)
@@ -32,7 +33,8 @@
 - ✅ **Pending Payments**: 2 casos de uso (Create, Settle)
 - ✅ **Accounting**: 1 caso de uso (Record Operation)
 - ✅ **Members**: 3 casos de uso (Create, Update, Delete)
-- **Total**: 21 casos de uso con contratos completos (Input/Pre/Post/Output)
+- ✅ **Mandatory Contributions**: 3 casos de uso + 2 query handlers (Create, Update, Delete, GetAll, GetDetail) ✅ Implementado
+- **Total**: 27 casos de uso con contratos completos (Input/Pre/Post/Output)
 
 #### 3. Diagramas Arquitectónicos ✅
 - ✅ **C4 Context Diagram**: Diagrama de contexto del sistema
@@ -54,6 +56,13 @@
 - ✅ **Organización por dominio de negocio**: Casos de uso organizados por dominio
 - ✅ **Estrategia para pagos parciales**: Documentada sin modificar BD
 - ✅ **Estructura por adaptadores**: TypeORM, NestJS, In-Memory
+
+#### 6. Módulos Pendientes de Diseño ⚠️
+- ⚠️ **Mandatory Contributions**: Módulo identificado pero sin casos de uso definidos
+  - **Estado**: Análisis completado (ver `MANDATORY_CONTRIBUTIONS_ANALISIS.md`)
+  - **Falta**: Casos de uso, query handlers, diseño completo de dominio
+  - **Prioridad**: Media (configuración del sistema)
+  - **Esfuerzo estimado**: 5-8 días
 
 ### Documentos Generados
 
@@ -79,7 +88,8 @@ El diseño arquitectónico está completo y documentado. La siguiente fase es la
 4. Crear entidades de dominio en `domain/entities/`
 5. Crear value objects en `domain/value-objects/`
 6. Implementar repositorios TypeORM en `infrastructure/typeorm/repositories/`
-7. Implementar EventBus y TransactionManager en `infrastructure/services/`
+7. Implementar TransactionManager en `infrastructure/services/`
+   - ⏸️ EventBus: No se implementará en el corto plazo
 8. Configurar estructura base para tests con adaptadores in-memory
 9. Setup inicial de TDD (Jest, configuración base)
 
@@ -87,6 +97,7 @@ El diseño arquitectónico está completo y documentado. La siguiente fase es la
 - ✅ Estructura de carpetas creada
 - ✅ Interfaces de repositorios definidas
 - ✅ Al menos un repositorio TypeORM implementado y testeado
-- ✅ EventBus y TransactionManager implementados
+- ✅ TransactionManager implementado
+- ⏸️ EventBus: No se implementará en el corto plazo
 - ✅ Tests base funcionando con adaptadores in-memory
 

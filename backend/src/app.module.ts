@@ -18,6 +18,7 @@ import { DividendsModule } from './dividends/dividends.module';
 import { MembersV2Module } from './infrastructure/nestjs/http/modules/members-v2.module';
 import { StocksV2Module } from './infrastructure/nestjs/http/modules/stocks-v2.module';
 import { MeetingsV2Module } from './infrastructure/nestjs/http/modules/meetings-v2.module';
+import { MandatoryContributionsV2Module } from './infrastructure/nestjs/http/modules/mandatory-contributions-v2.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { MeetingsV2Module } from './infrastructure/nestjs/http/modules/meetings-
     MembersV2Module,
     StocksV2Module,
     MeetingsV2Module,
+    MandatoryContributionsV2Module,
   ],
   controllers: [AppController],
   providers: [AppService],
