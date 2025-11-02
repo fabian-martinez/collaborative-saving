@@ -43,8 +43,6 @@ export class UpdateMandatoryContributionUseCase {
       id: saved.id,
       assetType: saved.assetType,
       value: saved.value,
-      createdAt: saved.createdAt,
-      updatedAt: saved.updatedAt,
     };
   }
 }

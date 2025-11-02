@@ -46,8 +46,6 @@ describe('CreateMandatoryContributionUseCase', () => {
       id: savedContribution.id,
       assetType: savedContribution.assetType,
       value: savedContribution.value,
-      createdAt: savedContribution.createdAt,
-      updatedAt: savedContribution.updatedAt,
     });
   });
 

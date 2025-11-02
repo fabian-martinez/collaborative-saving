@@ -27,8 +27,6 @@ describe('MandatoryContributionsV2Controller', () => {
     id: '550e8400-e29b-41d4-a716-446655440000',
     assetType: 'stock',
     value: 100,
-    createdAt: new Date('2024-01-15'),
-    updatedAt: new Date('2024-01-16'),
   };
 
   beforeEach(async () => {

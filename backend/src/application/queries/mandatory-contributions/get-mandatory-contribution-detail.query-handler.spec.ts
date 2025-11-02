@@ -36,8 +36,6 @@ describe('GetMandatoryContributionDetailQueryHandler', () => {
       id: contribution.id,
       assetType: contribution.assetType,
       value: contribution.value,
-      createdAt: contribution.createdAt,
-      updatedAt: contribution.updatedAt,
     });
   });
 

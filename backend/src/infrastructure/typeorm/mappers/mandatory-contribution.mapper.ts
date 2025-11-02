@@ -10,8 +10,6 @@ export class MandatoryContributionMapper {
         id: persistence.id,
         assetType: persistence.assetType,
         value: persistence.value,
-        createdAt: persistence.createdAt,
-        updatedAt: persistence.updatedAt,
       });
     } catch (error) {
       throw new Error(
@@ -27,8 +25,6 @@ export class MandatoryContributionMapper {
       id: domain.id,
       assetType: domain.assetType,
       value: domain.value,
-      createdAt: domain.createdAt,
-      updatedAt: domain.updatedAt,
     };
   }
 }

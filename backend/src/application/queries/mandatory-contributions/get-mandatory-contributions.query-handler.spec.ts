@@ -43,15 +43,11 @@ describe('GetMandatoryContributionsQueryHandler', () => {
       id: contributions[0].id,
       assetType: contributions[0].assetType,
       value: contributions[0].value,
-      createdAt: contributions[0].createdAt,
-      updatedAt: contributions[0].updatedAt,
     });
     expect(result[1]).toEqual({
       id: contributions[1].id,
       assetType: contributions[1].assetType,
       value: contributions[1].value,
-      createdAt: contributions[1].createdAt,
-      updatedAt: contributions[1].updatedAt,
     });
   });
 

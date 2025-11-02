@@ -18,10 +18,10 @@ export class Stock {
   @Column({ type: 'text', unique: true })
   type: string;
 
-  @Column({ type: 'numeric' })
+  @Column({ type: 'numeric', precision: 12, scale: 2 })
   value: number;
 
-  @Column({ type: 'numeric', name: 'monthly_contribution' })
+  @Column({ type: 'numeric', precision: 12, scale: 2, name: 'monthly_contribution', default: 0 })
   monthly_contribution: number;
 
   @Column({ type: 'boolean', default: false, name: 'is_guaranteed' })
@@ -29,6 +29,8 @@ export class Stock {
 
   @Column({
     type: 'numeric',
+    precision: 5,
+    scale: 4,
     nullable: true,
     name: 'guaranteed_yield',
   })
