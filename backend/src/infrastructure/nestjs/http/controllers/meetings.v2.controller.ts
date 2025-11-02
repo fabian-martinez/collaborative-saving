@@ -106,7 +106,7 @@ export class MeetingsV2Controller {
     }
   }
 
-  @Post('record-monthly-payment')
+  @Post('active/record-payment')
   @ApiOperation({
     summary: 'Record monthly payments for a member',
     description:
