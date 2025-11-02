@@ -14,6 +14,7 @@
 8. [Mappers](#mappers)
 9. [Controllers HTTP](#controllers-http)
 10. [DTOs por Capa](#dtos-por-capa)
+11. [Sistema Transversal de Registro de Operaciones](#sistema-transversal-de-registro-de-operaciones)
 
 ---
 
@@ -677,6 +678,83 @@ export class CreateMemberDto {
 
 ---
 
+## Sistema Transversal de Registro de Operaciones
+
+### Patrón Obligatorio
+
+**CRÍTICO**: Todas las operaciones contables DEBEN usar el sistema transversal `RecordOperationUseCase`. Este patrón elimina duplicación de código y garantiza validación automática de balance contable.
+
+### Componentes del Sistema
+
+1. **RecordOperationUseCase** (`application/use-cases/accounting/record-operation.use-case.ts`)
+   - Orquesta creación de operaciones y ledger entries
+   - Usa `TransactionManager` para transacciones atómicas
+   - Valida balance usando `OperationBalanceValidator`
+
+2. **OperationBalanceValidator** (`domain/services/operation-balance-validator.service.ts`)
+   - Domain Service puro (sin dependencias externas)
+   - Valida que débitos = créditos
+   - Lanza `BusinessRuleError` si no balancea
+
+3. **TransactionManager** (`domain/ports/services/transaction-manager.port.ts`)
+   - Puerto para gestión de transacciones
+   - Implementación: `TypeOrmTransactionManager` en infrastructure
+
+### Uso Obligatorio
+
+```typescript
+// ✅ CORRECTO - Usar RecordOperationUseCase
+const result = await this.recordOperationUseCase.execute({
+  memberId: memberId,
+  meetingId: meetingId,
+  type: OperationType.MONTHLY_PAYMENT,
+  description: 'Pago mensual',
+  entries: [
+    { accountType: CASH_ACCOUNT, amount: -1000 },  // Crédito
+    { accountType: STOCK_CAPITAL_ACCOUNT, amount: 1000 },  // Débito
+  ],
+});
+```
+
+### Reglas Estrictas
+
+**NUNCA hacer esto**:
+- ❌ Crear operaciones directamente con TypeORM
+- ❌ Crear ledger entries directamente con TypeORM
+- ❌ Duplicar lógica de validación de balance
+- ❌ Gestionar transacciones manualmente para operaciones contables
+
+**SIEMPRE hacer esto**:
+- ✅ Usar `RecordOperationUseCase.execute()`
+- ✅ Definir entries con débitos (amount > 0) y créditos (amount < 0)
+- ✅ Validación automática de balance incluida
+- ✅ Transaccionalidad automática garantizada
+
+### Arquitectura por Capas
+
+```
+Domain Layer (puro):
+  - OperationBalanceValidator (domain service)
+  - BusinessRuleError (domain error)
+  - TransactionManager port (interface)
+
+Application Layer:
+  - RecordOperationUseCase (orchestrates)
+  - RecordOperationDto / RecordOperationResponseDto
+
+Infrastructure Layer:
+  - TypeOrmTransactionManager (implements TransactionManager port)
+  - TypeOrmOperationRepository (implements OperationRepository port)
+  - TypeOrmLedgerEntryRepository (implements LedgerEntryRepository port)
+```
+
+### Documentación Completa
+
+Para ejemplos detallados, casos especiales y convenciones:
+Ver [GUIA_REGISTRO_OPERACIONES.md](../../docs/01-ARQUITECTURA/GUIA_REGISTRO_OPERACIONES.md)
+
+---
+
 ## Checklist de Validación
 
 Al implementar un nuevo módulo hexagonal, verificar:
@@ -691,6 +769,7 @@ Al implementar un nuevo módulo hexagonal, verificar:
 - [ ] **DTOs**: Separados por capa
 - [ ] **Repositories**: Implementan interfaces de Domain
 - [ ] **Use Cases**: Retornan DTOs, no entities
+- [ ] **Operaciones Contables**: Usan `RecordOperationUseCase` (NO TypeORM directo)
 
 ---
 

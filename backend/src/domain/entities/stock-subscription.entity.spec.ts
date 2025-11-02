@@ -149,7 +149,6 @@ describe('StockSubscription Entity', () => {
 
       expect(subscription.financingLoanId).toBeUndefined();
     });
-
   });
 
   describe('update method', () => {
@@ -288,4 +287,3 @@ describe('StockSubscription Entity', () => {
     });
   });
 });
-

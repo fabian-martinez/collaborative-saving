@@ -248,4 +248,3 @@ describe('LedgerEntry Entity', () => {
     });
   });
 });
-

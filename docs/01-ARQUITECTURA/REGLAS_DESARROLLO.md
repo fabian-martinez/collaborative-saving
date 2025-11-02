@@ -75,6 +75,41 @@
 ## 8) Transacciones
 - Orquestadas en application con `TransactionManager` (puerto) + implementación TypeORM.
 
+## 8.1) Registro de Operaciones Contables (OBLIGATORIO)
+- **TODAS las operaciones contables** DEBEN registrarse usando `RecordOperationUseCase`.
+- **NO crear** operaciones directamente con TypeORM (`queryRunner.manager.create(Operation, ...)`).
+- **NO crear** ledger entries directamente con TypeORM (`queryRunner.manager.create(LedgerEntry, ...)`).
+- **NO duplicar** lógica de validación de balance (ya está centralizada en `OperationBalanceValidator`).
+- **NO gestionar** transacciones manualmente para operaciones contables (use case lo maneja automáticamente).
+
+### Ejemplo de Uso Obligatorio
+```typescript
+// ✅ CORRECTO - Usar RecordOperationUseCase
+const result = await this.recordOperationUseCase.execute({
+  memberId: memberId,
+  meetingId: meetingId,
+  type: OperationType.MONTHLY_PAYMENT,
+  description: 'Pago mensual',
+  entries: [
+    { accountType: CASH_ACCOUNT, amount: -1000 },
+    { accountType: STOCK_CAPITAL_ACCOUNT, amount: 1000 },
+  ],
+});
+
+// ❌ INCORRECTO - NO crear operaciones directamente
+const queryRunner = this.dataSource.createQueryRunner();
+// ... código duplicado ...
+```
+
+### Beneficios
+- Validación automática de balance (débitos = créditos)
+- Transaccionalidad garantizada (todo o nada)
+- Eliminación de código duplicado (~1,300 líneas)
+- Consistencia en todo el sistema
+
+### Documentación Completa
+Ver [GUIA_REGISTRO_OPERACIONES.md](./GUIA_REGISTRO_OPERACIONES.md) para ejemplos detallados y casos de uso.
+
 ## 9) Testing
 - E2E: contratos externos y flujos completos. Unit: domain/application sin DB (repos in-memory).
 - Cobertura: priorizar módulos migrados (≥ 90% deseable). Evitar gastar tiempo en linting si no bloquea.

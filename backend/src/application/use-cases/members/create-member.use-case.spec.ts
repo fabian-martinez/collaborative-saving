@@ -54,16 +54,16 @@ describe('CreateMemberUseCase', () => {
     });
   });
 
-    it('should create a member with all optional fields', async () => {
-      const createDto = {
-        name: 'Complete Member',
-        email: 'complete@example.com',
-        role: 'admin' as const,
-        identificationNumber: '123456789',
-        address: '123 Main St',
-        phone: '+1234567890',
-        beneficiary: 'John Doe',
-      };
+  it('should create a member with all optional fields', async () => {
+    const createDto = {
+      name: 'Complete Member',
+      email: 'complete@example.com',
+      role: 'admin' as const,
+      identificationNumber: '123456789',
+      address: '123 Main St',
+      phone: '+1234567890',
+      beneficiary: 'John Doe',
+    };
 
     const savedMember = Member.create(createDto);
     memberRepository.save.mockResolvedValue(savedMember);
