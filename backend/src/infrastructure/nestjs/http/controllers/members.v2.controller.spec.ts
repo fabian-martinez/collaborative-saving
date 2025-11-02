@@ -188,6 +188,9 @@ describe('MembersV2Controller', () => {
       );
 
       await expect(controller.create(createDto)).rejects.toThrow(HttpException);
+      await expect(controller.create(createDto)).rejects.toThrow(
+        'Invalid email format',
+      );
 
       const error = (await controller
         .create(createDto)
@@ -205,6 +208,9 @@ describe('MembersV2Controller', () => {
       createMemberUseCaseExecuteSpy.mockRejectedValue('String error');
 
       await expect(controller.create(createDto)).rejects.toThrow(HttpException);
+      await expect(controller.create(createDto)).rejects.toThrow(
+        'Internal server error',
+      );
 
       const error = (await controller
         .create(createDto)
@@ -250,6 +256,9 @@ describe('MembersV2Controller', () => {
 
       await expect(controller.update(memberId, updateDto)).rejects.toThrow(
         HttpException,
+      );
+      await expect(controller.update(memberId, updateDto)).rejects.toThrow(
+        'Not Found',
       );
 
       const error = (await controller
@@ -316,6 +325,7 @@ describe('MembersV2Controller', () => {
       );
 
       await expect(controller.remove(memberId)).rejects.toThrow(HttpException);
+      await expect(controller.remove(memberId)).rejects.toThrow('Not Found');
 
       const error = (await controller
         .remove(memberId)
