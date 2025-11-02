@@ -7,6 +7,7 @@ import { Operation as OperationEntity } from '../entities/operation.entity';
 import { OperationMapper } from '../mappers/operation.mapper';
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
 import { LedgerEntry } from '@domain/entities/ledger-entry.entity';
+import { AccountType } from '@domain/constants/account-types';
 
 @Injectable()
 export class TypeOrmOperationRepository implements OperationRepository {
@@ -52,7 +53,7 @@ export class TypeOrmOperationRepository implements OperationRepository {
   async saveWithEntries(
     operation: OperationDomain,
     entries: Array<{
-      accountType: string;
+      accountType: AccountType;
       amount: number;
       description?: string | null;
     }>,

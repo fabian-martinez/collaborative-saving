@@ -6,6 +6,7 @@ import { LedgerEntry as LedgerEntryEntity } from '../entities/ledger-entry.entit
 import { Operation as OperationEntity } from '../entities/operation.entity';
 import { LedgerEntry as LedgerEntryDomain } from '@domain/entities/ledger-entry.entity';
 import { LedgerEntry } from '@domain/entities/ledger-entry.entity';
+import { CASH_ACCOUNT } from '@domain/constants/account-types';
 
 describe('TypeOrmLedgerEntryRepository', () => {
   let repository: TypeOrmLedgerEntryRepository;
@@ -53,7 +54,7 @@ describe('TypeOrmLedgerEntryRepository', () => {
       const entity: Partial<LedgerEntryEntity> = {
         id: entryId,
         operationId: 'operation-1',
-        accountType: 'cash',
+        accountType: CASH_ACCOUNT,
         amount: 1000,
         description: null,
         createdAt: new Date(),
@@ -77,7 +78,7 @@ describe('TypeOrmLedgerEntryRepository', () => {
         {
           id: '1',
           operationId: 'operation-1',
-          accountType: 'cash',
+          accountType: CASH_ACCOUNT,
           amount: 1000,
           createdAt: new Date(),
           description: null,
@@ -99,7 +100,7 @@ describe('TypeOrmLedgerEntryRepository', () => {
     it('should insert new entry when not exists', async () => {
       const domain = LedgerEntry.create({
         operationId: 'operation-1',
-        accountType: 'cash',
+        accountType: CASH_ACCOUNT,
         amount: 1000,
       });
 

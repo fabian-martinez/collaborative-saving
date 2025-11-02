@@ -10,6 +10,13 @@ import { OperationBalanceValidator } from '@domain/services/operation-balance-va
 import { Operation } from '@domain/entities/operation.entity';
 import { LedgerEntry } from '@domain/entities/ledger-entry.entity';
 import { BusinessRuleError } from '@domain/errors/business-rule.error';
+import {
+  CASH_ACCOUNT,
+  STOCK_CAPITAL_ACCOUNT,
+  LOANS_RECEIVABLE_ACCOUNT,
+  REVALUATION_SURPLUS_ACCOUNT,
+} from '@domain/constants/account-types';
+import { OperationType } from '@domain/enums/operation-type.enum';
 
 describe('RecordOperationUseCase', () => {
   let useCase: RecordOperationUseCase;
@@ -71,21 +78,21 @@ describe('RecordOperationUseCase', () => {
     const validDto: RecordOperationDto = {
       memberId: 'member-id',
       meetingId: 'meeting-id',
-      type: 'MONTHLY_PAYMENT',
+      type: OperationType.MONTHLY_PAYMENT,
       description: 'Monthly payment',
       entries: [
         {
-          accountType: 'CASH_ACCOUNT',
+          accountType: CASH_ACCOUNT,
           amount: -1000,
           description: 'Cash received',
         },
         {
-          accountType: 'STOCK_CAPITAL_ACCOUNT',
+          accountType: STOCK_CAPITAL_ACCOUNT,
           amount: 500,
           description: 'Stock payment',
         },
         {
-          accountType: 'LOANS_RECEIVABLE_ACCOUNT',
+          accountType: LOANS_RECEIVABLE_ACCOUNT,
           amount: 500,
           description: 'Loan payment',
         },
@@ -96,24 +103,24 @@ describe('RecordOperationUseCase', () => {
       const mockOperation = Operation.create({
         memberId: 'member-id',
         meetingId: 'meeting-id',
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
         description: 'Monthly payment',
       });
 
       const mockEntries = [
         LedgerEntry.create({
           operationId: mockOperation.id,
-          accountType: 'CASH_ACCOUNT',
+          accountType: CASH_ACCOUNT,
           amount: -1000,
         }),
         LedgerEntry.create({
           operationId: mockOperation.id,
-          accountType: 'STOCK_CAPITAL_ACCOUNT',
+          accountType: STOCK_CAPITAL_ACCOUNT,
           amount: 500,
         }),
         LedgerEntry.create({
           operationId: mockOperation.id,
-          accountType: 'LOANS_RECEIVABLE_ACCOUNT',
+          accountType: LOANS_RECEIVABLE_ACCOUNT,
           amount: 500,
         }),
       ];
@@ -138,11 +145,11 @@ describe('RecordOperationUseCase', () => {
         ...validDto,
         entries: [
           {
-            accountType: 'CASH_ACCOUNT',
+            accountType: CASH_ACCOUNT,
             amount: -1000,
           },
           {
-            accountType: 'STOCK_CAPITAL_ACCOUNT',
+            accountType: STOCK_CAPITAL_ACCOUNT,
             amount: 1500, // Does not match credit
           },
         ],
@@ -159,14 +166,14 @@ describe('RecordOperationUseCase', () => {
       const dtoWithoutMember: RecordOperationDto = {
         memberId: null,
         meetingId: 'meeting-id',
-        type: 'INITIAL_CASH_BALANCE',
+        type: OperationType.INITIAL_CASH_BALANCE,
         entries: [
           {
-            accountType: 'CASH_ACCOUNT',
+            accountType: CASH_ACCOUNT,
             amount: 5000,
           },
           {
-            accountType: 'REVALUATION_SURPLUS_ACCOUNT',
+            accountType: REVALUATION_SURPLUS_ACCOUNT,
             amount: -5000,
           },
         ],
@@ -175,18 +182,18 @@ describe('RecordOperationUseCase', () => {
       const mockOperation = Operation.create({
         memberId: null,
         meetingId: 'meeting-id',
-        type: 'INITIAL_CASH_BALANCE',
+        type: OperationType.INITIAL_CASH_BALANCE,
       });
 
       const mockEntries = [
         LedgerEntry.create({
           operationId: mockOperation.id,
-          accountType: 'CASH_ACCOUNT',
+          accountType: CASH_ACCOUNT,
           amount: 5000,
         }),
         LedgerEntry.create({
           operationId: mockOperation.id,
-          accountType: 'REVALUATION_SURPLUS_ACCOUNT',
+          accountType: REVALUATION_SURPLUS_ACCOUNT,
           amount: -5000,
         }),
       ];
@@ -205,13 +212,13 @@ describe('RecordOperationUseCase', () => {
         ...validDto,
         entries: [
           {
-            accountType: 'STOCK_CAPITAL_ACCOUNT',
+            accountType: STOCK_CAPITAL_ACCOUNT,
             amount: 1000,
             stockId: 'stock-id',
             stockSubscriptionId: 'subscription-id',
           },
           {
-            accountType: 'CASH_ACCOUNT',
+            accountType: CASH_ACCOUNT,
             amount: -1000,
           },
         ],
@@ -220,20 +227,20 @@ describe('RecordOperationUseCase', () => {
       const mockOperation = Operation.create({
         memberId: 'member-id',
         meetingId: 'meeting-id',
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
       });
 
       const mockEntries = [
         LedgerEntry.create({
           operationId: mockOperation.id,
-          accountType: 'STOCK_CAPITAL_ACCOUNT',
+          accountType: STOCK_CAPITAL_ACCOUNT,
           amount: 1000,
           stockId: 'stock-id',
           stockSubscriptionId: 'subscription-id',
         }),
         LedgerEntry.create({
           operationId: mockOperation.id,
-          accountType: 'CASH_ACCOUNT',
+          accountType: CASH_ACCOUNT,
           amount: -1000,
         }),
       ];

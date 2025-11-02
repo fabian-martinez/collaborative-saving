@@ -1,3 +1,6 @@
+import { AccountType } from '@domain/constants/account-types';
+import { OperationType } from '@domain/enums/operation-type.enum';
+
 /**
  * Record Operation DTO
  *
@@ -6,7 +9,7 @@
  * double-entry bookkeeping entries.
  */
 export interface LedgerEntryDto {
-  accountType: string;
+  accountType: AccountType;
   amount: number;
   description?: string | null;
   loanId?: string | null;
@@ -18,7 +21,7 @@ export interface LedgerEntryDto {
 export interface RecordOperationDto {
   memberId?: string | null;
   meetingId: string;
-  type: string;
+  type: OperationType;
   description?: string;
   date?: Date;
   entries: LedgerEntryDto[];

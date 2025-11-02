@@ -1,11 +1,12 @@
 import { randomUUID } from 'crypto';
+import { OperationType } from '../enums/operation-type.enum';
 
 export class Operation {
   constructor(
     public readonly id: string,
     private _memberId: string | null,
     private _meetingId: string,
-    private _type: string,
+    private _type: OperationType,
     private _date: Date,
     private _description?: string | null,
   ) {
@@ -15,7 +16,7 @@ export class Operation {
   static create(data: {
     memberId?: string | null;
     meetingId: string;
-    type: string;
+    type: OperationType;
     date?: Date;
     description?: string | null;
   }): Operation {
@@ -38,11 +39,16 @@ export class Operation {
     date: Date | string;
     description?: string | null;
   }): Operation {
+    // Validate operation type
+    if (!Object.values(OperationType).includes(data.type as OperationType)) {
+      throw new Error(`Invalid operation type: ${data.type}`);
+    }
+
     return new Operation(
       data.id,
       data.member_id ?? null,
       data.meeting_id,
-      data.type,
+      data.type as OperationType,
       typeof data.date === 'string' ? new Date(data.date) : data.date,
       data.description ?? undefined,
     );
@@ -50,13 +56,17 @@ export class Operation {
 
   update(data: {
     memberId?: string | null;
-    type?: string;
+    type?: OperationType;
     description?: string | null;
   }): void {
     if (data.memberId !== undefined) {
       this._memberId = data.memberId;
     }
     if (data.type !== undefined) {
+      // Validate operation type
+      if (!Object.values(OperationType).includes(data.type)) {
+        throw new Error(`Invalid operation type: ${data.type}`);
+      }
       this._type = data.type;
     }
     if (data.description !== undefined) {
@@ -67,8 +77,11 @@ export class Operation {
   }
 
   private validateInvariants(): void {
-    if (!this._type || this._type.trim().length === 0) {
+    if (!this._type) {
       throw new Error('Operation type is required');
+    }
+    if (!Object.values(OperationType).includes(this._type)) {
+      throw new Error(`Invalid operation type: ${this._type}`);
     }
     if (!this._meetingId) {
       throw new Error('Operation meetingId is required');
@@ -86,7 +99,7 @@ export class Operation {
     return this._meetingId;
   }
 
-  get type(): string {
+  get type(): OperationType {
     return this._type;
   }
 
