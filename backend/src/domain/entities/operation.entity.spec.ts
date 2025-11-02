@@ -128,7 +128,6 @@ describe('Operation Entity', () => {
 
       expect(operation.description).toBeUndefined();
     });
-
   });
 
   describe('update method', () => {
@@ -225,4 +224,3 @@ describe('Operation Entity', () => {
     });
   });
 });
-

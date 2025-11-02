@@ -21,7 +21,13 @@ export class Stock {
   @Column({ type: 'numeric', precision: 12, scale: 2 })
   value: number;
 
-  @Column({ type: 'numeric', precision: 12, scale: 2, name: 'monthly_contribution', default: 0 })
+  @Column({
+    type: 'numeric',
+    precision: 12,
+    scale: 2,
+    name: 'monthly_contribution',
+    default: 0,
+  })
   monthly_contribution: number;
 
   @Column({ type: 'boolean', default: false, name: 'is_guaranteed' })

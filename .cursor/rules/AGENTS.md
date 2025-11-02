@@ -86,6 +86,41 @@
 ## 8) Transacciones
 - Orquestadas en application con `TransactionManager` (puerto) + implementación TypeORM.
 
+## 8.1) Registro de Operaciones Contables (OBLIGATORIO)
+- **TODAS las operaciones contables** DEBEN registrarse usando `RecordOperationUseCase`.
+- **NO crear** operaciones directamente con TypeORM (`queryRunner.manager.create(Operation, ...)`).
+- **NO crear** ledger entries directamente con TypeORM (`queryRunner.manager.create(LedgerEntry, ...)`).
+- **NO duplicar** lógica de validación de balance (ya está centralizada en `OperationBalanceValidator`).
+- **NO gestionar** transacciones manualmente para operaciones contables (use case lo maneja automáticamente).
+
+### Uso Obligatorio
+```typescript
+// ✅ CORRECTO - Usar RecordOperationUseCase
+const result = await this.recordOperationUseCase.execute({
+  memberId: memberId,
+  meetingId: meetingId,
+  type: OperationType.MONTHLY_PAYMENT,
+  description: 'Pago mensual',
+  entries: [
+    { accountType: CASH_ACCOUNT, amount: -1000 },
+    { accountType: STOCK_CAPITAL_ACCOUNT, amount: 1000 },
+  ],
+});
+
+// ❌ INCORRECTO - NO crear operaciones directamente
+const queryRunner = this.dataSource.createQueryRunner();
+// ... código duplicado ...
+```
+
+### Beneficios
+- Validación automática de balance (débitos = créditos)
+- Transaccionalidad garantizada (todo o nada)
+- Eliminación de código duplicado (~1,300 líneas)
+- Consistencia en todo el sistema
+
+### Documentación Completa
+Ver [GUIA_REGISTRO_OPERACIONES.md](../../docs/01-ARQUITECTURA/GUIA_REGISTRO_OPERACIONES.md) para ejemplos detallados y casos de uso.
+
 ## 9) Testing
 - E2E: contratos externos y flujos completos. Unit: domain/application sin DB (repos in-memory).
 - Cobertura: priorizar módulos migrados (≥ 90% deseable). Evitar gastar tiempo en linting si no bloquea.
@@ -95,8 +130,32 @@
   - Tests E2E/Unit en verde
   - Use-cases con puertos
   - DTOs y validaciones
-  - Swagger actualizado
+  - **Swagger documentado (obligatorio para nuevos endpoints)**
   - Doc breve si hay nueva decisión
+
+## 10.1) Documentación Swagger (Obligatoria)
+- **Todos los endpoints nuevos DEBEN estar documentados con Swagger**
+- Controller: usar `@ApiTags()` para agrupar endpoints relacionados
+- Cada endpoint: `@ApiOperation()` con `summary` y `description`
+- Parámetros: `@ApiParam()` para path params, `@ApiBody()` para request body
+- Respuestas: `@ApiResponse()` para 200, `@ApiBadRequestResponse()`, `@ApiNotFoundResponse()`, etc.
+- DTOs:
+  - Convertir `type` a `class` para usar decoradores Swagger
+  - Usar `@ApiProperty()` para campos requeridos
+  - Usar `@ApiPropertyOptional()` para campos opcionales
+  - Incluir `description`, `example`, y `enum` cuando aplique
+- Ejemplo de estructura:
+  ```typescript
+  @ApiTags('Members V2')
+  @Controller('v2/members')
+  export class MembersV2Controller {
+    @Get()
+    @ApiOperation({ summary: 'List all active members' })
+    @ApiResponse({ status: 200, type: [MemberResponseDto] })
+    async list(): Promise<MemberResponseDto[]> { ... }
+  }
+  ```
+- Verificar documentación en `/api` (Swagger UI) antes de hacer merge
 
 ## 11) Operaciones y herramientas
 - DB normalizada. Usar MCP para DB. Podman para contenedores. Frontend con Tailwind + DaisyUI.

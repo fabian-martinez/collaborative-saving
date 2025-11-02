@@ -71,7 +71,6 @@ describe('MandatoryContribution Entity', () => {
 
       expect(contrib1.id).not.toBe(contrib2.id);
     });
-
   });
 
   describe('fromPersistence static method', () => {
@@ -162,7 +161,6 @@ describe('MandatoryContribution Entity', () => {
       expect(contribution.assetType).toBe('stock');
       expect(contribution.value).toBe(200);
     });
-
 
     it('should throw error when updating to value <= 0', () => {
       const contribution = MandatoryContribution.create({

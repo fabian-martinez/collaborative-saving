@@ -215,15 +215,15 @@ describe('Loan Entity', () => {
     });
 
     it('should throw error for invalid disbursedAmount', () => {
-      expect(() =>
-        loan.update({ disbursedAmount: 15000 }),
-      ).toThrow('Disbursed amount must be between 0 and approved amount');
+      expect(() => loan.update({ disbursedAmount: 15000 })).toThrow(
+        'Disbursed amount must be between 0 and approved amount',
+      );
     });
 
     it('should throw error for invalid outstandingBalance', () => {
-      expect(() =>
-        loan.update({ outstandingBalance: 15000 }),
-      ).toThrow('Outstanding balance must be between 0 and approved amount');
+      expect(() => loan.update({ outstandingBalance: 15000 })).toThrow(
+        'Outstanding balance must be between 0 and approved amount',
+      );
     });
   });
 
@@ -420,4 +420,3 @@ describe('Loan Entity', () => {
     });
   });
 });
-

@@ -81,9 +81,7 @@ describe('TypeOrmStockSubscriptionRepository', () => {
         },
       ];
 
-      typeOrmRepo.find.mockResolvedValue(
-        entities as StockSubscriptionEntity[],
-      );
+      typeOrmRepo.find.mockResolvedValue(entities as StockSubscriptionEntity[]);
 
       const result = await repository.findByMember('member-1');
 
@@ -111,7 +109,9 @@ describe('TypeOrmStockSubscriptionRepository', () => {
       };
 
       typeOrmRepo.findOne.mockResolvedValue(null);
-      typeOrmRepo.save.mockResolvedValue(savedEntity as StockSubscriptionEntity);
+      typeOrmRepo.save.mockResolvedValue(
+        savedEntity as StockSubscriptionEntity,
+      );
 
       const result = await repository.save(domain);
 
@@ -120,4 +120,3 @@ describe('TypeOrmStockSubscriptionRepository', () => {
     });
   });
 });
-

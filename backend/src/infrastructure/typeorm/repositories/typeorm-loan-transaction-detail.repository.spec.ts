@@ -3,7 +3,10 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TypeOrmLoanTransactionDetailRepository } from './typeorm-loan-transaction-detail.repository';
 import { LoanTransactionDetail as LoanTransactionDetailEntity } from '../entities/loan-transaction-detail.entity';
-import { LoanTransactionDetail as LoanTransactionDetailDomain, LoanTransactionType } from '@domain/entities/loan-transaction-detail.entity';
+import {
+  LoanTransactionDetail as LoanTransactionDetailDomain,
+  LoanTransactionType,
+} from '@domain/entities/loan-transaction-detail.entity';
 import { LoanTransactionDetail } from '@domain/entities/loan-transaction-detail.entity';
 
 describe('TypeOrmLoanTransactionDetailRepository', () => {
@@ -48,7 +51,9 @@ describe('TypeOrmLoanTransactionDetailRepository', () => {
         operationId: null,
       };
 
-      typeOrmRepo.findOne.mockResolvedValue(entity as LoanTransactionDetailEntity);
+      typeOrmRepo.findOne.mockResolvedValue(
+        entity as LoanTransactionDetailEntity,
+      );
       const result = await repository.findById(transactionId);
 
       expect(result).toBeInstanceOf(LoanTransactionDetailDomain);
@@ -70,7 +75,9 @@ describe('TypeOrmLoanTransactionDetailRepository', () => {
         },
       ];
 
-      typeOrmRepo.find.mockResolvedValue(entities as LoanTransactionDetailEntity[]);
+      typeOrmRepo.find.mockResolvedValue(
+        entities as LoanTransactionDetailEntity[],
+      );
       const result = await repository.findByLoan('loan-1');
       expect(result).toHaveLength(1);
     });
@@ -100,4 +107,3 @@ describe('TypeOrmLoanTransactionDetailRepository', () => {
     });
   });
 });
-

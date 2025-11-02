@@ -73,6 +73,5 @@ describe('MandatoryContributionMapper', () => {
       expect(persistence.assetType).toBe('savings');
       expect(persistence.value).toBe(50);
     });
-
   });
 });

@@ -1,5 +1,8 @@
 import { LoanTransactionDetailMapper } from './loan-transaction-detail.mapper';
-import { LoanTransactionDetail, LoanTransactionType } from '@domain/entities/loan-transaction-detail.entity';
+import {
+  LoanTransactionDetail,
+  LoanTransactionType,
+} from '@domain/entities/loan-transaction-detail.entity';
 import { LoanTransactionDetail as LoanTransactionDetailEntity } from '../entities/loan-transaction-detail.entity';
 
 describe('LoanTransactionDetailMapper', () => {
@@ -43,4 +46,3 @@ describe('LoanTransactionDetailMapper', () => {
     });
   });
 });
-
