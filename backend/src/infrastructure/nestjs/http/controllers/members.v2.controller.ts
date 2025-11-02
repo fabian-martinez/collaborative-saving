@@ -26,8 +26,10 @@ import { UpdateMemberUseCase } from '@application/use-cases/members/update-membe
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
 import { CreateMemberUseCase } from '@application/use-cases/members/create-member.use-case';
 import { MemberResponseDto } from '@application/dto/members/member-response.dto';
+import { MemberDueResponseDto } from '@application/dto/members/member-due-response.dto';
 import { GetMembersQueryHandler } from '@application/queries/members/get-members.query-handler';
 import { GetMemberDetailQueryHandler } from '@application/queries/members/get-member-detail.query-handler';
+import { GetMemberDuesForActiveMeetingQueryHandler } from '@application/queries/members/get-member-dues-for-active-meeting.query-handler';
 import { UpdateMemberHttpDto } from '../dto/update-member-http.dto';
 import { CreateMemberHttpDto } from '../dto/create-member-http.dto';
 import { DeleteMemberResponseDto } from '../dto/delete-member-response.dto';
@@ -38,6 +40,7 @@ export class MembersV2Controller {
   constructor(
     private readonly getMembersQuery: GetMembersQueryHandler,
     private readonly getMemberDetailQuery: GetMemberDetailQueryHandler,
+    private readonly getMemberDuesQuery: GetMemberDuesForActiveMeetingQueryHandler,
     private readonly createMemberUseCase: CreateMemberUseCase,
     private readonly updateMemberUseCase: UpdateMemberUseCase,
     private readonly deleteMemberUseCase: DeleteMemberUseCase,
@@ -206,6 +209,43 @@ export class MembersV2Controller {
     try {
       await this.deleteMemberUseCase.execute({ memberId: id });
       return { success: true } as DeleteMemberResponseDto;
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        console.error(e.message);
+      } else {
+        console.error(String(e));
+      }
+      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+    }
+  }
+
+  @Get(':id/dues')
+  @ApiOperation({
+    summary: 'Get member dues for active meeting',
+    description:
+      'Returns all pending obligations (dues) for a member in the active meeting, including mandatory contributions, stock fees, and loan payments.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The UUID of the member',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Member dues retrieved successfully',
+    type: [MemberDueResponseDto],
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid UUID format',
+  })
+  @ApiNotFoundResponse({
+    description: 'Member not found or no active meeting exists',
+  })
+  async getDues(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<MemberDueResponseDto[]> {
+    try {
+      return await this.getMemberDuesQuery.execute(id);
     } catch (e: unknown) {
       if (e instanceof Error) {
         console.error(e.message);
