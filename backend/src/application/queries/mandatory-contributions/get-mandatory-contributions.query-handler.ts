@@ -12,8 +12,6 @@ export class GetMandatoryContributionsQueryHandler {
       id: c.id,
       assetType: c.assetType,
       value: c.value,
-      createdAt: c.createdAt,
-      updatedAt: c.updatedAt,
     }));
   }
 }

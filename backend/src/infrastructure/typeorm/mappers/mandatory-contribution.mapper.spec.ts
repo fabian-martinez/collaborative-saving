@@ -9,8 +9,6 @@ describe('MandatoryContributionMapper', () => {
         id: '550e8400-e29b-41d4-a716-446655440000',
         assetType: 'stock',
         value: 100,
-        createdAt: new Date('2024-01-15'),
-        updatedAt: new Date('2024-01-16'),
       };
 
       const domain = MandatoryContributionMapper.toDomain(entity);
@@ -19,8 +17,6 @@ describe('MandatoryContributionMapper', () => {
       expect(domain.id).toBe(entity.id);
       expect(domain.assetType).toBe(entity.assetType);
       expect(domain.value).toBe(entity.value);
-      expect(domain.createdAt).toEqual(entity.createdAt);
-      expect(domain.updatedAt).toEqual(entity.updatedAt);
     });
 
     it('should throw error for invalid value in entity', () => {
@@ -28,8 +24,6 @@ describe('MandatoryContributionMapper', () => {
         id: '550e8400-e29b-41d4-a716-446655440000',
         assetType: 'stock',
         value: 0, // Invalid value
-        createdAt: new Date('2024-01-15'),
-        updatedAt: new Date('2024-01-16'),
       };
 
       expect(() =>
@@ -44,8 +38,6 @@ describe('MandatoryContributionMapper', () => {
         id: '550e8400-e29b-41d4-a716-446655440000',
         assetType: '', // Invalid assetType
         value: 100,
-        createdAt: new Date('2024-01-15'),
-        updatedAt: new Date('2024-01-16'),
       };
 
       expect(() =>
@@ -68,8 +60,6 @@ describe('MandatoryContributionMapper', () => {
       expect(persistence.id).toBe(domain.id);
       expect(persistence.assetType).toBe(domain.assetType);
       expect(persistence.value).toBe(domain.value);
-      expect(persistence.createdAt).toEqual(domain.createdAt);
-      expect(persistence.updatedAt).toEqual(domain.updatedAt);
     });
 
     it('should handle different asset types', () => {
@@ -84,19 +74,5 @@ describe('MandatoryContributionMapper', () => {
       expect(persistence.value).toBe(50);
     });
 
-    it('should preserve timestamps', () => {
-      const domain = MandatoryContribution.fromPersistence({
-        id: '550e8400-e29b-41d4-a716-446655440000',
-        assetType: 'stock',
-        value: 100,
-        createdAt: new Date('2024-01-15'),
-        updatedAt: new Date('2024-01-16'),
-      });
-
-      const persistence = MandatoryContributionMapper.toPersistence(domain);
-
-      expect(persistence.createdAt).toEqual(new Date('2024-01-15'));
-      expect(persistence.updatedAt).toEqual(new Date('2024-01-16'));
-    });
   });
 });

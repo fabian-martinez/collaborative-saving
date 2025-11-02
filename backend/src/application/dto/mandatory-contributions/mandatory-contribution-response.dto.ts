@@ -18,16 +18,4 @@ export class MandatoryContributionResponseDto {
     example: 100,
   })
   value: number;
-
-  @ApiProperty({
-    description: 'The creation timestamp',
-    example: '2023-01-15T10:30:00Z',
-  })
-  createdAt: Date | string;
-
-  @ApiProperty({
-    description: 'The last update timestamp',
-    example: '2023-01-15T10:30:00Z',
-  })
-  updatedAt: Date | string;
 }

@@ -6,8 +6,6 @@ export class MandatoryContribution {
     public readonly id: string,
     private _assetType: AssetType,
     private _value: number,
-    public readonly createdAt: Date,
-    private _updatedAt: Date,
   ) {
     if (_value <= 0) {
       throw new Error('Value must be greater than 0');
@@ -19,13 +17,10 @@ export class MandatoryContribution {
     value: number;
   }): MandatoryContribution {
     const id = randomUUID();
-    const now = new Date();
     return new MandatoryContribution(
       id,
       AssetType.create(data.assetType),
       data.value,
-      now, // createdAt
-      now, // updatedAt
     );
   }
 
@@ -33,19 +28,11 @@ export class MandatoryContribution {
     id: string;
     assetType: string;
     value: number;
-    createdAt: Date | string;
-    updatedAt: Date | string;
   }): MandatoryContribution {
     return new MandatoryContribution(
       data.id,
       AssetType.create(data.assetType),
       data.value,
-      typeof data.createdAt === 'string'
-        ? new Date(data.createdAt)
-        : data.createdAt,
-      typeof data.updatedAt === 'string'
-        ? new Date(data.updatedAt)
-        : data.updatedAt,
     );
   }
 
@@ -59,7 +46,6 @@ export class MandatoryContribution {
       }
       this._value = data.value;
     }
-    this._updatedAt = new Date();
   }
 
   get assetType(): string {
@@ -68,9 +54,5 @@ export class MandatoryContribution {
 
   get value(): number {
     return this._value;
-  }
-
-  get updatedAt(): Date {
-    return this._updatedAt;
   }
 }
