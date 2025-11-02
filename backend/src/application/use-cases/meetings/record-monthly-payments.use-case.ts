@@ -1,22 +1,25 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DataSource, QueryRunner } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { RecordMonthlyPaymentsDto } from '@application/dto/meetings/record-monthly-payments.dto';
 import { RecordMonthlyPaymentsResponseDto } from '@application/dto/meetings/record-monthly-payments-response.dto';
 import { OperationRecorder } from '@domain/services/operation-recorder.service';
 import { LoanPaymentProcessor } from '@domain/services/loan-payment-processor.service';
-import { DuesService } from '../../../dues/dues.service';
+import { DuesCalculationService } from '@domain/services/dues-calculation.service';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
+import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
+import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
+import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
+import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
+// Importaciones de entidades TypeORM solo para usar dentro de transacciones
 import { Operation } from '../../../operations/entities/operation.entity';
 import { LedgerEntry } from '../../../ledger-entries/entities/ledger-entry.entity';
-import { Loan } from '../../../loans/entities/loan.entity';
 import { LoanTransactionDetail } from '../../../loans/entities/loan-transaction-detail.entity';
 import { OperationType } from '../../../common/enums/operation-type.enum';
 import { TransactionType } from '../../../common/enums/transaction-type.enum';
 import {
   CASH_ACCOUNT,
   MANDATORY_CONTRIBUTION_INCOME_ACCOUNT,
-  STOCK_FEE_INCOME_ACCOUNT,
   INTEREST_INCOME_ACCOUNT,
   LOANS_RECEIVABLE_ACCOUNT,
   FEE_INCOME_ACCOUNT,
@@ -29,9 +32,13 @@ export class RecordMonthlyPaymentsUseCase {
   constructor(
     private readonly operationRecorder: OperationRecorder,
     private readonly loanPaymentProcessor: LoanPaymentProcessor,
-    private readonly duesService: DuesService,
+    private readonly duesCalculationService: DuesCalculationService,
     private readonly meetingRepository: MeetingRepository,
     private readonly memberRepository: MemberRepository,
+    private readonly loanRepository: LoanRepository,
+    private readonly operationRepository: OperationRepository,
+    private readonly ledgerEntryRepository: LedgerEntryRepository,
+    private readonly loanTransactionDetailRepository: LoanTransactionDetailRepository,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -66,9 +73,10 @@ export class RecordMonthlyPaymentsUseCase {
       }
 
       // 3. Obtener cuotas esperadas
-      const expectedDues = await this.duesService.getMemberDuesForActiveMeeting(
-        dto.memberId,
-      );
+      const expectedDues =
+        await this.duesCalculationService.calculateMemberDuesForActiveMeeting(
+          dto.memberId,
+        );
 
       // 4. Validar pagos contra cuotas
       this.validatePayments(dto.payments, expectedDues);
@@ -81,15 +89,18 @@ export class RecordMonthlyPaymentsUseCase {
         principalPaid: number;
         newBalance: number;
       }> = [];
-      const loansToUpdate: Array<{ loan: Loan; newBalance: number; newStatus: LoanStatus }> = [];
-      const transactionDetailsToSave: Partial<LoanTransactionDetail>[] = [];
+      const loansToUpdate: Array<{ loanId: string; newBalance: number; newStatus: LoanStatus }> = [];
+      const transactionDetailsToSave: Array<{
+        loan_id: string;
+        transaction_type: TransactionType;
+        amount: number;
+        transaction_date: string;
+      }> = [];
 
       for (const payment of dto.payments) {
         if (payment.type === 'loan_payment') {
           // Procesar pago de pr?stamo
-          const loan = await queryRunner.manager.findOneBy(Loan, {
-            id: payment.referenceId,
-          });
+          const loan = await this.loanRepository.findById(payment.referenceId!);
 
           if (!loan) {
             throw new NotFoundException(
@@ -108,12 +119,12 @@ export class RecordMonthlyPaymentsUseCase {
               loan_id: spec.loanId,
               transaction_type: spec.transactionType,
               amount: spec.amount,
-              transaction_date: new Date(),
+              transaction_date: new Date().toISOString().split('T')[0], // Formato YYYY-MM-DD
             })),
           );
 
           loansToUpdate.push({
-            loan,
+            loanId: loan.id,
             newBalance: result.newBalance,
             newStatus: result.newStatus,
           });
@@ -174,44 +185,41 @@ export class RecordMonthlyPaymentsUseCase {
           allLedgerSpecs,
         );
 
-      // 8. Persistir Operation
-      const savedOperation = await queryRunner.manager.save(
-        Operation,
-        operationData,
-      );
+      // 8. Persistir Operation dentro de la transacci?n
+      const operationEntity = queryRunner.manager.create(Operation, operationData);
+      const savedOperation = await queryRunner.manager.save(operationEntity);
 
-      // 9. Persistir LedgerEntries (asignar operation_id)
+      // 9. Persistir LedgerEntries (asignar operation_id) dentro de la transacci?n
       const ledgerEntriesToSave = ledgerEntriesData.map((entry) => ({
         ...entry,
         operation_id: savedOperation.id,
       }));
-      await queryRunner.manager.save(LedgerEntry, ledgerEntriesToSave);
+      const ledgerEntities = ledgerEntriesToSave.map((entry) =>
+        queryRunner.manager.create(LedgerEntry, entry),
+      );
+      await queryRunner.manager.save(ledgerEntities);
 
-      // 10. Persistir LoanTransactionDetails
+      // 10. Persistir LoanTransactionDetails dentro de la transacci?n
       const transactionDetailsWithOperationId =
         transactionDetailsToSave.map((detail) => ({
           ...detail,
           operation_id: savedOperation.id,
         }));
-      await queryRunner.manager.save(
-        LoanTransactionDetail,
-        transactionDetailsWithOperationId,
+      const transactionEntities = transactionDetailsWithOperationId.map((detail) =>
+        queryRunner.manager.create(LoanTransactionDetail, detail),
       );
+      await queryRunner.manager.save(transactionEntities);
 
-      // 11. Actualizar pr?stamos
-      for (const { loan, newBalance, newStatus } of loansToUpdate) {
-        await queryRunner.manager.update(
-          Loan,
-          { id: loan.id },
-          {
-            outstanding_balance: newBalance,
-            status: newStatus,
-          },
-        );
-      }
-
-      // 12. Confirmar transacci?n
+      // 11. Confirmar transacci?n antes de actualizar pr?stamos
       await queryRunner.commitTransaction();
+
+      // 12. Actualizar pr?stamos usando repositorio (despu?s del commit)
+      for (const { loanId, newBalance, newStatus } of loansToUpdate) {
+        await this.loanRepository.update(loanId, {
+          outstanding_balance: newBalance,
+          status: newStatus,
+        });
+      }
 
       // 13. Retornar response DTO
       return {
@@ -223,7 +231,9 @@ export class RecordMonthlyPaymentsUseCase {
         loanPaymentsSummary,
       };
     } catch (error) {
-      await queryRunner.rollbackTransaction();
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
       throw error;
     } finally {
       await queryRunner.release();
@@ -274,7 +284,7 @@ export class RecordMonthlyPaymentsUseCase {
   ): string {
     const mapping: Record<string, string> = {
       mandatory_contribution: MANDATORY_CONTRIBUTION_INCOME_ACCOUNT,
-      stock_fee: STOCK_FEE_INCOME_ACCOUNT,
+      stock_fee: FEE_INCOME_ACCOUNT, // Usar FEE_INCOME_ACCOUNT para stock_fee
       fee: FEE_INCOME_ACCOUNT,
       insurance: INSURANCE_INCOME_ACCOUNT,
     };
