@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
 import { RecordMonthlyPaymentsUseCase } from './record-monthly-payments.use-case';
-import { OperationRecorder } from '../../../domain/services/operation-recorder.service';
-import { LoanPaymentProcessor } from '../../../domain/services/loan-payment-processor.service';
+import { OperationRecorder } from '@domain/services/operation-recorder.service';
+import { LoanPaymentProcessor } from '@domain/services/loan-payment-processor.service';
 import { DuesService } from '../../../dues/dues.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { LoanStatus } from '../../../common/enums/loan-status.enum';

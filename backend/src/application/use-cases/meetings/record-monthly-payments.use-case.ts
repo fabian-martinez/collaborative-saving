@@ -2,8 +2,8 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { DataSource, QueryRunner } from 'typeorm';
 import { RecordMonthlyPaymentsDto } from '@application/dto/meetings/record-monthly-payments.dto';
 import { RecordMonthlyPaymentsResponseDto } from '@application/dto/meetings/record-monthly-payments-response.dto';
-import { OperationRecorder } from '../../../domain/services/operation-recorder.service';
-import { LoanPaymentProcessor } from '../../../domain/services/loan-payment-processor.service';
+import { OperationRecorder } from '@domain/services/operation-recorder.service';
+import { LoanPaymentProcessor } from '@domain/services/loan-payment-processor.service';
 import { DuesService } from '../../../dues/dues.service';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';

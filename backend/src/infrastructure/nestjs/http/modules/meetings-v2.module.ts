@@ -15,8 +15,8 @@ import { TypeOrmMeetingRepository } from '../../../typeorm/repositories/typeorm-
 import { TypeOrmMemberRepository } from '../../../typeorm/repositories/typeorm-member.repository';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
-import { OperationRecorder } from '../../../domain/services/operation-recorder.service';
-import { LoanPaymentProcessor } from '../../../domain/services/loan-payment-processor.service';
+import { OperationRecorder } from '@domain/services/operation-recorder.service';
+import { LoanPaymentProcessor } from '@domain/services/loan-payment-processor.service';
 import { DuesModule } from '../../../dues/dues.module';
 import { DuesService } from '../../../dues/dues.service';
 
