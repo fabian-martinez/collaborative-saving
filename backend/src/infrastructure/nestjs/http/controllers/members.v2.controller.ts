@@ -31,6 +31,9 @@ import { GetMemberDetailQueryHandler } from '@application/queries/members/get-me
 import { UpdateMemberHttpDto } from '../dto/update-member-http.dto';
 import { CreateMemberHttpDto } from '../dto/create-member-http.dto';
 import { DeleteMemberResponseDto } from '../dto/delete-member-response.dto';
+import { RecordMonthlyPaymentsUseCase } from '@application/use-cases/meetings/record-monthly-payments.use-case';
+import { RecordMonthlyPaymentsDto } from '@application/dto/meetings/record-monthly-payments.dto';
+import { RecordMonthlyPaymentsResponseDto } from '@application/dto/meetings/record-monthly-payments-response.dto';
 
 @ApiTags('Members V2')
 @Controller('v2/members')
@@ -41,6 +44,7 @@ export class MembersV2Controller {
     private readonly createMemberUseCase: CreateMemberUseCase,
     private readonly updateMemberUseCase: UpdateMemberUseCase,
     private readonly deleteMemberUseCase: DeleteMemberUseCase,
+    private readonly recordMonthlyPaymentsUseCase: RecordMonthlyPaymentsUseCase,
   ) {}
 
   @Get()
@@ -213,6 +217,51 @@ export class MembersV2Controller {
         console.error(String(e));
       }
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+    }
+  }
+
+  @Post(':id/payments')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Record monthly payments for a member',
+    description:
+      'Records all monthly payments (contributions, fees, loans) for a member in the active meeting',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The UUID of the member',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiBody({ type: RecordMonthlyPaymentsDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Payments recorded successfully',
+    type: RecordMonthlyPaymentsResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid payment data or no active meeting',
+  })
+  @ApiNotFoundResponse({ description: 'Member not found' })
+  async recordPayment(
+    @Param('id', ParseUUIDPipe) memberId: string,
+    @Body() dto: Omit<RecordMonthlyPaymentsDto, 'memberId'>,
+  ): Promise<RecordMonthlyPaymentsResponseDto> {
+    try {
+      return await this.recordMonthlyPaymentsUseCase.execute({
+        ...dto,
+        memberId,
+      });
+    } catch (e: unknown) {
+      if (e instanceof HttpException) {
+        throw e;
+      }
+      if (e instanceof Error) {
+        throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+      }
+      throw new HttpException(
+        'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }
