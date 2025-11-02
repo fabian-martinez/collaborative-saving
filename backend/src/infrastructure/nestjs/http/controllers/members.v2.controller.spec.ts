@@ -149,7 +149,7 @@ describe('MembersV2Controller', () => {
       expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
     });
 
-    it('should handle non-Error exceptions in detail', async () => {
+    it('should handle non-Error exceptions and return NOT_FOUND', async () => {
       const memberId = '550e8400-e29b-41d4-a716-446655440000';
       getMemberDetailQueryExecuteSpy.mockRejectedValue('String error');
 
@@ -196,7 +196,7 @@ describe('MembersV2Controller', () => {
       expect(error.message).toBe('Invalid email format');
     });
 
-    it('should handle non-Error exceptions in create', async () => {
+    it('should handle non-Error exceptions and return INTERNAL_SERVER_ERROR', async () => {
       const createDto = {
         name: 'New Member',
         email: 'new@example.com',
@@ -259,7 +259,7 @@ describe('MembersV2Controller', () => {
       expect(error.message).toBe('Not Found');
     });
 
-    it('should handle non-Error exceptions in update', async () => {
+    it('should handle non-Error exceptions and return NOT_FOUND', async () => {
       const memberId = '550e8400-e29b-41d4-a716-446655440000';
       const updateDto = {
         name: 'Updated Name',
@@ -324,7 +324,7 @@ describe('MembersV2Controller', () => {
       expect(error.message).toBe('Not Found');
     });
 
-    it('should handle non-Error exceptions in remove', async () => {
+    it('should handle non-Error exceptions and return NOT_FOUND', async () => {
       const memberId = '550e8400-e29b-41d4-a716-446655440000';
       deleteMemberUseCaseExecuteSpy.mockRejectedValue('String error');
 
