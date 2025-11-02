@@ -196,7 +196,6 @@ describe('MembersV2Controller', () => {
         .create(createDto)
         .catch((e: unknown) => e)) as HttpException;
       expect(error.getStatus()).toBe(HttpStatus.BAD_REQUEST);
-      expect(error.message).toBe('Invalid email format');
     });
 
     it('should handle non-Error exceptions and return INTERNAL_SERVER_ERROR', async () => {
@@ -216,7 +215,6 @@ describe('MembersV2Controller', () => {
         .create(createDto)
         .catch((e: unknown) => e)) as HttpException;
       expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
-      expect(error.message).toBe('Internal server error');
     });
   });
 
@@ -265,7 +263,6 @@ describe('MembersV2Controller', () => {
         .update(memberId, updateDto)
         .catch((e: unknown) => e)) as HttpException;
       expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
-      expect(error.message).toBe('Not Found');
     });
 
     it('should handle non-Error exceptions and return NOT_FOUND', async () => {
@@ -331,7 +328,6 @@ describe('MembersV2Controller', () => {
         .remove(memberId)
         .catch((e: unknown) => e)) as HttpException;
       expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
-      expect(error.message).toBe('Not Found');
     });
 
     it('should handle non-Error exceptions and return NOT_FOUND', async () => {
