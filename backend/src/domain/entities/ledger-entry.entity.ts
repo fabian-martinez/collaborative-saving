@@ -1,10 +1,11 @@
 import { randomUUID } from 'crypto';
+import { AccountType, ALL_ACCOUNT_TYPES } from '../constants/account-types';
 
 export class LedgerEntry {
   constructor(
     public readonly id: string,
     private _operationId: string,
-    private _accountType: string,
+    private _accountType: AccountType,
     private _amount: number,
     private _createdAt: Date,
     private _description?: string | null,
@@ -18,7 +19,7 @@ export class LedgerEntry {
 
   static create(data: {
     operationId: string;
-    accountType: string;
+    accountType: AccountType;
     amount: number;
     description?: string | null;
     loanId?: string | null;
@@ -53,10 +54,15 @@ export class LedgerEntry {
     mandatory_contribution_id?: string | null;
     stock_subscription_id?: string | null;
   }): LedgerEntry {
+    // Validate account type
+    if (!ALL_ACCOUNT_TYPES.includes(data.account_type as AccountType)) {
+      throw new Error(`Invalid account type: ${data.account_type}`);
+    }
+
     return new LedgerEntry(
       data.id,
       data.operation_id,
-      data.account_type,
+      data.account_type as AccountType,
       Number(data.amount),
       typeof data.created_at === 'string'
         ? new Date(data.created_at)
@@ -70,11 +76,15 @@ export class LedgerEntry {
   }
 
   update(data: {
-    accountType?: string;
+    accountType?: AccountType;
     amount?: number;
     description?: string | null;
   }): void {
     if (data.accountType !== undefined) {
+      // Validate account type
+      if (!ALL_ACCOUNT_TYPES.includes(data.accountType)) {
+        throw new Error(`Invalid account type: ${data.accountType}`);
+      }
       this._accountType = data.accountType;
     }
     if (data.amount !== undefined) {
@@ -91,8 +101,11 @@ export class LedgerEntry {
     if (this._amount === 0) {
       throw new Error('LedgerEntry amount cannot be 0');
     }
-    if (!this._accountType || this._accountType.trim().length === 0) {
+    if (!this._accountType) {
       throw new Error('LedgerEntry accountType is required');
+    }
+    if (!ALL_ACCOUNT_TYPES.includes(this._accountType)) {
+      throw new Error(`Invalid account type: ${this._accountType}`);
     }
     if (!this._operationId) {
       throw new Error('LedgerEntry operationId is required');
@@ -106,7 +119,7 @@ export class LedgerEntry {
     return this._operationId;
   }
 
-  get accountType(): string {
+  get accountType(): AccountType {
     return this._accountType;
   }
 

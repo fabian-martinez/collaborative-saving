@@ -1,6 +1,7 @@
 import { OperationMapper } from './operation.mapper';
 import { Operation } from '@domain/entities/operation.entity';
 import { Operation as OperationEntity } from '../entities/operation.entity';
+import { OperationType } from '@domain/enums/operation-type.enum';
 
 describe('OperationMapper', () => {
   describe('toDomain', () => {
@@ -9,7 +10,7 @@ describe('OperationMapper', () => {
         id: '550e8400-e29b-41d4-a716-446655440000',
         memberId: 'member-1',
         meetingId: 'meeting-1',
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
         date: new Date('2024-01-15'),
         description: 'Monthly payment',
       };
@@ -27,7 +28,7 @@ describe('OperationMapper', () => {
         id: '550e8400-e29b-41d4-a716-446655440000',
         memberId: null,
         meetingId: 'meeting-1',
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
         date: new Date('2024-01-15'),
         description: null,
       };
@@ -42,7 +43,7 @@ describe('OperationMapper', () => {
       const domain = Operation.create({
         memberId: 'member-1',
         meetingId: 'meeting-1',
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
       });
 
       const persistence = OperationMapper.toPersistence(domain);

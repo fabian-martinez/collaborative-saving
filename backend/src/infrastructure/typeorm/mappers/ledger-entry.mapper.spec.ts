@@ -1,6 +1,7 @@
 import { LedgerEntryMapper } from './ledger-entry.mapper';
 import { LedgerEntry } from '@domain/entities/ledger-entry.entity';
 import { LedgerEntry as LedgerEntryEntity } from '../entities/ledger-entry.entity';
+import { CASH_ACCOUNT } from '@domain/constants/account-types';
 
 describe('LedgerEntryMapper', () => {
   describe('toDomain', () => {
@@ -8,7 +9,7 @@ describe('LedgerEntryMapper', () => {
       const entity: Partial<LedgerEntryEntity> = {
         id: '550e8400-e29b-41d4-a716-446655440000',
         operationId: 'operation-1',
-        accountType: 'cash',
+        accountType: CASH_ACCOUNT,
         amount: 1000,
         description: 'Payment received',
         createdAt: new Date('2024-01-15'),
@@ -32,7 +33,7 @@ describe('LedgerEntryMapper', () => {
     it('should map Domain LedgerEntry to LedgerEntryEntity', () => {
       const domain = LedgerEntry.create({
         operationId: 'operation-1',
-        accountType: 'cash',
+        accountType: CASH_ACCOUNT,
         amount: 1000,
         loanId: 'loan-1',
       });

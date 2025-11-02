@@ -1,4 +1,9 @@
 import { LedgerEntry } from './ledger-entry.entity';
+import {
+  CASH_ACCOUNT,
+  LOANS_RECEIVABLE_ACCOUNT,
+  STOCK_CAPITAL_ACCOUNT,
+} from '../constants/account-types';
 
 describe('LedgerEntry Entity', () => {
   const mockId = '550e8400-e29b-41d4-a716-446655440000';
@@ -8,13 +13,13 @@ describe('LedgerEntry Entity', () => {
     it('should create LedgerEntry with required fields (debit)', () => {
       const entry = LedgerEntry.create({
         operationId: 'operation-1',
-        accountType: 'cash',
+        accountType: CASH_ACCOUNT,
         amount: 1000,
       });
 
       expect(entry.id).toBeDefined();
       expect(entry.operationId).toBe('operation-1');
-      expect(entry.accountType).toBe('cash');
+      expect(entry.accountType).toBe(CASH_ACCOUNT);
       expect(entry.amount).toBe(1000);
       expect(entry.createdAt).toBeInstanceOf(Date);
       expect(entry.isDebit()).toBe(true);
@@ -24,7 +29,7 @@ describe('LedgerEntry Entity', () => {
     it('should create LedgerEntry with credit (negative amount)', () => {
       const entry = LedgerEntry.create({
         operationId: 'operation-1',
-        accountType: 'accounts_payable',
+        accountType: STOCK_CAPITAL_ACCOUNT,
         amount: -500,
       });
 
@@ -36,7 +41,7 @@ describe('LedgerEntry Entity', () => {
     it('should accept optional description', () => {
       const entry = LedgerEntry.create({
         operationId: 'operation-1',
-        accountType: 'cash',
+        accountType: CASH_ACCOUNT,
         amount: 1000,
         description: 'Payment received',
       });
@@ -47,7 +52,7 @@ describe('LedgerEntry Entity', () => {
     it('should accept optional entity references', () => {
       const entry = LedgerEntry.create({
         operationId: 'operation-1',
-        accountType: 'loan_portfolio',
+        accountType: LOANS_RECEIVABLE_ACCOUNT,
         amount: 5000,
         loanId: 'loan-1',
       });
@@ -58,12 +63,12 @@ describe('LedgerEntry Entity', () => {
     it('should generate unique IDs for each entry', () => {
       const e1 = LedgerEntry.create({
         operationId: 'operation-1',
-        accountType: 'cash',
+        accountType: CASH_ACCOUNT,
         amount: 1000,
       });
       const e2 = LedgerEntry.create({
         operationId: 'operation-1',
-        accountType: 'cash',
+        accountType: CASH_ACCOUNT,
         amount: 1000,
       });
 
@@ -74,7 +79,7 @@ describe('LedgerEntry Entity', () => {
       expect(() =>
         LedgerEntry.create({
           operationId: 'operation-1',
-          accountType: 'cash',
+          accountType: CASH_ACCOUNT,
           amount: 0,
         }),
       ).toThrow('LedgerEntry amount cannot be 0');
@@ -84,7 +89,7 @@ describe('LedgerEntry Entity', () => {
       expect(() =>
         LedgerEntry.create({
           operationId: 'operation-1',
-          accountType: '',
+          accountType: '' as typeof CASH_ACCOUNT,
           amount: 1000,
         }),
       ).toThrow('LedgerEntry accountType is required');
@@ -96,14 +101,14 @@ describe('LedgerEntry Entity', () => {
       const entry = LedgerEntry.fromPersistence({
         id: mockId,
         operation_id: 'operation-1',
-        account_type: 'cash',
+        account_type: CASH_ACCOUNT,
         amount: 1000,
         created_at: mockDate,
       });
 
       expect(entry.id).toBe(mockId);
       expect(entry.operationId).toBe('operation-1');
-      expect(entry.accountType).toBe('cash');
+      expect(entry.accountType).toBe(CASH_ACCOUNT);
       expect(entry.amount).toBe(1000);
     });
 
@@ -111,7 +116,7 @@ describe('LedgerEntry Entity', () => {
       const entry = LedgerEntry.fromPersistence({
         id: mockId,
         operation_id: 'operation-1',
-        account_type: 'cash',
+        account_type: CASH_ACCOUNT,
         amount: 1000,
         created_at: '2024-01-15T10:00:00Z',
       });
@@ -123,7 +128,7 @@ describe('LedgerEntry Entity', () => {
       const entry = LedgerEntry.fromPersistence({
         id: mockId,
         operation_id: 'operation-1',
-        account_type: 'cash',
+        account_type: CASH_ACCOUNT,
         amount: '1000.50',
         created_at: mockDate,
       });
@@ -135,7 +140,7 @@ describe('LedgerEntry Entity', () => {
       const entry = LedgerEntry.fromPersistence({
         id: mockId,
         operation_id: 'operation-1',
-        account_type: 'cash',
+        account_type: CASH_ACCOUNT,
         amount: 1000,
         created_at: mockDate,
         description: null,
@@ -157,14 +162,14 @@ describe('LedgerEntry Entity', () => {
     beforeEach(() => {
       entry = LedgerEntry.create({
         operationId: 'operation-1',
-        accountType: 'cash',
+        accountType: CASH_ACCOUNT,
         amount: 1000,
       });
     });
 
     it('should update accountType', () => {
-      entry.update({ accountType: 'accounts_receivable' });
-      expect(entry.accountType).toBe('accounts_receivable');
+      entry.update({ accountType: LOANS_RECEIVABLE_ACCOUNT });
+      expect(entry.accountType).toBe(LOANS_RECEIVABLE_ACCOUNT);
     });
 
     it('should update amount', () => {
@@ -194,7 +199,7 @@ describe('LedgerEntry Entity', () => {
     it('should return true for debit (positive amount)', () => {
       const entry = LedgerEntry.create({
         operationId: 'operation-1',
-        accountType: 'cash',
+        accountType: CASH_ACCOUNT,
         amount: 1000,
       });
 
@@ -205,7 +210,7 @@ describe('LedgerEntry Entity', () => {
     it('should return true for credit (negative amount)', () => {
       const entry = LedgerEntry.create({
         operationId: 'operation-1',
-        accountType: 'accounts_payable',
+        accountType: STOCK_CAPITAL_ACCOUNT,
         amount: -500,
       });
 
@@ -220,7 +225,7 @@ describe('LedgerEntry Entity', () => {
     beforeEach(() => {
       entry = LedgerEntry.create({
         operationId: 'operation-1',
-        accountType: 'cash',
+        accountType: CASH_ACCOUNT,
         amount: 1000,
         description: 'Test entry',
         loanId: 'loan-1',
@@ -232,7 +237,7 @@ describe('LedgerEntry Entity', () => {
     });
 
     it('should return accountType via getter', () => {
-      expect(entry.accountType).toBe('cash');
+      expect(entry.accountType).toBe(CASH_ACCOUNT);
     });
 
     it('should return amount via getter', () => {

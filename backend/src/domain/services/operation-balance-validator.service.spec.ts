@@ -1,6 +1,11 @@
 import { OperationBalanceValidator } from './operation-balance-validator.service';
 import { LedgerEntry } from '../entities/ledger-entry.entity';
 import { BusinessRuleError } from '../errors/business-rule.error';
+import {
+  CASH_ACCOUNT,
+  STOCK_CAPITAL_ACCOUNT,
+  LOANS_RECEIVABLE_ACCOUNT,
+} from '../constants/account-types';
 
 describe('OperationBalanceValidator', () => {
   let validator: OperationBalanceValidator;
@@ -14,12 +19,12 @@ describe('OperationBalanceValidator', () => {
       const entries = [
         LedgerEntry.create({
           operationId: 'op-1',
-          accountType: 'CASH_ACCOUNT',
+          accountType: CASH_ACCOUNT,
           amount: -100, // Credit
         }),
         LedgerEntry.create({
           operationId: 'op-1',
-          accountType: 'STOCK_CAPITAL_ACCOUNT',
+          accountType: STOCK_CAPITAL_ACCOUNT,
           amount: 100, // Debit
         }),
       ];
@@ -31,17 +36,17 @@ describe('OperationBalanceValidator', () => {
       const entries = [
         LedgerEntry.create({
           operationId: 'op-1',
-          accountType: 'CASH_ACCOUNT',
+          accountType: CASH_ACCOUNT,
           amount: -1000, // Credit
         }),
         LedgerEntry.create({
           operationId: 'op-1',
-          accountType: 'STOCK_CAPITAL_ACCOUNT',
+          accountType: STOCK_CAPITAL_ACCOUNT,
           amount: 500, // Debit
         }),
         LedgerEntry.create({
           operationId: 'op-1',
-          accountType: 'LOANS_RECEIVABLE_ACCOUNT',
+          accountType: LOANS_RECEIVABLE_ACCOUNT,
           amount: 500, // Debit
         }),
       ];
@@ -53,7 +58,7 @@ describe('OperationBalanceValidator', () => {
       const entries = [
         LedgerEntry.create({
           operationId: 'op-1',
-          accountType: 'CASH_ACCOUNT',
+          accountType: CASH_ACCOUNT,
           amount: -100,
         }),
       ];
@@ -70,12 +75,12 @@ describe('OperationBalanceValidator', () => {
       const entries = [
         LedgerEntry.create({
           operationId: 'op-1',
-          accountType: 'CASH_ACCOUNT',
+          accountType: CASH_ACCOUNT,
           amount: -100, // Credit
         }),
         LedgerEntry.create({
           operationId: 'op-1',
-          accountType: 'STOCK_CAPITAL_ACCOUNT',
+          accountType: STOCK_CAPITAL_ACCOUNT,
           amount: 150, // Debit (does not match credit)
         }),
       ];
@@ -92,17 +97,17 @@ describe('OperationBalanceValidator', () => {
       const entries = [
         LedgerEntry.create({
           operationId: 'op-1',
-          accountType: 'CASH_ACCOUNT',
+          accountType: CASH_ACCOUNT,
           amount: -100.01, // Credit
         }),
         LedgerEntry.create({
           operationId: 'op-1',
-          accountType: 'STOCK_CAPITAL_ACCOUNT',
+          accountType: STOCK_CAPITAL_ACCOUNT,
           amount: 50.005, // Debit
         }),
         LedgerEntry.create({
           operationId: 'op-1',
-          accountType: 'LOANS_RECEIVABLE_ACCOUNT',
+          accountType: LOANS_RECEIVABLE_ACCOUNT,
           amount: 50.005, // Debit
         }),
       ];
@@ -116,7 +121,7 @@ describe('OperationBalanceValidator', () => {
       // so this is a defensive check. We test by creating a mock entry with zero amount.
       const entry1 = LedgerEntry.create({
         operationId: 'op-1',
-        accountType: 'CASH_ACCOUNT',
+        accountType: CASH_ACCOUNT,
         amount: -100,
       });
 
@@ -126,7 +131,7 @@ describe('OperationBalanceValidator', () => {
       const entryWithZero = {
         id: 'test-id',
         operationId: 'op-1',
-        accountType: 'STOCK_CAPITAL_ACCOUNT',
+        accountType: STOCK_CAPITAL_ACCOUNT,
         amount: 0,
         createdAt: new Date(),
       } as LedgerEntry;
@@ -145,17 +150,17 @@ describe('OperationBalanceValidator', () => {
       const entries = [
         LedgerEntry.create({
           operationId: 'op-1',
-          accountType: 'CASH_ACCOUNT',
+          accountType: CASH_ACCOUNT,
           amount: -500.5, // Credit
         }),
         LedgerEntry.create({
           operationId: 'op-1',
-          accountType: 'STOCK_CAPITAL_ACCOUNT',
+          accountType: STOCK_CAPITAL_ACCOUNT,
           amount: 300.25, // Debit
         }),
         LedgerEntry.create({
           operationId: 'op-1',
-          accountType: 'LOANS_RECEIVABLE_ACCOUNT',
+          accountType: LOANS_RECEIVABLE_ACCOUNT,
           amount: 200.25, // Debit
         }),
       ];

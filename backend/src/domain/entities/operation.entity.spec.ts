@@ -1,4 +1,5 @@
 import { Operation } from './operation.entity';
+import { OperationType } from '../enums/operation-type.enum';
 
 describe('Operation Entity', () => {
   const mockId = '550e8400-e29b-41d4-a716-446655440000';
@@ -8,7 +9,7 @@ describe('Operation Entity', () => {
     it('should create Operation with required fields', () => {
       const operation = Operation.create({
         meetingId: 'meeting-1',
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
       });
 
       expect(operation.id).toBeDefined();
@@ -21,7 +22,7 @@ describe('Operation Entity', () => {
       const operation = Operation.create({
         memberId: 'member-1',
         meetingId: 'meeting-1',
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
       });
 
       expect(operation.memberId).toBe('member-1');
@@ -31,7 +32,7 @@ describe('Operation Entity', () => {
       const operation = Operation.create({
         memberId: null,
         meetingId: 'meeting-1',
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
       });
 
       expect(operation.memberId).toBeNull();
@@ -40,7 +41,7 @@ describe('Operation Entity', () => {
     it('should accept optional date', () => {
       const operation = Operation.create({
         meetingId: 'meeting-1',
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
         date: mockDate,
       });
 
@@ -50,7 +51,7 @@ describe('Operation Entity', () => {
     it('should accept optional description', () => {
       const operation = Operation.create({
         meetingId: 'meeting-1',
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
         description: 'Monthly payment for member',
       });
 
@@ -60,11 +61,11 @@ describe('Operation Entity', () => {
     it('should generate unique IDs for each operation', () => {
       const op1 = Operation.create({
         meetingId: 'meeting-1',
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
       });
       const op2 = Operation.create({
         meetingId: 'meeting-1',
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
       });
 
       expect(op1.id).not.toBe(op2.id);
@@ -74,7 +75,7 @@ describe('Operation Entity', () => {
       expect(() =>
         Operation.create({
           meetingId: 'meeting-1',
-          type: '',
+          type: '' as OperationType,
         }),
       ).toThrow('Operation type is required');
     });
@@ -85,7 +86,7 @@ describe('Operation Entity', () => {
       const operation = Operation.fromPersistence({
         id: mockId,
         meeting_id: 'meeting-1',
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
         date: mockDate,
       });
 
@@ -98,7 +99,7 @@ describe('Operation Entity', () => {
       const operation = Operation.fromPersistence({
         id: mockId,
         meeting_id: 'meeting-1',
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
         date: '2024-01-15T10:00:00Z',
       });
 
@@ -110,7 +111,7 @@ describe('Operation Entity', () => {
         id: mockId,
         member_id: null,
         meeting_id: 'meeting-1',
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
         date: mockDate,
       });
 
@@ -121,7 +122,7 @@ describe('Operation Entity', () => {
       const operation = Operation.fromPersistence({
         id: mockId,
         meeting_id: 'meeting-1',
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
         date: mockDate,
         description: null,
       });
@@ -136,7 +137,7 @@ describe('Operation Entity', () => {
     beforeEach(() => {
       operation = Operation.create({
         meetingId: 'meeting-1',
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
       });
     });
 
@@ -152,8 +153,8 @@ describe('Operation Entity', () => {
     });
 
     it('should update type', () => {
-      operation.update({ type: 'LOAN_PAYMENT' });
-      expect(operation.type).toBe('LOAN_PAYMENT');
+      operation.update({ type: OperationType.LOAN_PAYMENT });
+      expect(operation.type).toBe(OperationType.LOAN_PAYMENT);
     });
 
     it('should update description', () => {
@@ -181,7 +182,7 @@ describe('Operation Entity', () => {
       operation = Operation.create({
         memberId: 'member-1',
         meetingId: 'meeting-1',
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
         description: 'Test operation',
       });
     });
@@ -217,7 +218,7 @@ describe('Operation Entity', () => {
         Operation.fromPersistence({
           id: '550e8400-e29b-41d4-a716-446655440000',
           meeting_id: 'meeting-1',
-          type: 'MONTHLY_PAYMENT',
+          type: OperationType.MONTHLY_PAYMENT,
           date: futureDate,
         }),
       ).toThrow('Operation date cannot be in the future');

@@ -7,6 +7,7 @@ import { Operation as OperationDomain } from '@domain/entities/operation.entity'
 import { Operation } from '@domain/entities/operation.entity';
 import { TypeOrmLedgerEntryRepository } from './typeorm-ledger-entry.repository';
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
+import { OperationType } from '@domain/enums/operation-type.enum';
 
 describe('TypeOrmOperationRepository', () => {
   let repository: TypeOrmOperationRepository;
@@ -54,7 +55,7 @@ describe('TypeOrmOperationRepository', () => {
         id: operationId,
         memberId: 'member-1',
         meetingId: 'meeting-1',
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
         date: new Date(),
         description: null,
       };
@@ -71,7 +72,7 @@ describe('TypeOrmOperationRepository', () => {
     it('should insert new operation when not exists', async () => {
       const domain = Operation.create({
         meetingId: 'meeting-1',
-        type: 'MONTHLY_PAYMENT',
+        type: OperationType.MONTHLY_PAYMENT,
       });
 
       typeOrmRepo.findOne.mockResolvedValue(null);
