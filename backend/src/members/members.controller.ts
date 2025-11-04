@@ -1,7 +1,9 @@
 import {
   Controller,
   Get,
+  Post,
   Param,
+  Body,
   ParseUUIDPipe,
   HttpStatus,
   HttpException,
@@ -13,6 +15,7 @@ import {
   ApiResponse,
   ApiParam,
   ApiQuery,
+  ApiBody,
   ApiBadRequestResponse,
   ApiNotFoundResponse,
   ApiInternalServerErrorResponse,
@@ -26,6 +29,9 @@ import { DebtCapacityResponseDto } from './dto/debt-capacity-response.dto';
 import { MemberSummaryResponseDto } from './dto/member-summary-response.dto';
 import { StockTransactionHistoryDto } from './dto/stock-transaction-history.dto';
 import { LoanInstallmentsDto } from './dto/loan-installments.dto';
+import { RecordMonthlyPaymentsHttpDto } from './dto/record-monthly-payments-http.dto';
+import { RecordMonthlyPaymentsUseCase } from '@application/use-cases/members/record-monthly-payments.use-case';
+import { RecordMonthlyPaymentsResponseDto } from '@application/dto/members/record-monthly-payments-response.dto';
 
 @ApiTags('Members')
 @Controller('members')
@@ -33,6 +39,7 @@ export class MembersController {
   constructor(
     private readonly membersService: MembersService,
     private readonly debtCapacityService: DebtCapacityService,
+    private readonly recordMonthlyPaymentsUseCase: RecordMonthlyPaymentsUseCase,
   ) {}
 
   @Get()
@@ -57,6 +64,7 @@ export class MembersController {
       );
       return memberDetails;
     } catch (error) {
+      console.error(error);
       throw new HttpException(
         'Internal server error',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -93,8 +101,11 @@ export class MembersController {
   ): Promise<MemberDetailResponseDto> {
     try {
       return await this.membersService.getMemberDetail(id);
-    } catch (error) {
-      if (error.message.includes('not found')) {
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      if (error instanceof Error && error.message.includes('not found')) {
         throw new HttpException(
           `Member with ID ${id} not found`,
           HttpStatus.NOT_FOUND,
@@ -130,8 +141,11 @@ export class MembersController {
   ): Promise<MemberStocksResponseDto> {
     try {
       return await this.membersService.getMemberStocks(id);
-    } catch (error) {
-      if (error.message.includes('not found')) {
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      if (error instanceof Error && error.message.includes('not found')) {
         throw new HttpException(
           `Member with ID ${id} not found`,
           HttpStatus.NOT_FOUND,
@@ -167,8 +181,11 @@ export class MembersController {
   ): Promise<MemberLoansResponseDto> {
     try {
       return await this.membersService.getMemberLoans(id);
-    } catch (error) {
-      if (error.message.includes('not found')) {
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      if (error instanceof Error && error.message.includes('not found')) {
         throw new HttpException(
           `Member with ID ${id} not found`,
           HttpStatus.NOT_FOUND,
@@ -204,8 +221,11 @@ export class MembersController {
   ): Promise<DebtCapacityResponseDto> {
     try {
       return await this.debtCapacityService.calculateDebtCapacity(id);
-    } catch (error) {
-      if (error.message.includes('not found')) {
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      if (error instanceof Error && error.message.includes('not found')) {
         throw new HttpException(
           `Member with ID ${id} not found`,
           HttpStatus.NOT_FOUND,
@@ -242,8 +262,11 @@ export class MembersController {
   ): Promise<MemberSummaryResponseDto> {
     try {
       return await this.membersService.getMemberSummary(id);
-    } catch (error) {
-      if (error.message.includes('not found')) {
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      if (error instanceof Error && error.message.includes('not found')) {
         throw new HttpException(
           `Member with ID ${id} not found`,
           HttpStatus.NOT_FOUND,
@@ -289,8 +312,11 @@ export class MembersController {
         stockId,
         memberId,
       );
-    } catch (error) {
-      if (error.message.includes('not found')) {
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      if (error instanceof Error && error.message.includes('not found')) {
         throw new HttpException(
           'Member or stock not found',
           HttpStatus.NOT_FOUND,
@@ -333,8 +359,11 @@ export class MembersController {
   ): Promise<LoanInstallmentsDto> {
     try {
       return await this.membersService.getLoanInstallments(loanId);
-    } catch (error) {
-      if (error.message.includes('not found')) {
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      if (error instanceof Error && error.message.includes('not found')) {
         throw new HttpException(
           'Member or loan not found',
           HttpStatus.NOT_FOUND,
@@ -435,7 +464,85 @@ export class MembersController {
   async getOrganizationDebtCapacityStats() {
     try {
       return await this.debtCapacityService.getOrganizationDebtCapacityStats();
-    } catch (error) {
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post(':memberId/payments')
+  @ApiOperation({
+    summary: 'Record monthly payments for a member',
+    description:
+      'Records monthly payments from a member. Supports multiple payment types (stock fees, loan payments, mandatory contributions, fees, insurance, novelties). The memberId is extracted from the URL path parameter.',
+  })
+  @ApiParam({
+    name: 'memberId',
+    description: 'The unique identifier of the member',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiBody({ type: RecordMonthlyPaymentsHttpDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Monthly payments recorded successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        operationId: {
+          type: 'string',
+          example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+        },
+        meetingId: {
+          type: 'string',
+          example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+        },
+        memberId: {
+          type: 'string',
+          example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+        },
+        totalAmount: {
+          type: 'number',
+          example: 150.0,
+        },
+        ledgerEntryIds: {
+          type: 'array',
+          items: { type: 'string' },
+          example: [
+            'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+            'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12',
+          ],
+        },
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid request data or validation failed',
+  })
+  @ApiNotFoundResponse({
+    description: 'Member or meeting not found',
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error',
+  })
+  async recordMonthlyPayments(
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @Body() dto: RecordMonthlyPaymentsHttpDto,
+  ): Promise<RecordMonthlyPaymentsResponseDto> {
+    try {
+      return await this.recordMonthlyPaymentsUseCase.execute({
+        memberId,
+        payments: dto.payments,
+        meetingId: dto.meetingId,
+      });
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         'Internal server error',
         HttpStatus.INTERNAL_SERVER_ERROR,

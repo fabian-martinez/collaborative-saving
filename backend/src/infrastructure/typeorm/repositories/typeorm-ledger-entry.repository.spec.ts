@@ -11,7 +11,6 @@ import { CASH_ACCOUNT } from '@domain/constants/account-types';
 describe('TypeOrmLedgerEntryRepository', () => {
   let repository: TypeOrmLedgerEntryRepository;
   let typeOrmRepo: jest.Mocked<Repository<LedgerEntryEntity>>;
-  let operationRepo: jest.Mocked<Repository<OperationEntity>>;
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -45,7 +44,6 @@ describe('TypeOrmLedgerEntryRepository', () => {
       TypeOrmLedgerEntryRepository,
     );
     typeOrmRepo = module.get(getRepositoryToken(LedgerEntryEntity));
-    operationRepo = module.get(getRepositoryToken(OperationEntity));
   });
 
   describe('findById', () => {
