@@ -41,6 +41,18 @@ export class MeetingsV2Controller {
     status: 201,
     description: 'Meeting opened successfully',
     type: MeetingResponseDto,
+    examples: {
+      example: {
+        summary: 'Opened meeting',
+        value: {
+          id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+          date: '2024-01-15T10:30:00Z',
+          status: 'active',
+          notes: 'Reunión mensual de enero',
+          createdAt: '2024-01-15T10:30:00Z',
+        },
+      },
+    },
   })
   @ApiBadRequestResponse({
     description:
@@ -79,6 +91,18 @@ export class MeetingsV2Controller {
     status: 200,
     description: 'Meeting closed successfully',
     type: MeetingResponseDto,
+    examples: {
+      example: {
+        summary: 'Closed meeting',
+        value: {
+          id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+          date: '2024-01-15T10:30:00Z',
+          status: 'closed',
+          notes: 'Reunión mensual de enero',
+          createdAt: '2024-01-15T10:30:00Z',
+        },
+      },
+    },
   })
   @ApiNotFoundResponse({
     description: 'Meeting not found',
