@@ -1,7 +1,7 @@
 /**
- * Payment Type Enum
+ * Payment Item DTO
  *
- * Defines the types of payments that can be recorded for a member.
+ * DTO for a single payment item in a monthly payment request.
  */
 export enum PaymentType {
   MANDATORY_CONTRIBUTION = 'mandatory_contribution',
@@ -12,15 +12,10 @@ export enum PaymentType {
   NOVELTY = 'novelty',
 }
 
-/**
- * Payment Item DTO
- *
- * Represents a single payment item in a monthly payment request.
- * Each payment item corresponds to a specific payment type (e.g., loan payment, stock fee).
- */
 export interface PaymentItemDto {
   type: PaymentType;
   amount: number;
   description?: string;
   referenceId?: string;
+  noveltyComment?: string;
 }

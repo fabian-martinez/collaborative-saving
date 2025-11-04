@@ -1,4 +1,67 @@
+import { useApiVersionStore } from '@/shared/stores/apiVersion'
+import { getV2Endpoint, hasV2Version, ENDPOINT_MAPPINGS_V2 } from '@/shared/config/apiEndpoints'
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+/**
+ * Extrae parámetros de una URL y los mapea según un patrón
+ * Ejemplo: pattern='dues/active-meeting/member/:memberId', url='dues/active-meeting/member/123'
+ * Retorna: { memberId: '123' }
+ */
+function extractParams(pattern: string, url: string): Record<string, string> {
+  const params: Record<string, string> = {}
+  const patternParts = pattern.split('/')
+  const urlParts = url.split('/')
+  
+  patternParts.forEach((part, index) => {
+    if (part.startsWith(':')) {
+      const paramName = part.slice(1)
+      if (urlParts[index]) {
+        params[paramName] = urlParts[index]
+      }
+    }
+  })
+  
+  return params
+}
+
+/**
+ * Obtiene el endpoint correcto según la versión de API activa
+ */
+function getApiEndpoint(endpoint: string, method: string): string {
+  const apiVersionStore = useApiVersionStore()
+  
+  // Si no está usando v2, devolver el endpoint original
+  if (!apiVersionStore.isV2) {
+    return endpoint
+  }
+
+  // Remover leading slash si existe para comparación
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint
+
+  // Verificar si el endpoint tiene versión v2
+  if (!hasV2Version(cleanEndpoint)) {
+    return endpoint
+  }
+
+  // Extraer parámetros de la URL si hay un patrón que coincida
+  let params: Record<string, string> | undefined
+  
+  // Buscar en ENDPOINT_MAPPINGS_V2 si hay un patrón que coincida
+  for (const pattern of Object.keys(ENDPOINT_MAPPINGS_V2)) {
+    const patternRegex = new RegExp('^' + pattern.replace(/:[^/]+/g, '([^/]+)') + '$')
+    if (patternRegex.test(cleanEndpoint)) {
+      params = extractParams(pattern, cleanEndpoint)
+      break
+    }
+  }
+
+  // Obtener el endpoint v2
+  const v2Endpoint = getV2Endpoint(cleanEndpoint, method, params)
+  
+  // Asegurar que tenga el leading slash
+  return v2Endpoint.startsWith('/') ? v2Endpoint : `/${v2Endpoint}`
+}
 
 async function request<T>(
   method: string,
@@ -7,6 +70,9 @@ async function request<T>(
 ): Promise<T> {
   const headers = new Headers();
   headers.append('Content-Type', 'application/json');
+
+  // Obtener el endpoint correcto según la versión de API
+  const finalEndpoint = getApiEndpoint(endpoint, method);
 
   const options: RequestInit = {
     method,
@@ -17,7 +83,7 @@ async function request<T>(
     options.body = JSON.stringify(body);
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+  const response = await fetch(`${API_BASE_URL}${finalEndpoint}`, options);
 
   if (!response.ok) {
     const errorBody = await response.text();

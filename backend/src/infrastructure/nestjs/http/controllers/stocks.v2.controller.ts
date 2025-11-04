@@ -27,7 +27,7 @@ import { UpdateStockHttpDto } from '../dto/update-stock-http.dto';
 import { StockResponseDto } from '@application/dto/stocks/stock-response.dto';
 
 @ApiTags('Stocks V2')
-@Controller('api/v2/stocks')
+@Controller('v2/stocks')
 export class StocksV2Controller {
   constructor(
     private readonly getStocksQuery: GetStocksQueryHandler,

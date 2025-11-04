@@ -7,9 +7,14 @@ import { GetMemberDuesForActiveMeetingQueryHandler } from '@application/queries/
 import { CreateMemberUseCase } from '@application/use-cases/members/create-member.use-case';
 import { UpdateMemberUseCase } from '@application/use-cases/members/update-member.use-case';
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
+import { RecordMonthlyPaymentsUseCase } from '@application/use-cases/members/record-monthly-payments.use-case';
 import { MemberResponseDto } from '@application/dto/members/member-response.dto';
+import { RecordMonthlyPaymentsResponseDto } from '@application/dto/members/record-monthly-payments-response.dto';
+import { PaymentType } from '@application/dto/members/payment-item.dto';
+import { RecordMonthlyPaymentsHttpDto } from '../dto/record-monthly-payments-http.dto';
 import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
+import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 
 describe('MembersV2Controller', () => {
   let controller: MembersV2Controller;
@@ -18,6 +23,7 @@ describe('MembersV2Controller', () => {
   let createMemberUseCase: jest.Mocked<CreateMemberUseCase>;
   let updateMemberUseCase: jest.Mocked<UpdateMemberUseCase>;
   let deleteMemberUseCase: jest.Mocked<DeleteMemberUseCase>;
+  let recordMonthlyPaymentsUseCase: jest.Mocked<RecordMonthlyPaymentsUseCase>;
 
   // Spies for execute methods to avoid 'this' scoping issues
   let getMembersQueryExecuteSpy: jest.SpyInstance;
@@ -25,6 +31,7 @@ describe('MembersV2Controller', () => {
   let createMemberUseCaseExecuteSpy: jest.SpyInstance;
   let updateMemberUseCaseExecuteSpy: jest.SpyInstance;
   let deleteMemberUseCaseExecuteSpy: jest.SpyInstance;
+  let recordMonthlyPaymentsUseCaseExecuteSpy: jest.SpyInstance;
 
   const mockMemberResponse: MemberResponseDto = {
     id: '550e8400-e29b-41d4-a716-446655440000',
@@ -76,6 +83,12 @@ describe('MembersV2Controller', () => {
             execute: jest.fn(),
           },
         },
+        {
+          provide: RecordMonthlyPaymentsUseCase,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -85,6 +98,7 @@ describe('MembersV2Controller', () => {
     createMemberUseCase = module.get(CreateMemberUseCase);
     updateMemberUseCase = module.get(UpdateMemberUseCase);
     deleteMemberUseCase = module.get(DeleteMemberUseCase);
+    recordMonthlyPaymentsUseCase = module.get(RecordMonthlyPaymentsUseCase);
 
     // Create spies to avoid 'this' scoping issues
     getMembersQueryExecuteSpy = jest.spyOn(getMembersQuery, 'execute');
@@ -95,6 +109,10 @@ describe('MembersV2Controller', () => {
     createMemberUseCaseExecuteSpy = jest.spyOn(createMemberUseCase, 'execute');
     updateMemberUseCaseExecuteSpy = jest.spyOn(updateMemberUseCase, 'execute');
     deleteMemberUseCaseExecuteSpy = jest.spyOn(deleteMemberUseCase, 'execute');
+    recordMonthlyPaymentsUseCaseExecuteSpy = jest.spyOn(
+      recordMonthlyPaymentsUseCase,
+      'execute',
+    );
   });
 
   it('should be defined', () => {
@@ -118,8 +136,15 @@ describe('MembersV2Controller', () => {
       const result = await controller.list();
 
       expect(getMembersQueryExecuteSpy).toHaveBeenCalledTimes(1);
-      expect(result).toEqual(members);
+      // Controller returns snake_case HTTP DTOs
       expect(result).toHaveLength(2);
+      expect(result[0]).toMatchObject({
+        id: members[0].id,
+        name: members[0].name,
+        email: members[0].email,
+        identification_number: members[0].identificationNumber,
+        registration_date: members[0].registrationDate,
+      });
     });
 
     it('should return empty array when no members exist', async () => {
@@ -140,7 +165,14 @@ describe('MembersV2Controller', () => {
       const result = await controller.detail(memberId);
 
       expect(getMemberDetailQueryExecuteSpy).toHaveBeenCalledWith(memberId);
-      expect(result).toEqual(mockMemberResponse);
+      // Controller returns snake_case HTTP DTO
+      expect(result).toMatchObject({
+        id: mockMemberResponse.id,
+        name: mockMemberResponse.name,
+        email: mockMemberResponse.email,
+        identification_number: mockMemberResponse.identificationNumber,
+        registration_date: mockMemberResponse.registrationDate,
+      });
     });
 
     it('should throw HttpException with NOT_FOUND when member not found', async () => {
@@ -183,7 +215,14 @@ describe('MembersV2Controller', () => {
       const result = await controller.create(createDto);
 
       expect(createMemberUseCaseExecuteSpy).toHaveBeenCalledWith(createDto);
-      expect(result).toEqual(mockMemberResponse);
+      // Controller returns snake_case HTTP DTO
+      expect(result).toMatchObject({
+        id: mockMemberResponse.id,
+        name: mockMemberResponse.name,
+        email: mockMemberResponse.email,
+        identification_number: mockMemberResponse.identificationNumber,
+        registration_date: mockMemberResponse.registrationDate,
+      });
     });
 
     it('should throw HttpException with BAD_REQUEST when creation fails', async () => {
@@ -247,7 +286,12 @@ describe('MembersV2Controller', () => {
         ...updateDto,
         memberId,
       });
-      expect(result).toEqual(updatedMember);
+      // Controller returns snake_case HTTP DTO
+      expect(result).toMatchObject({
+        id: updatedMember.id,
+        name: 'Updated Name',
+        email: updatedMember.email,
+      });
       expect(result.name).toBe('Updated Name');
     });
 
@@ -349,6 +393,115 @@ describe('MembersV2Controller', () => {
         .remove(memberId)
         .catch((e: unknown) => e)) as HttpException;
       expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
+    });
+  });
+
+  describe('recordMonthlyPayments', () => {
+    const memberId = '550e8400-e29b-41d4-a716-446655440000';
+    const mockResponse: RecordMonthlyPaymentsResponseDto = {
+      operationId: '650e8400-e29b-41d4-a716-446655440000',
+      meetingId: '750e8400-e29b-41d4-a716-446655440000',
+      memberId,
+      totalAmount: 150.0,
+      ledgerEntryIds: [
+        '850e8400-e29b-41d4-a716-446655440000',
+        '950e8400-e29b-41d4-a716-446655440000',
+      ],
+    };
+
+    const validDto: RecordMonthlyPaymentsHttpDto = {
+      payments: [
+        {
+          type: PaymentType.STOCK_FEE,
+          amount: 100.0,
+          description: 'Stock fee payment',
+        },
+        {
+          type: PaymentType.MANDATORY_CONTRIBUTION,
+          amount: 50.0,
+          description: 'Mandatory contribution',
+        },
+      ],
+    };
+
+    it('should record monthly payments successfully', async () => {
+      recordMonthlyPaymentsUseCaseExecuteSpy.mockResolvedValue(mockResponse);
+
+      const result = await controller.recordMonthlyPayments(memberId, validDto);
+
+      expect(recordMonthlyPaymentsUseCaseExecuteSpy).toHaveBeenCalledWith({
+        memberId,
+        payments: validDto.payments,
+        meetingId: undefined,
+      });
+      // Controller returns snake_case HTTP DTO
+      expect(result).toMatchObject({
+        operation_id: mockResponse.operationId,
+        meeting_id: mockResponse.meetingId,
+        member_id: mockResponse.memberId,
+        total_amount: mockResponse.totalAmount,
+        ledger_entry_ids: mockResponse.ledgerEntryIds,
+      });
+    });
+
+    it('should record monthly payments with meetingId', async () => {
+      const dtoWithMeeting = {
+        ...validDto,
+        meetingId: '750e8400-e29b-41d4-a716-446655440000',
+      };
+      recordMonthlyPaymentsUseCaseExecuteSpy.mockResolvedValue(mockResponse);
+
+      const result = await controller.recordMonthlyPayments(
+        memberId,
+        dtoWithMeeting,
+      );
+
+      expect(recordMonthlyPaymentsUseCaseExecuteSpy).toHaveBeenCalledWith({
+        memberId,
+        payments: validDto.payments,
+        meetingId: dtoWithMeeting.meetingId,
+      });
+      // Controller returns snake_case HTTP DTO
+      expect(result).toMatchObject({
+        operation_id: mockResponse.operationId,
+        meeting_id: mockResponse.meetingId,
+        member_id: mockResponse.memberId,
+        total_amount: mockResponse.totalAmount,
+        ledger_entry_ids: mockResponse.ledgerEntryIds,
+      });
+    });
+
+    it('should throw HttpException when member not found', async () => {
+      recordMonthlyPaymentsUseCaseExecuteSpy.mockRejectedValue(
+        new MemberNotFoundException(memberId),
+      );
+
+      await expect(
+        controller.recordMonthlyPayments(memberId, validDto),
+      ).rejects.toThrow(HttpException);
+    });
+
+    it('should throw HttpException when meeting not found', async () => {
+      recordMonthlyPaymentsUseCaseExecuteSpy.mockRejectedValue(
+        new MeetingNotFoundException('meeting-id'),
+      );
+
+      await expect(
+        controller.recordMonthlyPayments(memberId, validDto),
+      ).rejects.toThrow(HttpException);
+    });
+
+    it('should throw HttpException with INTERNAL_SERVER_ERROR for unknown errors', async () => {
+      recordMonthlyPaymentsUseCaseExecuteSpy.mockRejectedValue('String error');
+
+      await expect(
+        controller.recordMonthlyPayments(memberId, validDto),
+      ).rejects.toThrow(HttpException);
+
+      const error = (await controller
+        .recordMonthlyPayments(memberId, validDto)
+        .catch((e: unknown) => e)) as HttpException;
+      expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
     });
   });
 });

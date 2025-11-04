@@ -2,6 +2,7 @@
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useActiveMeetingStore } from '@/features/meetings/stores/activeMeeting'
+import { useApiVersionStore } from '@/shared/stores/apiVersion'
 import { storeToRefs } from 'pinia'
 
 const route = useRoute()
@@ -10,6 +11,9 @@ const pageTitle = computed(() => route.meta.title || 'Dashboard')
 
 const activeMeetingStore = useActiveMeetingStore()
 const { isMeetingActive } = storeToRefs(activeMeetingStore)
+
+const apiVersionStore = useApiVersionStore()
+const { isV2 } = storeToRefs(apiVersionStore)
 
 onMounted(() => {
   activeMeetingStore.fetchActiveMeeting()
@@ -29,6 +33,10 @@ async function startNewMeeting() {
 function goToActiveMeeting() {
   router.push({ name: 'active-meeting' })
 }
+
+function toggleApiVersion() {
+  apiVersionStore.toggleVersion()
+}
 </script>
 
 <template>
@@ -40,6 +48,19 @@ function goToActiveMeeting() {
       </div>
 
       <div class="flex items-center gap-4">
+        <!-- Switch de versión API -->
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-medium">API v1</span>
+          <input
+            type="checkbox"
+            class="toggle toggle-primary"
+            :checked="isV2"
+            @change="toggleApiVersion"
+          />
+          <span class="text-sm font-medium">API v2</span>
+          <span v-if="isV2" class="badge badge-primary badge-sm">v2</span>
+        </div>
+
         <div v-if="isMeetingActive" class="flex items-center gap-2">
           <span class="badge badge-error animate-pulse">Reunión Activa</span>
           <button @click="goToActiveMeeting" class="btn btn-primary btn-sm">Ir a la Reunión</button>

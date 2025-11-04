@@ -23,7 +23,7 @@ import { OpenMeetingHttpDto } from '../dto/open-meeting-http.dto';
 import { MeetingResponseDto } from '@application/dto/meetings/meeting-response.dto';
 
 @ApiTags('Meetings V2')
-@Controller('api/v2/meetings')
+@Controller('v2/meetings')
 export class MeetingsV2Controller {
   constructor(
     private readonly openMeetingUseCase: OpenMeetingUseCase,
