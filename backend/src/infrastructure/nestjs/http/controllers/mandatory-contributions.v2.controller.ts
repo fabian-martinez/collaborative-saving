@@ -51,6 +51,23 @@ export class MandatoryContributionsV2Controller {
     status: 200,
     description: 'List of mandatory contributions',
     type: [MandatoryContributionResponseDto],
+    examples: {
+      example: {
+        summary: 'List of mandatory contributions',
+        value: [
+          {
+            id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+            assetType: 'cash',
+            value: 50000,
+          },
+          {
+            id: 'b1ffcd0a-0d1c-5fg9-cc7e-7cc0ce491e22',
+            assetType: 'investment',
+            value: 100000,
+          },
+        ],
+      },
+    },
   })
   async list(): Promise<MandatoryContributionResponseDto[]> {
     return await this.getContributionsQuery.execute();
@@ -71,6 +88,16 @@ export class MandatoryContributionsV2Controller {
     status: 201,
     description: 'Mandatory contribution created successfully',
     type: MandatoryContributionResponseDto,
+    examples: {
+      example: {
+        summary: 'Created mandatory contribution',
+        value: {
+          id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+          assetType: 'cash',
+          value: 50000,
+        },
+      },
+    },
   })
   @ApiBadRequestResponse({
     description: 'Invalid request data',
@@ -114,6 +141,16 @@ export class MandatoryContributionsV2Controller {
     status: 200,
     description: 'Mandatory contribution details',
     type: MandatoryContributionResponseDto,
+    examples: {
+      example: {
+        summary: 'Mandatory contribution details',
+        value: {
+          id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+          assetType: 'cash',
+          value: 50000,
+        },
+      },
+    },
   })
   @ApiBadRequestResponse({
     description: 'Invalid UUID format',
@@ -156,6 +193,16 @@ export class MandatoryContributionsV2Controller {
     status: 200,
     description: 'Mandatory contribution updated successfully',
     type: MandatoryContributionResponseDto,
+    examples: {
+      example: {
+        summary: 'Updated mandatory contribution',
+        value: {
+          id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+          assetType: 'cash',
+          value: 75000,
+        },
+      },
+    },
   })
   @ApiBadRequestResponse({
     description: 'Invalid request data',
@@ -186,6 +233,7 @@ export class MandatoryContributionsV2Controller {
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete a mandatory contribution',
     description: 'Deletes a mandatory contribution permanently (hard delete).',
@@ -196,7 +244,7 @@ export class MandatoryContributionsV2Controller {
     example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
   })
   @ApiResponse({
-    status: 200,
+    status: 204,
     description: 'Mandatory contribution deleted successfully',
   })
   @ApiBadRequestResponse({

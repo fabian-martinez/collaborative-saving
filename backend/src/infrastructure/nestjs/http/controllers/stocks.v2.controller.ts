@@ -45,6 +45,33 @@ export class StocksV2Controller {
     status: 200,
     description: 'Stocks retrieved successfully',
     type: [StockResponseDto],
+    examples: {
+      example: {
+        summary: 'List of stocks',
+        value: [
+          {
+            id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+            type: 'Acción A',
+            value: 100000,
+            monthlyContribution: 50000,
+            isGuaranteed: true,
+            guaranteedYield: 0.05,
+            behavior: 'CAPITAL_APPRECIATION',
+            createdAt: '2024-01-15T10:30:00Z',
+          },
+          {
+            id: 'b1ffcd0a-0d1c-5fg9-cc7e-7cc0ce491e22',
+            type: 'Acción B',
+            value: 200000,
+            monthlyContribution: 75000,
+            isGuaranteed: false,
+            guaranteedYield: null,
+            behavior: 'DIVIDEND_YIELD',
+            createdAt: '2024-02-20T14:20:00Z',
+          },
+        ],
+      },
+    },
   })
   async list(): Promise<StockResponseDto[]> {
     try {
@@ -71,6 +98,21 @@ export class StocksV2Controller {
     status: 200,
     description: 'Stock retrieved successfully',
     type: StockResponseDto,
+    examples: {
+      example: {
+        summary: 'Stock details',
+        value: {
+          id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+          type: 'Acción A',
+          value: 100000,
+          monthlyContribution: 50000,
+          isGuaranteed: true,
+          guaranteedYield: 0.05,
+          behavior: 'CAPITAL_APPRECIATION',
+          createdAt: '2024-01-15T10:30:00Z',
+        },
+      },
+    },
   })
   @ApiNotFoundResponse({
     description: 'Stock not found',
@@ -101,6 +143,21 @@ export class StocksV2Controller {
     status: 201,
     description: 'Stock created successfully',
     type: StockResponseDto,
+    examples: {
+      example: {
+        summary: 'Created stock',
+        value: {
+          id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+          type: 'Acción A',
+          value: 100000,
+          monthlyContribution: 50000,
+          isGuaranteed: true,
+          guaranteedYield: 0.05,
+          behavior: 'CAPITAL_APPRECIATION',
+          createdAt: '2024-01-15T10:30:00Z',
+        },
+      },
+    },
   })
   @ApiBadRequestResponse({
     description:
@@ -143,6 +200,21 @@ export class StocksV2Controller {
     status: 200,
     description: 'Stock updated successfully',
     type: StockResponseDto,
+    examples: {
+      example: {
+        summary: 'Updated stock',
+        value: {
+          id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+          type: 'Acción A Actualizada',
+          value: 120000,
+          monthlyContribution: 60000,
+          isGuaranteed: true,
+          guaranteedYield: 0.06,
+          behavior: 'CAPITAL_APPRECIATION',
+          createdAt: '2024-01-15T10:30:00Z',
+        },
+      },
+    },
   })
   @ApiNotFoundResponse({
     description: 'Stock not found',

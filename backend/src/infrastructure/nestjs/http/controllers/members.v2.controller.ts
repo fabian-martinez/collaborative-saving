@@ -55,6 +55,35 @@ export class MembersV2Controller {
     status: 200,
     description: 'List of active members',
     type: [MemberResponseDto],
+    examples: {
+      example: {
+        summary: 'List of active members',
+        value: [
+          {
+            id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+            name: 'Juan Pérez',
+            email: 'juan.perez@example.com',
+            role: 'member',
+            identificationNumber: '1234567890',
+            status: 'active',
+            address: 'Calle 123, Ciudad',
+            phone: '+57 300 123 4567',
+            beneficiary: 'María Pérez',
+            registrationDate: '2024-01-15T10:30:00Z',
+            createdAt: '2024-01-15T10:30:00Z',
+          },
+          {
+            id: 'b1ffcd0a-0d1c-5fg9-cc7e-7cc0ce491e22',
+            name: 'María García',
+            email: 'maria.garcia@example.com',
+            role: 'member',
+            status: 'active',
+            registrationDate: '2024-02-20T14:20:00Z',
+            createdAt: '2024-02-20T14:20:00Z',
+          },
+        ],
+      },
+    },
   })
   async list(): Promise<MemberResponseDto[]> {
     return await this.getMembersQuery.execute();
@@ -74,6 +103,24 @@ export class MembersV2Controller {
     status: 201,
     description: 'Member created successfully',
     type: MemberResponseDto,
+    examples: {
+      example: {
+        summary: 'Created member',
+        value: {
+          id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+          name: 'Juan Pérez',
+          email: 'juan.perez@example.com',
+          role: 'member',
+          identificationNumber: '1234567890',
+          status: 'active',
+          address: 'Calle 123, Ciudad',
+          phone: '+57 300 123 4567',
+          beneficiary: 'María Pérez',
+          registrationDate: '2024-01-15T10:30:00Z',
+          createdAt: '2024-01-15T10:30:00Z',
+        },
+      },
+    },
   })
   @ApiBadRequestResponse({
     description: 'Invalid request data (e.g., invalid email format)',
@@ -111,6 +158,24 @@ export class MembersV2Controller {
     status: 200,
     description: 'Member details',
     type: MemberResponseDto,
+    examples: {
+      example: {
+        summary: 'Member details',
+        value: {
+          id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+          name: 'Juan Pérez',
+          email: 'juan.perez@example.com',
+          role: 'member',
+          identificationNumber: '1234567890',
+          status: 'active',
+          address: 'Calle 123, Ciudad',
+          phone: '+57 300 123 4567',
+          beneficiary: 'María Pérez',
+          registrationDate: '2024-01-15T10:30:00Z',
+          createdAt: '2024-01-15T10:30:00Z',
+        },
+      },
+    },
   })
   @ApiBadRequestResponse({
     description: 'Invalid UUID format',
@@ -153,6 +218,24 @@ export class MembersV2Controller {
     status: 200,
     description: 'Member updated successfully',
     type: MemberResponseDto,
+    examples: {
+      example: {
+        summary: 'Updated member',
+        value: {
+          id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+          name: 'Juan Pérez',
+          email: 'juan.perez.updated@example.com',
+          role: 'member',
+          identificationNumber: '1234567890',
+          status: 'active',
+          address: 'Calle 456, Nueva Ciudad',
+          phone: '+57 300 123 4567',
+          beneficiary: 'María Pérez',
+          registrationDate: '2024-01-15T10:30:00Z',
+          createdAt: '2024-01-15T10:30:00Z',
+        },
+      },
+    },
   })
   @ApiBadRequestResponse({
     description: 'Invalid request data (e.g., invalid email format)',
@@ -196,6 +279,14 @@ export class MembersV2Controller {
     status: 200,
     description: 'Member deleted successfully',
     type: DeleteMemberResponseDto,
+    examples: {
+      example: {
+        summary: 'Member deleted',
+        value: {
+          success: true,
+        },
+      },
+    },
   })
   @ApiBadRequestResponse({
     description: 'Invalid UUID format',
@@ -234,6 +325,42 @@ export class MembersV2Controller {
     status: 200,
     description: 'Member dues retrieved successfully',
     type: [MemberDueResponseDto],
+    examples: {
+      example: {
+        summary: 'Member dues',
+        value: [
+          {
+            type: 'mandatory_contribution',
+            description: 'Aporte obligatorio mensual',
+            amount: 50000,
+            referenceId: 'mc-123e4567-e89b-12d3-a456-426614174000',
+            monthlyContribution: 50000,
+            creationDate: '2024-01-15T10:30:00Z',
+          },
+          {
+            type: 'stock_fee',
+            description: 'Cuota de acciones',
+            amount: 25000,
+            referenceId: 'stock-123e4567-e89b-12d3-a456-426614174000',
+            monthlyContribution: 25000,
+            stockQuantity: 10,
+            creationDate: '2024-01-15T10:30:00Z',
+          },
+          {
+            type: 'loan_payment',
+            description: 'Pago de préstamo',
+            amount: 150000,
+            referenceId: 'loan-123e4567-e89b-12d3-a456-426614174000',
+            details: {
+              interest: 20000,
+              principal: 130000,
+              outstanding_balance: 1000000,
+            },
+            creationDate: '2024-01-15T10:30:00Z',
+          },
+        ],
+      },
+    },
   })
   @ApiBadRequestResponse({
     description: 'Invalid UUID format',
