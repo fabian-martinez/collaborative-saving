@@ -31,7 +31,7 @@ export class CreateStockHttpDto {
   })
   @IsNumber()
   @Min(0)
-  monthlyContribution: number;
+  monthly_contribution: number;
 
   @ApiProperty({
     description: 'Flag to indicate if the stock has a guaranteed yield',
@@ -41,7 +41,7 @@ export class CreateStockHttpDto {
   })
   @IsBoolean()
   @IsOptional()
-  isGuaranteed?: boolean;
+  is_guaranteed?: boolean;
 
   @ApiProperty({
     description:
@@ -53,7 +53,7 @@ export class CreateStockHttpDto {
   @IsNumber()
   @Min(0)
   @IsOptional()
-  guaranteedYield?: number | null;
+  guaranteed_yield?: number | null;
 
   @ApiProperty({
     description:

@@ -360,12 +360,11 @@ describe('MembersV2Controller', () => {
       const memberId = '550e8400-e29b-41d4-a716-446655440000';
       deleteMemberUseCaseExecuteSpy.mockResolvedValue(undefined);
 
-      const result = await controller.remove(memberId);
+      await controller.remove(memberId);
 
       expect(deleteMemberUseCaseExecuteSpy).toHaveBeenCalledWith({
         memberId,
       });
-      expect(result).toEqual({ success: true });
     });
 
     it('should throw HttpException with NOT_FOUND when member not found', async () => {

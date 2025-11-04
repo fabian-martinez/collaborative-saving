@@ -33,7 +33,6 @@ import { GetMemberDetailQueryHandler } from '@application/queries/members/get-me
 import { GetMemberDuesForActiveMeetingQueryHandler } from '@application/queries/members/get-member-dues-for-active-meeting.query-handler';
 import { UpdateMemberHttpDto } from '../dto/update-member-http.dto';
 import { CreateMemberHttpDto } from '../dto/create-member-http.dto';
-import { DeleteMemberResponseDto } from '../dto/delete-member-response.dto';
 import { RecordMonthlyPaymentsUseCase } from '@application/use-cases/members/record-monthly-payments.use-case';
 import { RecordMonthlyPaymentsResponseDto } from '@application/dto/members/record-monthly-payments-response.dto';
 import { RecordMonthlyPaymentsHttpDto } from '../dto/record-monthly-payments-http.dto';
@@ -96,22 +95,6 @@ export class MembersV2Controller {
   async list(): Promise<MemberResponseHttpDto[]> {
     const members = await this.getMembersQuery.execute();
     return members.map((m) => this.mapMemberToHttp(m));
-  }
-
-  private mapMemberToHttp(m: MemberResponseDto): MemberResponseHttpDto {
-    return {
-      id: m.id,
-      name: m.name,
-      email: m.email,
-      role: m.role,
-      identification_number: m.identificationNumber,
-      status: m.status,
-      address: m.address,
-      phone: m.phone,
-      beneficiary: m.beneficiary,
-      registration_date: m.registrationDate,
-      created_at: m.createdAt,
-    } as MemberResponseHttpDto;
   }
 
   @Post()
@@ -303,17 +286,8 @@ export class MembersV2Controller {
     example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
   })
   @ApiResponse({
-    status: 200,
+    status: 204,
     description: 'Member deleted successfully',
-    type: DeleteMemberResponseDto,
-    examples: {
-      example: {
-        summary: 'Member deleted',
-        value: {
-          success: true,
-        },
-      },
-    },
   })
   @ApiBadRequestResponse({
     description: 'Invalid UUID format',
@@ -321,12 +295,9 @@ export class MembersV2Controller {
   @ApiNotFoundResponse({
     description: 'Member not found or already deleted',
   })
-  async remove(
-    @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<DeleteMemberResponseDto> {
+  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     try {
       await this.deleteMemberUseCase.execute({ memberId: id });
-      return { success: true } as DeleteMemberResponseDto;
     } catch (e: unknown) {
       if (e instanceof Error) {
         console.error(e.message);
@@ -513,5 +484,21 @@ export class MembersV2Controller {
       total_amount: r.totalAmount,
       ledger_entry_ids: r.ledgerEntryIds,
     } as RecordMonthlyPaymentsResponseHttpDto;
+  }
+
+  private mapMemberToHttp(m: MemberResponseDto): MemberResponseHttpDto {
+    return {
+      id: m.id,
+      name: m.name,
+      email: m.email,
+      role: m.role,
+      identification_number: m.identificationNumber,
+      status: m.status,
+      address: m.address,
+      phone: m.phone,
+      beneficiary: m.beneficiary,
+      registration_date: m.registrationDate,
+      created_at: m.createdAt,
+    };
   }
 }

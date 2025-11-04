@@ -6,6 +6,8 @@ import { UpdateMemberDto } from '@application/dto/members/update-member.dto';
 describe('UpdateMemberUseCase', () => {
   let useCase: UpdateMemberUseCase;
   let memberRepository: jest.Mocked<MemberRepository>;
+  let findByIdSpy: jest.SpyInstance;
+  let saveSpy: jest.SpyInstance;
 
   beforeEach(() => {
     memberRepository = {
@@ -14,6 +16,9 @@ describe('UpdateMemberUseCase', () => {
       save: jest.fn(),
       softDelete: jest.fn(),
     } as unknown as jest.Mocked<MemberRepository>;
+
+    findByIdSpy = jest.spyOn(memberRepository, 'findById');
+    saveSpy = jest.spyOn(memberRepository, 'save');
 
     useCase = new UpdateMemberUseCase(memberRepository);
   });
@@ -35,13 +40,13 @@ describe('UpdateMemberUseCase', () => {
       name: 'Updated Name',
     };
 
-    memberRepository.findById.mockResolvedValue(existingMember);
-    memberRepository.save.mockResolvedValue(existingMember);
+    findByIdSpy.mockResolvedValue(existingMember);
+    saveSpy.mockResolvedValue(existingMember);
 
     const result = await useCase.execute(updateDto);
 
-    expect(memberRepository.findById).toHaveBeenCalledWith(memberId);
-    expect(memberRepository.save).toHaveBeenCalledTimes(1);
+    expect(findByIdSpy).toHaveBeenCalledWith(memberId);
+    expect(saveSpy).toHaveBeenCalledTimes(1);
     expect(result.name).toBe('Updated Name');
   });
 
@@ -52,14 +57,14 @@ describe('UpdateMemberUseCase', () => {
       name: 'Updated Name',
     };
 
-    memberRepository.findById.mockResolvedValue(null);
+    findByIdSpy.mockResolvedValue(null);
 
     await expect(useCase.execute(updateDto)).rejects.toThrow(
       'Member not found',
     );
 
-    expect(memberRepository.findById).toHaveBeenCalledWith(memberId);
-    expect(memberRepository.save).not.toHaveBeenCalled();
+    expect(findByIdSpy).toHaveBeenCalledWith(memberId);
+    expect(saveSpy).not.toHaveBeenCalled();
   });
 
   it('should update multiple fields', async () => {
@@ -81,8 +86,8 @@ describe('UpdateMemberUseCase', () => {
       phone: '+1234567890',
     };
 
-    memberRepository.findById.mockResolvedValue(existingMember);
-    memberRepository.save.mockResolvedValue(existingMember);
+    findByIdSpy.mockResolvedValue(existingMember);
+    saveSpy.mockResolvedValue(existingMember);
 
     const result = await useCase.execute(updateDto);
 
@@ -109,8 +114,8 @@ describe('UpdateMemberUseCase', () => {
       name: 'Updated Name',
     };
 
-    memberRepository.findById.mockResolvedValue(existingMember);
-    memberRepository.save.mockResolvedValue(existingMember);
+    findByIdSpy.mockResolvedValue(existingMember);
+    saveSpy.mockResolvedValue(existingMember);
 
     const result = await useCase.execute(updateDto);
 
@@ -135,8 +140,8 @@ describe('UpdateMemberUseCase', () => {
       role: 'admin',
     };
 
-    memberRepository.findById.mockResolvedValue(existingMember);
-    memberRepository.save.mockResolvedValue(existingMember);
+    findByIdSpy.mockResolvedValue(existingMember);
+    saveSpy.mockResolvedValue(existingMember);
 
     const result = await useCase.execute(updateDto);
 
