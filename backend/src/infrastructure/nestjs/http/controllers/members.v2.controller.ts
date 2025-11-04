@@ -21,6 +21,7 @@ import {
   ApiBody,
   ApiBadRequestResponse,
   ApiNotFoundResponse,
+  ApiInternalServerErrorResponse,
 } from '@nestjs/swagger';
 import { UpdateMemberUseCase } from '@application/use-cases/members/update-member.use-case';
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
@@ -33,6 +34,12 @@ import { GetMemberDuesForActiveMeetingQueryHandler } from '@application/queries/
 import { UpdateMemberHttpDto } from '../dto/update-member-http.dto';
 import { CreateMemberHttpDto } from '../dto/create-member-http.dto';
 import { DeleteMemberResponseDto } from '../dto/delete-member-response.dto';
+import { RecordMonthlyPaymentsUseCase } from '@application/use-cases/members/record-monthly-payments.use-case';
+import { RecordMonthlyPaymentsResponseDto } from '@application/dto/members/record-monthly-payments-response.dto';
+import { RecordMonthlyPaymentsHttpDto } from '../dto/record-monthly-payments-http.dto';
+import { MemberResponseHttpDto } from '../dto/member-response-http.dto';
+import { MemberDueResponseHttpDto } from '../dto/member-due-response-http.dto';
+import { RecordMonthlyPaymentsResponseHttpDto } from '../dto/record-monthly-payments-response-http.dto';
 
 @ApiTags('Members V2')
 @Controller('v2/members')
@@ -44,6 +51,7 @@ export class MembersV2Controller {
     private readonly createMemberUseCase: CreateMemberUseCase,
     private readonly updateMemberUseCase: UpdateMemberUseCase,
     private readonly deleteMemberUseCase: DeleteMemberUseCase,
+    private readonly recordMonthlyPaymentsUseCase: RecordMonthlyPaymentsUseCase,
   ) {}
 
   @Get()
@@ -54,7 +62,7 @@ export class MembersV2Controller {
   @ApiResponse({
     status: 200,
     description: 'List of active members',
-    type: [MemberResponseDto],
+    type: [MemberResponseHttpDto],
     examples: {
       example: {
         summary: 'List of active members',
@@ -64,13 +72,13 @@ export class MembersV2Controller {
             name: 'Juan Pérez',
             email: 'juan.perez@example.com',
             role: 'member',
-            identificationNumber: '1234567890',
+            identification_number: '1234567890',
             status: 'active',
             address: 'Calle 123, Ciudad',
             phone: '+57 300 123 4567',
             beneficiary: 'María Pérez',
-            registrationDate: '2024-01-15T10:30:00Z',
-            createdAt: '2024-01-15T10:30:00Z',
+            registration_date: '2024-01-15T10:30:00Z',
+            created_at: '2024-01-15T10:30:00Z',
           },
           {
             id: 'b1ffcd0a-0d1c-5fg9-cc7e-7cc0ce491e22',
@@ -78,15 +86,32 @@ export class MembersV2Controller {
             email: 'maria.garcia@example.com',
             role: 'member',
             status: 'active',
-            registrationDate: '2024-02-20T14:20:00Z',
-            createdAt: '2024-02-20T14:20:00Z',
+            registration_date: '2024-02-20T14:20:00Z',
+            created_at: '2024-02-20T14:20:00Z',
           },
         ],
       },
     },
   })
-  async list(): Promise<MemberResponseDto[]> {
-    return await this.getMembersQuery.execute();
+  async list(): Promise<MemberResponseHttpDto[]> {
+    const members = await this.getMembersQuery.execute();
+    return members.map((m) => this.mapMemberToHttp(m));
+  }
+
+  private mapMemberToHttp(m: MemberResponseDto): MemberResponseHttpDto {
+    return {
+      id: m.id,
+      name: m.name,
+      email: m.email,
+      role: m.role,
+      identification_number: m.identificationNumber,
+      status: m.status,
+      address: m.address,
+      phone: m.phone,
+      beneficiary: m.beneficiary,
+      registration_date: m.registrationDate,
+      created_at: m.createdAt,
+    } as MemberResponseHttpDto;
   }
 
   @Post()
@@ -102,7 +127,7 @@ export class MembersV2Controller {
   @ApiResponse({
     status: 201,
     description: 'Member created successfully',
-    type: MemberResponseDto,
+    type: MemberResponseHttpDto,
     examples: {
       example: {
         summary: 'Created member',
@@ -111,13 +136,13 @@ export class MembersV2Controller {
           name: 'Juan Pérez',
           email: 'juan.perez@example.com',
           role: 'member',
-          identificationNumber: '1234567890',
+          identification_number: '1234567890',
           status: 'active',
           address: 'Calle 123, Ciudad',
           phone: '+57 300 123 4567',
           beneficiary: 'María Pérez',
-          registrationDate: '2024-01-15T10:30:00Z',
-          createdAt: '2024-01-15T10:30:00Z',
+          registration_date: '2024-01-15T10:30:00Z',
+          created_at: '2024-01-15T10:30:00Z',
         },
       },
     },
@@ -126,10 +151,12 @@ export class MembersV2Controller {
     description: 'Invalid request data (e.g., invalid email format)',
   })
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  async create(@Body() body: CreateMemberHttpDto): Promise<MemberResponseDto> {
+  async create(
+    @Body() body: CreateMemberHttpDto,
+  ): Promise<MemberResponseHttpDto> {
     try {
       const result = await this.createMemberUseCase.execute(body);
-      return result;
+      return this.mapMemberToHttp(result);
     } catch (e: unknown) {
       if (e instanceof Error) {
         console.error(e.message);
@@ -157,7 +184,7 @@ export class MembersV2Controller {
   @ApiResponse({
     status: 200,
     description: 'Member details',
-    type: MemberResponseDto,
+    type: MemberResponseHttpDto,
     examples: {
       example: {
         summary: 'Member details',
@@ -166,13 +193,13 @@ export class MembersV2Controller {
           name: 'Juan Pérez',
           email: 'juan.perez@example.com',
           role: 'member',
-          identificationNumber: '1234567890',
+          identification_number: '1234567890',
           status: 'active',
           address: 'Calle 123, Ciudad',
           phone: '+57 300 123 4567',
           beneficiary: 'María Pérez',
-          registrationDate: '2024-01-15T10:30:00Z',
-          createdAt: '2024-01-15T10:30:00Z',
+          registration_date: '2024-01-15T10:30:00Z',
+          created_at: '2024-01-15T10:30:00Z',
         },
       },
     },
@@ -185,10 +212,10 @@ export class MembersV2Controller {
   })
   async detail(
     @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<MemberResponseDto> {
+  ): Promise<MemberResponseHttpDto> {
     try {
       const result = await this.getMemberDetailQuery.execute(id);
-      return result;
+      return this.mapMemberToHttp(result);
     } catch (e: unknown) {
       if (e instanceof Error) {
         console.error(e.message);
@@ -217,7 +244,7 @@ export class MembersV2Controller {
   @ApiResponse({
     status: 200,
     description: 'Member updated successfully',
-    type: MemberResponseDto,
+    type: MemberResponseHttpDto,
     examples: {
       example: {
         summary: 'Updated member',
@@ -226,13 +253,13 @@ export class MembersV2Controller {
           name: 'Juan Pérez',
           email: 'juan.perez.updated@example.com',
           role: 'member',
-          identificationNumber: '1234567890',
+          identification_number: '1234567890',
           status: 'active',
           address: 'Calle 456, Nueva Ciudad',
           phone: '+57 300 123 4567',
           beneficiary: 'María Pérez',
-          registrationDate: '2024-01-15T10:30:00Z',
-          createdAt: '2024-01-15T10:30:00Z',
+          registration_date: '2024-01-15T10:30:00Z',
+          created_at: '2024-01-15T10:30:00Z',
         },
       },
     },
@@ -247,13 +274,13 @@ export class MembersV2Controller {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: UpdateMemberHttpDto,
-  ): Promise<MemberResponseDto> {
+  ): Promise<MemberResponseHttpDto> {
     try {
       const result = await this.updateMemberUseCase.execute({
         ...body,
         memberId: id,
       });
-      return result;
+      return this.mapMemberToHttp(result);
     } catch (e: unknown) {
       if (e instanceof Error) {
         console.error(e.message);
@@ -324,7 +351,7 @@ export class MembersV2Controller {
   @ApiResponse({
     status: 200,
     description: 'Member dues retrieved successfully',
-    type: [MemberDueResponseDto],
+    type: [MemberDueResponseHttpDto],
     examples: {
       example: {
         summary: 'Member dues',
@@ -333,30 +360,30 @@ export class MembersV2Controller {
             type: 'mandatory_contribution',
             description: 'Aporte obligatorio mensual',
             amount: 50000,
-            referenceId: 'mc-123e4567-e89b-12d3-a456-426614174000',
-            monthlyContribution: 50000,
-            creationDate: '2024-01-15T10:30:00Z',
+            reference_id: 'mc-123e4567-e89b-12d3-a456-426614174000',
+            monthly_contribution: 50000,
+            creation_date: '2024-01-15T10:30:00Z',
           },
           {
             type: 'stock_fee',
             description: 'Cuota de acciones',
             amount: 25000,
-            referenceId: 'stock-123e4567-e89b-12d3-a456-426614174000',
-            monthlyContribution: 25000,
-            stockQuantity: 10,
-            creationDate: '2024-01-15T10:30:00Z',
+            reference_id: 'stock-123e4567-e89b-12d3-a456-426614174000',
+            monthly_contribution: 25000,
+            stock_quantity: 10,
+            creation_date: '2024-01-15T10:30:00Z',
           },
           {
             type: 'loan_payment',
             description: 'Pago de préstamo',
             amount: 150000,
-            referenceId: 'loan-123e4567-e89b-12d3-a456-426614174000',
+            reference_id: 'loan-123e4567-e89b-12d3-a456-426614174000',
             details: {
               interest: 20000,
               principal: 130000,
               outstanding_balance: 1000000,
             },
-            creationDate: '2024-01-15T10:30:00Z',
+            creation_date: '2024-01-15T10:30:00Z',
           },
         ],
       },
@@ -370,9 +397,10 @@ export class MembersV2Controller {
   })
   async getDues(
     @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<MemberDueResponseDto[]> {
+  ): Promise<MemberDueResponseHttpDto[]> {
     try {
-      return await this.getMemberDuesQuery.execute(id);
+      const dues = await this.getMemberDuesQuery.execute(id);
+      return dues.map((d) => this.mapDueToHttp(d));
     } catch (e: unknown) {
       if (e instanceof Error) {
         console.error(e.message);
@@ -381,5 +409,109 @@ export class MembersV2Controller {
       }
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
+  }
+
+  private mapDueToHttp(d: MemberDueResponseDto): MemberDueResponseHttpDto {
+    return {
+      type: d.type,
+      description: d.description,
+      amount: d.amount,
+      reference_id: d.referenceId,
+      details: d.details,
+      monthly_contribution: d.monthlyContribution,
+      stock_quantity: d.stockQuantity,
+      novelty_comment: d.noveltyComment,
+      creation_date: d.creationDate,
+    } as MemberDueResponseHttpDto;
+  }
+
+  @Post(':id/payments')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Record monthly payments for a member',
+    description:
+      'Records monthly payments from a member. Supports multiple payment types (stock fees, loan payments, mandatory contributions, fees, insurance, novelties). The memberId is extracted from the URL path parameter.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The UUID of the member',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiBody({ type: RecordMonthlyPaymentsHttpDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Monthly payments recorded successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        operation_id: {
+          type: 'string',
+          example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+        },
+        meeting_id: {
+          type: 'string',
+          example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+        },
+        member_id: {
+          type: 'string',
+          example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+        },
+        total_amount: {
+          type: 'number',
+          example: 150.0,
+        },
+        ledger_entry_ids: {
+          type: 'array',
+          items: { type: 'string' },
+          example: [
+            'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+            'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12',
+          ],
+        },
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid request data or validation failed',
+  })
+  @ApiNotFoundResponse({
+    description: 'Member or meeting not found',
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error',
+  })
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  async recordMonthlyPayments(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RecordMonthlyPaymentsHttpDto,
+  ): Promise<RecordMonthlyPaymentsResponseHttpDto> {
+    try {
+      const result = await this.recordMonthlyPaymentsUseCase.execute({
+        memberId: id,
+        payments: dto.payments,
+        meetingId: dto.meetingId,
+      });
+      return this.mapRecordMonthlyPaymentsToHttp(result);
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  private mapRecordMonthlyPaymentsToHttp(
+    r: RecordMonthlyPaymentsResponseDto,
+  ): RecordMonthlyPaymentsResponseHttpDto {
+    return {
+      operation_id: r.operationId,
+      meeting_id: r.meetingId,
+      member_id: r.memberId,
+      total_amount: r.totalAmount,
+      ledger_entry_ids: r.ledgerEntryIds,
+    } as RecordMonthlyPaymentsResponseHttpDto;
   }
 }

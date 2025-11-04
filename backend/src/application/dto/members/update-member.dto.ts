@@ -1,34 +1,16 @@
-import { IsOptional, IsEmail, IsString, IsIn } from 'class-validator';
-
-export class UpdateMemberDto {
-  memberId!: string;
-
-  @IsOptional()
-  @IsString()
+/**
+ * Update Member DTO
+ *
+ * Input DTO for updating an existing member.
+ * All fields are optional.
+ */
+export interface UpdateMemberDto {
+  memberId: string;
   name?: string;
-
-  @IsOptional()
-  @IsEmail()
   email?: string;
-
-  @IsOptional()
-  @IsString()
-  @IsIn(['member', 'admin', 'treasurer'])
-  role?: 'member' | 'admin' | 'treasurer';
-
-  @IsOptional()
-  @IsString()
+  role?: string;
   identificationNumber?: string;
-
-  @IsOptional()
-  @IsString()
   address?: string;
-
-  @IsOptional()
-  @IsString()
   phone?: string;
-
-  @IsOptional()
-  @IsString()
   beneficiary?: string;
 }

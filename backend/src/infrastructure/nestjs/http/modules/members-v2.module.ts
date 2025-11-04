@@ -7,6 +7,8 @@ import { GetMemberDuesForActiveMeetingQueryHandler } from '@application/queries/
 import { CreateMemberUseCase } from '@application/use-cases/members/create-member.use-case';
 import { UpdateMemberUseCase } from '@application/use-cases/members/update-member.use-case';
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
+import { RecordMonthlyPaymentsUseCase } from '@application/use-cases/members/record-monthly-payments.use-case';
+import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
 import { TypeOrmMemberRepository } from '@infrastructure/typeorm/repositories/typeorm-member.repository';
 import { TypeOrmMeetingRepository } from '@infrastructure/typeorm/repositories/typeorm-meeting.repository';
 import { TypeOrmMandatoryContributionRepository } from '@infrastructure/typeorm/repositories/typeorm-mandatory-contribution.repository';
@@ -28,6 +30,17 @@ import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-su
 import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
 import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
+import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
+import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
+import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
+import { OperationBalanceValidator } from '@domain/services/operation-balance-validator.service';
+import { TypeOrmOperationRepository } from '@infrastructure/typeorm/repositories/typeorm-operation.repository';
+import { TypeOrmLedgerEntryRepository } from '@infrastructure/typeorm/repositories/typeorm-ledger-entry.repository';
+import { TypeOrmTransactionManager } from '@infrastructure/services/transaction-manager/typeorm-transaction-manager.service';
+import { Operation } from '@infrastructure/typeorm/entities/operation.entity';
+import { LedgerEntry } from '@infrastructure/typeorm/entities/ledger-entry.entity';
+import { Operation as OperationEntity } from '@infrastructure/typeorm/entities/operation.entity';
+import { LedgerEntry as LedgerEntryEntity } from '@infrastructure/typeorm/entities/ledger-entry.entity';
 
 const MEMBER_REPOSITORY = Symbol('MemberRepository');
 const MEETING_REPOSITORY = Symbol('MeetingRepository');
@@ -40,6 +53,9 @@ const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
   'LoanTransactionDetailRepository',
 );
 const STOCK_REPOSITORY = Symbol('StockRepository');
+const OPERATION_REPOSITORY = Symbol('OperationRepository');
+const LEDGER_ENTRY_REPOSITORY = Symbol('LedgerEntryRepository');
+const TRANSACTION_MANAGER = Symbol('TransactionManager');
 
 @Module({
   imports: [
@@ -51,6 +67,11 @@ const STOCK_REPOSITORY = Symbol('StockRepository');
       Loan,
       LoanTransactionDetail,
       Stock,
+      Operation,
+      LedgerEntry,
+      // Domain entities for hexagonal architecture
+      OperationEntity,
+      LedgerEntryEntity,
     ]),
   ],
   controllers: [MembersV2Controller],
@@ -83,6 +104,18 @@ const STOCK_REPOSITORY = Symbol('StockRepository');
     {
       provide: STOCK_REPOSITORY,
       useClass: TypeOrmStockRepository,
+    },
+    {
+      provide: OPERATION_REPOSITORY,
+      useClass: TypeOrmOperationRepository,
+    },
+    {
+      provide: LEDGER_ENTRY_REPOSITORY,
+      useClass: TypeOrmLedgerEntryRepository,
+    },
+    {
+      provide: TRANSACTION_MANAGER,
+      useClass: TypeOrmTransactionManager,
     },
     // Query handlers
     {
@@ -142,6 +175,54 @@ const STOCK_REPOSITORY = Symbol('StockRepository');
       useFactory: (repo: MemberRepository) => new DeleteMemberUseCase(repo),
       inject: [MEMBER_REPOSITORY],
     },
+    // Domain services
+    OperationBalanceValidator,
+    // Use cases
+    {
+      provide: RecordOperationUseCase,
+      useFactory: (
+        operationRepo: OperationRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+        transactionMgr: TransactionManager,
+        balanceValidator: OperationBalanceValidator,
+      ) =>
+        new RecordOperationUseCase(
+          operationRepo,
+          ledgerEntryRepo,
+          transactionMgr,
+          balanceValidator,
+        ),
+      inject: [
+        OPERATION_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+        TRANSACTION_MANAGER,
+        OperationBalanceValidator,
+      ],
+    },
+    {
+      provide: RecordMonthlyPaymentsUseCase,
+      useFactory: (
+        memberRepo: MemberRepository,
+        meetingRepo: MeetingRepository,
+        loanRepo: LoanRepository,
+        loanTransactionDetailRepo: LoanTransactionDetailRepository,
+        recordOperationUseCase: RecordOperationUseCase,
+      ) =>
+        new RecordMonthlyPaymentsUseCase(
+          memberRepo,
+          meetingRepo,
+          loanRepo,
+          loanTransactionDetailRepo,
+          recordOperationUseCase,
+        ),
+      inject: [
+        MEMBER_REPOSITORY,
+        MEETING_REPOSITORY,
+        LOAN_REPOSITORY,
+        LOAN_TRANSACTION_DETAIL_REPOSITORY,
+        RecordOperationUseCase,
+      ],
+    },
     // Repository instances for direct injection if needed
     TypeOrmMemberRepository,
     TypeOrmMeetingRepository,
@@ -150,6 +231,9 @@ const STOCK_REPOSITORY = Symbol('StockRepository');
     TypeOrmLoanRepository,
     TypeOrmLoanTransactionDetailRepository,
     TypeOrmStockRepository,
+    TypeOrmOperationRepository,
+    TypeOrmLedgerEntryRepository,
+    TypeOrmTransactionManager,
   ],
 })
 export class MembersV2Module {}
