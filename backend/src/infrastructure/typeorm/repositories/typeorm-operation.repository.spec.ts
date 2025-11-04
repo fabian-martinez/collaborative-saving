@@ -5,7 +5,6 @@ import { TypeOrmOperationRepository } from './typeorm-operation.repository';
 import { Operation as OperationEntity } from '../entities/operation.entity';
 import { Operation as OperationDomain } from '@domain/entities/operation.entity';
 import { Operation } from '@domain/entities/operation.entity';
-import { TypeOrmLedgerEntryRepository } from './typeorm-ledger-entry.repository';
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
 import { OperationType } from '@domain/enums/operation-type.enum';
 
