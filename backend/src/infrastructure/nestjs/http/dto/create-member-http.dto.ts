@@ -30,7 +30,7 @@ export class CreateMemberHttpDto {
   })
   @IsOptional()
   @IsString()
-  identificationNumber?: string;
+  identification_number?: string;
 
   @ApiPropertyOptional({
     description: "The member's role",

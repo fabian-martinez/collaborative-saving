@@ -21,6 +21,7 @@ import { OpenMeetingUseCase } from '@application/use-cases/meetings/open-meeting
 import { CloseMeetingUseCase } from '@application/use-cases/meetings/close-meeting.use-case';
 import { OpenMeetingHttpDto } from '../dto/open-meeting-http.dto';
 import { MeetingResponseDto } from '@application/dto/meetings/meeting-response.dto';
+import { OpenMeetingResponseHttpDto } from '../dto/open-meeting-response-http.dto';
 
 @ApiTags('Meetings V2')
 @Controller('v2/meetings')
@@ -58,13 +59,16 @@ export class MeetingsV2Controller {
     description:
       'Bad request - An active meeting already exists or invalid data',
   })
-  async open(@Body() dto: OpenMeetingHttpDto): Promise<MeetingResponseDto> {
+  async open(
+    @Body() dto: OpenMeetingHttpDto,
+  ): Promise<OpenMeetingResponseHttpDto> {
     try {
       const openDto = {
         date: dto.date,
         notes: dto.notes,
       };
-      return await this.openMeetingUseCase.execute(openDto);
+      const result = await this.openMeetingUseCase.execute(openDto);
+      return this.mapMeetingToHttp(result);
     } catch (error: unknown) {
       if (error instanceof HttpException) {
         throw error;
@@ -112,9 +116,10 @@ export class MeetingsV2Controller {
   })
   async close(
     @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<MeetingResponseDto> {
+  ): Promise<OpenMeetingResponseHttpDto> {
     try {
-      return await this.closeMeetingUseCase.execute({ meetingId: id });
+      const result = await this.closeMeetingUseCase.execute({ meetingId: id });
+      return this.mapMeetingToHttp(result);
     } catch (error: unknown) {
       if (error instanceof HttpException) {
         throw error;
@@ -124,5 +129,14 @@ export class MeetingsV2Controller {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+  private mapMeetingToHttp(m: MeetingResponseDto): OpenMeetingResponseHttpDto {
+    return {
+      id: m.id,
+      date: m.date,
+      status: m.status,
+      notes: m.notes,
+      created_at: m.createdAt,
+    };
   }
 }

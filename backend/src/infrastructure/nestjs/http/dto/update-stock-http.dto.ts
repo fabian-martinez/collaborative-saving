@@ -39,7 +39,7 @@ export class UpdateStockHttpDto extends PartialType(CreateStockHttpDto) {
   @IsNumber()
   @Min(0)
   @IsOptional()
-  monthlyContribution?: number;
+  monthly_contribution?: number;
 
   @ApiProperty({
     description: 'Flag to indicate if the stock has a guaranteed yield',
@@ -48,7 +48,7 @@ export class UpdateStockHttpDto extends PartialType(CreateStockHttpDto) {
   })
   @IsBoolean()
   @IsOptional()
-  isGuaranteed?: boolean;
+  is_guaranteed?: boolean;
 
   @ApiProperty({
     description:
@@ -60,7 +60,7 @@ export class UpdateStockHttpDto extends PartialType(CreateStockHttpDto) {
   @IsNumber()
   @Min(0)
   @IsOptional()
-  guaranteedYield?: number | null;
+  guaranteed_yield?: number | null;
 
   @ApiProperty({
     description:

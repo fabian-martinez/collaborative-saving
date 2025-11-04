@@ -23,7 +23,9 @@ import { UpdateStockUseCase } from '@application/use-cases/stocks/update-stock.u
 import { GetStocksQueryHandler } from '@application/queries/stocks/get-stocks.query-handler';
 import { GetStockDetailQueryHandler } from '@application/queries/stocks/get-stock-detail.query-handler';
 import { CreateStockHttpDto } from '../dto/create-stock-http.dto';
+import { CreateStockDto } from '@application/dto/stocks/create-stock.dto';
 import { UpdateStockHttpDto } from '../dto/update-stock-http.dto';
+import { StockResponseHttpDto } from '../dto/stock-response-http.dto';
 import { StockResponseDto } from '@application/dto/stocks/stock-response.dto';
 
 @ApiTags('Stocks V2')
@@ -44,7 +46,7 @@ export class StocksV2Controller {
   @ApiResponse({
     status: 200,
     description: 'Stocks retrieved successfully',
-    type: [StockResponseDto],
+    type: [StockResponseHttpDto],
     examples: {
       example: {
         summary: 'List of stocks',
@@ -73,9 +75,10 @@ export class StocksV2Controller {
       },
     },
   })
-  async list(): Promise<StockResponseDto[]> {
+  async list(): Promise<StockResponseHttpDto[]> {
     try {
-      return await this.getStocksQuery.execute();
+      const stocks = await this.getStocksQuery.execute();
+      return stocks.map((stock) => this.mapStockToHttp(stock));
     } catch (error: unknown) {
       throw new HttpException(
         error instanceof Error ? error.message : 'Internal server error',
@@ -97,7 +100,7 @@ export class StocksV2Controller {
   @ApiResponse({
     status: 200,
     description: 'Stock retrieved successfully',
-    type: StockResponseDto,
+    type: StockResponseHttpDto,
     examples: {
       example: {
         summary: 'Stock details',
@@ -119,9 +122,10 @@ export class StocksV2Controller {
   })
   async detail(
     @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<StockResponseDto> {
+  ): Promise<StockResponseHttpDto> {
     try {
-      return await this.getStockDetailQuery.execute(id);
+      const stock = await this.getStockDetailQuery.execute(id);
+      return this.mapStockToHttp(stock);
     } catch (error: unknown) {
       if (error instanceof HttpException) {
         throw error;
@@ -142,7 +146,7 @@ export class StocksV2Controller {
   @ApiResponse({
     status: 201,
     description: 'Stock created successfully',
-    type: StockResponseDto,
+    type: StockResponseHttpDto,
     examples: {
       example: {
         summary: 'Created stock',
@@ -163,17 +167,18 @@ export class StocksV2Controller {
     description:
       'Bad request - Invalid stock data or stock type already exists',
   })
-  async create(@Body() dto: CreateStockHttpDto): Promise<StockResponseDto> {
+  async create(@Body() dto: CreateStockHttpDto): Promise<StockResponseHttpDto> {
     try {
-      const createDto = {
+      const createDto: CreateStockDto = {
         type: dto.type,
         value: dto.value,
-        monthlyContribution: dto.monthlyContribution,
-        isGuaranteed: dto.isGuaranteed,
-        guaranteedYield: dto.guaranteedYield,
+        monthlyContribution: dto.monthly_contribution,
+        isGuaranteed: dto.is_guaranteed,
+        guaranteedYield: dto.guaranteed_yield,
         behavior: dto.behavior,
       };
-      return await this.createStockUseCase.execute(createDto);
+      const result = await this.createStockUseCase.execute(createDto);
+      return this.mapStockToHttp(result);
     } catch (error: unknown) {
       if (error instanceof HttpException) {
         throw error;
@@ -199,7 +204,7 @@ export class StocksV2Controller {
   @ApiResponse({
     status: 200,
     description: 'Stock updated successfully',
-    type: StockResponseDto,
+    type: StockResponseHttpDto,
     examples: {
       example: {
         summary: 'Updated stock',
@@ -226,17 +231,18 @@ export class StocksV2Controller {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateStockHttpDto,
-  ): Promise<StockResponseDto> {
+  ): Promise<StockResponseHttpDto> {
     try {
       const updateDto = {
         type: dto.type,
         value: dto.value,
-        monthlyContribution: dto.monthlyContribution,
-        isGuaranteed: dto.isGuaranteed,
-        guaranteedYield: dto.guaranteedYield,
+        monthlyContribution: dto.monthly_contribution,
+        isGuaranteed: dto.is_guaranteed,
+        guaranteedYield: dto.guaranteed_yield,
         behavior: dto.behavior,
       };
-      return await this.updateStockUseCase.execute(id, updateDto);
+      const result = await this.updateStockUseCase.execute(id, updateDto);
+      return this.mapStockToHttp(result);
     } catch (error: unknown) {
       if (error instanceof HttpException) {
         throw error;
@@ -246,5 +252,18 @@ export class StocksV2Controller {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  private mapStockToHttp(stock: StockResponseDto): StockResponseHttpDto {
+    return {
+      id: stock.id,
+      type: stock.type,
+      value: stock.value,
+      monthly_contribution: stock.monthlyContribution,
+      is_guaranteed: stock.isGuaranteed,
+      guaranteed_yield: stock.guaranteedYield,
+      behavior: stock.behavior,
+      created_at: stock.createdAt,
+    };
   }
 }

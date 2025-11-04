@@ -3,8 +3,9 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { MeetingsV2Controller } from './meetings.v2.controller';
 import { OpenMeetingUseCase } from '@application/use-cases/meetings/open-meeting.use-case';
 import { CloseMeetingUseCase } from '@application/use-cases/meetings/close-meeting.use-case';
-import { MeetingResponseDto } from '@application/dto/meetings/meeting-response.dto';
 import { MeetingStatus } from '@domain/entities/meeting.entity';
+import { OpenMeetingResponseHttpDto } from '../dto/open-meeting-response-http.dto';
+import { MeetingResponseDto } from '@application/dto/meetings/meeting-response.dto';
 
 describe('MeetingsV2Controller', () => {
   let controller: MeetingsV2Controller;
@@ -14,12 +15,20 @@ describe('MeetingsV2Controller', () => {
   let openMeetingUseCaseExecuteSpy: jest.SpyInstance;
   let closeMeetingUseCaseExecuteSpy: jest.SpyInstance;
 
-  const mockMeetingResponse: MeetingResponseDto = {
+  const mockOpenMeetingResponse: MeetingResponseDto = {
     id: '550e8400-e29b-41d4-a716-446655440000',
     date: new Date('2024-01-15'),
     status: MeetingStatus.ACTIVE,
     notes: 'Test meeting',
     createdAt: new Date('2024-01-15'),
+  };
+
+  const mockOpenMeetinHttpResponse: OpenMeetingResponseHttpDto = {
+    id: '550e8400-e29b-41d4-a716-446655440000',
+    date: new Date('2024-01-15'),
+    status: MeetingStatus.ACTIVE,
+    notes: 'Test meeting',
+    created_at: new Date('2024-01-15'),
   };
 
   beforeEach(async () => {
@@ -61,7 +70,7 @@ describe('MeetingsV2Controller', () => {
         notes: 'Test meeting',
       };
 
-      openMeetingUseCaseExecuteSpy.mockResolvedValue(mockMeetingResponse);
+      openMeetingUseCaseExecuteSpy.mockResolvedValue(mockOpenMeetingResponse);
 
       // ACT
       const result = await controller.open(openDto);
@@ -71,14 +80,14 @@ describe('MeetingsV2Controller', () => {
         date: openDto.date,
         notes: openDto.notes,
       });
-      expect(result).toEqual(mockMeetingResponse);
+      expect(result).toEqual(mockOpenMeetinHttpResponse);
     });
 
     it('should open a meeting without optional fields', async () => {
       // ARRANGE
       const openDto = {};
 
-      openMeetingUseCaseExecuteSpy.mockResolvedValue(mockMeetingResponse);
+      openMeetingUseCaseExecuteSpy.mockResolvedValue(mockOpenMeetingResponse);
 
       // ACT
       const result = await controller.open(openDto);
@@ -88,7 +97,7 @@ describe('MeetingsV2Controller', () => {
         date: undefined,
         notes: undefined,
       });
-      expect(result).toEqual(mockMeetingResponse);
+      expect(result).toEqual(mockOpenMeetinHttpResponse);
     });
 
     it('should handle BadRequestException when active meeting exists', async () => {
@@ -125,8 +134,17 @@ describe('MeetingsV2Controller', () => {
     it('should close a meeting successfully', async () => {
       // ARRANGE
       const closedMeeting: MeetingResponseDto = {
-        ...mockMeetingResponse,
+        ...mockOpenMeetingResponse,
         status: MeetingStatus.CLOSED,
+        createdAt: new Date('2024-01-15'),
+      };
+
+      const closeMeetingHttpRespose: OpenMeetingResponseHttpDto = {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        date: new Date('2024-01-15'),
+        notes: 'Test meeting',
+        status: MeetingStatus.CLOSED,
+        created_at: new Date('2024-01-15'),
       };
 
       closeMeetingUseCaseExecuteSpy.mockResolvedValue(closedMeeting);
@@ -138,7 +156,7 @@ describe('MeetingsV2Controller', () => {
       expect(closeMeetingUseCaseExecuteSpy).toHaveBeenCalledWith({
         meetingId,
       });
-      expect(result).toEqual(closedMeeting);
+      expect(result).toEqual(closeMeetingHttpRespose);
       expect(result.status).toBe(MeetingStatus.CLOSED);
     });
 
