@@ -1,7 +1,8 @@
 import { CloseMeetingUseCase } from './close-meeting.use-case';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { Meeting, MeetingStatus } from '@domain/entities/meeting.entity';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
+import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 
 describe('CloseMeetingUseCase', () => {
   let useCase: CloseMeetingUseCase;
@@ -50,14 +51,14 @@ describe('CloseMeetingUseCase', () => {
     expect(result.id).toBe(meetingId);
   });
 
-  it('should throw NotFoundException if meeting does not exist', async () => {
+  it('should throw MeetingNotFoundException if meeting does not exist', async () => {
     // ARRANGE
     const meetingId = '550e8400-e29b-41d4-a716-446655440000';
     meetingRepository.findById.mockResolvedValue(null);
 
     // ACT & ASSERT
     await expect(useCase.execute({ meetingId })).rejects.toThrow(
-      NotFoundException,
+      MeetingNotFoundException,
     );
     await expect(useCase.execute({ meetingId })).rejects.toThrow(
       `Meeting with ID ${meetingId} not found`,
@@ -66,7 +67,7 @@ describe('CloseMeetingUseCase', () => {
     expect(saveSpy).not.toHaveBeenCalled();
   });
 
-  it('should throw BadRequestException if meeting is already closed', async () => {
+  it('should throw InvalidRequestError if meeting is already closed', async () => {
     // ARRANGE
     const meetingId = '550e8400-e29b-41d4-a716-446655440000';
     const closedMeeting = Meeting.create({});
@@ -76,7 +77,7 @@ describe('CloseMeetingUseCase', () => {
 
     // ACT & ASSERT
     await expect(useCase.execute({ meetingId })).rejects.toThrow(
-      BadRequestException,
+      InvalidRequestError,
     );
     await expect(useCase.execute({ meetingId })).rejects.toThrow(
       'This meeting is already closed',

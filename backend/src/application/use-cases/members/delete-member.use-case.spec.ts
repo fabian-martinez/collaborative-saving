@@ -1,7 +1,7 @@
 import { DeleteMemberUseCase } from './delete-member.use-case';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
 import { Member } from '@domain/entities/member.entity';
-import { NotFoundException } from '@nestjs/common';
+import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
 
 describe('DeleteMemberUseCase', () => {
   let useCase: DeleteMemberUseCase;
@@ -51,7 +51,7 @@ describe('DeleteMemberUseCase', () => {
     expect(softDeleteSpy).toHaveBeenCalledWith(memberId);
   });
 
-  it('should throw NotFoundException when member not found', async () => {
+  it('should throw MemberNotFoundException when member not found', async () => {
     const memberId = '550e8400-e29b-41d4-a716-446655440000';
     const deleteDto = {
       memberId,
@@ -59,7 +59,9 @@ describe('DeleteMemberUseCase', () => {
 
     findByIdSpy.mockResolvedValue(null);
 
-    await expect(useCase.execute(deleteDto)).rejects.toThrow(NotFoundException);
+    await expect(useCase.execute(deleteDto)).rejects.toThrow(
+      MemberNotFoundException,
+    );
     await expect(useCase.execute(deleteDto)).rejects.toThrow(
       `Member with ID ${memberId} not found`,
     );

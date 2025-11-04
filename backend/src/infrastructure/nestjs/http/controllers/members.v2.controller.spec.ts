@@ -3,10 +3,13 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { MembersV2Controller } from './members.v2.controller';
 import { GetMembersQueryHandler } from '@application/queries/members/get-members.query-handler';
 import { GetMemberDetailQueryHandler } from '@application/queries/members/get-member-detail.query-handler';
+import { GetMemberDuesForActiveMeetingQueryHandler } from '@application/queries/members/get-member-dues-for-active-meeting.query-handler';
 import { CreateMemberUseCase } from '@application/use-cases/members/create-member.use-case';
 import { UpdateMemberUseCase } from '@application/use-cases/members/update-member.use-case';
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
 import { MemberResponseDto } from '@application/dto/members/member-response.dto';
+import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
+import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 
 describe('MembersV2Controller', () => {
   let controller: MembersV2Controller;
@@ -45,6 +48,12 @@ describe('MembersV2Controller', () => {
         },
         {
           provide: GetMemberDetailQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: GetMemberDuesForActiveMeetingQueryHandler,
           useValue: {
             execute: jest.fn(),
           },
@@ -137,7 +146,7 @@ describe('MembersV2Controller', () => {
     it('should throw HttpException with NOT_FOUND when member not found', async () => {
       const memberId = '550e8400-e29b-41d4-a716-446655440000';
       getMemberDetailQueryExecuteSpy.mockRejectedValue(
-        new Error('Member not found'),
+        new MemberNotFoundException(memberId),
       );
 
       await expect(controller.detail(memberId)).rejects.toThrow(HttpException);
@@ -184,7 +193,7 @@ describe('MembersV2Controller', () => {
       };
 
       createMemberUseCaseExecuteSpy.mockRejectedValue(
-        new Error('Invalid email format'),
+        new InvalidRequestError('Invalid email format'),
       );
 
       await expect(controller.create(createDto)).rejects.toThrow(HttpException);
@@ -249,7 +258,7 @@ describe('MembersV2Controller', () => {
       };
 
       updateMemberUseCaseExecuteSpy.mockRejectedValue(
-        new Error('Member not found'),
+        new MemberNotFoundException(memberId),
       );
 
       await expect(controller.update(memberId, updateDto)).rejects.toThrow(
@@ -318,7 +327,7 @@ describe('MembersV2Controller', () => {
     it('should throw HttpException with NOT_FOUND when member not found', async () => {
       const memberId = '550e8400-e29b-41d4-a716-446655440000';
       deleteMemberUseCaseExecuteSpy.mockRejectedValue(
-        new Error('Member not found'),
+        new MemberNotFoundException(memberId),
       );
 
       await expect(controller.remove(memberId)).rejects.toThrow(HttpException);

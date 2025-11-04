@@ -1,6 +1,7 @@
-import { NotFoundException } from '@nestjs/common';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
+import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
+import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
 import { MandatoryContributionRepository } from '@domain/ports/repositories/mandatory-contribution-repository.port';
 import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-subscription-repository.port';
 import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
@@ -8,7 +9,7 @@ import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { Loan } from '@domain/entities/loan.entity';
 import { MemberDueResponseDto } from '@application/dto/members/member-due-response.dto';
-import { TransactionType } from 'src/common/enums/transaction-type.enum';
+import { LoanTransactionType } from '@domain/entities/loan-transaction-detail.entity';
 
 export class GetMemberDuesForActiveMeetingQueryHandler {
   constructor(
@@ -25,13 +26,13 @@ export class GetMemberDuesForActiveMeetingQueryHandler {
     // 1. Obtener reunión activa
     const activeMeeting = await this.meetingRepository.findActive();
     if (!activeMeeting) {
-      throw new NotFoundException('No active meeting found');
+      throw new MeetingNotFoundException();
     }
 
     // 2. Validar que el miembro existe
     const member = await this.memberRepository.findById(memberId);
     if (!member) {
-      throw new NotFoundException(`Member with ID ${memberId} not found`);
+      throw new MemberNotFoundException(memberId);
     }
 
     // 3. Obtener contribuciones obligatorias
@@ -130,7 +131,7 @@ export class GetMemberDuesForActiveMeetingQueryHandler {
       const hasInterestPayment = transactions.some(
         (transaction) =>
           transaction.transactionType ===
-          String(TransactionType.INTEREST_PAYMENT),
+          String(LoanTransactionType.INTEREST_PAYMENT),
       );
 
       // Si no hay pago de interés, agregar a la lista de préstamos sin pagar

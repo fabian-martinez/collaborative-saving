@@ -1,0 +1,14 @@
+import { NotFoundError } from '@domain/errors/not-found.error';
+
+/**
+ * Member Not Found Exception
+ *
+ * Application-level exception for when a member is not found.
+ * Extends NotFoundError for consistency with domain errors.
+ */
+export class MemberNotFoundException extends NotFoundError {
+  constructor(memberId: string) {
+    super('Member', memberId);
+    this.name = 'MemberNotFoundException';
+  }
+}

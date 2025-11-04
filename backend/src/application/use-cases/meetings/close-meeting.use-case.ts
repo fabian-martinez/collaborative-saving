@@ -1,7 +1,8 @@
 import { CloseMeetingDto } from '@application/dto/meetings/close-meeting.dto';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { MeetingResponseDto } from '@application/dto/meetings/meeting-response.dto';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
+import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 
 export class CloseMeetingUseCase {
   constructor(private readonly meetingRepository: MeetingRepository) {}
@@ -10,11 +11,11 @@ export class CloseMeetingUseCase {
     const meeting = await this.meetingRepository.findById(dto.meetingId);
 
     if (!meeting) {
-      throw new NotFoundException(`Meeting with ID ${dto.meetingId} not found`);
+      throw new MeetingNotFoundException(dto.meetingId);
     }
 
     if (meeting.isClosed()) {
-      throw new BadRequestException('This meeting is already closed');
+      throw new InvalidRequestError('This meeting is already closed');
     }
 
     meeting.close();

@@ -1,6 +1,6 @@
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { StockResponseDto } from '@application/dto/stocks/stock-response.dto';
-import { NotFoundException } from '@nestjs/common';
+import { StockNotFoundException } from '@application/exceptions/stock-not-found.exception';
 
 export class GetStockDetailQueryHandler {
   constructor(private readonly stockRepository: StockRepository) {}
@@ -8,7 +8,7 @@ export class GetStockDetailQueryHandler {
   async execute(stockId: string): Promise<StockResponseDto> {
     const stock = await this.stockRepository.findById(stockId);
     if (!stock) {
-      throw new NotFoundException(`Stock with ID ${stockId} not found`);
+      throw new StockNotFoundException(stockId);
     }
     return {
       id: stock.id,
