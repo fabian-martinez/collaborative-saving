@@ -1,7 +1,8 @@
 import { UpdateStockUseCase } from './update-stock.use-case';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { Stock, StockBehavior } from '@domain/entities/stock.entity';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { StockNotFoundException } from '@application/exceptions/stock-not-found.exception';
+import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 
 describe('UpdateStockUseCase', () => {
   let useCase: UpdateStockUseCase;
@@ -54,12 +55,12 @@ describe('UpdateStockUseCase', () => {
     expect(result.monthlyContribution).toBe(75);
   });
 
-  it('should throw NotFoundException if stock does not exist', async () => {
+  it('should throw StockNotFoundException if stock does not exist', async () => {
     const stockId = '550e8400-e29b-41d4-a716-446655440000';
     stockRepository.findById.mockResolvedValue(null);
 
     await expect(useCase.execute(stockId, { value: 150 })).rejects.toThrow(
-      NotFoundException,
+      StockNotFoundException,
     );
     await expect(useCase.execute(stockId, { value: 150 })).rejects.toThrow(
       `Stock with ID ${stockId} not found`,
@@ -68,7 +69,7 @@ describe('UpdateStockUseCase', () => {
     expect(saveSpy).not.toHaveBeenCalled();
   });
 
-  it('should throw BadRequestException if stock is deleted', async () => {
+  it('should throw InvalidRequestError if stock is deleted', async () => {
     const stockId = '550e8400-e29b-41d4-a716-446655440000';
     const deletedStock = Stock.create({
       type: 'preferential',
@@ -80,7 +81,7 @@ describe('UpdateStockUseCase', () => {
     stockRepository.findById.mockResolvedValue(deletedStock);
 
     await expect(useCase.execute(stockId, { value: 150 })).rejects.toThrow(
-      BadRequestException,
+      InvalidRequestError,
     );
     await expect(useCase.execute(stockId, { value: 150 })).rejects.toThrow(
       `Stock with ID ${stockId} is deleted`,
@@ -89,7 +90,7 @@ describe('UpdateStockUseCase', () => {
     expect(saveSpy).not.toHaveBeenCalled();
   });
 
-  it('should throw BadRequestException if new type already exists', async () => {
+  it('should throw InvalidRequestError if new type already exists', async () => {
     const stockId = '550e8400-e29b-41d4-a716-446655440000';
     const existingStock = Stock.create({
       type: 'preferential',
@@ -108,7 +109,7 @@ describe('UpdateStockUseCase', () => {
 
     await expect(
       useCase.execute(stockId, { type: 'new-type' }),
-    ).rejects.toThrow(BadRequestException);
+    ).rejects.toThrow(InvalidRequestError);
     await expect(
       useCase.execute(stockId, { type: 'new-type' }),
     ).rejects.toThrow('Stock with type "new-type" already exists');

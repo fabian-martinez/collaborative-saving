@@ -10,7 +10,11 @@ import { LoanRepository } from '@domain/ports/repositories/loan-repository.port'
 import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
 import { RecordOperationDto } from '@application/dto/accounting/record-operation.dto';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
+import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
+import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
+import { InvalidPaymentException } from '@application/exceptions/invalid-payment.exception';
+import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { OperationType } from '@domain/enums/operation-type.enum';
 import { Meeting } from '@domain/entities/meeting.entity';
 import {
@@ -48,7 +52,7 @@ export class RecordMonthlyPaymentsUseCase {
     // 1. Validate member exists
     const member = await this.memberRepository.findById(dto.memberId);
     if (!member) {
-      throw new NotFoundException(`Member with ID ${dto.memberId} not found`);
+      throw new MemberNotFoundException(dto.memberId);
     }
 
     // 2. Get active meeting (or use provided meetingId)
@@ -56,14 +60,12 @@ export class RecordMonthlyPaymentsUseCase {
     if (dto.meetingId) {
       meeting = await this.meetingRepository.findById(dto.meetingId);
       if (!meeting) {
-        throw new NotFoundException(
-          `Meeting with ID ${dto.meetingId} not found`,
-        );
+        throw new MeetingNotFoundException(dto.meetingId);
       }
     } else {
       meeting = await this.meetingRepository.findActive();
       if (!meeting) {
-        throw new NotFoundException('No active meeting found');
+        throw new MeetingNotFoundException();
       }
     }
 
@@ -72,13 +74,13 @@ export class RecordMonthlyPaymentsUseCase {
 
     // 3. Validate payments array is not empty
     if (!dto.payments || dto.payments.length === 0) {
-      throw new BadRequestException('At least one payment is required');
+      throw new InvalidPaymentException('At least one payment is required');
     }
 
     // 4. Validate all amounts are positive
     for (const payment of dto.payments) {
       if (payment.amount <= 0) {
-        throw new BadRequestException(
+        throw new InvalidPaymentException(
           `Payment amount must be positive, got ${payment.amount}`,
         );
       }
@@ -94,16 +96,14 @@ export class RecordMonthlyPaymentsUseCase {
     for (const payment of dto.payments) {
       if (payment.type === PaymentType.LOAN_PAYMENT) {
         if (!payment.referenceId) {
-          throw new BadRequestException(
+          throw new InvalidPaymentException(
             'Loan payment must include a referenceId (loan ID)',
           );
         }
         // Validate loan exists
         const loan = await this.loanRepository.findById(payment.referenceId);
         if (!loan) {
-          throw new NotFoundException(
-            `Loan with ID ${payment.referenceId} not found`,
-          );
+          throw new LoanNotFoundException(payment.referenceId);
         }
         loanPayments.push({
           loanId: payment.referenceId,
@@ -140,9 +140,7 @@ export class RecordMonthlyPaymentsUseCase {
       const loan = await this.loanRepository.findById(loanPayment.loanId);
       if (!loan) {
         // This should not happen since we validated earlier, but handle it gracefully
-        throw new NotFoundException(
-          `Loan with ID ${loanPayment.loanId} not found`,
-        );
+        throw new LoanNotFoundException(loanPayment.loanId);
       }
 
       // Apply domain logic: record payment (updates internal state)
@@ -283,7 +281,7 @@ export class RecordMonthlyPaymentsUseCase {
         break;
 
       default:
-        throw new BadRequestException(
+        throw new InvalidRequestError(
           `Unknown payment type: ${String(payment.type)}`,
         );
     }

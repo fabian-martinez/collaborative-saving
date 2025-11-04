@@ -12,7 +12,10 @@ import {
   LoanTransactionDetail,
   LoanTransactionType,
 } from '@domain/entities/loan-transaction-detail.entity';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
+import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
+import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
+import { InvalidPaymentException } from '@application/exceptions/invalid-payment.exception';
 import { PaymentType } from '@application/dto/members/payment-item.dto';
 
 describe('RecordMonthlyPaymentsUseCase', () => {
@@ -133,26 +136,26 @@ describe('RecordMonthlyPaymentsUseCase', () => {
       expect(result.ledgerEntryIds).toEqual(['entry-1', 'entry-2', 'entry-3']);
     });
 
-    it('should throw NotFoundException when member does not exist', async () => {
+    it('should throw MemberNotFoundException when member does not exist', async () => {
       // ARRANGE
       findByIdSpy.mockResolvedValue(null);
 
       // ACT & ASSERT
       await expect(useCase.execute(validDto)).rejects.toThrow(
-        NotFoundException,
+        MemberNotFoundException,
       );
       expect(findByIdSpy).toHaveBeenCalledWith('member-id');
       expect(recordOperationExecuteSpy).not.toHaveBeenCalled();
     });
 
-    it('should throw NotFoundException when no active meeting exists', async () => {
+    it('should throw MeetingNotFoundException when no active meeting exists', async () => {
       // ARRANGE
       findByIdSpy.mockResolvedValue(mockMember);
       findActiveSpy.mockResolvedValue(null);
 
       // ACT & ASSERT
       await expect(useCase.execute(validDto)).rejects.toThrow(
-        NotFoundException,
+        MeetingNotFoundException,
       );
       expect(findActiveSpy).toHaveBeenCalledTimes(1);
       expect(recordOperationExecuteSpy).not.toHaveBeenCalled();
@@ -214,7 +217,7 @@ describe('RecordMonthlyPaymentsUseCase', () => {
 
       // ACT & ASSERT
       await expect(useCase.execute(invalidDto)).rejects.toThrow(
-        BadRequestException,
+        InvalidPaymentException,
       );
     });
 
@@ -274,7 +277,7 @@ describe('RecordMonthlyPaymentsUseCase', () => {
       expect(result.totalAmount).toBe(500);
     });
 
-    it('should throw NotFoundException when loan does not exist', async () => {
+    it('should throw LoanNotFoundException when loan does not exist', async () => {
       // ARRANGE
       const loanDto: RecordMonthlyPaymentsDto = {
         memberId: 'member-id',
@@ -292,12 +295,14 @@ describe('RecordMonthlyPaymentsUseCase', () => {
       loanFindByIdSpy.mockResolvedValue(null);
 
       // ACT & ASSERT
-      await expect(useCase.execute(loanDto)).rejects.toThrow(NotFoundException);
+      await expect(useCase.execute(loanDto)).rejects.toThrow(
+        LoanNotFoundException,
+      );
       expect(loanFindByIdSpy).toHaveBeenCalledWith('non-existent-loan');
       expect(recordOperationExecuteSpy).not.toHaveBeenCalled();
     });
 
-    it('should throw BadRequestException when loan payment has no referenceId', async () => {
+    it('should throw InvalidPaymentException when loan payment has no referenceId', async () => {
       // ARRANGE
       const invalidDto: RecordMonthlyPaymentsDto = {
         memberId: 'member-id',
@@ -315,7 +320,7 @@ describe('RecordMonthlyPaymentsUseCase', () => {
 
       // ACT & ASSERT
       await expect(useCase.execute(invalidDto)).rejects.toThrow(
-        BadRequestException,
+        InvalidPaymentException,
       );
       expect(recordOperationExecuteSpy).not.toHaveBeenCalled();
     });

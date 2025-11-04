@@ -1,6 +1,6 @@
 import { DeleteMemberDto } from '@application/dto/members/delete-member.dto';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
-import { NotFoundException } from '@nestjs/common';
+import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
 
 export class DeleteMemberUseCase {
   constructor(private readonly memberRepository: MemberRepository) {}
@@ -8,7 +8,7 @@ export class DeleteMemberUseCase {
   async execute(dto: DeleteMemberDto): Promise<void> {
     const member = await this.memberRepository.findById(dto.memberId);
     if (!member) {
-      throw new NotFoundException(`Member with ID ${dto.memberId} not found`);
+      throw new MemberNotFoundException(dto.memberId);
     }
 
     // Mark as deleted in domain

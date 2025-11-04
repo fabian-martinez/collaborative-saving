@@ -1,7 +1,7 @@
 import { CreateStockUseCase } from './create-stock.use-case';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { Stock, StockBehavior } from '@domain/entities/stock.entity';
-import { BadRequestException } from '@nestjs/common';
+import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 
 describe('CreateStockUseCase', () => {
   let useCase: CreateStockUseCase;
@@ -84,7 +84,7 @@ describe('CreateStockUseCase', () => {
     expect(result.behavior).toBe(StockBehavior.DIVIDEND_YIELD);
   });
 
-  it('should throw BadRequestException if stock type already exists', async () => {
+  it('should throw InvalidRequestError if stock type already exists', async () => {
     // ARRANGE
     const createDto = {
       type: 'preferential',
@@ -97,7 +97,7 @@ describe('CreateStockUseCase', () => {
 
     // ACT & ASSERT
     await expect(useCase.execute(createDto)).rejects.toThrow(
-      BadRequestException,
+      InvalidRequestError,
     );
     await expect(useCase.execute(createDto)).rejects.toThrow(
       'Stock with type "preferential" already exists',

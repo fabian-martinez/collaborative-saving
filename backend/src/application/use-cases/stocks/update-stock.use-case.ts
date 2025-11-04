@@ -1,7 +1,8 @@
 import { UpdateStockDto } from '@application/dto/stocks/update-stock.dto';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { StockResponseDto } from '@application/dto/stocks/stock-response.dto';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { StockNotFoundException } from '@application/exceptions/stock-not-found.exception';
+import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 
 export class UpdateStockUseCase {
   constructor(private readonly stockRepository: StockRepository) {}
@@ -13,18 +14,18 @@ export class UpdateStockUseCase {
     const stock = await this.stockRepository.findById(stockId);
 
     if (!stock) {
-      throw new NotFoundException(`Stock with ID ${stockId} not found`);
+      throw new StockNotFoundException(stockId);
     }
 
     if (stock.isDeleted()) {
-      throw new BadRequestException(`Stock with ID ${stockId} is deleted`);
+      throw new InvalidRequestError(`Stock with ID ${stockId} is deleted`);
     }
 
     // Si se está actualizando el tipo, verificar que no exista otro stock con el mismo tipo
     if (dto.type && dto.type !== stock.type) {
       const existing = await this.stockRepository.findByType(dto.type);
       if (existing && existing.id !== stockId && !existing.isDeleted()) {
-        throw new BadRequestException(
+        throw new InvalidRequestError(
           `Stock with type "${dto.type}" already exists`,
         );
       }

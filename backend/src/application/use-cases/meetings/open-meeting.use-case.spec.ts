@@ -1,7 +1,7 @@
 import { OpenMeetingUseCase } from './open-meeting.use-case';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { Meeting, MeetingStatus } from '@domain/entities/meeting.entity';
-import { BadRequestException } from '@nestjs/common';
+import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 
 describe('OpenMeetingUseCase', () => {
   let useCase: OpenMeetingUseCase;
@@ -68,14 +68,14 @@ describe('OpenMeetingUseCase', () => {
     expect(result.notes).toBeNull();
   });
 
-  it('should throw BadRequestException if active meeting exists', async () => {
+  it('should throw InvalidRequestError if active meeting exists', async () => {
     // ARRANGE
     const openDto = { date: new Date('2024-01-15') };
     const activeMeeting = Meeting.create({});
     meetingRepository.findActive.mockResolvedValue(activeMeeting);
 
     // ACT & ASSERT
-    await expect(useCase.execute(openDto)).rejects.toThrow(BadRequestException);
+    await expect(useCase.execute(openDto)).rejects.toThrow(InvalidRequestError);
     await expect(useCase.execute(openDto)).rejects.toThrow(
       'An active meeting already exists',
     );

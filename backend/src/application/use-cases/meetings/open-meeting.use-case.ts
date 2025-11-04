@@ -1,7 +1,7 @@
 import { OpenMeetingDto } from '@application/dto/meetings/open-meeting.dto';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { MeetingResponseDto } from '@application/dto/meetings/meeting-response.dto';
-import { BadRequestException } from '@nestjs/common';
+import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { Meeting } from '@domain/entities/meeting.entity';
 
 export class OpenMeetingUseCase {
@@ -11,7 +11,7 @@ export class OpenMeetingUseCase {
     // Validar que no exista una reunión activa
     const activeMeeting = await this.meetingRepository.findActive();
     if (activeMeeting) {
-      throw new BadRequestException(
+      throw new InvalidRequestError(
         'An active meeting already exists. Please close it before creating a new one.',
       );
     }

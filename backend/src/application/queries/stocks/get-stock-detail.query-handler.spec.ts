@@ -1,7 +1,7 @@
 import { GetStockDetailQueryHandler } from './get-stock-detail.query-handler';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { Stock, StockBehavior } from '@domain/entities/stock.entity';
-import { NotFoundException } from '@nestjs/common';
+import { StockNotFoundException } from '@application/exceptions/stock-not-found.exception';
 
 describe('GetStockDetailQueryHandler', () => {
   let handler: GetStockDetailQueryHandler;
@@ -78,13 +78,15 @@ describe('GetStockDetailQueryHandler', () => {
     expect(result.behavior).toBe(StockBehavior.DIVIDEND_YIELD);
   });
 
-  it('should throw NotFoundException when stock not found', async () => {
+  it('should throw StockNotFoundException when stock not found', async () => {
     // ARRANGE
     const stockId = '550e8400-e29b-41d4-a716-446655440000';
     stockRepository.findById.mockResolvedValue(null);
 
     // ACT & ASSERT
-    await expect(handler.execute(stockId)).rejects.toThrow(NotFoundException);
+    await expect(handler.execute(stockId)).rejects.toThrow(
+      StockNotFoundException,
+    );
     await expect(handler.execute(stockId)).rejects.toThrow(
       `Stock with ID ${stockId} not found`,
     );
