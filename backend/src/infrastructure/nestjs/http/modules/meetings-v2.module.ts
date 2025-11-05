@@ -6,6 +6,7 @@ import { MeetingsV2Controller } from '../controllers/meetings.v2.controller';
 import { OpenMeetingUseCase } from '@application/use-cases/meetings/open-meeting.use-case';
 import { CloseMeetingUseCase } from '@application/use-cases/meetings/close-meeting.use-case';
 import { GetMeetingMonthlyPaymentsQueryHandler } from '@application/queries/meetings/get-meeting-monthly-payments.query-handler';
+import { GetMeetingsQueryHandler } from '@application/queries/meetings/get-meetings.query-handler';
 import { TypeOrmMeetingRepository } from '@infrastructure/typeorm/repositories/typeorm-meeting.repository';
 import { TypeOrmOperationRepository } from '@infrastructure/typeorm/repositories/typeorm-operation.repository';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
@@ -28,6 +29,12 @@ const OPERATION_REPOSITORY = Symbol('OperationRepository');
       useClass: TypeOrmOperationRepository,
     },
     // Query handlers
+    {
+      provide: GetMeetingsQueryHandler,
+      useFactory: (meetingRepo: MeetingRepository) =>
+        new GetMeetingsQueryHandler(meetingRepo),
+      inject: [MEETING_REPOSITORY],
+    },
     {
       provide: GetMeetingMonthlyPaymentsQueryHandler,
       useFactory: (

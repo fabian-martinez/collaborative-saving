@@ -21,6 +21,7 @@ import {
 import { OpenMeetingUseCase } from '@application/use-cases/meetings/open-meeting.use-case';
 import { CloseMeetingUseCase } from '@application/use-cases/meetings/close-meeting.use-case';
 import { GetMeetingMonthlyPaymentsQueryHandler } from '@application/queries/meetings/get-meeting-monthly-payments.query-handler';
+import { GetMeetingsQueryHandler } from '@application/queries/meetings/get-meetings.query-handler';
 import { OpenMeetingHttpDto } from '../dto/open-meeting-http.dto';
 import { MeetingResponseDto } from '@application/dto/meetings/meeting-response.dto';
 import { OpenMeetingResponseHttpDto } from '../dto/open-meeting-response-http.dto';
@@ -35,6 +36,7 @@ export class MeetingsV2Controller {
     private readonly openMeetingUseCase: OpenMeetingUseCase,
     private readonly closeMeetingUseCase: CloseMeetingUseCase,
     private readonly getMeetingMonthlyPaymentsQuery: GetMeetingMonthlyPaymentsQueryHandler,
+    private readonly getMeetingsQuery: GetMeetingsQueryHandler,
   ) {}
 
   @Post()
@@ -136,6 +138,33 @@ export class MeetingsV2Controller {
       );
     }
   }
+
+  @Get()
+  @ApiOperation({
+    summary: 'Get all meetings',
+    description:
+      'Returns all meetings ordered by date descending (newest first).',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of all meetings, ordered by date descending',
+    type: [OpenMeetingResponseHttpDto],
+  })
+  async findAll(): Promise<OpenMeetingResponseHttpDto[]> {
+    try {
+      const meetings = await this.getMeetingsQuery.execute();
+      return meetings.map((m) => this.mapMeetingToHttp(m));
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Get(':id/payments')
   @ApiOperation({
     summary: 'Get monthly payments for a meeting',

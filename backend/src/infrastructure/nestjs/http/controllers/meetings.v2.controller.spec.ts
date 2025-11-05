@@ -4,6 +4,7 @@ import { MeetingsV2Controller } from './meetings.v2.controller';
 import { OpenMeetingUseCase } from '@application/use-cases/meetings/open-meeting.use-case';
 import { CloseMeetingUseCase } from '@application/use-cases/meetings/close-meeting.use-case';
 import { GetMeetingMonthlyPaymentsQueryHandler } from '@application/queries/meetings/get-meeting-monthly-payments.query-handler';
+import { GetMeetingsQueryHandler } from '@application/queries/meetings/get-meetings.query-handler';
 import { MeetingStatus } from '@domain/entities/meeting.entity';
 import { OpenMeetingResponseHttpDto } from '../dto/open-meeting-response-http.dto';
 import { MeetingResponseDto } from '@application/dto/meetings/meeting-response.dto';
@@ -16,10 +17,12 @@ describe('MeetingsV2Controller', () => {
   let openMeetingUseCase: jest.Mocked<OpenMeetingUseCase>;
   let closeMeetingUseCase: jest.Mocked<CloseMeetingUseCase>;
   let getMeetingMonthlyPaymentsQuery: jest.Mocked<GetMeetingMonthlyPaymentsQueryHandler>;
+  let getMeetingsQuery: jest.Mocked<GetMeetingsQueryHandler>;
 
   let openMeetingUseCaseExecuteSpy: jest.SpyInstance;
   let closeMeetingUseCaseExecuteSpy: jest.SpyInstance;
   let getMeetingMonthlyPaymentsQueryExecuteSpy: jest.SpyInstance;
+  let getMeetingsQueryExecuteSpy: jest.SpyInstance;
 
   const mockOpenMeetingResponse: MeetingResponseDto = {
     id: '550e8400-e29b-41d4-a716-446655440000',
@@ -59,6 +62,12 @@ describe('MeetingsV2Controller', () => {
             execute: jest.fn(),
           },
         },
+        {
+          provide: GetMeetingsQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -68,6 +77,7 @@ describe('MeetingsV2Controller', () => {
     getMeetingMonthlyPaymentsQuery = module.get(
       GetMeetingMonthlyPaymentsQueryHandler,
     );
+    getMeetingsQuery = module.get(GetMeetingsQueryHandler);
 
     openMeetingUseCaseExecuteSpy = jest.spyOn(openMeetingUseCase, 'execute');
     closeMeetingUseCaseExecuteSpy = jest.spyOn(closeMeetingUseCase, 'execute');
@@ -75,6 +85,7 @@ describe('MeetingsV2Controller', () => {
       getMeetingMonthlyPaymentsQuery,
       'execute',
     );
+    getMeetingsQueryExecuteSpy = jest.spyOn(getMeetingsQuery, 'execute');
   });
 
   it('should be defined', () => {
@@ -343,6 +354,109 @@ describe('MeetingsV2Controller', () => {
       await expect(controller.getMonthlyPayments(meetingId)).rejects.toThrow(
         'Internal error',
       );
+    });
+  });
+
+  describe('findAll', () => {
+    it('should return list of meetings successfully', async () => {
+      // ARRANGE
+      const mockMeetings: MeetingResponseDto[] = [
+        {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          date: new Date('2024-01-15'),
+          status: MeetingStatus.ACTIVE,
+          notes: 'Test meeting 1',
+          createdAt: new Date('2024-01-15'),
+        },
+        {
+          id: '550e8400-e29b-41d4-a716-446655440001',
+          date: new Date('2024-02-15'),
+          status: MeetingStatus.CLOSED,
+          notes: 'Test meeting 2',
+          createdAt: new Date('2024-02-15'),
+        },
+      ];
+
+      const expectedHttpResponse: OpenMeetingResponseHttpDto[] = [
+        {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          date: new Date('2024-01-15'),
+          status: MeetingStatus.ACTIVE,
+          notes: 'Test meeting 1',
+          created_at: new Date('2024-01-15'),
+        },
+        {
+          id: '550e8400-e29b-41d4-a716-446655440001',
+          date: new Date('2024-02-15'),
+          status: MeetingStatus.CLOSED,
+          notes: 'Test meeting 2',
+          created_at: new Date('2024-02-15'),
+        },
+      ];
+
+      getMeetingsQueryExecuteSpy.mockResolvedValue(mockMeetings);
+
+      // ACT
+      const result = await controller.findAll();
+
+      // ASSERT
+      expect(getMeetingsQueryExecuteSpy).toHaveBeenCalledTimes(1);
+      expect(result).toEqual(expectedHttpResponse);
+      expect(result).toHaveLength(2);
+    });
+
+    it('should return empty array when no meetings exist', async () => {
+      // ARRANGE
+      getMeetingsQueryExecuteSpy.mockResolvedValue([]);
+
+      // ACT
+      const result = await controller.findAll();
+
+      // ASSERT
+      expect(getMeetingsQueryExecuteSpy).toHaveBeenCalledTimes(1);
+      expect(result).toEqual([]);
+    });
+
+    it('should handle meetings with null notes', async () => {
+      // ARRANGE
+      const mockMeetings: MeetingResponseDto[] = [
+        {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          date: new Date('2024-01-15'),
+          status: MeetingStatus.ACTIVE,
+          notes: null,
+          createdAt: new Date('2024-01-15'),
+        },
+      ];
+
+      getMeetingsQueryExecuteSpy.mockResolvedValue(mockMeetings);
+
+      // ACT
+      const result = await controller.findAll();
+
+      // ASSERT
+      expect(result[0].notes).toBeNull();
+      expect(result[0].created_at).toBeInstanceOf(Date);
+    });
+
+    it('should handle generic errors', async () => {
+      // ARRANGE
+      const error = new Error('Internal error');
+      getMeetingsQueryExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.findAll()).rejects.toThrow(HttpException);
+      await expect(controller.findAll()).rejects.toThrow('Internal error');
+    });
+
+    it('should handle HttpException errors', async () => {
+      // ARRANGE
+      const error = new HttpException('Custom error', HttpStatus.BAD_REQUEST);
+      getMeetingsQueryExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.findAll()).rejects.toThrow(HttpException);
+      await expect(controller.findAll()).rejects.toThrow('Custom error');
     });
   });
 });
