@@ -13,7 +13,7 @@ export const API_ENDPOINTS_V2: Record<string, {
   },
   meetings: {
     base: 'v2/meetings',
-    methods: ['POST', 'PATCH'],
+    methods: ['GET', 'POST', 'PATCH'],
   },
   'mandatory-contributions': {
     base: 'v2/mandatory-contributions',
@@ -41,6 +41,13 @@ export const ENDPOINT_MAPPINGS_V2: Record<string, {
     v2: 'v2/members/:id/payments',
     method: 'POST',
     paramMapping: { memberId: 'id' },
+  },
+  // V1: GET /meetings/:id/monthly-payments
+  // V2: GET /v2/meetings/:id/payments
+  'meetings/:id/monthly-payments': {
+    v2: 'v2/meetings/:id/payments',
+    method: 'GET',
+    paramMapping: { id: 'id' },
   },
 }
 

@@ -97,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { meetingsService } from '@/features/meetings/services/meetings';
 import type { Member } from '@/features/members/types';
 import type { MemberDue, Payment } from '../types';
@@ -127,7 +127,22 @@ const viewedTotal = computed(() => sumCashEntries(viewedOperations.value || []))
 
 onMounted(async () => {
   await activeMeetingStore.fetchMembers();
-  await fetchMeetingPayments(activeMeetingStore.meetingId || '');
+  
+  // Asegurar que el meetingId esté disponible
+  if (!activeMeetingStore.meetingId) {
+    await activeMeetingStore.fetchActiveMeeting();
+  }
+  
+  if (activeMeetingStore.meetingId) {
+    await fetchMeetingPayments(activeMeetingStore.meetingId);
+  }
+});
+
+// Agregar watcher para cuando el meetingId cambie
+watch(() => activeMeetingStore.meetingId, async (newMeetingId) => {
+  if (newMeetingId && activeMeetingStore.members.length > 0) {
+    await fetchMeetingPayments(newMeetingId);
+  }
 });
 
 async function fetchMeetingPayments(meetingId: string) {
@@ -143,14 +158,22 @@ async function fetchMeetingPayments(meetingId: string) {
     const paymentsList: { memberName: string; amount: number }[] = [];
 
     for (const op of operations) {
-      if (!operationMap.has(op.member_id)) {
-        operationMap.set(op.member_id, []);
+      // Compatibilidad con ambos formatos: memberId (V2) o member_id (V1)
+      const memberId = (op as any).memberId || (op as any).member_id;
+      if (!memberId) continue;
+      
+      if (!operationMap.has(memberId)) {
+        operationMap.set(memberId, []);
       }
-      operationMap.get(op.member_id)!.push(op);
+      operationMap.get(memberId)!.push(op);
 
-      if (op.ledger_entries) {
-        for (const entry of op.ledger_entries) {
-          if (entry.account_type === 'INTEREST_INCOME') {
+      // Compatibilidad con ambos formatos: ledgerEntries (V2) o ledger_entries (V1)
+      const ledgerEntries = (op as any).ledgerEntries || (op as any).ledger_entries;
+      if (ledgerEntries) {
+        for (const entry of ledgerEntries) {
+          // Compatibilidad: accountType (V2) o account_type (V1)
+          const accountType = entry.accountType || entry.account_type;
+          if (accountType === 'INTEREST_INCOME') {
             totalInterest += Number(entry.amount) || 0;
           }
         }
