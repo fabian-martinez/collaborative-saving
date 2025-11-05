@@ -95,8 +95,9 @@ function formatDate(date: string) {
     return 'Invalid Date'
   }
 }
-function formatCOP(value: number) {
-  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value)
+function formatCOP(value: number | undefined | null) {
+  if (value == null || isNaN(value)) return '$0';
+  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value);
 }
 
 function accountTypeLabel(accountType: string) {

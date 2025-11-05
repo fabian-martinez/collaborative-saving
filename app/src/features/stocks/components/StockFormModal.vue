@@ -33,7 +33,7 @@
             <span class="label-text">Aporte Mensual (Bs.)</span>
           </label>
           <input
-            v-model.number="editableStock.monthly_contribution"
+            v-model.number="editableStock.monthlyContribution"
             type="number"
             step="0.01"
             placeholder="Ej: 50.00"
@@ -77,7 +77,7 @@ const error = ref<string | null>(null);
 const initialStockState: Omit<Stock, 'id'> = {
   type: '',
   value: 0,
-  monthly_contribution: 0,
+  monthlyContribution: 0,
   behavior: 'CAPITAL_APPRECIATION'
 };
 

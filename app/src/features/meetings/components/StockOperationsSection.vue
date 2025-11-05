@@ -14,13 +14,26 @@ const methodFilter = ref<string>('')
 const page = ref(1)
 const pageSize = ref(10)
 
-function formatCurrency(value: number) {
+function formatCurrency(value: number | undefined | null) {
+  if (value == null || isNaN(value)) return '$0';
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',
     currency: 'COP',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(value)
+  }).format(value);
+}
+
+function formatDate(date: string | undefined | null) {
+  if (!date) return 'N/A';
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'Invalid Date';
+    return d.toLocaleString();
+  } catch (error) {
+    console.warn('Error formatting date:', date, error);
+    return 'Invalid Date';
+  }
 }
 
 const filtered = computed(() => {
@@ -96,7 +109,7 @@ function goTo(p: number) { page.value = Math.min(Math.max(1, p), totalPages.valu
               <td colspan="7" class="text-center text-sm text-base-content/60">No hay datos</td>
             </tr>
             <tr v-for="op in paged" :key="op.id">
-              <td>{{ new Date(op.date).toLocaleString() }}</td>
+              <td>{{ formatDate(op.date) }}</td>
               <td>
                 <RouterLink :to="{ name: 'member-details', params: { id: op.memberId } }" class="link link-hover">
                   {{ op.memberName }}

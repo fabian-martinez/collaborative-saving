@@ -39,7 +39,7 @@
           <Group class="w-7 h-7" />
         </div>
         <div class="stat-title text-gray-500">Total Suscripciones</div>
-        <div class="stat-value text-orange-700 text-2xl" :title="totalSubscriptions.toLocaleString()">{{ formatCompactNumber(totalSubscriptions) }}</div>
+        <div class="stat-value text-orange-700 text-2xl" :title="formatCompactNumber(totalSubscriptions)">{{ formatCompactNumber(totalSubscriptions) }}</div>
       </div>
     </div>
 
@@ -81,7 +81,7 @@
           <tr v-for="stock in filteredStocks" :key="stock.id">
             <td class="font-semibold">{{ stock.type }}</td>
             <td>{{ formatCurrency(stock.value) }}</td>
-            <td>{{ formatCurrency(stock.monthly_contribution) }}</td>
+            <td>{{ formatCurrency(stock.monthlyContribution) }}</td>
             <td class="text-center">
               <span class="badge badge-info badge-lg">
                 {{ stock.subscriptionCount ?? 0 }}
@@ -144,18 +144,20 @@ const totalValue = computed(() =>
 const totalMonthlyContribution = computed(() =>
   filteredStocks.value.reduce((sum, stock) => {
     const subscriptions = stock.subscriptionCount ?? 0;
-    return sum + (stock.monthly_contribution * subscriptions);
+    return sum + (stock.monthlyContribution * subscriptions);
   }, 0)
 );
 const totalSubscriptions = computed(() =>
   filteredStocks.value.reduce((sum, stock) => sum + (stock.subscriptionCount ?? 0), 0)
 );
 
-function formatCurrency(value: number) {
+function formatCurrency(value: number | undefined | null) {
+  if (value == null || isNaN(value)) return '$0.00';
   return value.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2 });
 }
 
-function formatCompactCurrency(value: number) {
+function formatCompactCurrency(value: number | undefined | null) {
+  if (value == null || isNaN(value)) return '$0';
   if (value === 0) return '$0';
   
   const absValue = Math.abs(value);
@@ -170,7 +172,8 @@ function formatCompactCurrency(value: number) {
   }
 }
 
-function formatCompactNumber(value: number) {
+function formatCompactNumber(value: number | undefined | null) {
+  if (value == null || isNaN(value)) return '0';
   if (value === 0) return '0';
   
   const absValue = Math.abs(value);

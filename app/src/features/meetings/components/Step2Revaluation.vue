@@ -45,19 +45,19 @@
           <div class="stat">
             <div class="stat-title">Aportes Recaudados</div>
             <div class="stat-value text-success">
-              <CopyOnDblClickNumber :value="previewData.total_contributions" />
+              <CopyOnDblClickNumber :value="previewData.totalContributions" />
             </div>
           </div>
           <div class="stat">
             <div class="stat-title">Intereses Recaudados</div>
             <div class="stat-value text-success">
-              <CopyOnDblClickNumber :value="previewData.total_interest" />
+              <CopyOnDblClickNumber :value="previewData.totalInterest" />
             </div>
           </div>
           <div class="stat">
             <div class="stat-title">Total a Distribuir</div>
             <div class="stat-value text-primary">
-              <CopyOnDblClickNumber :value="previewData.total_to_distribute" />
+              <CopyOnDblClickNumber :value="previewData.totalToDistribute" />
             </div>
           </div>
         </div>
@@ -76,27 +76,30 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="detail in previewData.details" :key="detail.stock_id">
+              <tr v-for="detail in previewData.details" :key="detail.stockId">
                 <td>
                   <div class="font-bold">{{ detail.type }}</div>
-                  <div v-if="detail.is_guaranteed" class="badge badge-secondary badge-sm">
+                  <div v-if="detail.isGuaranteed" class="badge badge-secondary badge-sm">
                     Garantizada
                   </div>
                 </td>
-                <td class="text-right">$<CopyOnDblClickNumber :value="detail.previous_value" /></td>
+                <td class="text-right">$<CopyOnDblClickNumber :value="detail.previousValue" /></td>
                 <td class="text-right text-info">
-                  +<CopyOnDblClickNumber :value="detail.growth_from_contributions" /> ({{ Number(detail.estimated_growth_from_contributions).toLocaleString() }})
+                  +<CopyOnDblClickNumber :value="detail.growthFromContributions" /> 
+                  <span v-if="detail.estimatedGrowthFromContributions != null">
+                    ({{ Number(detail.estimatedGrowthFromContributions).toLocaleString() }})
+                  </span>
                 </td>
                 <td class="text-right text-success">
-                  $<CopyOnDblClickNumber :value="detail.growth_from_interest" /> 
-                  <span class="text-sm text-accent">({{ calculateInterestRate(detail.growth_from_interest, detail.previous_value) }}%)</span>
+                  $<CopyOnDblClickNumber :value="detail.growthFromInterest" /> 
+                  <span class="text-sm text-accent">({{ calculateInterestRate(detail.growthFromInterest, detail.previousValue) }}%)</span>
                 </td>
                 <td class="text-right font-bold text-success">
-                  +<CopyOnDblClickNumber :value="detail.total_growth_per_share" />
+                  +<CopyOnDblClickNumber :value="detail.totalGrowthPerShare" />
                 </td>
-                <td class="text-right font-bold text-primary">$<CopyOnDblClickNumber :value="detail.new_value" /></td>
+                <td class="text-right font-bold text-primary">$<CopyOnDblClickNumber :value="detail.newValue" /></td>
                 <td class="text-right text-warning font-bold">
-                  <span v-if="typeof detail.dividends_generated === 'number' && detail.dividends_generated > 0">$<CopyOnDblClickNumber :value="detail.dividends_generated" /></span><span v-else>-</span>
+                  <span v-if="typeof detail.dividendsGenerated === 'number' && detail.dividendsGenerated > 0">$<CopyOnDblClickNumber :value="detail.dividendsGenerated" /></span><span v-else>-</span>
                 </td>
               </tr>
             </tbody>
@@ -104,7 +107,7 @@
         </div>
 
         <div
-          v-if="previewData?.mandatory_contributions_by_type && previewData.mandatory_contributions_by_type.length"
+          v-if="previewData?.mandatoryContributionsByType && previewData.mandatoryContributionsByType.length"
           class="mt-8 card border bg-base-100 shadow-xl"
         >
           <div class="card-body">
@@ -119,14 +122,14 @@
                 </thead>
                 <tbody>
                   <tr
-                    v-for="item in previewData.mandatory_contributions_by_type"
-                    :key="item.mandatory_contribution_id"
+                    v-for="item in previewData.mandatoryContributionsByType"
+                    :key="item.mandatoryContributionId"
                   >
                     <td>
                       {{
                         (mandatoryContributions.find(
-                          (c: MandatoryContribution) => c.id === item.mandatory_contribution_id
-                        )?.asset_type) || item.mandatory_contribution_id
+                          (c: MandatoryContribution) => c.id === item.mandatoryContributionId
+                        )?.asset_type) || item.mandatoryContributionId
                       }}
                     </td>
                     <td class="text-right font-bold">
@@ -138,7 +141,7 @@
                   <tr>
                     <th>Total</th>
                     <th class="text-right text-primary">
-                      <CopyOnDblClickNumber :value="previewData?.total_mandatory_contributions ?? 0" />
+                      <CopyOnDblClickNumber :value="previewData?.totalMandatoryContributions ?? 0" />
                     </th>
                   </tr>
                 </tfoot>

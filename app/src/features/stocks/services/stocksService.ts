@@ -2,27 +2,28 @@ import { api } from '@/services/api';
 import type { Stock, StockHistoryData, StockHistoryRequest } from '../types';
 
 // Helper to ensure numeric fields are numbers, as the backend sends them as strings.
+// Nota: Las respuestas ya vienen normalizadas a camelCase por el servicio API
 const transformStock = (
-  stock: Omit<Stock, 'value' | 'monthly_contribution' | 'subscriptionCount'> & {
+  stock: Omit<Stock, 'value' | 'monthlyContribution' | 'subscriptionCount'> & {
     value: string | number;
-    monthly_contribution: string | number;
+    monthlyContribution: string | number;
     subscriptionCount?: string | number;
   }
 ): Stock => ({
   ...stock,
   value: Number(stock.value),
-  monthly_contribution: Number(stock.monthly_contribution),
+  monthlyContribution: Number(stock.monthlyContribution),
   subscriptionCount: stock.subscriptionCount ? Number(stock.subscriptionCount) : undefined,
 });
 
 export interface StockSubscription {
   id: string;
-  member_id: string;
-  stock_id: string;
+  memberId: string; // Normalizado de member_id
+  stockId: string; // Normalizado de stock_id
   quantity: number;
-  purchase_date: string;
+  purchaseDate: string; // Normalizado de purchase_date
   status: string;
-  financing_loan_id?: string | null;
+  financingLoanId?: string | null; // Normalizado de financing_loan_id
   stock?: Stock;
 }
 

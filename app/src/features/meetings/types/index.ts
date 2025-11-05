@@ -166,28 +166,28 @@ export interface MeetingDetail {
 // ---- Existing active meeting flow types (used elsewhere) ----
 
 export interface RevaluationPreviewResult {
-  total_contributions: number;
-  total_interest: number;
-  total_to_distribute: number;
+  totalContributions: number; // Normalizado de total_contributions
+  totalInterest: number; // Normalizado de total_interest
+  totalToDistribute: number; // Normalizado de total_to_distribute
   details: RevaluationDetail[];
-  total_mandatory_contributions?: number;
-  mandatory_contributions_by_type?: Array<{
+  totalMandatoryContributions?: number; // Normalizado de total_mandatory_contributions
+  mandatoryContributionsByType?: Array<{
     total: number;
-    mandatory_contribution_id: string;
+    mandatoryContributionId: string; // Normalizado de mandatory_contribution_id
   }>;
 }
 
 export interface RevaluationDetail {
-  stock_id: string;
+  stockId: string; // Normalizado de stock_id
   type: string;
-  is_guaranteed: boolean;
-  previous_value: number;
-  growth_from_contributions: number;
-  estimated_growth_from_contributions: number;
-  growth_from_interest: number;
-  total_growth_per_share: number;
-  new_value: number;
-  dividends_generated?: number;
+  isGuaranteed: boolean; // Normalizado de is_guaranteed
+  previousValue: number; // Normalizado de previous_value
+  growthFromContributions: number; // Normalizado de growth_from_contributions
+  estimatedGrowthFromContributions: number; // Normalizado de estimated_growth_from_contributions
+  growthFromInterest: number; // Normalizado de growth_from_interest
+  totalGrowthPerShare: number; // Normalizado de total_growth_per_share
+  newValue: number; // Normalizado de new_value
+  dividendsGenerated?: number; // Normalizado de dividends_generated
 }
 
 export interface DisbursementPlan {
