@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import { TypeOrmLoanRepository } from './typeorm-loan.repository';
 import { Loan as LoanEntity } from '../entities/loan.entity';
 import { Loan as LoanDomain } from '@domain/entities/loan.entity';

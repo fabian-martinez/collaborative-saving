@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, LessThan } from 'typeorm';
+import { Repository } from 'typeorm';
 import { TypeOrmStockValueHistoryRepository } from './typeorm-stock-value-history.repository';
 import { StockValueHistory as StockValueHistoryEntity } from '../entities/stock-value-history.entity';
 import { StockValueHistory as StockValueHistoryDomain } from '@domain/entities/stock-value-history.entity';

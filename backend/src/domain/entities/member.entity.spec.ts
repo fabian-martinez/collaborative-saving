@@ -1,7 +1,4 @@
 import { Member } from './member.entity';
-import { Email } from '../value-objects/email.value-object';
-import { Phone } from '../value-objects/phone.value-object';
-import { MemberStatus } from '../value-objects/member-status.value-object';
 
 describe('Member Entity', () => {
   const mockId = '550e8400-e29b-41d4-a716-446655440000';

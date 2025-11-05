@@ -3,6 +3,7 @@ import { LedgerEntry } from '../../entities/ledger-entry.entity';
 export interface LedgerEntryRepository {
   findById(id: string): Promise<LedgerEntry | null>;
   findByOperation(operationId: string): Promise<LedgerEntry[]>;
+  findByOperations(operationIds: string[]): Promise<LedgerEntry[]>;
   findByMeeting(meetingId: string): Promise<LedgerEntry[]>;
   findByAccountType(accountType: string): Promise<LedgerEntry[]>;
   save(entry: LedgerEntry): Promise<LedgerEntry>;

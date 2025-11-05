@@ -12,6 +12,7 @@ import {
   UsePipes,
   ValidationPipe,
   HttpCode,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -22,6 +23,7 @@ import {
   ApiBadRequestResponse,
   ApiNotFoundResponse,
   ApiInternalServerErrorResponse,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { UpdateMemberUseCase } from '@application/use-cases/members/update-member.use-case';
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
@@ -31,6 +33,7 @@ import { MemberDueResponseDto } from '@application/dto/members/member-due-respon
 import { GetMembersQueryHandler } from '@application/queries/members/get-members.query-handler';
 import { GetMemberDetailQueryHandler } from '@application/queries/members/get-member-detail.query-handler';
 import { GetMemberDuesForActiveMeetingQueryHandler } from '@application/queries/members/get-member-dues-for-active-meeting.query-handler';
+import { GetMemberPaymentsQueryHandler } from '@application/queries/members/get-member-payments.query-handler';
 import { UpdateMemberHttpDto } from '../dto/update-member-http.dto';
 import { CreateMemberHttpDto } from '../dto/create-member-http.dto';
 import { RecordMonthlyPaymentsUseCase } from '@application/use-cases/members/record-monthly-payments.use-case';
@@ -39,6 +42,10 @@ import { RecordMonthlyPaymentsHttpDto } from '../dto/record-monthly-payments-htt
 import { MemberResponseHttpDto } from '../dto/member-response-http.dto';
 import { MemberDueResponseHttpDto } from '../dto/member-due-response-http.dto';
 import { RecordMonthlyPaymentsResponseHttpDto } from '../dto/record-monthly-payments-response-http.dto';
+import { GetMemberPaymentsQueryHttpDto } from '../dto/get-member-payments-query-http.dto';
+import { MemberPaymentResponseHttpDto } from '../dto/member-payment-response-http.dto';
+import { MemberPaymentResponseDto } from '@application/dto/members/member-payment-response.dto';
+import { PaymentFilterType } from '@domain/enums/payment-filter-type.enum';
 
 @ApiTags('Members V2')
 @Controller('v2/members')
@@ -47,6 +54,7 @@ export class MembersV2Controller {
     private readonly getMembersQuery: GetMembersQueryHandler,
     private readonly getMemberDetailQuery: GetMemberDetailQueryHandler,
     private readonly getMemberDuesQuery: GetMemberDuesForActiveMeetingQueryHandler,
+    private readonly getMemberPaymentsQuery: GetMemberPaymentsQueryHandler,
     private readonly createMemberUseCase: CreateMemberUseCase,
     private readonly updateMemberUseCase: UpdateMemberUseCase,
     private readonly deleteMemberUseCase: DeleteMemberUseCase,
@@ -396,6 +404,57 @@ export class MembersV2Controller {
     } as MemberDueResponseHttpDto;
   }
 
+  @Get(':id/payments')
+  @ApiOperation({
+    summary: 'Get member payments',
+    description:
+      'Retrieves all payments made by a member. Supports filtering by payment type and meeting ID.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The UUID of the member',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    description: 'Filter by payment type',
+    enum: PaymentFilterType,
+    example: PaymentFilterType.MONTHLY_PAYMENT,
+  })
+  @ApiQuery({
+    name: 'meetingId',
+    required: false,
+    description: 'Filter by meeting ID',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Member payments retrieved successfully',
+    type: [MemberPaymentResponseHttpDto],
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid UUID format or invalid query parameters',
+  })
+  @ApiNotFoundResponse({
+    description: 'Member not found',
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error',
+  })
+  async getPayments(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: GetMemberPaymentsQueryHttpDto,
+  ): Promise<MemberPaymentResponseHttpDto[]> {
+    // Validation is handled by class-validator in the DTO
+    // Exception handling is done by GlobalExceptionFilter
+    const payments = await this.getMemberPaymentsQuery.execute(id, {
+      paymentType: query.type,
+      meetingId: query.meetingId,
+    });
+    return payments.map((payment) => this.mapPaymentToHttp(payment));
+  }
+
   @Post(':id/payments')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
@@ -484,6 +543,29 @@ export class MembersV2Controller {
       total_amount: r.totalAmount,
       ledger_entry_ids: r.ledgerEntryIds,
     } as RecordMonthlyPaymentsResponseHttpDto;
+  }
+
+  private mapPaymentToHttp(
+    payment: MemberPaymentResponseDto,
+  ): MemberPaymentResponseHttpDto {
+    return {
+      operation_id: payment.operationId,
+      type: String(payment.type),
+      total_amount: payment.totalAmount,
+      description: payment.description,
+      date: payment.date,
+      meeting_id: payment.meetingId,
+      entries: payment.entries.map((entry) => ({
+        id: entry.id,
+        account_type: entry.accountType,
+        amount: entry.amount,
+        description: entry.description,
+        loan_id: entry.loanId,
+        stock_id: entry.stockId,
+        mandatory_contribution_id: entry.mandatoryContributionId,
+        stock_subscription_id: entry.stockSubscriptionId,
+      })),
+    };
   }
 
   private mapMemberToHttp(m: MemberResponseDto): MemberResponseHttpDto {

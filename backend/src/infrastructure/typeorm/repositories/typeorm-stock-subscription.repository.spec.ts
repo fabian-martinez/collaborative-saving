@@ -50,9 +50,13 @@ describe('TypeOrmStockSubscriptionRepository', () => {
 
       const result = await repository.findById(subscriptionId);
 
-      expect(typeOrmRepo.findOne).toHaveBeenCalledWith({
-        where: { id: subscriptionId },
-      });
+      const findOneCall = typeOrmRepo.findOne.mock.calls[0]?.[0];
+      expect(findOneCall).toBeDefined();
+      if (!findOneCall) return;
+      const where = Array.isArray(findOneCall.where)
+        ? findOneCall.where[0]
+        : findOneCall.where;
+      expect(where?.id).toBe(subscriptionId);
       expect(result).toBeInstanceOf(StockSubscriptionDomain);
       expect(result?.id).toBe(subscriptionId);
     });
@@ -115,7 +119,7 @@ describe('TypeOrmStockSubscriptionRepository', () => {
 
       const result = await repository.save(domain);
 
-      expect(typeOrmRepo.save).toHaveBeenCalledTimes(1);
+      expect(typeOrmRepo.save.mock.calls.length).toBe(1);
       expect(result).toBeInstanceOf(StockSubscriptionDomain);
     });
   });

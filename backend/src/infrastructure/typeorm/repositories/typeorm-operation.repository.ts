@@ -44,6 +44,34 @@ export class TypeOrmOperationRepository implements OperationRepository {
     return entities.map((e) => OperationMapper.toDomain(e));
   }
 
+  async findByMember(
+    memberId: string,
+    filters?: {
+      meetingId?: string;
+      types?: OperationType[];
+    },
+  ): Promise<OperationDomain[]> {
+    const qb = this.repo
+      .createQueryBuilder('operation')
+      .where('operation.member_id = :memberId', { memberId })
+      .orderBy('operation.date', 'DESC');
+
+    if (filters?.meetingId) {
+      qb.andWhere('operation.meeting_id = :meetingId', {
+        meetingId: filters.meetingId,
+      });
+    }
+
+    if (filters?.types && filters.types.length > 0) {
+      qb.andWhere('operation.type IN (:...types)', {
+        types: filters.types,
+      });
+    }
+
+    const entities = await qb.getMany();
+    return entities.map((e) => OperationMapper.toDomain(e));
+  }
+
   async save(operation: OperationDomain): Promise<OperationDomain> {
     const persistence = OperationMapper.toPersistence(operation);
     const existing = await this.repo.findOne({ where: { id: operation.id } });

@@ -4,6 +4,7 @@ import { MembersV2Controller } from './members.v2.controller';
 import { GetMembersQueryHandler } from '@application/queries/members/get-members.query-handler';
 import { GetMemberDetailQueryHandler } from '@application/queries/members/get-member-detail.query-handler';
 import { GetMemberDuesForActiveMeetingQueryHandler } from '@application/queries/members/get-member-dues-for-active-meeting.query-handler';
+import { GetMemberPaymentsQueryHandler } from '@application/queries/members/get-member-payments.query-handler';
 import { CreateMemberUseCase } from '@application/use-cases/members/create-member.use-case';
 import { UpdateMemberUseCase } from '@application/use-cases/members/update-member.use-case';
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
@@ -61,6 +62,12 @@ describe('MembersV2Controller', () => {
         },
         {
           provide: GetMemberDuesForActiveMeetingQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: GetMemberPaymentsQueryHandler,
           useValue: {
             execute: jest.fn(),
           },

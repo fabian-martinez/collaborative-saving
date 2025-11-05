@@ -1,0 +1,12 @@
+/**
+ * Payment Filter Type Enum
+ *
+ * Types of payments that can be filtered when querying member payments.
+ * This enum represents filter options for payment queries.
+ */
+export enum PaymentFilterType {
+  MONTHLY_PAYMENT = 'monthly_payment',
+  STOCK_PURCHASE = 'stock_purchase',
+  STOCK_MODIFICATION = 'stock_modification',
+  LOAN_EXTRAORDINARY_PAYMENT = 'loan_extraordinary_payment',
+}

@@ -8,6 +8,13 @@ export interface OperationRepository {
     meetingId: string,
     type: OperationType,
   ): Promise<Operation[]>;
+  findByMember(
+    memberId: string,
+    filters?: {
+      meetingId?: string;
+      types?: OperationType[];
+    },
+  ): Promise<Operation[]>;
   save(operation: Operation): Promise<Operation>;
   saveWithEntries(
     operation: Operation,

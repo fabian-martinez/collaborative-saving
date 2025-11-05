@@ -26,12 +26,29 @@ export class TypeOrmLedgerEntryRepository implements LedgerEntryRepository {
     return entities.map((e) => LedgerEntryMapper.toDomain(e));
   }
 
+  async findByOperations(operationIds: string[]): Promise<LedgerEntryDomain[]> {
+    if (operationIds.length === 0) {
+      return [];
+    }
+    const entities = await this.repo
+      .createQueryBuilder('ledger_entry')
+      .where('ledger_entry.operation_id IN (:...operationIds)', {
+        operationIds,
+      })
+      .getMany();
+    return entities.map((e) => LedgerEntryMapper.toDomain(e));
+  }
+
   async findByMeeting(meetingId: string): Promise<LedgerEntryDomain[]> {
     // Join with operations to filter by meeting
     const entities = await this.repo
       .createQueryBuilder('ledger_entry')
-      .innerJoin('ledger_entry.operation', 'operation')
-      .where('operation.meetingId = :meetingId', { meetingId })
+      .innerJoin(
+        'operations',
+        'operation',
+        'operation.id = ledger_entry.operation_id',
+      )
+      .where('operation.meeting_id = :meetingId', { meetingId })
       .getMany();
     return entities.map((e) => LedgerEntryMapper.toDomain(e));
   }

@@ -32,13 +32,11 @@ describe('CreateMemberUseCase', () => {
 
     const result = await useCase.execute(createDto);
 
-    expect(memberRepository.save).toHaveBeenCalledTimes(1);
-    expect(memberRepository.save).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: 'Test Member',
-        email: 'test@example.com',
-      }),
-    );
+    expect(memberRepository.save.mock.calls.length).toBe(1);
+    expect(memberRepository.save.mock.calls[0][0]).toMatchObject({
+      name: 'Test Member',
+      email: 'test@example.com',
+    });
     expect(result).toEqual({
       id: savedMember.id,
       name: savedMember.name,
@@ -70,7 +68,7 @@ describe('CreateMemberUseCase', () => {
 
     const result = await useCase.execute(createDto);
 
-    expect(memberRepository.save).toHaveBeenCalledTimes(1);
+    expect(memberRepository.save.mock.calls.length).toBe(1);
     expect(result.name).toBe('Complete Member');
     expect(result.email).toBe('complete@example.com');
     expect(result.role).toBe('admin');
