@@ -1,5 +1,6 @@
 import { useApiVersionStore } from '@/shared/stores/apiVersion'
 import { getV2Endpoint, hasV2Version, ENDPOINT_MAPPINGS_V2 } from '@/shared/config/apiEndpoints'
+import { normalizeToCamelCase } from '@/shared/utils'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -27,8 +28,11 @@ function extractParams(pattern: string, url: string): Record<string, string> {
 
 /**
  * Obtiene el endpoint correcto según la versión de API activa
+ * @param endpoint - Endpoint original
+ * @param method - Método HTTP
+ * @param additionalParams - Parámetros adicionales que pueden venir del body (ej: memberId para record-monthly-payment)
  */
-function getApiEndpoint(endpoint: string, method: string): string {
+function getApiEndpoint(endpoint: string, method: string, additionalParams?: Record<string, string>): string {
   const apiVersionStore = useApiVersionStore()
   
   // Si no está usando v2, devolver el endpoint original
@@ -45,13 +49,14 @@ function getApiEndpoint(endpoint: string, method: string): string {
   }
 
   // Extraer parámetros de la URL si hay un patrón que coincida
-  let params: Record<string, string> | undefined
+  let params: Record<string, string> | undefined = additionalParams ? { ...additionalParams } : undefined
   
   // Buscar en ENDPOINT_MAPPINGS_V2 si hay un patrón que coincida
   for (const pattern of Object.keys(ENDPOINT_MAPPINGS_V2)) {
     const patternRegex = new RegExp('^' + pattern.replace(/:[^/]+/g, '([^/]+)') + '$')
     if (patternRegex.test(cleanEndpoint)) {
-      params = extractParams(pattern, cleanEndpoint)
+      const extractedParams = extractParams(pattern, cleanEndpoint)
+      params = params ? { ...params, ...extractedParams } : extractedParams
       break
     }
   }
@@ -71,16 +76,42 @@ async function request<T>(
   const headers = new Headers();
   headers.append('Content-Type', 'application/json');
 
+  // Para endpoints que requieren extraer parámetros del body (como record-monthly-payment)
+  // Necesitamos extraer el memberId del body y ponerlo en la URL en v2
+  let bodyForRequest = body;
+  let additionalParams: Record<string, string> | undefined = undefined;
+  
+  if (body && typeof body === 'object' && body !== null) {
+    const bodyObj = body as Record<string, unknown>;
+    const apiVersionStore = useApiVersionStore();
+    
+    // Si estamos usando v2 y el endpoint es record-monthly-payment
+    // Necesitamos extraer memberId del body y ponerlo en la URL
+    if (apiVersionStore.isV2 && endpoint.includes('record-monthly-payment') && 'memberId' in bodyObj) {
+      const memberId = String(bodyObj.memberId);
+      // Remover memberId del body ya que irá en la URL
+      const { memberId: _, ...bodyWithoutMemberId } = bodyObj;
+      bodyForRequest = bodyWithoutMemberId;
+      // Pasar el memberId como parámetro adicional para que se incluya en la URL
+      additionalParams = { memberId };
+    }
+  }
+
   // Obtener el endpoint correcto según la versión de API
-  const finalEndpoint = getApiEndpoint(endpoint, method);
+  let finalEndpoint = getApiEndpoint(endpoint, method, additionalParams);
+  
+  // Reemplazar :id con el memberId si está disponible (para endpoints que lo requieren)
+  if (additionalParams && additionalParams.memberId) {
+    finalEndpoint = finalEndpoint.replace(':id', additionalParams.memberId);
+  }
 
   const options: RequestInit = {
     method,
     headers,
   };
 
-  if (body) {
-    options.body = JSON.stringify(body);
+  if (bodyForRequest) {
+    options.body = JSON.stringify(bodyForRequest);
   }
 
   const response = await fetch(`${API_BASE_URL}${finalEndpoint}`, options);
@@ -99,7 +130,11 @@ async function request<T>(
     return null as T;
   }
 
-  return response.json();
+  const data = await response.json();
+  
+  // Normalizar la respuesta para convertir snake_case a camelCase
+  // Esto permite que el frontend maneje ambos formatos del backend
+  return normalizeToCamelCase(data) as T;
 }
 
 export const api = {
@@ -149,7 +184,8 @@ export const ledgerApi = {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    return response.json();
+    const data = await response.json();
+    return normalizeToCamelCase(data);
   },
 
   // Obtener asientos contables de una operación específica
@@ -168,7 +204,8 @@ export const ledgerApi = {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    return response.json();
+    const data = await response.json();
+    return normalizeToCamelCase(data);
   },
 
   // Obtener tipos de cuenta disponibles
@@ -187,7 +224,8 @@ export const ledgerApi = {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    return response.json();
+    const data = await response.json();
+    return normalizeToCamelCase(data);
   },
 
   // Obtener operaciones con filtros y paginación
@@ -224,7 +262,8 @@ export const ledgerApi = {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    return response.json();
+    const data = await response.json();
+    return normalizeToCamelCase(data);
   },
 
   // Obtener reuniones con paginación
@@ -251,6 +290,7 @@ export const ledgerApi = {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    return response.json();
+    const data = await response.json();
+    return normalizeToCamelCase(data);
   },
 }; 

@@ -87,13 +87,21 @@ defineEmits<{
 const totalPages = computed(() => Math.max(1, Math.ceil(props.groups.length / props.pageSize)))
 const pageGroups = computed(() => props.groups.slice((props.page-1)*props.pageSize, (props.page-1)*props.pageSize + props.pageSize))
 
-function formatDate(date: string) {
-  const d = new Date(date)
-  return d.toLocaleString('es-CO')
+function formatDate(date: string | undefined | null) {
+  if (!date) return 'N/A';
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'Invalid Date';
+    return d.toLocaleString('es-CO');
+  } catch (error) {
+    console.warn('Error formatting date:', date, error);
+    return 'Invalid Date';
+  }
 }
 
-function formatCOP(value: number) {
-  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value)
+function formatCOP(value: number | undefined | null) {
+  if (value == null || isNaN(value)) return '$0';
+  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value);
 }
 
 function accountTypeLabel(t: AccountType) {

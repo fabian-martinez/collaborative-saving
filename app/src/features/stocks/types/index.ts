@@ -4,10 +4,10 @@ export interface Stock {
   id: string;
   type: string;
   value: number;
-  monthly_contribution: number;
-  created_at: string;
-  updated_at: string;
-  deleted_at?: string;
+  monthlyContribution: number; // Normalizado de monthly_contribution
+  createdAt: string; // Normalizado de created_at
+  updatedAt: string; // Normalizado de updated_at
+  deletedAt?: string; // Normalizado de deleted_at
   subscriptionCount?: number;
 }
 

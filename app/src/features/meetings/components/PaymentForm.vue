@@ -236,23 +236,24 @@ const totalInterest = computed(() => {
 });
 
 function handleFineUpdate(data: { description: string, amount: number }) {
+    const amount = Number(data.amount) || 0; // Asegurar que amount sea un número válido
     if (editingFineIndex.value !== null) {
         const index = editingFineIndex.value;
         memberDues.value[index].description = data.description;
-        memberDues.value[index].amount = data.amount;
-        payments.value[index].amount = data.amount;
+        memberDues.value[index].amount = amount;
+        payments.value[index].amount = amount;
         payments.value[index].description = data.description;
     } else {
         const fineDue: MemberDue = {
             type: 'fee',
             description: data.description,
-            amount: data.amount,
+            amount: amount,
         };
         memberDues.value.push(fineDue);
         const finePayment: Payment = {
             type: 'fee',
             description: data.description,
-            amount: data.amount,
+            amount: amount,
         };
         payments.value.push(finePayment);
     }
@@ -262,8 +263,9 @@ function handleFineUpdate(data: { description: string, amount: number }) {
 }
 
 async function handleLoanPaymentUpdate(newAmount: number) {
+    const amount = Number(newAmount) || 0; // Asegurar que amount sea un número válido
     if(editingLoanIndex.value !== null) {
-        payments.value[editingLoanIndex.value].amount = newAmount;
+        payments.value[editingLoanIndex.value].amount = amount;
     }
     isLoanModalOpen.value = false;
     await recalculateInsurance();
@@ -305,9 +307,12 @@ async function handleRecordTransaction() {
     return;
   }
   const processedPayments = payments.value.flatMap((payment, index) => {
-    if (Number(payment.amount || 0) === 0) {
+    // Convertir amount a número y validar que sea positivo
+    const amount = Number(payment.amount);
+    if (isNaN(amount) || amount <= 0) {
       return [];
     }
+    
     const due = memberDues.value[index];
     let description = payment.description;
     const noveltyComment = payment.noveltyComment;
@@ -316,14 +321,23 @@ async function handleRecordTransaction() {
         description = `${due.description}, ${Number(due.stockQuantity).toFixed(2)} uds. x ${due.monthlyContribution.toFixed(2)} c/u`;
       } else if (due.type === 'loan_payment' && due.details) {
         const interest = due.details.interest || 0;
-        const principal = payment.amount - interest;
+        const principal = amount - interest;
         description = `${due.description}, Abono Capital: ${principal.toFixed(2)}, Intereses: ${interest.toFixed(2)}`;
       }
     }
+    
+    // Asegurar que amount sea un número válido en el objeto de respuesta
+    const processedPayment: Payment = {
+      ...payment,
+      amount: amount, // Asegurar que es un número válido
+      description,
+    };
+    
     if (payment.type === 'novelty') {
-      return [{ ...payment, description, noveltyComment }];
+      processedPayment.noveltyComment = noveltyComment;
     }
-    return [{ ...payment, description }];
+    
+    return [processedPayment];
   });
   
   const payload: { memberId: string, payments: Payment[] } = {
@@ -364,12 +378,14 @@ async function recalculateInsurance() {
     );
     const insuranceDueIndex = memberDues.value.findIndex((d) => d.type === 'insurance');
     if (insuranceDueIndex !== -1) {
-      memberDues.value[insuranceDueIndex].amount = insuranceAmount;
-      payments.value[insuranceDueIndex].amount = insuranceAmount;
+      const amount = Number(insuranceAmount) || 0; // Asegurar que amount sea un número válido
+      memberDues.value[insuranceDueIndex].amount = amount;
+      payments.value[insuranceDueIndex].amount = amount;
     } else if (insuranceAmount > 0) {
-      const insuranceDue: MemberDue = { type: 'insurance', description: 'Seguro de deuda', amount: insuranceAmount };
+      const amount = Number(insuranceAmount) || 0; // Asegurar que amount sea un número válido
+      const insuranceDue: MemberDue = { type: 'insurance', description: 'Seguro de deuda', amount: amount };
       memberDues.value.push(insuranceDue);
-      payments.value.push({ type: 'insurance', description: 'Seguro de deuda', amount: insuranceAmount });
+      payments.value.push({ type: 'insurance', description: 'Seguro de deuda', amount: amount });
     }
   } catch (error) {
     console.error('Error recalculating insurance:', error);
@@ -399,7 +415,7 @@ async function fetchDues(member: Member) {
     payments.value = dues.map(due => ({
       type: due.type,
       description: due.description,
-      amount: due.amount,
+      amount: Number(due.amount) || 0, // Asegurar que amount sea un número válido
       referenceId: due.referenceId,
     }));
   } catch (err: unknown) {
@@ -428,10 +444,11 @@ function addNovelty() {
 }
 
 function handleNoveltySave(data: { amount: number, comment: string }) {
+  const amount = Number(data.amount) || 0; // Asegurar que amount sea un número válido
   payments.value.push({
     type: 'novelty',
     description: data.comment || 'Novedad',
-    amount: Math.abs(data.amount),
+    amount: Math.abs(amount),
     noveltyComment: data.comment,
   });
   isNoveltyModalOpen.value = false;

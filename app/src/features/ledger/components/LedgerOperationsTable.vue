@@ -48,9 +48,16 @@ defineProps<{
 
 defineEmits<{ (e: 'open-details', id: string): void }>()
 
-function formatDate(date: string) {
-  const d = new Date(date)
-  return d.toLocaleString('es-CO')
+function formatDate(date: string | undefined | null) {
+  if (!date) return 'N/A';
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'Invalid Date';
+    return d.toLocaleString('es-CO');
+  } catch (error) {
+    console.warn('Error formatting date:', date, error);
+    return 'Invalid Date';
+  }
 }
 </script>
 
