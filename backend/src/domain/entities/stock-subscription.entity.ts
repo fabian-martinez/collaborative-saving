@@ -94,12 +94,6 @@ export class StockSubscription {
       throw new Error('StockSubscription quantity must be >= 0');
     }
     if (
-      this._quantity === 0 &&
-      this._status !== StockSubscriptionStatus.INACTIVE
-    ) {
-      throw new Error('StockSubscription with quantity 0 must be inactive');
-    }
-    if (
       this._status !== StockSubscriptionStatus.PENDING &&
       this._status !== StockSubscriptionStatus.ACTIVE &&
       this._status !== StockSubscriptionStatus.INACTIVE
