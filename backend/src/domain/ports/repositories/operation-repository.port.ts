@@ -1,8 +1,13 @@
 import { Operation } from '../../entities/operation.entity';
+import { OperationType } from '../../enums/operation-type.enum';
 
 export interface OperationRepository {
   findById(id: string): Promise<Operation | null>;
   findByMeeting(meetingId: string): Promise<Operation[]>;
+  findByMeetingAndType(
+    meetingId: string,
+    type: OperationType,
+  ): Promise<Operation[]>;
   save(operation: Operation): Promise<Operation>;
   saveWithEntries(
     operation: Operation,
