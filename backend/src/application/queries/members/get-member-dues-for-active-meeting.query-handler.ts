@@ -67,14 +67,12 @@ export class GetMemberDuesForActiveMeetingQueryHandler {
   private calculateMandatoryContributionDues(
     contributions: Array<{ id: string; assetType: string; value: number }>,
   ): MemberDueResponseDto[] {
-    return contributions
-      .filter((contribution) => contribution.value > 0)
-      .map((contribution) => ({
-        type: 'mandatory_contribution' as MemberDueResponseDto['type'],
-        description: contribution.assetType,
-        amount: contribution.value,
-        referenceId: contribution.id,
-      }));
+    return contributions.map((contribution) => ({
+      type: 'mandatory_contribution' as MemberDueResponseDto['type'],
+      description: contribution.assetType,
+      amount: contribution.value,
+      referenceId: contribution.id,
+    }));
   }
 
   private async calculateStockFeeDues(
