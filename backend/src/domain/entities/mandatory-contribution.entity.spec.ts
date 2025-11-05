@@ -2,7 +2,6 @@ import { MandatoryContribution } from './mandatory-contribution.entity';
 
 describe('MandatoryContribution Entity', () => {
   const mockId = '550e8400-e29b-41d4-a716-446655440000';
-  const mockDate = new Date('2024-01-15');
 
   describe('create static method', () => {
     it('should create MandatoryContribution with valid values', () => {

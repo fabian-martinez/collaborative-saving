@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull, UpdateResult } from 'typeorm';
 import { TypeOrmMemberRepository } from './typeorm-member.repository';
 import { Member as MemberEntity } from '../entities/member.entity';
 import { Member as MemberDomain } from '@domain/entities/member.entity';
@@ -54,9 +54,12 @@ describe('TypeOrmMemberRepository', () => {
 
       const result = await repository.findById(memberId);
 
-      expect(typeOrmRepo.findOne).toHaveBeenCalledWith({
-        where: { id: memberId, deletedAt: expect.any(Date) as Date },
-      });
+      const findOneCall = typeOrmRepo.findOne.mock.calls[0][0];
+      const where = Array.isArray(findOneCall.where)
+        ? findOneCall.where[0]
+        : findOneCall.where;
+      expect(where?.id).toBe(memberId);
+      expect(where?.deletedAt).toEqual(IsNull());
       expect(result).toBeInstanceOf(MemberDomain);
       expect(result?.id).toBe(memberId);
     });
@@ -108,9 +111,14 @@ describe('TypeOrmMemberRepository', () => {
 
       const result = await repository.findActive();
 
-      expect(typeOrmRepo.find).toHaveBeenCalledWith({
-        where: { deletedAt: expect.any(Date) as Date, status: 'active' },
-      });
+      const findCall = typeOrmRepo.find.mock.calls[0]?.[0];
+      expect(findCall).toBeDefined();
+      if (!findCall) return;
+      const where = Array.isArray(findCall.where)
+        ? findCall.where[0]
+        : findCall.where;
+      expect(where?.deletedAt).toEqual(IsNull());
+      expect(where?.status).toBe('active');
       expect(result).toHaveLength(2);
       expect(result[0]).toBeInstanceOf(MemberDomain);
       expect(result[1]).toBeInstanceOf(MemberDomain);
@@ -152,11 +160,13 @@ describe('TypeOrmMemberRepository', () => {
 
       const result = await repository.save(domainMember);
 
-      expect(typeOrmRepo.findOne).toHaveBeenCalledWith({
-        where: { id: domainMember.id },
-        withDeleted: true,
-      });
-      expect(typeOrmRepo.save).toHaveBeenCalledTimes(1);
+      const findOneCall = typeOrmRepo.findOne.mock.calls[0][0];
+      const where = Array.isArray(findOneCall.where)
+        ? findOneCall.where[0]
+        : findOneCall.where;
+      expect(where?.id).toBe(domainMember.id);
+      expect(findOneCall.withDeleted).toBe(true);
+      expect(typeOrmRepo.save.mock.calls.length).toBe(1);
       expect(result).toBeInstanceOf(MemberDomain);
     });
 
@@ -190,14 +200,17 @@ describe('TypeOrmMemberRepository', () => {
         .mockResolvedValueOnce(existingEntity) // Check if exists
         .mockResolvedValueOnce(updatedEntity); // After update
 
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
+      const updateResult: UpdateResult = {
+        affected: 1,
+        raw: {},
+        generatedMaps: [],
+      };
+      typeOrmRepo.update.mockResolvedValue(updateResult);
 
       const result = await repository.save(domainMember);
 
-      expect(typeOrmRepo.update).toHaveBeenCalledWith(
-        domainMember.id,
-        expect.any(Object),
-      );
+      expect(typeOrmRepo.update.mock.calls[0][0]).toBe(domainMember.id);
+      expect(typeOrmRepo.update.mock.calls[0][1]).toBeDefined();
       expect(result).toBeInstanceOf(MemberDomain);
       expect(result.name).toBe('Updated Member');
     });
@@ -227,7 +240,12 @@ describe('TypeOrmMemberRepository', () => {
         .mockResolvedValueOnce(existingEntity) // Check if exists
         .mockResolvedValueOnce(null); // After update - not found
 
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
+      const updateResult: UpdateResult = {
+        affected: 1,
+        raw: {},
+        generatedMaps: [],
+      };
+      typeOrmRepo.update.mockResolvedValue(updateResult);
 
       await expect(repository.save(domainMember)).rejects.toThrow(
         'Member not found after update',
@@ -238,16 +256,26 @@ describe('TypeOrmMemberRepository', () => {
   describe('softDelete', () => {
     it('should soft delete member successfully', async () => {
       const memberId = '550e8400-e29b-41d4-a716-446655440000';
-      typeOrmRepo.softDelete.mockResolvedValue({ affected: 1 } as any);
+      const updateResult: UpdateResult = {
+        affected: 1,
+        raw: {},
+        generatedMaps: [],
+      };
+      typeOrmRepo.softDelete.mockResolvedValue(updateResult);
 
       await repository.softDelete(memberId);
 
-      expect(typeOrmRepo.softDelete).toHaveBeenCalledWith(memberId);
+      expect(typeOrmRepo.softDelete.mock.calls[0][0]).toBe(memberId);
     });
 
     it('should throw error when member not found', async () => {
       const memberId = '550e8400-e29b-41d4-a716-446655440000';
-      typeOrmRepo.softDelete.mockResolvedValue({ affected: 0 } as any);
+      const updateResult: UpdateResult = {
+        affected: 0,
+        raw: {},
+        generatedMaps: [],
+      };
+      typeOrmRepo.softDelete.mockResolvedValue(updateResult);
 
       await expect(repository.softDelete(memberId)).rejects.toThrow(
         'Member not found',
@@ -258,11 +286,17 @@ describe('TypeOrmMemberRepository', () => {
   describe('updateStatus', () => {
     it('should update member status', async () => {
       const memberId = '550e8400-e29b-41d4-a716-446655440000';
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
+      const updateResult: UpdateResult = {
+        affected: 1,
+        raw: {},
+        generatedMaps: [],
+      };
+      typeOrmRepo.update.mockResolvedValue(updateResult);
 
       await repository.updateStatus(memberId, 'inactive');
 
-      expect(typeOrmRepo.update).toHaveBeenCalledWith(memberId, {
+      expect(typeOrmRepo.update.mock.calls[0][0]).toBe(memberId);
+      expect(typeOrmRepo.update.mock.calls[0][1]).toEqual({
         status: 'inactive',
       });
     });
@@ -290,10 +324,12 @@ describe('TypeOrmMemberRepository', () => {
 
       const result = await repository.findByIdWithDeleted(memberId);
 
-      expect(typeOrmRepo.findOne).toHaveBeenCalledWith({
-        where: { id: memberId },
-        withDeleted: true,
-      });
+      const findOneCall = typeOrmRepo.findOne.mock.calls[0][0];
+      const where = Array.isArray(findOneCall.where)
+        ? findOneCall.where[0]
+        : findOneCall.where;
+      expect(where?.id).toBe(memberId);
+      expect(findOneCall.withDeleted).toBe(true);
       expect(result).toBeInstanceOf(MemberDomain);
     });
 

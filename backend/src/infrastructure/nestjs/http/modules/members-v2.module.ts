@@ -4,6 +4,7 @@ import { MembersV2Controller } from '../controllers/members.v2.controller';
 import { GetMembersQueryHandler } from '@application/queries/members/get-members.query-handler';
 import { GetMemberDetailQueryHandler } from '@application/queries/members/get-member-detail.query-handler';
 import { GetMemberDuesForActiveMeetingQueryHandler } from '@application/queries/members/get-member-dues-for-active-meeting.query-handler';
+import { GetMemberPaymentsQueryHandler } from '@application/queries/members/get-member-payments.query-handler';
 import { CreateMemberUseCase } from '@application/use-cases/members/create-member.use-case';
 import { UpdateMemberUseCase } from '@application/use-cases/members/update-member.use-case';
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
@@ -34,6 +35,7 @@ import { OperationRepository } from '@domain/ports/repositories/operation-reposi
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 import { OperationBalanceValidator } from '@domain/services/operation-balance-validator.service';
+import { PaymentMapperService } from '@domain/services/payment-mapper.service';
 import { TypeOrmOperationRepository } from '@infrastructure/typeorm/repositories/typeorm-operation.repository';
 import { TypeOrmLedgerEntryRepository } from '@infrastructure/typeorm/repositories/typeorm-ledger-entry.repository';
 import { TypeOrmTransactionManager } from '@infrastructure/services/transaction-manager/typeorm-transaction-manager.service';
@@ -159,6 +161,28 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
         STOCK_REPOSITORY,
       ],
     },
+    {
+      provide: GetMemberPaymentsQueryHandler,
+      useFactory: (
+        memberRepo: MemberRepository,
+        operationRepo: OperationRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+        paymentMapperService: PaymentMapperService,
+      ): GetMemberPaymentsQueryHandler => {
+        return new GetMemberPaymentsQueryHandler(
+          memberRepo,
+          operationRepo,
+          ledgerEntryRepo,
+          paymentMapperService,
+        );
+      },
+      inject: [
+        MEMBER_REPOSITORY,
+        OPERATION_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+        PaymentMapperService,
+      ],
+    },
     // Use cases
     {
       provide: CreateMemberUseCase,
@@ -177,6 +201,7 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
     },
     // Domain services
     OperationBalanceValidator,
+    PaymentMapperService,
     // Use cases
     {
       provide: RecordOperationUseCase,
