@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Patch,
+  Get,
   Body,
   Param,
   ParseUUIDPipe,
@@ -19,9 +20,13 @@ import {
 } from '@nestjs/swagger';
 import { OpenMeetingUseCase } from '@application/use-cases/meetings/open-meeting.use-case';
 import { CloseMeetingUseCase } from '@application/use-cases/meetings/close-meeting.use-case';
+import { GetMeetingMonthlyPaymentsQueryHandler } from '@application/queries/meetings/get-meeting-monthly-payments.query-handler';
 import { OpenMeetingHttpDto } from '../dto/open-meeting-http.dto';
 import { MeetingResponseDto } from '@application/dto/meetings/meeting-response.dto';
 import { OpenMeetingResponseHttpDto } from '../dto/open-meeting-response-http.dto';
+import { OperationResponseHttpDto } from '../dto/operation-response-http.dto';
+import { OperationResponseDto } from '@application/dto/meetings/operation-response.dto';
+import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 
 @ApiTags('Meetings V2')
 @Controller('v2/meetings')
@@ -29,6 +34,7 @@ export class MeetingsV2Controller {
   constructor(
     private readonly openMeetingUseCase: OpenMeetingUseCase,
     private readonly closeMeetingUseCase: CloseMeetingUseCase,
+    private readonly getMeetingMonthlyPaymentsQuery: GetMeetingMonthlyPaymentsQueryHandler,
   ) {}
 
   @Post()
@@ -130,6 +136,45 @@ export class MeetingsV2Controller {
       );
     }
   }
+  @Get(':id/payments')
+  @ApiOperation({
+    summary: 'Get monthly payments for a meeting',
+    description:
+      'Returns all monthly payment operations for a specific meeting.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The unique identifier of the meeting',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Monthly payments retrieved successfully',
+    type: [OperationResponseHttpDto],
+  })
+  @ApiNotFoundResponse({
+    description: 'Meeting not found',
+  })
+  async getMonthlyPayments(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<OperationResponseHttpDto[]> {
+    try {
+      const payments = await this.getMeetingMonthlyPaymentsQuery.execute(id);
+      return payments.map((p) => this.mapOperationToHttp(p));
+    } catch (error: unknown) {
+      if (error instanceof MeetingNotFoundException) {
+        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+      }
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   private mapMeetingToHttp(m: MeetingResponseDto): OpenMeetingResponseHttpDto {
     return {
       id: m.id,
@@ -137,6 +182,19 @@ export class MeetingsV2Controller {
       status: m.status,
       notes: m.notes,
       created_at: m.createdAt,
+    };
+  }
+
+  private mapOperationToHttp(
+    operation: OperationResponseDto,
+  ): OperationResponseHttpDto {
+    return {
+      id: operation.id,
+      member_id: operation.memberId,
+      meeting_id: operation.meetingId,
+      type: operation.type,
+      date: operation.date,
+      description: operation.description,
     };
   }
 }

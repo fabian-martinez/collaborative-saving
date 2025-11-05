@@ -8,6 +8,7 @@ import { OperationMapper } from '../mappers/operation.mapper';
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
 import { LedgerEntry } from '@domain/entities/ledger-entry.entity';
 import { AccountType } from '@domain/constants/account-types';
+import { OperationType } from '@domain/enums/operation-type.enum';
 
 @Injectable()
 export class TypeOrmOperationRepository implements OperationRepository {
@@ -30,6 +31,16 @@ export class TypeOrmOperationRepository implements OperationRepository {
 
   async findByMeeting(meetingId: string): Promise<OperationDomain[]> {
     const entities = await this.repo.find({ where: { meetingId } });
+    return entities.map((e) => OperationMapper.toDomain(e));
+  }
+
+  async findByMeetingAndType(
+    meetingId: string,
+    type: OperationType,
+  ): Promise<OperationDomain[]> {
+    const entities = await this.repo.find({
+      where: { meetingId, type },
+    });
     return entities.map((e) => OperationMapper.toDomain(e));
   }
 
