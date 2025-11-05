@@ -8,12 +8,14 @@ import { MemberRepository } from '@domain/ports/repositories/member-repository.p
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
 import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
+import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
 import { RecordOperationDto } from '@application/dto/accounting/record-operation.dto';
 import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
 import { InvalidPaymentException } from '@application/exceptions/invalid-payment.exception';
+import { DuplicateMonthlyPaymentException } from '@application/exceptions/duplicate-monthly-payment.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { OperationType } from '@domain/enums/operation-type.enum';
 import { Meeting } from '@domain/entities/meeting.entity';
@@ -43,6 +45,7 @@ export class RecordMonthlyPaymentsUseCase {
     private readonly meetingRepository: MeetingRepository,
     private readonly loanRepository: LoanRepository,
     private readonly loanTransactionDetailRepository: LoanTransactionDetailRepository,
+    private readonly operationRepository: OperationRepository,
     private readonly recordOperationUseCase: RecordOperationUseCase,
   ) {}
 
@@ -72,12 +75,28 @@ export class RecordMonthlyPaymentsUseCase {
     // At this point, meeting is guaranteed to be non-null
     const activeMeeting = meeting;
 
-    // 3. Validate payments array is not empty
+    // 3. Validate that member doesn't already have a monthly payment for this meeting
+    const existingPayments = await this.operationRepository.findByMember(
+      dto.memberId,
+      {
+        meetingId: activeMeeting.id,
+        types: [OperationType.MONTHLY_PAYMENT],
+      },
+    );
+
+    if (existingPayments.length > 0) {
+      throw new DuplicateMonthlyPaymentException(
+        dto.memberId,
+        activeMeeting.id,
+      );
+    }
+
+    // 4. Validate payments array is not empty
     if (!dto.payments || dto.payments.length === 0) {
       throw new InvalidPaymentException('At least one payment is required');
     }
 
-    // 4. Validate all amounts are positive
+    // 5. Validate all amounts are positive
     for (const payment of dto.payments) {
       if (payment.amount <= 0) {
         throw new InvalidPaymentException(
@@ -86,7 +105,7 @@ export class RecordMonthlyPaymentsUseCase {
       }
     }
 
-    // 5. Validate loan payments and prepare loan updates
+    // 6. Validate loan payments and prepare loan updates
     const loanPayments: Array<{
       loanId: string;
       amount: number;
@@ -113,7 +132,7 @@ export class RecordMonthlyPaymentsUseCase {
       }
     }
 
-    // 6. Process payments and map to ledger entries
+    // 7. Process payments and map to ledger entries
     const allEntries: RecordOperationDto['entries'] = [];
     let totalAmount = 0;
 
@@ -123,7 +142,7 @@ export class RecordMonthlyPaymentsUseCase {
       allEntries.push(...entries);
     }
 
-    // 7. Create operation using RecordOperationUseCase
+    // 8. Create operation using RecordOperationUseCase
     const operationDto: RecordOperationDto = {
       memberId: dto.memberId,
       meetingId: activeMeeting.id,
@@ -134,7 +153,7 @@ export class RecordMonthlyPaymentsUseCase {
 
     const result = await this.recordOperationUseCase.execute(operationDto);
 
-    // 8. Process loan payments: update loans and create transaction details
+    // 9. Process loan payments: update loans and create transaction details
     for (const loanPayment of loanPayments) {
       // Get the loan again to ensure we have the latest state
       const loan = await this.loanRepository.findById(loanPayment.loanId);
@@ -161,7 +180,7 @@ export class RecordMonthlyPaymentsUseCase {
       await this.loanTransactionDetailRepository.save(transactionDetail);
     }
 
-    // 9. Return response
+    // 10. Return response
     return {
       operationId: result.operationId,
       meetingId: activeMeeting.id,

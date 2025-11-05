@@ -123,6 +123,7 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
         meetingRepo: MeetingRepository,
         loanRepo: LoanRepository,
         loanTransactionDetailRepo: LoanTransactionDetailRepository,
+        operationRepo: OperationRepository,
         recordOperationUseCase: RecordOperationUseCase,
       ) =>
         new RecordMonthlyPaymentsUseCase(
@@ -130,6 +131,7 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
           meetingRepo,
           loanRepo,
           loanTransactionDetailRepo,
+          operationRepo,
           recordOperationUseCase,
         ),
       inject: [
@@ -137,6 +139,7 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
         MEETING_REPOSITORY,
         LOAN_REPOSITORY,
         LOAN_TRANSACTION_DETAIL_REPOSITORY,
+        OPERATION_REPOSITORY,
         RecordOperationUseCase,
       ],
     },
