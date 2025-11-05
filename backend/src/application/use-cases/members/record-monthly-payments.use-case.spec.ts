@@ -4,6 +4,7 @@ import { MemberRepository } from '@domain/ports/repositories/member-repository.p
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
 import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
+import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
 import { Member } from '@domain/entities/member.entity';
 import { Meeting } from '@domain/entities/meeting.entity';
@@ -16,7 +17,10 @@ import { MemberNotFoundException } from '@application/exceptions/member-not-foun
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
 import { InvalidPaymentException } from '@application/exceptions/invalid-payment.exception';
+import { DuplicateMonthlyPaymentException } from '@application/exceptions/duplicate-monthly-payment.exception';
 import { PaymentType } from '@application/dto/members/payment-item.dto';
+import { OperationType } from '@domain/enums/operation-type.enum';
+import { Operation } from '@domain/entities/operation.entity';
 
 describe('RecordMonthlyPaymentsUseCase', () => {
   let useCase: RecordMonthlyPaymentsUseCase;
@@ -24,12 +28,14 @@ describe('RecordMonthlyPaymentsUseCase', () => {
   let meetingRepository: jest.Mocked<MeetingRepository>;
   let loanRepository: jest.Mocked<LoanRepository>;
   let loanTransactionDetailRepository: jest.Mocked<LoanTransactionDetailRepository>;
+  let operationRepository: jest.Mocked<OperationRepository>;
   let recordOperationUseCase: jest.Mocked<RecordOperationUseCase>;
   let findByIdSpy: jest.SpyInstance;
   let findActiveSpy: jest.SpyInstance;
   let loanFindByIdSpy: jest.SpyInstance;
   let loanSaveSpy: jest.SpyInstance;
   let loanTransactionDetailSaveSpy: jest.SpyInstance;
+  let findByMemberSpy: jest.SpyInstance;
   let recordOperationExecuteSpy: jest.SpyInstance;
 
   beforeEach(() => {
@@ -65,6 +71,15 @@ describe('RecordMonthlyPaymentsUseCase', () => {
       saveMany: jest.fn(),
     } as unknown as jest.Mocked<LoanTransactionDetailRepository>;
 
+    operationRepository = {
+      findById: jest.fn(),
+      findByMeeting: jest.fn(),
+      findByMeetingAndType: jest.fn(),
+      findByMember: jest.fn(),
+      save: jest.fn(),
+      saveWithEntries: jest.fn(),
+    } as unknown as jest.Mocked<OperationRepository>;
+
     recordOperationUseCase = {
       execute: jest.fn(),
     } as unknown as jest.Mocked<RecordOperationUseCase>;
@@ -77,13 +92,18 @@ describe('RecordMonthlyPaymentsUseCase', () => {
       loanTransactionDetailRepository,
       'save',
     );
+    findByMemberSpy = jest.spyOn(operationRepository, 'findByMember');
     recordOperationExecuteSpy = jest.spyOn(recordOperationUseCase, 'execute');
+
+    // Default: no existing payments
+    findByMemberSpy.mockResolvedValue([]);
 
     useCase = new RecordMonthlyPaymentsUseCase(
       memberRepository,
       meetingRepository,
       loanRepository,
       loanTransactionDetailRepository,
+      operationRepository,
       recordOperationUseCase,
     );
   });
@@ -322,6 +342,30 @@ describe('RecordMonthlyPaymentsUseCase', () => {
       await expect(useCase.execute(invalidDto)).rejects.toThrow(
         InvalidPaymentException,
       );
+      expect(recordOperationExecuteSpy).not.toHaveBeenCalled();
+    });
+
+    it('should throw DuplicateMonthlyPaymentException when member already has a monthly payment for this meeting', async () => {
+      // ARRANGE
+      const existingPayment = Operation.create({
+        memberId: 'member-id',
+        meetingId: mockMeeting.id,
+        type: OperationType.MONTHLY_PAYMENT,
+        description: 'Existing monthly payment',
+      });
+
+      findByIdSpy.mockResolvedValue(mockMember);
+      findActiveSpy.mockResolvedValue(mockMeeting);
+      findByMemberSpy.mockResolvedValue([existingPayment]);
+
+      // ACT & ASSERT
+      await expect(useCase.execute(validDto)).rejects.toThrow(
+        DuplicateMonthlyPaymentException,
+      );
+      expect(findByMemberSpy).toHaveBeenCalledWith('member-id', {
+        meetingId: mockMeeting.id,
+        types: [OperationType.MONTHLY_PAYMENT],
+      });
       expect(recordOperationExecuteSpy).not.toHaveBeenCalled();
     });
   });
