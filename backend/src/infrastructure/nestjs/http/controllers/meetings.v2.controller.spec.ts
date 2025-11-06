@@ -7,6 +7,8 @@ import { GetMeetingMonthlyPaymentsQueryHandler } from '@application/queries/meet
 import { GetMeetingsQueryHandler } from '@application/queries/meetings/get-meetings.query-handler';
 import { GetMeetingQueryHandler } from '@application/queries/meetings/get-meeting.query-handler';
 import { GetActiveMeetingQueryHandler } from '@application/queries/meetings/get-active-meeting.query-handler';
+import { GetRevaluationQueryHandler } from '@application/queries/meetings/get-revaluation.query-handler';
+import { RecordRevaluationUseCase } from '@application/use-cases/meetings/record-revaluation.use-case';
 import { MeetingStatus } from '@domain/entities/meeting.entity';
 import { OpenMeetingResponseHttpDto } from '../dto/open-meeting-response-http.dto';
 import { MeetingResponseDto } from '@application/dto/meetings/meeting-response.dto';
@@ -82,6 +84,18 @@ describe('MeetingsV2Controller', () => {
         },
         {
           provide: GetActiveMeetingQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: GetRevaluationQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: RecordRevaluationUseCase,
           useValue: {
             execute: jest.fn(),
           },

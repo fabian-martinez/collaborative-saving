@@ -3,6 +3,7 @@ import { StockValueHistory } from '../../entities/stock-value-history.entity';
 export interface StockValueHistoryRepository {
   findById(id: string): Promise<StockValueHistory | null>;
   findByStock(stockId: string): Promise<StockValueHistory[]>;
+  findByOperation(operationId: string): Promise<StockValueHistory[]>;
   findLatestByStock(stockId: string): Promise<StockValueHistory | null>;
   findByStockBeforeDate(
     stockId: string,

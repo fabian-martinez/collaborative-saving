@@ -28,6 +28,16 @@ export class TypeOrmStockValueHistoryRepository
     return entities.map((e) => StockValueHistoryMapper.toDomain(e));
   }
 
+  async findByOperation(
+    operationId: string,
+  ): Promise<StockValueHistoryDomain[]> {
+    const entities = await this.repo.find({
+      where: { operationId },
+      order: { createdAt: 'ASC' },
+    });
+    return entities.map((e) => StockValueHistoryMapper.toDomain(e));
+  }
+
   async findLatestByStock(
     stockId: string,
   ): Promise<StockValueHistoryDomain | null> {
