@@ -80,25 +80,21 @@ const loadingSummary = ref(false)
 const summaryError = ref('')
 
 async function fetchMeetingSummary() {
-  if (activeMeetingStore.meetingId) {
-    loadingSummary.value = true
-    summaryError.value = ''
-    try {
-      const summary = await meetingsService.getMeetingSummary(
-        activeMeetingStore.meetingId,
-        ['totalCollected', 'totalCash', 'totalInterest']
-      )
-      totalCollection.value = summary.totalCollected ?? 0
-      availableCash.value = summary.totalCash ?? 0
-      totalInterest.value = summary.totalInterest ?? 0
-    } catch {
-      summaryError.value = 'Error al obtener el resumen de la reunión'
-      totalCollection.value = 0
-      availableCash.value = 0
-      totalInterest.value = 0
-    } finally {
-      loadingSummary.value = false
-    }
+  loadingSummary.value = true
+  summaryError.value = ''
+  try {
+    // Usar getActiveMeetingWithSummary para obtener siempre la reunión activa actualizada
+    const summary = await meetingsService.getActiveMeetingWithSummary()
+    totalCollection.value = summary.totalCollected ?? 0
+    availableCash.value = summary.totalCash ?? 0
+    totalInterest.value = summary.totalInterest ?? 0
+  } catch {
+    summaryError.value = 'Error al obtener el resumen de la reunión'
+    totalCollection.value = 0
+    availableCash.value = 0
+    totalInterest.value = 0
+  } finally {
+    loadingSummary.value = false
   }
 }
 
