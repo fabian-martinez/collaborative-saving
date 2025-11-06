@@ -9,6 +9,7 @@ import type {
   LedgerEntriesResponse,
   StockChangesSectionData,
   StockOperationsResponse,
+  MemberPaymentResponse,
 } from '../types';
 import type { Operation } from '@/features/operations/types';
 import type { StocksForPurchase } from '@/features/stocks/types';
@@ -53,6 +54,17 @@ class MeetingsService {
 
   getMonthlyPayments(meetingId: string): Promise<Operation[]> {
     return api.get(`/meetings/${meetingId}/monthly-payments`);
+  }
+
+  /**
+   * Obtiene los pagos mensuales de un miembro para una reunión específica (V2)
+   * Solo se debe usar cuando la API está en modo V2
+   * Retorna la respuesta normalizada del endpoint (camelCase)
+   */
+  getMemberPayments(memberId: string, meetingId?: string): Promise<MemberPaymentResponse[]> {
+    // El enum PaymentFilterType usa valores en minúsculas con guiones bajos
+    const queryParams = meetingId ? `?meetingId=${meetingId}&type=monthly_payment` : '?type=monthly_payment';
+    return api.get(`/v2/members/${memberId}/payments${queryParams}`);
   }
 
   /**

@@ -100,9 +100,10 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { meetingsService } from '@/features/meetings/services/meetings';
 import type { Member } from '@/features/members/types';
-import type { MemberDue, Payment } from '../types';
+import type { MemberDue, Payment, MemberPaymentResponse } from '../types';
 import type { Operation } from '@/features/operations/types';
 import { useActiveMeetingStore } from '../stores/activeMeeting';
+import { useApiVersionStore } from '@/shared/stores/apiVersion';
 import OperationDetails from '@/features/operations/components/operationDetails.vue';
 import PaymentForm from './PaymentForm.vue';
 import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
@@ -123,7 +124,52 @@ const viewedOperations = ref<Operation[] | null>(null);
 const isDuesLoading = ref(false);
 const duesError = ref<string | null>(null);
 
+const apiVersionStore = useApiVersionStore();
+
 const viewedTotal = computed(() => sumCashEntries(viewedOperations.value || []));
+
+// Tipo para operaciones que pueden venir en diferentes formatos (V1/V2)
+interface OperationWithLegacyFormat {
+  id?: string;
+  memberId?: string;
+  member_id?: string;
+  meeting_id?: string;
+  meetingId?: string;
+  type?: string;
+  date?: string;
+  description?: string;
+  ledgerEntries?: Array<{ accountType?: string; account_type?: string; amount?: number | string }>;
+  ledger_entries?: Array<{ accountType?: string; account_type?: string; amount?: number | string }>;
+}
+
+/**
+ * Mapea la respuesta del endpoint V2 de pagos del miembro al formato Operation
+ * La respuesta viene normalizada a camelCase por el servicio api
+ * Necesitamos convertir de vuelta a snake_case para el tipo Operation
+ */
+function mapPaymentToOperation(payment: MemberPaymentResponse, memberId: string): Operation {
+  // Asegurar que entries existe y es un array
+  const entries = payment.entries || [];
+  
+  return {
+    id: payment.operationId,
+    meeting_id: payment.meetingId,
+    member_id: memberId,
+    type: payment.type,
+    date: payment.date,
+    description: payment.description || '',
+    ledger_entries: entries.map((entry) => ({
+      id: entry.id,
+      operation_id: payment.operationId,
+      account_type: entry.accountType || '', // Asegurar que accountType existe
+      amount: Number(entry.amount) || 0, // Asegurar que es número
+      created_at: payment.date,
+      description: entry.description || '',
+    })),
+    total_debit: 0,
+    total_credit: 0,
+  };
+}
 
 onMounted(async () => {
   await activeMeetingStore.fetchMembers();
@@ -151,31 +197,136 @@ async function fetchMeetingPayments(meetingId: string) {
       console.error('No meeting ID found');
       return;
     }
-    const operations = await meetingsService.getMonthlyPayments(meetingId);
+
     const operationMap = new Map<string, Operation[]>();
     let total = 0;
     let totalInterest = 0;
     const paymentsList: { memberName: string; amount: number }[] = [];
 
-    for (const op of operations) {
-      // Compatibilidad con ambos formatos: memberId (V2) o member_id (V1)
-      const memberId = (op as any).memberId || (op as any).member_id;
-      if (!memberId) continue;
-      
-      if (!operationMap.has(memberId)) {
-        operationMap.set(memberId, []);
-      }
-      operationMap.get(memberId)!.push(op);
+    // V2: Solo consultar endpoint de reunión para identificar miembros con pagos
+    if (apiVersionStore.isV2) {
+      // Usar endpoint v2/meetings/:id/payments solo para identificar qué miembros tienen pagos
+      const operations = await meetingsService.getMonthlyPayments(meetingId);
+      const membersWithPayments: string[] = [];
 
-      // Compatibilidad con ambos formatos: ledgerEntries (V2) o ledger_entries (V1)
-      const ledgerEntries = (op as any).ledgerEntries || (op as any).ledger_entries;
-      if (ledgerEntries) {
-        for (const entry of ledgerEntries) {
-          // Compatibilidad: accountType (V2) o account_type (V1)
-          const accountType = entry.accountType || entry.account_type;
-          if (accountType === 'INTEREST_INCOME') {
-            totalInterest += Number(entry.amount) || 0;
+      for (const op of operations as OperationWithLegacyFormat[]) {
+        // Extraer memberId (viene como member_id en snake_case pero se normaliza a memberId)
+        const memberId = op.memberId || op.member_id;
+        if (!memberId) continue;
+        
+        // Solo marcar que el miembro tiene pago, sin almacenar detalles completos
+        // Los detalles se consultarán al hacer click en el miembro
+        if (!operationMap.has(memberId)) {
+          operationMap.set(memberId, []);
+          membersWithPayments.push(memberId);
+        }
+        
+        // Guardar una operación básica solo para marcar como pagado
+        const basicOperation: Operation = {
+          id: op.id || '',
+          meeting_id: op.meeting_id || op.meetingId || meetingId,
+          member_id: memberId,
+          type: op.type || '',
+          date: op.date || '',
+          description: op.description || '',
+          ledger_entries: [], // Vacío, se llenará al consultar detalles
+          total_debit: 0,
+          total_credit: 0,
+        };
+        operationMap.get(memberId)!.push(basicOperation);
+      }
+      
+      // Consultar detalles de pagos solo para miembros que tienen pagos (para calcular totales)
+      if (membersWithPayments.length > 0) {
+        const paymentPromises = membersWithPayments.map(async (memberId) => {
+          try {
+            const payments = await meetingsService.getMemberPayments(memberId, meetingId);
+            if (payments && payments.length > 0) {
+              // Convertir a Operation para calcular totales
+              const operations = payments.map(p => mapPaymentToOperation(p, memberId));
+              
+              // Actualizar las operaciones en el mapa con los detalles completos
+              operationMap.set(memberId, operations);
+              
+              // Calcular montos para este miembro
+              const member = activeMeetingStore.members.find(m => m.id === memberId);
+              if (member) {
+                const amount = sumCashEntries(operations);
+                total += amount;
+                
+                // Calcular intereses
+                for (const payment of payments) {
+                  for (const entry of payment.entries) {
+                    if (entry.accountType === 'INTEREST_INCOME') {
+                      totalInterest += Number(entry.amount) || 0;
+                    }
+                  }
+                }
+                
+                paymentsList.push({ memberName: member.name, amount });
+              }
+            }
+          } catch (error) {
+            // Ignorar errores individuales
+            console.debug(`Error fetching payment details for member ${memberId}:`, error);
           }
+        });
+        
+        await Promise.all(paymentPromises);
+      }
+    } else {
+      // V1: Usar endpoint de reunión (incluye ledger entries)
+      const operations = await meetingsService.getMonthlyPayments(meetingId);
+
+      for (const op of operations as OperationWithLegacyFormat[]) {
+        // Compatibilidad con ambos formatos: memberId (V2) o member_id (V1)
+        const memberId = op.memberId || op.member_id;
+        if (!memberId) continue;
+        
+        if (!operationMap.has(memberId)) {
+          operationMap.set(memberId, []);
+        }
+        // Convertir a formato Operation si no está ya en ese formato
+        const operation: Operation = {
+          id: op.id || '',
+          meeting_id: op.meeting_id || op.meetingId || meetingId,
+          member_id: memberId,
+          type: op.type || '',
+          date: op.date || '',
+          description: op.description || '',
+          ledger_entries: (op.ledgerEntries || op.ledger_entries || []).map(entry => ({
+            id: '',
+            operation_id: op.id || '',
+            account_type: entry.accountType || entry.account_type || '',
+            amount: Number(entry.amount) || 0,
+            created_at: op.date || '',
+            description: '',
+          })),
+          total_debit: 0,
+          total_credit: 0,
+        };
+        operationMap.get(memberId)!.push(operation);
+
+        // Compatibilidad con ambos formatos: ledgerEntries (V2) o ledger_entries (V1)
+        const ledgerEntries = op.ledgerEntries || op.ledger_entries;
+        if (ledgerEntries) {
+          for (const entry of ledgerEntries) {
+            // Compatibilidad: accountType (V2) o account_type (V1)
+            const accountType = entry.accountType || entry.account_type;
+            if (accountType === 'INTEREST_INCOME') {
+              totalInterest += Number(entry.amount) || 0;
+            }
+          }
+        }
+      }
+      
+      // Recalculate totals and paid list para V1
+      for(const [memberId, ops] of operationMap.entries()) {
+        const member = activeMeetingStore.members.find(m => m.id === memberId);
+        if(member) {
+          const amount = sumCashEntries(ops);
+          total += amount;
+          paymentsList.push({ memberName: member.name, amount });
         }
       }
     }
@@ -183,15 +334,6 @@ async function fetchMeetingPayments(meetingId: string) {
     paidMemberOperations.value = operationMap;
     paidMemberIds.value = Array.from(operationMap.keys());
     
-    // Recalculate totals and paid list
-    for(const [memberId, ops] of operationMap.entries()) {
-        const member = activeMeetingStore.members.find(m => m.id === memberId);
-        if(member) {
-            const amount = sumCashEntries(ops);
-            total += amount;
-            paymentsList.push({ memberName: member.name, amount });
-        }
-    }
     totalCollected.value = total;
     completedPayments.value = paymentsList;
     emit('update:totalCollected', totalCollected.value);
@@ -211,7 +353,36 @@ async function selectMember(member: Member) {
   payments.value = [];
   duesError.value = null;
   
-  if (isMemberPaid(member.id)) {
+  // V2: Si el miembro tiene pagos, consultar detalles del endpoint de pagos del miembro
+  if (apiVersionStore.isV2 && activeMeetingStore.meetingId && isMemberPaid(member.id)) {
+    try {
+      const payments = await meetingsService.getMemberPayments(
+        member.id, 
+        activeMeetingStore.meetingId
+      );
+      
+      if (payments && payments.length > 0) {
+        // Debug: verificar estructura de datos
+        console.debug('Payments received:', payments);
+        const operations = payments.map(p => {
+          const op = mapPaymentToOperation(p, member.id);
+          console.debug('Mapped operation:', op);
+          console.debug('Ledger entries:', op.ledger_entries);
+          return op;
+        });
+        viewedOperations.value = operations;
+        return; // Mostrar pagos
+      }
+    } catch (error) {
+      // Si falla, mostrar operaciones básicas guardadas
+      console.warn('Error fetching member payments details:', error);
+      viewedOperations.value = paidMemberOperations.value.get(member.id) || [];
+      return;
+    }
+  }
+  
+  // V1: Si el miembro tiene pagos, usar los guardados
+  if (!apiVersionStore.isV2 && isMemberPaid(member.id)) {
     viewedOperations.value = paidMemberOperations.value.get(member.id) || [];
     return;
   }
