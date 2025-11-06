@@ -25,11 +25,15 @@ import { GetMeetingMonthlyPaymentsQueryHandler } from '@application/queries/meet
 import { GetMeetingsQueryHandler } from '@application/queries/meetings/get-meetings.query-handler';
 import { GetMeetingQueryHandler } from '@application/queries/meetings/get-meeting.query-handler';
 import { GetActiveMeetingQueryHandler } from '@application/queries/meetings/get-active-meeting.query-handler';
+import { GetRevaluationQueryHandler } from '@application/queries/meetings/get-revaluation.query-handler';
+import { RecordRevaluationUseCase } from '@application/use-cases/meetings/record-revaluation.use-case';
 import { OpenMeetingHttpDto } from '../dto/open-meeting-http.dto';
 import { MeetingResponseDto } from '@application/dto/meetings/meeting-response.dto';
 import { OpenMeetingResponseHttpDto } from '../dto/open-meeting-response-http.dto';
 import { OperationResponseHttpDto } from '../dto/operation-response-http.dto';
 import { OperationResponseDto } from '@application/dto/meetings/operation-response.dto';
+import { RevaluationResponseHttpDto } from '../dto/revaluation-response-http.dto';
+import { RevaluationResultDto } from '@application/dto/meetings/revaluation-result.dto';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { IncludeSummaryQueryDto } from '../dto/include-summary-query.dto';
 
@@ -43,6 +47,8 @@ export class MeetingsV2Controller {
     private readonly getMeetingsQuery: GetMeetingsQueryHandler,
     private readonly getMeetingQuery: GetMeetingQueryHandler,
     private readonly getActiveMeetingQuery: GetActiveMeetingQueryHandler,
+    private readonly getRevaluationQuery: GetRevaluationQueryHandler,
+    private readonly recordRevaluationUseCase: RecordRevaluationUseCase,
   ) {}
 
   @Post()
@@ -393,6 +399,123 @@ export class MeetingsV2Controller {
       type: operation.type,
       date: operation.date,
       description: operation.description,
+    };
+  }
+
+  @Get(':id/revaluation')
+  @ApiOperation({
+    summary: 'Get revaluation preview or executed result',
+    description:
+      "Returns preview if not executed, or executed result if already executed. Includes status field to indicate if it's a preview or executed result.",
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The unique identifier of the meeting',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Revaluation data retrieved successfully',
+    type: RevaluationResponseHttpDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Meeting not found',
+  })
+  async getRevaluation(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<RevaluationResponseHttpDto> {
+    try {
+      const result = await this.getRevaluationQuery.execute(id);
+      return this.mapRevaluationToHttp(result);
+    } catch (error: unknown) {
+      if (error instanceof MeetingNotFoundException) {
+        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+      }
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Patch(':id/revaluation/confirm')
+  @ApiOperation({
+    summary: 'Confirm and execute revaluation',
+    description:
+      'Confirms and executes the revaluation for the meeting. This operation is idempotent - if already executed, returns the existing result.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The unique identifier of the meeting',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Revaluation confirmed and executed successfully',
+    type: RevaluationResponseHttpDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Meeting not found',
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad request - Invalid revaluation data or meeting state',
+  })
+  async confirmRevaluation(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<RevaluationResponseHttpDto> {
+    try {
+      const result = await this.recordRevaluationUseCase.execute({
+        meetingId: id,
+      });
+      return this.mapRevaluationToHttp(result);
+    } catch (error: unknown) {
+      if (error instanceof MeetingNotFoundException) {
+        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+      }
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  private mapRevaluationToHttp(
+    result: RevaluationResultDto,
+  ): RevaluationResponseHttpDto {
+    return {
+      total_contributions: result.totalContributions,
+      total_interest: result.totalInterest,
+      total_to_distribute: result.totalToDistribute,
+      details: result.details.map((detail) => ({
+        stock_id: detail.stockId,
+        type: detail.type,
+        is_guaranteed: detail.isGuaranteed,
+        total_shares: detail.totalShares,
+        previous_value: detail.previousValue,
+        growth_from_contributions: detail.growthFromContributions,
+        growth_from_interest: detail.growthFromInterest,
+        total_growth_per_share: detail.totalGrowthPerShare,
+        estimated_growth_from_contributions:
+          detail.estimatedGrowthFromContributions,
+        new_value: detail.newValue,
+        dividends_generated: detail.dividendsGenerated,
+      })),
+      total_mandatory_contributions: result.totalMandatoryContributions,
+      mandatory_contributions_by_type: result.mandatoryContributionsByType?.map(
+        (m) => ({
+          mandatory_contribution_id: m.mandatoryContributionId,
+          total: m.total,
+        }),
+      ),
+      status: result.status,
+      executed_at: result.executedAt,
+      operation_id: result.operationId,
     };
   }
 }
