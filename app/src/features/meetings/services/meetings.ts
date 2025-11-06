@@ -1,4 +1,5 @@
 import { api } from '@/services/api';
+import { useApiVersionStore } from '@/shared/stores/apiVersion';
 import type {
   Meeting,
   MemberDue,
@@ -85,9 +86,10 @@ class MeetingsService {
   }
 
   /**
-   * Obtiene el resumen de la reunión con los campos solicitados
+   * Obtiene la reunión activa con su summary
+   * Útil para actualizar valores cuando se cambia de step
    */
-  getMeetingSummary(meetingId: string, fields?: string[]): Promise<{
+  async getActiveMeetingWithSummary(): Promise<{
     totalCollected?: number;
     totalInterest?: number;
     totalCash?: number;
@@ -96,6 +98,115 @@ class MeetingsService {
     participantsCount?: number;
     duration?: string;
   }> {
+    const apiVersionStore = useApiVersionStore();
+    
+    if (apiVersionStore.isV2) {
+      // V2: usar endpoint que retorna reunión activa con summary incluido
+      const response = await api.get<{
+        id: string;
+        date: Date;
+        status: string;
+        notes: string | null;
+        createdAt: Date;
+        summary?: {
+          totalCash?: number;
+          totalInterest?: number;
+          totalLoans?: number;
+          totalCollected?: number;
+          totalDividends?: number;
+          totalStockInvestment?: number;
+          finalCashBalance?: number;
+          totalDisbursed?: number;
+          participantsCount?: number;
+          duration?: string;
+        };
+      }>('/v2/meetings/active');
+      
+      return {
+        totalCollected: response.summary?.totalCollected,
+        totalInterest: response.summary?.totalInterest,
+        totalCash: response.summary?.totalCash,
+        finalCashBalance: response.summary?.finalCashBalance,
+        totalDisbursed: response.summary?.totalDisbursed,
+        participantsCount: response.summary?.participantsCount,
+        duration: response.summary?.duration,
+      };
+    }
+    
+    // V1: obtener reunión activa y luego su summary
+    const activeMeeting = await this.findActive();
+    if (!activeMeeting) {
+      return {};
+    }
+    
+    return this.getMeetingSummary(activeMeeting.id, ['totalCollected', 'totalCash', 'totalInterest']);
+  }
+
+  /**
+   * Obtiene el resumen de la reunión con los campos solicitados
+   */
+  async getMeetingSummary(meetingId: string, fields?: string[]): Promise<{
+    totalCollected?: number;
+    totalInterest?: number;
+    totalCash?: number;
+    finalCashBalance?: number;
+    totalDisbursed?: number;
+    participantsCount?: number;
+    duration?: string;
+  }> {
+    const apiVersionStore = useApiVersionStore();
+    
+    // Si está en v2, usar el endpoint v2 que retorna el meeting con summary incluido
+    if (apiVersionStore.isV2) {
+      // Verificar si es la reunión activa para usar el endpoint específico
+      let url: string;
+      try {
+        const activeMeeting = await this.findActive();
+        if (activeMeeting && activeMeeting.id === meetingId) {
+          // Es la reunión activa, usar endpoint específico
+          url = '/v2/meetings/active';
+        } else {
+          // No es la reunión activa, usar endpoint con ID
+          url = `/v2/meetings/${meetingId}?includeSummary=true`;
+        }
+      } catch {
+        // Si falla obtener la reunión activa, usar el endpoint con ID
+        url = `/v2/meetings/${meetingId}?includeSummary=true`;
+      }
+      
+      const response = await api.get<{
+        id: string;
+        date: Date;
+        status: string;
+        notes: string | null;
+        createdAt: Date;
+        summary?: {
+          totalCash?: number;
+          totalInterest?: number;
+          totalLoans?: number;
+          totalCollected?: number;
+          totalDividends?: number;
+          totalStockInvestment?: number;
+          finalCashBalance?: number;
+          totalDisbursed?: number;
+          participantsCount?: number;
+          duration?: string;
+        };
+      }>(url);
+      
+      // Extraer solo el summary de la respuesta v2
+      return {
+        totalCollected: response.summary?.totalCollected,
+        totalInterest: response.summary?.totalInterest,
+        totalCash: response.summary?.totalCash,
+        finalCashBalance: response.summary?.finalCashBalance,
+        totalDisbursed: response.summary?.totalDisbursed,
+        participantsCount: response.summary?.participantsCount,
+        duration: response.summary?.duration,
+      };
+    }
+    
+    // V1: comportamiento original
     let url = `/meetings/${meetingId}/summary`;
     if (fields && fields.length > 0) {
       const params = fields.map(f => `fields=${encodeURIComponent(f)}`).join('&');
@@ -105,43 +216,103 @@ class MeetingsService {
   }
 
   async getMeetingDetail(meetingId: string): Promise<MeetingDetail> {
-    // 1) Obtener resumen desde backend para MeetingSummarySection
-    const rawSummary = await this.getMeetingSummary(meetingId, [
-      'meeting.id',
-      'meeting.date',
-      'meeting.status',
-      'meeting.notes',
-      'totalCollected',
-      'totalInterest',
-      'finalCashBalance',
-      'totalDisbursed',
-      'participantsCount',
-      'duration',
-    ]) as {
-      meeting?: { id?: string; date?: string; status?: string; notes?: string };
-      totalCollected?: number;
-      totalInterest?: number;
-      totalDisbursed?: number;
-      finalCashBalance?: number;
-      duration?: string;
-      participantsCount?: number;
-    };
+    const apiVersionStore = useApiVersionStore();
+    
+    let meeting: MeetingDetail['meeting'];
+    let summary: MeetingDetail['summary'];
+    
+    if (apiVersionStore.isV2) {
+      // V2: Obtener meeting con summary incluido
+      let url: string;
+      try {
+        const activeMeeting = await this.findActive();
+        if (activeMeeting && activeMeeting.id === meetingId) {
+          // Es la reunión activa, usar endpoint específico
+          url = '/v2/meetings/active';
+        } else {
+          // No es la reunión activa, usar endpoint con ID
+          url = `/v2/meetings/${meetingId}?includeSummary=true`;
+        }
+      } catch {
+        // Si falla obtener la reunión activa, usar el endpoint con ID
+        url = `/v2/meetings/${meetingId}?includeSummary=true`;
+      }
+      
+      const response = await api.get<{
+        id: string;
+        date: Date | string;
+        status: string;
+        notes: string | null;
+        createdAt: Date | string;
+        summary?: {
+          totalCash?: number;
+          totalInterest?: number;
+          totalLoans?: number;
+          totalCollected?: number;
+          totalDividends?: number;
+          totalStockInvestment?: number;
+          finalCashBalance?: number;
+          totalDisbursed?: number;
+          participantsCount?: number;
+          duration?: string;
+        };
+      }>(url);
+      
+      // Extraer meeting y summary de la respuesta v2
+      meeting = {
+        id: response.id,
+        date: typeof response.date === 'string' ? response.date : response.date.toISOString(),
+        status: (response.status as 'active' | 'closed') ?? 'closed',
+        notes: response.notes ?? undefined,
+      };
+      
+      summary = {
+        totalCollected: Number(response.summary?.totalCollected ?? 0),
+        totalInterest: Number(response.summary?.totalInterest ?? 0),
+        totalDisbursed: Number(response.summary?.totalDisbursed ?? 0),
+        finalCashBalance: Number(response.summary?.finalCashBalance ?? 0),
+        duration: String(response.summary?.duration ?? ''),
+        participantsCount: Number(response.summary?.participantsCount ?? 0),
+      } satisfies MeetingDetail['summary'];
+    } else {
+      // V1: comportamiento original
+      const rawSummary = await this.getMeetingSummary(meetingId, [
+        'meeting.id',
+        'meeting.date',
+        'meeting.status',
+        'meeting.notes',
+        'totalCollected',
+        'totalInterest',
+        'finalCashBalance',
+        'totalDisbursed',
+        'participantsCount',
+        'duration',
+      ]) as {
+        meeting?: { id?: string; date?: string; status?: string; notes?: string };
+        totalCollected?: number;
+        totalInterest?: number;
+        totalDisbursed?: number;
+        finalCashBalance?: number;
+        duration?: string;
+        participantsCount?: number;
+      };
 
-    const meeting = {
-      id: rawSummary?.meeting?.id ?? meetingId,
-      date: rawSummary?.meeting?.date ?? new Date().toISOString(),
-      status: (rawSummary?.meeting?.status as 'active' | 'closed') ?? 'closed',
-      notes: rawSummary?.meeting?.notes ?? undefined,
-    };
+      meeting = {
+        id: rawSummary?.meeting?.id ?? meetingId,
+        date: rawSummary?.meeting?.date ?? new Date().toISOString(),
+        status: (rawSummary?.meeting?.status as 'active' | 'closed') ?? 'closed',
+        notes: rawSummary?.meeting?.notes ?? undefined,
+      };
 
-    const summary = {
-      totalCollected: Number(rawSummary?.totalCollected ?? 0),
-      totalInterest: Number(rawSummary?.totalInterest ?? 0),
-      totalDisbursed: Number(rawSummary?.totalDisbursed ?? 0),
-      finalCashBalance: Number(rawSummary?.finalCashBalance ?? 0),
-      duration: String(rawSummary?.duration ?? ''),
-      participantsCount: Number(rawSummary?.participantsCount ?? 0),
-    } satisfies MeetingDetail['summary'];
+      summary = {
+        totalCollected: Number(rawSummary?.totalCollected ?? 0),
+        totalInterest: Number(rawSummary?.totalInterest ?? 0),
+        totalDisbursed: Number(rawSummary?.totalDisbursed ?? 0),
+        finalCashBalance: Number(rawSummary?.finalCashBalance ?? 0),
+        duration: String(rawSummary?.duration ?? ''),
+        participantsCount: Number(rawSummary?.participantsCount ?? 0),
+      } satisfies MeetingDetail['summary'];
+    }
 
     // 2) Mantener mocks en las demás secciones por ahora
     const [contributions, stockChanges, stockOperations, disbursements, ledgerEntries] = await Promise.all([
