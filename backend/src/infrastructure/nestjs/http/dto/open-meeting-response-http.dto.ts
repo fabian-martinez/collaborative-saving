@@ -1,5 +1,8 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsDate, IsString, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { MeetingSummaryHttpDto } from './meeting-summary-http.dto';
+
 export class OpenMeetingResponseHttpDto {
   @ApiProperty()
   id: string;
@@ -15,4 +18,11 @@ export class OpenMeetingResponseHttpDto {
   @ApiProperty()
   @IsDate()
   created_at: Date;
+  @ApiPropertyOptional({
+    type: MeetingSummaryHttpDto,
+    description: 'Resumen de la reunión (incluido solo si includeSummary=true)',
+  })
+  @ValidateNested()
+  @Type(() => MeetingSummaryHttpDto)
+  summary?: MeetingSummaryHttpDto;
 }

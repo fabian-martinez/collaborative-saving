@@ -5,6 +5,8 @@ import { OpenMeetingUseCase } from '@application/use-cases/meetings/open-meeting
 import { CloseMeetingUseCase } from '@application/use-cases/meetings/close-meeting.use-case';
 import { GetMeetingMonthlyPaymentsQueryHandler } from '@application/queries/meetings/get-meeting-monthly-payments.query-handler';
 import { GetMeetingsQueryHandler } from '@application/queries/meetings/get-meetings.query-handler';
+import { GetMeetingQueryHandler } from '@application/queries/meetings/get-meeting.query-handler';
+import { GetActiveMeetingQueryHandler } from '@application/queries/meetings/get-active-meeting.query-handler';
 import { MeetingStatus } from '@domain/entities/meeting.entity';
 import { OpenMeetingResponseHttpDto } from '../dto/open-meeting-response-http.dto';
 import { MeetingResponseDto } from '@application/dto/meetings/meeting-response.dto';
@@ -18,11 +20,15 @@ describe('MeetingsV2Controller', () => {
   let closeMeetingUseCase: jest.Mocked<CloseMeetingUseCase>;
   let getMeetingMonthlyPaymentsQuery: jest.Mocked<GetMeetingMonthlyPaymentsQueryHandler>;
   let getMeetingsQuery: jest.Mocked<GetMeetingsQueryHandler>;
+  let getMeetingQuery: jest.Mocked<GetMeetingQueryHandler>;
+  let getActiveMeetingQuery: jest.Mocked<GetActiveMeetingQueryHandler>;
 
   let openMeetingUseCaseExecuteSpy: jest.SpyInstance;
   let closeMeetingUseCaseExecuteSpy: jest.SpyInstance;
   let getMeetingMonthlyPaymentsQueryExecuteSpy: jest.SpyInstance;
   let getMeetingsQueryExecuteSpy: jest.SpyInstance;
+  let getMeetingQueryExecuteSpy: jest.SpyInstance;
+  let getActiveMeetingQueryExecuteSpy: jest.SpyInstance;
 
   const mockOpenMeetingResponse: MeetingResponseDto = {
     id: '550e8400-e29b-41d4-a716-446655440000',
@@ -68,6 +74,18 @@ describe('MeetingsV2Controller', () => {
             execute: jest.fn(),
           },
         },
+        {
+          provide: GetMeetingQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: GetActiveMeetingQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -78,6 +96,8 @@ describe('MeetingsV2Controller', () => {
       GetMeetingMonthlyPaymentsQueryHandler,
     );
     getMeetingsQuery = module.get(GetMeetingsQueryHandler);
+    getMeetingQuery = module.get(GetMeetingQueryHandler);
+    getActiveMeetingQuery = module.get(GetActiveMeetingQueryHandler);
 
     openMeetingUseCaseExecuteSpy = jest.spyOn(openMeetingUseCase, 'execute');
     closeMeetingUseCaseExecuteSpy = jest.spyOn(closeMeetingUseCase, 'execute');
@@ -86,6 +106,11 @@ describe('MeetingsV2Controller', () => {
       'execute',
     );
     getMeetingsQueryExecuteSpy = jest.spyOn(getMeetingsQuery, 'execute');
+    getMeetingQueryExecuteSpy = jest.spyOn(getMeetingQuery, 'execute');
+    getActiveMeetingQueryExecuteSpy = jest.spyOn(
+      getActiveMeetingQuery,
+      'execute',
+    );
   });
 
   it('should be defined', () => {
@@ -457,6 +482,392 @@ describe('MeetingsV2Controller', () => {
       // ACT & ASSERT
       await expect(controller.findAll()).rejects.toThrow(HttpException);
       await expect(controller.findAll()).rejects.toThrow('Custom error');
+    });
+  });
+
+  describe('findOne', () => {
+    const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+
+    it('should return meeting by ID successfully', async () => {
+      // ARRANGE
+      const mockMeeting: MeetingResponseDto = {
+        id: meetingId,
+        date: new Date('2024-01-15'),
+        status: MeetingStatus.ACTIVE,
+        notes: 'Test meeting',
+        createdAt: new Date('2024-01-15'),
+      };
+
+      const expectedHttpResponse: OpenMeetingResponseHttpDto = {
+        id: meetingId,
+        date: new Date('2024-01-15'),
+        status: MeetingStatus.ACTIVE,
+        notes: 'Test meeting',
+        created_at: new Date('2024-01-15'),
+      };
+
+      getMeetingQueryExecuteSpy.mockResolvedValue(mockMeeting);
+
+      // ACT
+      const result = await controller.findOne(meetingId, {});
+
+      // ASSERT
+      expect(getMeetingQueryExecuteSpy).toHaveBeenCalledWith(meetingId, false);
+      expect(getMeetingQueryExecuteSpy).toHaveBeenCalledTimes(1);
+      expect(result).toEqual(expectedHttpResponse);
+    });
+
+    it('should return 404 when meeting not found', async () => {
+      // ARRANGE
+      const error = new MeetingNotFoundException(meetingId);
+      getMeetingQueryExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.findOne(meetingId, {})).rejects.toThrow(
+        HttpException,
+      );
+      try {
+        await controller.findOne(meetingId, {});
+      } catch (e) {
+        expect(e).toBeInstanceOf(HttpException);
+        if (e instanceof HttpException) {
+          expect(e.getStatus()).toBe(HttpStatus.NOT_FOUND);
+          expect(e.message).toContain(meetingId);
+        }
+      }
+    });
+
+    it('should handle meetings with null notes', async () => {
+      // ARRANGE
+      const mockMeeting: MeetingResponseDto = {
+        id: meetingId,
+        date: new Date('2024-01-15'),
+        status: MeetingStatus.ACTIVE,
+        notes: null,
+        createdAt: new Date('2024-01-15'),
+      };
+
+      getMeetingQueryExecuteSpy.mockResolvedValue(mockMeeting);
+
+      // ACT
+      const result = await controller.findOne(meetingId, {});
+
+      // ASSERT
+      expect(result.notes).toBeNull();
+      expect(result.created_at).toBeInstanceOf(Date);
+    });
+
+    it('should handle closed meetings', async () => {
+      // ARRANGE
+      const mockMeeting: MeetingResponseDto = {
+        id: meetingId,
+        date: new Date('2024-01-15'),
+        status: MeetingStatus.CLOSED,
+        notes: 'Closed meeting',
+        createdAt: new Date('2024-01-15'),
+      };
+
+      getMeetingQueryExecuteSpy.mockResolvedValue(mockMeeting);
+
+      // ACT
+      const result = await controller.findOne(meetingId, {});
+
+      // ASSERT
+      expect(result.status).toBe(MeetingStatus.CLOSED);
+    });
+
+    it('should handle generic errors', async () => {
+      // ARRANGE
+      const error = new Error('Internal error');
+      getMeetingQueryExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.findOne(meetingId, {})).rejects.toThrow(
+        HttpException,
+      );
+      await expect(controller.findOne(meetingId, {})).rejects.toThrow(
+        'Internal error',
+      );
+    });
+
+    it('should include summary when includeSummary query param is true', async () => {
+      // ARRANGE
+      const mockMeeting: MeetingResponseDto = {
+        id: meetingId,
+        date: new Date('2024-01-15'),
+        status: MeetingStatus.ACTIVE,
+        notes: 'Test meeting',
+        createdAt: new Date('2024-01-15'),
+      };
+
+      // Expected HTTP response (snake_case)
+      const expectedSummary = {
+        total_cash: 150000.0,
+        total_interest: 5000.0,
+        total_loans: 20000.0,
+        total_collected: 145000.0,
+        total_dividends: 10000.0,
+        total_stock_investment: 30000.0,
+        final_cash_balance: 120000.0,
+        total_disbursed: 30000.0,
+        participants_count: 15,
+        duration: '2h 30m',
+      };
+
+      const expectedHttpResponse: OpenMeetingResponseHttpDto = {
+        id: meetingId,
+        date: new Date('2024-01-15'),
+        status: MeetingStatus.ACTIVE,
+        notes: 'Test meeting',
+        created_at: new Date('2024-01-15'),
+        summary: expectedSummary,
+      };
+
+      // Mock summary from service (camelCase)
+      const serviceSummary = {
+        totalCash: 150000.0,
+        totalInterest: 5000.0,
+        totalLoans: 20000.0,
+        totalCollected: 145000.0,
+        totalDividends: 10000.0,
+        totalStockInvestment: 30000.0,
+        finalCashBalance: 120000.0,
+        totalDisbursed: 30000.0,
+        participantsCount: 15,
+        duration: '2h 30m',
+      };
+
+      getMeetingQueryExecuteSpy.mockResolvedValue({
+        ...mockMeeting,
+        summary: serviceSummary,
+      });
+
+      // ACT
+      const result = await controller.findOne(meetingId, {
+        includeSummary: true,
+      });
+
+      // ASSERT
+      expect(getMeetingQueryExecuteSpy).toHaveBeenCalledWith(meetingId, true);
+      expect(result).toEqual(expectedHttpResponse);
+      expect(result.summary).toBeDefined();
+      expect(result.summary?.total_cash).toBe(150000.0);
+    });
+
+    it('should not include summary when includeSummary query param is false', async () => {
+      // ARRANGE
+      const mockMeeting: MeetingResponseDto = {
+        id: meetingId,
+        date: new Date('2024-01-15'),
+        status: MeetingStatus.ACTIVE,
+        notes: 'Test meeting',
+        createdAt: new Date('2024-01-15'),
+      };
+
+      const expectedHttpResponse: OpenMeetingResponseHttpDto = {
+        id: meetingId,
+        date: new Date('2024-01-15'),
+        status: MeetingStatus.ACTIVE,
+        notes: 'Test meeting',
+        created_at: new Date('2024-01-15'),
+      };
+
+      getMeetingQueryExecuteSpy.mockResolvedValue(mockMeeting);
+
+      // ACT
+      const result = await controller.findOne(meetingId, {
+        includeSummary: false,
+      });
+
+      // ASSERT
+      expect(getMeetingQueryExecuteSpy).toHaveBeenCalledWith(meetingId, false);
+      expect(result).toEqual(expectedHttpResponse);
+      expect(result.summary).toBeUndefined();
+    });
+
+    it('should not include summary when includeSummary query param is not provided', async () => {
+      // ARRANGE
+      const mockMeeting: MeetingResponseDto = {
+        id: meetingId,
+        date: new Date('2024-01-15'),
+        status: MeetingStatus.ACTIVE,
+        notes: 'Test meeting',
+        createdAt: new Date('2024-01-15'),
+      };
+
+      const expectedHttpResponse: OpenMeetingResponseHttpDto = {
+        id: meetingId,
+        date: new Date('2024-01-15'),
+        status: MeetingStatus.ACTIVE,
+        notes: 'Test meeting',
+        created_at: new Date('2024-01-15'),
+      };
+
+      getMeetingQueryExecuteSpy.mockResolvedValue(mockMeeting);
+
+      // ACT
+      const result = await controller.findOne(meetingId, {});
+
+      // ASSERT
+      expect(getMeetingQueryExecuteSpy).toHaveBeenCalledWith(meetingId, false);
+      expect(result).toEqual(expectedHttpResponse);
+      expect(result.summary).toBeUndefined();
+    });
+  });
+
+  describe('getActive', () => {
+    it('should return active meeting with summary successfully', async () => {
+      // ARRANGE
+      // Mock summary from service (camelCase)
+      const serviceSummary = {
+        totalCash: 150000.0,
+        totalInterest: 5000.0,
+        totalLoans: 20000.0,
+        totalCollected: 145000.0,
+        totalDividends: 10000.0,
+        totalStockInvestment: 30000.0,
+        finalCashBalance: 120000.0,
+        totalDisbursed: 30000.0,
+        participantsCount: 15,
+        duration: '2h 30m',
+      };
+
+      const mockMeeting: MeetingResponseDto & {
+        summary: typeof serviceSummary;
+      } = {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        date: new Date('2024-01-15'),
+        status: MeetingStatus.ACTIVE,
+        notes: 'Active meeting',
+        createdAt: new Date('2024-01-15'),
+        summary: serviceSummary,
+      };
+
+      // Expected HTTP response (snake_case)
+      const expectedSummary = {
+        total_cash: 150000.0,
+        total_interest: 5000.0,
+        total_loans: 20000.0,
+        total_collected: 145000.0,
+        total_dividends: 10000.0,
+        total_stock_investment: 30000.0,
+        final_cash_balance: 120000.0,
+        total_disbursed: 30000.0,
+        participants_count: 15,
+        duration: '2h 30m',
+      };
+
+      const expectedHttpResponse: OpenMeetingResponseHttpDto = {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        date: new Date('2024-01-15'),
+        status: MeetingStatus.ACTIVE,
+        notes: 'Active meeting',
+        created_at: new Date('2024-01-15'),
+        summary: expectedSummary,
+      };
+
+      getActiveMeetingQueryExecuteSpy.mockResolvedValue(mockMeeting);
+
+      // ACT
+      const result = await controller.getActive();
+
+      // ASSERT
+      expect(getActiveMeetingQueryExecuteSpy).toHaveBeenCalledTimes(1);
+      expect(result).toEqual(expectedHttpResponse);
+      expect(result.status).toBe(MeetingStatus.ACTIVE);
+      expect(result.summary).toBeDefined();
+      expect(result.summary?.total_cash).toBe(150000.0);
+    });
+
+    it('should return 404 when no active meeting exists', async () => {
+      // ARRANGE
+      const error = new MeetingNotFoundException('active');
+      getActiveMeetingQueryExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.getActive()).rejects.toThrow(HttpException);
+      try {
+        await controller.getActive();
+      } catch (e) {
+        expect(e).toBeInstanceOf(HttpException);
+        if (e instanceof HttpException) {
+          expect(e.getStatus()).toBe(HttpStatus.NOT_FOUND);
+        }
+      }
+    });
+
+    it('should handle active meetings with null notes and include summary', async () => {
+      // ARRANGE
+      // Mock summary from service (camelCase)
+      const serviceSummary = {
+        totalCash: 0,
+        totalInterest: 0,
+        totalLoans: 0,
+        totalCollected: 0,
+        totalDividends: 0,
+        totalStockInvestment: 0,
+        finalCashBalance: 0,
+        totalDisbursed: 0,
+        participantsCount: 0,
+        duration: '0h 0m',
+      };
+
+      const mockMeeting: MeetingResponseDto & {
+        summary: typeof serviceSummary;
+      } = {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        date: new Date('2024-01-15'),
+        status: MeetingStatus.ACTIVE,
+        notes: null,
+        createdAt: new Date('2024-01-15'),
+        summary: serviceSummary,
+      };
+
+      // Expected HTTP response (snake_case)
+      const expectedSummary = {
+        total_cash: 0,
+        total_interest: 0,
+        total_loans: 0,
+        total_collected: 0,
+        total_dividends: 0,
+        total_stock_investment: 0,
+        final_cash_balance: 0,
+        total_disbursed: 0,
+        participants_count: 0,
+        duration: '0h 0m',
+      };
+
+      getActiveMeetingQueryExecuteSpy.mockResolvedValue(mockMeeting);
+
+      // ACT
+      const result = await controller.getActive();
+
+      // ASSERT
+      expect(result.notes).toBeNull();
+      expect(result.status).toBe(MeetingStatus.ACTIVE);
+      expect(result.created_at).toBeInstanceOf(Date);
+      expect(result.summary).toBeDefined();
+      expect(result.summary).toEqual(expectedSummary);
+    });
+
+    it('should handle generic errors', async () => {
+      // ARRANGE
+      const error = new Error('Internal error');
+      getActiveMeetingQueryExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.getActive()).rejects.toThrow(HttpException);
+      await expect(controller.getActive()).rejects.toThrow('Internal error');
+    });
+
+    it('should handle HttpException errors', async () => {
+      // ARRANGE
+      const error = new HttpException('Custom error', HttpStatus.BAD_REQUEST);
+      getActiveMeetingQueryExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.getActive()).rejects.toThrow(HttpException);
+      await expect(controller.getActive()).rejects.toThrow('Custom error');
     });
   });
 });
