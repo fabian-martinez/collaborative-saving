@@ -213,3 +213,26 @@ export interface DisbursementPlan {
     notes: string;
   };
 }
+
+// ---- V2 Member Payment Response Types (normalized from snake_case to camelCase) ----
+
+export interface MemberPaymentResponse {
+  operationId: string;
+  type: string;
+  totalAmount: number;
+  description?: string;
+  date: string;
+  meetingId: string;
+  entries: MemberPaymentEntry[];
+}
+
+export interface MemberPaymentEntry {
+  id: string;
+  accountType: string;
+  amount: number;
+  description?: string;
+  loanId?: string;
+  stockId?: string;
+  mandatoryContributionId?: string;
+  stockSubscriptionId?: string;
+}

@@ -9,14 +9,14 @@
       </div>
     </div>
     
-    <div v-if="operation.ledger_entries && operation.ledger_entries.length" class="space-y-2 text-sm">
+    <div v-if="(operation.ledger_entries && operation.ledger_entries.length) || ((operation as any).ledgerEntries && (operation as any).ledgerEntries.length)" class="space-y-2 text-sm">
         <div 
             v-for="entry in creditEntries" 
             :key="entry.id" 
             class="flex justify-between items-center bg-base-100/50 p-2 rounded-md"
         >
             <div>
-                <span class="text-base-content/80">{{ getAccountName(entry.account_type) }}</span>
+                <span class="text-base-content/80">{{ getAccountName(entry.account_type || (entry as any).accountType) }}</span>
                 <p class="text-xs text-base-content/60">{{ entry.description }}</p>
             </div>
             <span class="font-mono text-error font-medium">{{ formatNumber(-Number(entry.amount)) }}</span>
@@ -43,7 +43,12 @@ const props = defineProps<{
 }>();
 
 const creditEntries = computed(() => {
-    return props.operation.ledger_entries?.filter(e => e.account_type !== CASH_ACCOUNT) || [];
+    // Compatibilidad con ambos formatos: ledger_entries (snake_case) o ledgerEntries (camelCase)
+    const entries = props.operation.ledger_entries || (props.operation as any).ledgerEntries || [];
+    return entries.filter((e: any) => {
+      const accountType = e.account_type || e.accountType;
+      return accountType !== CASH_ACCOUNT;
+    });
 });
 
 const accountNames: Record<string, string> = {
