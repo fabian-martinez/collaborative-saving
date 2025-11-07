@@ -121,6 +121,14 @@ export class Loan {
     }
   }
 
+  /**
+   * Calculates the interest due based on the outstanding balance and interest rate
+   * @returns The interest amount due for the current period
+   */
+  calculateInterestDue(): number {
+    return this._outstandingBalance * this._interestRate;
+  }
+
   recordPayment(principalAmount: number, interestAmount: number): void {
     if (principalAmount < 0 || interestAmount < 0) {
       throw new Error('Payment amounts must be >= 0');

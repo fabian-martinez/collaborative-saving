@@ -241,7 +241,7 @@ describe('RecordMonthlyPaymentsUseCase', () => {
       );
     });
 
-    it('should process loan payment and update loan balance', async () => {
+    it('should process loan payment with interest and update loan balance', async () => {
       // ARRANGE
       const loanId = 'loan-id';
       const loanDto: RecordMonthlyPaymentsDto = {
@@ -261,10 +261,235 @@ describe('RecordMonthlyPaymentsUseCase', () => {
         loanType: 'corriente',
         approvedAmount: 10000,
         monthlyPaymentAmount: 500,
-        interestRate: 0.02,
+        interestRate: 0.02, // 2% interest rate
         term: 24,
       });
       mockLoan.update({ outstandingBalance: 5000 });
+      // Interest due = 5000 * 0.02 = 100
+      // Payment = 500, so interestPaid = 100, principalPaid = 400
+
+      findByIdSpy.mockResolvedValue(mockMember);
+      findActiveSpy.mockResolvedValue(mockMeeting);
+      loanFindByIdSpy.mockResolvedValue(mockLoan);
+      loanSaveSpy.mockResolvedValue(mockLoan);
+      loanTransactionDetailSaveSpy.mockResolvedValue(
+        LoanTransactionDetail.create({
+          loanId: loanId,
+          transactionType: LoanTransactionType.PRINCIPAL_PAYMENT,
+          amount: 400,
+          operationId: 'operation-id',
+        }),
+      );
+      recordOperationExecuteSpy.mockResolvedValue({
+        operationId: 'operation-id',
+        ledgerEntryIds: ['entry-1', 'entry-2', 'entry-3'],
+      });
+
+      // ACT
+      const result = await useCase.execute(loanDto);
+
+      // ASSERT
+      expect(findByIdSpy).toHaveBeenCalledWith('member-id');
+      expect(loanFindByIdSpy).toHaveBeenCalledWith(loanId);
+      expect(loanFindByIdSpy).toHaveBeenCalledTimes(2); // Once for validation, once for processing
+      expect(loanSaveSpy).toHaveBeenCalledTimes(1);
+      // Should create both interest and principal transaction details
+      expect(loanTransactionDetailSaveSpy).toHaveBeenCalledTimes(2);
+      expect(mockLoan.outstandingBalance).toBe(4600); // 5000 - 400 (principal only)
+      expect(result.operationId).toBe('operation-id');
+      expect(result.totalAmount).toBe(500);
+
+      // Verify interest transaction detail was created
+      expect(loanTransactionDetailSaveSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          transactionType: LoanTransactionType.INTEREST_PAYMENT,
+          amount: 100,
+        }),
+      );
+
+      // Verify principal transaction detail was created
+      expect(loanTransactionDetailSaveSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          transactionType: LoanTransactionType.PRINCIPAL_PAYMENT,
+          amount: 400,
+        }),
+      );
+
+      // Verify ledger entries include interest income
+      const calls = recordOperationExecuteSpy.mock.calls as Array<
+        Array<{
+          entries: Array<{ accountType: string; amount: number }>;
+        }>
+      >;
+      expect(calls.length).toBeGreaterThan(0);
+      const firstCall = calls[0];
+      if (firstCall && firstCall[0]) {
+        const operationDto = firstCall[0];
+        const hasInterestEntry = operationDto.entries.some(
+          (e) => e.accountType === 'INTEREST_INCOME' && e.amount === -100,
+        );
+        expect(hasInterestEntry).toBe(true);
+      }
+    });
+
+    it('should process loan payment when payment is less than interest due', async () => {
+      // ARRANGE
+      const loanId = 'loan-id';
+      const loanDto: RecordMonthlyPaymentsDto = {
+        memberId: 'member-id',
+        payments: [
+          {
+            type: PaymentType.LOAN_PAYMENT,
+            amount: 50,
+            description: 'Partial loan payment',
+            referenceId: loanId,
+          },
+        ],
+      };
+
+      const mockLoan = Loan.create({
+        memberId: 'member-id',
+        loanType: 'corriente',
+        approvedAmount: 10000,
+        monthlyPaymentAmount: 500,
+        interestRate: 0.02, // 2% interest rate
+        term: 24,
+      });
+      mockLoan.update({ outstandingBalance: 5000 });
+      // Interest due = 5000 * 0.02 = 100
+      // Payment = 50, so interestPaid = 50, principalPaid = 0
+
+      findByIdSpy.mockResolvedValue(mockMember);
+      findActiveSpy.mockResolvedValue(mockMeeting);
+      loanFindByIdSpy.mockResolvedValue(mockLoan);
+      loanSaveSpy.mockResolvedValue(mockLoan);
+      loanTransactionDetailSaveSpy.mockResolvedValue(
+        LoanTransactionDetail.create({
+          loanId: loanId,
+          transactionType: LoanTransactionType.INTEREST_PAYMENT,
+          amount: 50,
+          operationId: 'operation-id',
+        }),
+      );
+      recordOperationExecuteSpy.mockResolvedValue({
+        operationId: 'operation-id',
+        ledgerEntryIds: ['entry-1', 'entry-2'],
+      });
+
+      // ACT
+      await useCase.execute(loanDto);
+
+      // ASSERT
+      expect(mockLoan.outstandingBalance).toBe(5000); // No change (no principal paid)
+      expect(loanTransactionDetailSaveSpy).toHaveBeenCalledTimes(1); // Only interest
+      expect(loanTransactionDetailSaveSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          transactionType: LoanTransactionType.INTEREST_PAYMENT,
+          amount: 50,
+        }),
+      );
+
+      // Verify ledger entries
+      const calls = recordOperationExecuteSpy.mock.calls as Array<
+        Array<{
+          entries: Array<{ accountType: string; amount: number }>;
+        }>
+      >;
+      expect(calls.length).toBeGreaterThan(0);
+      const firstCall = calls[0];
+      if (firstCall && firstCall[0]) {
+        const operationDto = firstCall[0];
+        const hasInterestEntry = operationDto.entries.some(
+          (e) => e.accountType === 'INTEREST_INCOME' && e.amount === -50,
+        );
+        expect(hasInterestEntry).toBe(true);
+        // Should not have LOANS_RECEIVABLE entry since no principal was paid
+        const hasPrincipalEntry = operationDto.entries.some(
+          (e) => e.accountType === 'LOANS_RECEIVABLE',
+        );
+        expect(hasPrincipalEntry).toBe(false);
+      }
+    });
+
+    it('should process loan payment when payment exactly equals interest due', async () => {
+      // ARRANGE
+      const loanId = 'loan-id';
+      const loanDto: RecordMonthlyPaymentsDto = {
+        memberId: 'member-id',
+        payments: [
+          {
+            type: PaymentType.LOAN_PAYMENT,
+            amount: 100,
+            description: 'Exact interest payment',
+            referenceId: loanId,
+          },
+        ],
+      };
+
+      const mockLoan = Loan.create({
+        memberId: 'member-id',
+        loanType: 'corriente',
+        approvedAmount: 10000,
+        monthlyPaymentAmount: 500,
+        interestRate: 0.02, // 2% interest rate
+        term: 24,
+      });
+      mockLoan.update({ outstandingBalance: 5000 });
+      // Interest due = 5000 * 0.02 = 100
+      // Payment = 100, so interestPaid = 100, principalPaid = 0
+
+      findByIdSpy.mockResolvedValue(mockMember);
+      findActiveSpy.mockResolvedValue(mockMeeting);
+      loanFindByIdSpy.mockResolvedValue(mockLoan);
+      loanSaveSpy.mockResolvedValue(mockLoan);
+      loanTransactionDetailSaveSpy.mockResolvedValue(
+        LoanTransactionDetail.create({
+          loanId: loanId,
+          transactionType: LoanTransactionType.INTEREST_PAYMENT,
+          amount: 100,
+          operationId: 'operation-id',
+        }),
+      );
+      recordOperationExecuteSpy.mockResolvedValue({
+        operationId: 'operation-id',
+        ledgerEntryIds: ['entry-1', 'entry-2'],
+      });
+
+      // ACT
+      const result = await useCase.execute(loanDto);
+
+      // ASSERT
+      expect(mockLoan.outstandingBalance).toBe(5000); // No change (no principal paid)
+      expect(loanTransactionDetailSaveSpy).toHaveBeenCalledTimes(1); // Only interest
+      expect(result.totalAmount).toBe(100);
+    });
+
+    it('should process loan payment when payment is greater than interest due', async () => {
+      // ARRANGE
+      const loanId = 'loan-id';
+      const loanDto: RecordMonthlyPaymentsDto = {
+        memberId: 'member-id',
+        payments: [
+          {
+            type: PaymentType.LOAN_PAYMENT,
+            amount: 600,
+            description: 'Payment greater than interest',
+            referenceId: loanId,
+          },
+        ],
+      };
+
+      const mockLoan = Loan.create({
+        memberId: 'member-id',
+        loanType: 'corriente',
+        approvedAmount: 10000,
+        monthlyPaymentAmount: 500,
+        interestRate: 0.02, // 2% interest rate
+        term: 24,
+      });
+      mockLoan.update({ outstandingBalance: 5000 });
+      // Interest due = 5000 * 0.02 = 100
+      // Payment = 600, so interestPaid = 100, principalPaid = 500
 
       findByIdSpy.mockResolvedValue(mockMember);
       findActiveSpy.mockResolvedValue(mockMeeting);
@@ -280,21 +505,31 @@ describe('RecordMonthlyPaymentsUseCase', () => {
       );
       recordOperationExecuteSpy.mockResolvedValue({
         operationId: 'operation-id',
-        ledgerEntryIds: ['entry-1', 'entry-2'],
+        ledgerEntryIds: ['entry-1', 'entry-2', 'entry-3'],
       });
 
       // ACT
       const result = await useCase.execute(loanDto);
 
       // ASSERT
-      expect(findByIdSpy).toHaveBeenCalledWith('member-id');
-      expect(loanFindByIdSpy).toHaveBeenCalledWith(loanId);
-      expect(loanFindByIdSpy).toHaveBeenCalledTimes(2); // Once for validation, once for processing
-      expect(loanSaveSpy).toHaveBeenCalledTimes(1);
-      expect(loanTransactionDetailSaveSpy).toHaveBeenCalledTimes(1);
-      expect(mockLoan.outstandingBalance).toBe(4500); // 5000 - 500
-      expect(result.operationId).toBe('operation-id');
-      expect(result.totalAmount).toBe(500);
+      expect(mockLoan.outstandingBalance).toBe(4500); // 5000 - 500 (principal)
+      expect(loanTransactionDetailSaveSpy).toHaveBeenCalledTimes(2); // Both interest and principal
+      expect(result.totalAmount).toBe(600);
+
+      // Verify both transaction details
+      expect(loanTransactionDetailSaveSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          transactionType: LoanTransactionType.INTEREST_PAYMENT,
+          amount: 100,
+        }),
+      );
+
+      expect(loanTransactionDetailSaveSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          transactionType: LoanTransactionType.PRINCIPAL_PAYMENT,
+          amount: 500,
+        }),
+      );
     });
 
     it('should throw LoanNotFoundException when loan does not exist', async () => {

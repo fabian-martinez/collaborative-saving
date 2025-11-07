@@ -31,6 +31,7 @@ import {
   INSURANCE_INCOME_ACCOUNT,
   NOVELTY_LOSS_ACCOUNT,
   LOANS_RECEIVABLE_ACCOUNT,
+  INTEREST_INCOME_ACCOUNT,
 } from '@domain/constants/account-types';
 
 /**
@@ -105,12 +106,18 @@ export class RecordMonthlyPaymentsUseCase {
       }
     }
 
-    // 6. Validate loan payments and prepare loan updates
+    // 6. Validate loan payments, calculate interest/principal, and prepare loan updates
     const loanPayments: Array<{
       loanId: string;
       amount: number;
+      interestPaid: number;
+      principalPaid: number;
       description?: string;
     }> = [];
+    const loanPaymentInfo = new Map<
+      string,
+      { interestPaid: number; principalPaid: number }
+    >();
 
     for (const payment of dto.payments) {
       if (payment.type === PaymentType.LOAN_PAYMENT) {
@@ -124,10 +131,24 @@ export class RecordMonthlyPaymentsUseCase {
         if (!loan) {
           throw new LoanNotFoundException(payment.referenceId);
         }
+
+        // Calculate interest and principal
+        const interestDue = loan.calculateInterestDue();
+        const interestPaid = Math.min(payment.amount, interestDue);
+        const principalPaid = payment.amount - interestPaid;
+
         loanPayments.push({
           loanId: payment.referenceId,
           amount: payment.amount,
+          interestPaid,
+          principalPaid,
           description: payment.description,
+        });
+
+        // Store payment breakdown for ledger entries mapping
+        loanPaymentInfo.set(payment.referenceId, {
+          interestPaid,
+          principalPaid,
         });
       }
     }
@@ -138,7 +159,11 @@ export class RecordMonthlyPaymentsUseCase {
 
     for (const payment of dto.payments) {
       totalAmount += payment.amount;
-      const entries = this.mapPaymentToLedgerEntries(payment);
+      const paymentInfo =
+        payment.type === PaymentType.LOAN_PAYMENT && payment.referenceId
+          ? loanPaymentInfo.get(payment.referenceId)
+          : undefined;
+      const entries = this.mapPaymentToLedgerEntries(payment, paymentInfo);
       allEntries.push(...entries);
     }
 
@@ -163,21 +188,38 @@ export class RecordMonthlyPaymentsUseCase {
       }
 
       // Apply domain logic: record payment (updates internal state)
-      loan.recordPayment(loanPayment.amount, 0); // For now, treat entire amount as principal
+      loan.recordPayment(loanPayment.principalPaid, loanPayment.interestPaid);
 
       // Save updated loan
       await this.loanRepository.save(loan);
 
-      // Create loan transaction detail for history
-      const transactionDetail = LoanTransactionDetail.create({
-        loanId: loan.id,
-        transactionType: LoanTransactionType.PRINCIPAL_PAYMENT,
-        amount: loanPayment.amount,
-        notes: loanPayment.description || null,
-        operationId: result.operationId,
-      });
+      // Create loan transaction detail for interest payment if applicable
+      if (loanPayment.interestPaid > 0) {
+        const interestTransactionDetail = LoanTransactionDetail.create({
+          loanId: loan.id,
+          transactionType: LoanTransactionType.INTEREST_PAYMENT,
+          amount: loanPayment.interestPaid,
+          notes: loanPayment.description || null,
+          operationId: result.operationId,
+        });
+        await this.loanTransactionDetailRepository.save(
+          interestTransactionDetail,
+        );
+      }
 
-      await this.loanTransactionDetailRepository.save(transactionDetail);
+      // Create loan transaction detail for principal payment if applicable
+      if (loanPayment.principalPaid > 0) {
+        const principalTransactionDetail = LoanTransactionDetail.create({
+          loanId: loan.id,
+          transactionType: LoanTransactionType.PRINCIPAL_PAYMENT,
+          amount: loanPayment.principalPaid,
+          notes: loanPayment.description || null,
+          operationId: result.operationId,
+        });
+        await this.loanTransactionDetailRepository.save(
+          principalTransactionDetail,
+        );
+      }
     }
 
     // 10. Return response
@@ -192,9 +234,12 @@ export class RecordMonthlyPaymentsUseCase {
 
   /**
    * Maps a payment item to ledger entries based on payment type
+   * @param payment - The payment item to map
+   * @param loanPaymentInfo - Optional interest/principal breakdown for loan payments
    */
   private mapPaymentToLedgerEntries(
     payment: PaymentItemDto,
+    loanPaymentInfo?: { interestPaid: number; principalPaid: number },
   ): RecordOperationDto['entries'] {
     const entries: RecordOperationDto['entries'] = [];
 
@@ -279,8 +324,8 @@ export class RecordMonthlyPaymentsUseCase {
         });
         break;
 
-      case PaymentType.LOAN_PAYMENT:
-        // Loan payment ledger entries (domain logic handled separately above)
+      case PaymentType.LOAN_PAYMENT: {
+        // Loan payment ledger entries
         // Cash entry (debit - money received)
         entries.push({
           accountType: CASH_ACCOUNT,
@@ -288,16 +333,32 @@ export class RecordMonthlyPaymentsUseCase {
           description: payment.description || 'Loan payment',
           loanId: payment.referenceId || null,
         });
-        // Loans receivable entry (credit - reduce loan balance)
+
+        // Interest income entry (credit - income) if interest was paid
+        if (loanPaymentInfo && loanPaymentInfo.interestPaid > 0) {
+          entries.push({
+            accountType: INTEREST_INCOME_ACCOUNT,
+            amount: -loanPaymentInfo.interestPaid,
+            description: payment.description || 'Loan interest payment',
+            loanId: payment.referenceId || null,
+          });
+        }
+
+        // Loans receivable entry (credit - reduce loan balance) for principal portion
         // Note: The actual loan balance update is handled by loan.recordPayment()
-        // in step 8 of the execute method
-        entries.push({
-          accountType: LOANS_RECEIVABLE_ACCOUNT,
-          amount: -payment.amount,
-          description: payment.description || 'Loan payment',
-          loanId: payment.referenceId || null,
-        });
+        // in step 9 of the execute method
+        const principalAmount =
+          loanPaymentInfo?.principalPaid ?? payment.amount;
+        if (principalAmount > 0) {
+          entries.push({
+            accountType: LOANS_RECEIVABLE_ACCOUNT,
+            amount: -principalAmount,
+            description: payment.description || 'Loan principal payment',
+            loanId: payment.referenceId || null,
+          });
+        }
         break;
+      }
 
       default:
         throw new InvalidRequestError(
