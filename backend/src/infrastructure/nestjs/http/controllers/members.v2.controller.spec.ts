@@ -16,6 +16,7 @@ import { RecordMonthlyPaymentsHttpDto } from '../dto/record-monthly-payments-htt
 import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
+import { CalculateMemberInsuranceUseCase } from '@application/use-cases/members/calculate-member-insurance.use-case';
 
 describe('MembersV2Controller', () => {
   let controller: MembersV2Controller;
@@ -25,6 +26,7 @@ describe('MembersV2Controller', () => {
   let updateMemberUseCase: jest.Mocked<UpdateMemberUseCase>;
   let deleteMemberUseCase: jest.Mocked<DeleteMemberUseCase>;
   let recordMonthlyPaymentsUseCase: jest.Mocked<RecordMonthlyPaymentsUseCase>;
+  let calculateMemberInsuranceUseCase: jest.Mocked<CalculateMemberInsuranceUseCase>;
 
   // Spies for execute methods to avoid 'this' scoping issues
   let getMembersQueryExecuteSpy: jest.SpyInstance;
@@ -33,6 +35,7 @@ describe('MembersV2Controller', () => {
   let updateMemberUseCaseExecuteSpy: jest.SpyInstance;
   let deleteMemberUseCaseExecuteSpy: jest.SpyInstance;
   let recordMonthlyPaymentsUseCaseExecuteSpy: jest.SpyInstance;
+  let calculateMemberInsuranceUseCaseExecuteSpy: jest.SpyInstance;
 
   const mockMemberResponse: MemberResponseDto = {
     id: '550e8400-e29b-41d4-a716-446655440000',
@@ -96,6 +99,12 @@ describe('MembersV2Controller', () => {
             execute: jest.fn(),
           },
         },
+        {
+          provide: CalculateMemberInsuranceUseCase,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -106,6 +115,9 @@ describe('MembersV2Controller', () => {
     updateMemberUseCase = module.get(UpdateMemberUseCase);
     deleteMemberUseCase = module.get(DeleteMemberUseCase);
     recordMonthlyPaymentsUseCase = module.get(RecordMonthlyPaymentsUseCase);
+    calculateMemberInsuranceUseCase = module.get(
+      CalculateMemberInsuranceUseCase,
+    );
 
     // Create spies to avoid 'this' scoping issues
     getMembersQueryExecuteSpy = jest.spyOn(getMembersQuery, 'execute');
@@ -118,6 +130,10 @@ describe('MembersV2Controller', () => {
     deleteMemberUseCaseExecuteSpy = jest.spyOn(deleteMemberUseCase, 'execute');
     recordMonthlyPaymentsUseCaseExecuteSpy = jest.spyOn(
       recordMonthlyPaymentsUseCase,
+      'execute',
+    );
+    calculateMemberInsuranceUseCaseExecuteSpy = jest.spyOn(
+      calculateMemberInsuranceUseCase,
       'execute',
     );
   });
@@ -508,6 +524,42 @@ describe('MembersV2Controller', () => {
         .recordMonthlyPayments(memberId, validDto)
         .catch((e: unknown) => e)) as HttpException;
       expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+    });
+  });
+
+  describe('calculateInsurance', () => {
+    const memberId = '550e8400-e29b-41d4-a716-446655440000';
+
+    it('should calculate insurance without capital payment', async () => {
+      calculateMemberInsuranceUseCaseExecuteSpy.mockResolvedValue({
+        insuranceAmount: 1234,
+      });
+
+      const result = await controller.calculateInsurance(memberId);
+
+      expect(calculateMemberInsuranceUseCaseExecuteSpy).toHaveBeenCalledWith({
+        memberId,
+        capitalPayment: undefined,
+      });
+      expect(result).toEqual({ insuranceAmount: 1234 });
+    });
+
+    it('should forward capital payment to the use case', async () => {
+      calculateMemberInsuranceUseCaseExecuteSpy.mockResolvedValue({
+        insuranceAmount: 5678,
+      });
+
+      const capitalPayment = 100000;
+      const result = await controller.calculateInsurance(
+        memberId,
+        capitalPayment,
+      );
+
+      expect(calculateMemberInsuranceUseCaseExecuteSpy).toHaveBeenCalledWith({
+        memberId,
+        capitalPayment,
+      });
+      expect(result).toEqual({ insuranceAmount: 5678 });
     });
   });
 });
