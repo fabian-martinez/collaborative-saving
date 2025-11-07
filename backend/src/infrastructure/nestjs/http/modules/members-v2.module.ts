@@ -10,6 +10,7 @@ import { UpdateMemberUseCase } from '@application/use-cases/members/update-membe
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
 import { RecordMonthlyPaymentsUseCase } from '@application/use-cases/members/record-monthly-payments.use-case';
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
+import { CalculateMemberInsuranceUseCase } from '@application/use-cases/members/calculate-member-insurance.use-case';
 import { TypeOrmMemberRepository } from '@infrastructure/typeorm/repositories/typeorm-member.repository';
 import { TypeOrmMeetingRepository } from '@infrastructure/typeorm/repositories/typeorm-meeting.repository';
 import { TypeOrmMandatoryContributionRepository } from '@infrastructure/typeorm/repositories/typeorm-mandatory-contribution.repository';
@@ -198,6 +199,24 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
       provide: DeleteMemberUseCase,
       useFactory: (repo: MemberRepository) => new DeleteMemberUseCase(repo),
       inject: [MEMBER_REPOSITORY],
+    },
+    {
+      provide: CalculateMemberInsuranceUseCase,
+      useFactory: (
+        stockSubscriptionRepo: StockSubscriptionRepository,
+        loanRepo: LoanRepository,
+        stockRepo: StockRepository,
+      ) =>
+        new CalculateMemberInsuranceUseCase(
+          stockSubscriptionRepo,
+          loanRepo,
+          stockRepo,
+        ),
+      inject: [
+        STOCK_SUBSCRIPTION_REPOSITORY,
+        LOAN_REPOSITORY,
+        STOCK_REPOSITORY,
+      ],
     },
     // Domain services
     OperationBalanceValidator,

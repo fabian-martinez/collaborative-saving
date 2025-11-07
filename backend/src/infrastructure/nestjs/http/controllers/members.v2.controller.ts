@@ -4,6 +4,7 @@ import {
   Post,
   Param,
   ParseUUIDPipe,
+  ParseFloatPipe,
   Patch,
   Body,
   Delete,
@@ -46,6 +47,7 @@ import { GetMemberPaymentsQueryHttpDto } from '../dto/get-member-payments-query-
 import { MemberPaymentResponseHttpDto } from '../dto/member-payment-response-http.dto';
 import { MemberPaymentResponseDto } from '@application/dto/members/member-payment-response.dto';
 import { PaymentFilterType } from '@domain/enums/payment-filter-type.enum';
+import { CalculateMemberInsuranceUseCase } from '@application/use-cases/members/calculate-member-insurance.use-case';
 
 @ApiTags('Members V2')
 @Controller('v2/members')
@@ -59,6 +61,7 @@ export class MembersV2Controller {
     private readonly updateMemberUseCase: UpdateMemberUseCase,
     private readonly deleteMemberUseCase: DeleteMemberUseCase,
     private readonly recordMonthlyPaymentsUseCase: RecordMonthlyPaymentsUseCase,
+    private readonly calculateMemberInsuranceUseCase: CalculateMemberInsuranceUseCase,
   ) {}
 
   @Get()
@@ -453,6 +456,48 @@ export class MembersV2Controller {
       meetingId: query.meetingId,
     });
     return payments.map((payment) => this.mapPaymentToHttp(payment));
+  }
+
+  @Get(':id/insurance')
+  @ApiOperation({
+    summary: 'Calculate insurance amount for a member',
+    description:
+      "Calculates the insurance amount based on the member's active loans and savings. Optionally accepts a capital payment to reduce the debt base.",
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The UUID of the member',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiQuery({
+    name: 'capitalPayment',
+    required: false,
+    description: 'Optional capital payment amount to deduct from the debt base',
+    type: Number,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Insurance calculated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        insuranceAmount: {
+          type: 'number',
+          example: 5000,
+        },
+      },
+    },
+  })
+  async calculateInsurance(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('capitalPayment', new ParseFloatPipe({ optional: true }))
+    capitalPayment?: number,
+  ): Promise<{ insuranceAmount: number }> {
+    const result = await this.calculateMemberInsuranceUseCase.execute({
+      memberId: id,
+      capitalPayment,
+    });
+    return { insuranceAmount: result.insuranceAmount };
   }
 
   @Post(':id/payments')
