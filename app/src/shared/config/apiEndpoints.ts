@@ -49,6 +49,21 @@ export const ENDPOINT_MAPPINGS_V2: Record<string, {
     method: 'GET',
     paramMapping: { id: 'id' },
   },
+  // V1: GET /meetings/:id/revaluation/preview
+  // V2: GET /v2/meetings/:id/revaluation
+  'meetings/:id/revaluation/preview': {
+    v2: 'v2/meetings/:id/revaluation',
+    method: 'GET',
+    paramMapping: { id: 'id' },
+  },
+  // V1: POST /meetings/:id/revaluation
+  // V2: PATCH /v2/meetings/:id/revaluation/confirm
+  // Nota: El servicio manejará el cambio de método (POST -> PATCH) cuando esté en v2
+  'meetings/:id/revaluation': {
+    v2: 'v2/meetings/:id/revaluation/confirm',
+    method: 'POST',
+    paramMapping: { id: 'id' },
+  },
 }
 
 /**
