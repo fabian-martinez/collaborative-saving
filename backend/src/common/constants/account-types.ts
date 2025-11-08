@@ -32,8 +32,5 @@ export const INSURANCE_INCOME_ACCOUNT = 'INSURANCE_INCOME'; // Ingresos por el s
 export const DIVIDEND_EXPENSE_ACCOUNT = 'DIVIDEND_EXPENSE'; // Gastos por pago de dividendos a los socios.
 export const OTHER_EXPENSES_ACCOUNT = 'OTHER_EXPENSES'; // Otros gastos del fondo.
 
-// Cuenta temporal para transacciones no clasificadas durante el desarrollo
-export const PENDING_CLASSIFICATION_ACCOUNT = 'PENDING_CLASSIFICATION';
-
 // Cuenta para registrar pérdidas por novedades que afectan negativamente el recaudo
 export const NOVELTY_LOSS_ACCOUNT = 'NOVELTY_LOSS';

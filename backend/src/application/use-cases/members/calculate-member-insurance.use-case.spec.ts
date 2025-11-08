@@ -32,7 +32,6 @@ describe('CalculateMemberInsuranceUseCase', () => {
       findActiveByMember: jest.fn(),
       findPendingByMember: jest.fn(),
       save: jest.fn(),
-      findByIds: jest.fn(),
     } as unknown as jest.Mocked<LoanRepository>;
 
     stockRepository = {
@@ -114,8 +113,6 @@ describe('CalculateMemberInsuranceUseCase', () => {
       createLoan({ id: loanId, outstandingBalance: 100000 }),
     ]);
 
-    loanRepository.findByIds.mockResolvedValue([]);
-
     stockRepository.findById.mockResolvedValue(
       createStock({ id: stockId, value: 50000 }),
     );
@@ -138,8 +135,6 @@ describe('CalculateMemberInsuranceUseCase', () => {
       createLoan({ id: 'loan-1', outstandingBalance: 50000 }),
     ]);
 
-    loanRepository.findByIds.mockResolvedValue([]);
-
     stockRepository.findById.mockResolvedValue(
       createStock({ id: stockId, value: 30000 }),
     );
@@ -159,8 +154,6 @@ describe('CalculateMemberInsuranceUseCase', () => {
     loanRepository.findActiveByMember.mockResolvedValue([
       createLoan({ id: 'loan-1', outstandingBalance: 100000 }),
     ]);
-
-    loanRepository.findByIds.mockResolvedValue([]);
 
     stockRepository.findById.mockResolvedValue(
       createStock({ id: stockId, value: 30000 }),
@@ -187,14 +180,6 @@ describe('CalculateMemberInsuranceUseCase', () => {
     loanRepository.findActiveByMember.mockResolvedValue([
       createLoan({ id: 'loan-regular', outstandingBalance: 80000 }),
       createLoan({ id: financingLoanId, outstandingBalance: 50000 }),
-    ]);
-
-    loanRepository.findByIds.mockResolvedValue([
-      createLoan({
-        id: financingLoanId,
-        outstandingBalance: 50000,
-        status: LoanStatus.ACTIVE,
-      }),
     ]);
 
     stockRepository.findById.mockResolvedValue(
