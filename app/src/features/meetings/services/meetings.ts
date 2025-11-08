@@ -41,10 +41,14 @@ class MeetingsService {
   }
 
   calculateInsurance(memberId: string, capitalPayment?: number): Promise<{ insuranceAmount: number }> {
-    if (capitalPayment !== undefined) {
-      return api.get(`/dues/calculate-insurance/${memberId}?capitalPayment=${capitalPayment}`);
+    const apiVersionStore = useApiVersionStore();
+    const query = capitalPayment !== undefined ? `?capitalPayment=${capitalPayment}` : '';
+
+    if (apiVersionStore.isV2) {
+      return api.get(`/v2/members/${memberId}/insurance${query}`);
     }
-    return api.get(`/dues/calculate-insurance/${memberId}`);
+
+    return api.get(`/dues/calculate-insurance/${memberId}${query}`);
   }
 
   recordMonthlyPayment(

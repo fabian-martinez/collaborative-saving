@@ -59,7 +59,6 @@ const accountNames: Record<string, string> = {
   FEE_INCOME: 'Ingresos por Otros',
   INSURANCE_INCOME: 'Ingresos por Seguro',
   MANDATORY_CONTRIBUTION_INCOME: 'Aportes Obligatorios',
-  PENDING_CLASSIFICATION: 'Pendiente de Clasificar',
   MONTHLY_PAYMENT: 'Cuota Mensual',
   NOVELTY_LOSS: 'Pérdida por Novedad',
 };

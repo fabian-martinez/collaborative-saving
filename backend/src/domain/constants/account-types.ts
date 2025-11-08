@@ -3,7 +3,6 @@
 
 // Activos Corrientes (Líquidos)
 export const CASH_ACCOUNT = 'CASH'; // Dinero en efectivo o en banco.
-export const INITIAL_BALANCE_ACCOUNT = 'INITIAL_BALANCE'; // Balance inicial del fondo.
 
 // Cuentas por Cobrar
 export const LOANS_RECEIVABLE_ACCOUNT = 'LOANS_RECEIVABLE'; // Dinero que los socios deben al fondo por préstamos.
@@ -34,15 +33,11 @@ export const DIVIDEND_EXPENSE_ACCOUNT = 'DIVIDEND_EXPENSE'; // Gastos por pago d
 export const OTHER_EXPENSES_ACCOUNT = 'OTHER_EXPENSES'; // Otros gastos del fondo.
 
 // Cuenta temporal para transacciones no clasificadas durante el desarrollo
-export const PENDING_CLASSIFICATION_ACCOUNT = 'PENDING_CLASSIFICATION';
-
-// Cuenta para registrar pérdidas por novedades que afectan negativamente el recaudo
 export const NOVELTY_LOSS_ACCOUNT = 'NOVELTY_LOSS';
 
 // Tipo TypeScript para todos los tipos de cuenta
 export type AccountType =
   | 'CASH'
-  | 'INITIAL_BALANCE'
   | 'LOANS_RECEIVABLE'
   | 'INVESTMENT_IN_STOCKS'
   | 'DIVIDENDS_PAYABLE'
@@ -57,13 +52,11 @@ export type AccountType =
   | 'INSURANCE_INCOME'
   | 'DIVIDEND_EXPENSE'
   | 'OTHER_EXPENSES'
-  | 'PENDING_CLASSIFICATION'
   | 'NOVELTY_LOSS';
 
 // Array con todos los tipos de cuenta
 export const ALL_ACCOUNT_TYPES: AccountType[] = [
   CASH_ACCOUNT,
-  INITIAL_BALANCE_ACCOUNT,
   LOANS_RECEIVABLE_ACCOUNT,
   INVESTMENT_IN_STOCKS_ACCOUNT,
   DIVIDENDS_PAYABLE_ACCOUNT,
@@ -78,7 +71,6 @@ export const ALL_ACCOUNT_TYPES: AccountType[] = [
   INSURANCE_INCOME_ACCOUNT,
   DIVIDEND_EXPENSE_ACCOUNT,
   OTHER_EXPENSES_ACCOUNT,
-  PENDING_CLASSIFICATION_ACCOUNT,
   NOVELTY_LOSS_ACCOUNT,
 ];
 
@@ -87,7 +79,6 @@ export const ACCOUNT_TYPES = {
   // Activos
   ASSETS: {
     CASH: CASH_ACCOUNT,
-    INITIAL_BALANCE: INITIAL_BALANCE_ACCOUNT,
     LOANS_RECEIVABLE: LOANS_RECEIVABLE_ACCOUNT,
     INVESTMENT_IN_STOCKS: INVESTMENT_IN_STOCKS_ACCOUNT,
     DIVIDENDS_PAYABLE: DIVIDENDS_PAYABLE_ACCOUNT,
@@ -114,7 +105,6 @@ export const ACCOUNT_TYPES = {
   },
   // Otros
   OTHER: {
-    PENDING_CLASSIFICATION: PENDING_CLASSIFICATION_ACCOUNT,
     NOVELTY_LOSS: NOVELTY_LOSS_ACCOUNT,
   },
 } as const;
@@ -122,7 +112,6 @@ export const ACCOUNT_TYPES = {
 // Etiquetas en español para cada tipo de cuenta
 export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   [CASH_ACCOUNT]: 'Efectivo',
-  [INITIAL_BALANCE_ACCOUNT]: 'Balance Inicial',
   [LOANS_RECEIVABLE_ACCOUNT]: 'Préstamos por Cobrar',
   [INVESTMENT_IN_STOCKS_ACCOUNT]: 'Inversión en Acciones',
   [DIVIDENDS_PAYABLE_ACCOUNT]: 'Dividendos por Pagar',
@@ -138,14 +127,12 @@ export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   [INSURANCE_INCOME_ACCOUNT]: 'Ingresos por Seguro',
   [DIVIDEND_EXPENSE_ACCOUNT]: 'Gastos por Dividendos',
   [OTHER_EXPENSES_ACCOUNT]: 'Otros Gastos',
-  [PENDING_CLASSIFICATION_ACCOUNT]: 'Pendiente de Clasificación',
   [NOVELTY_LOSS_ACCOUNT]: 'Pérdida por Novedades',
 };
 
 // Etiquetas en inglés para cada tipo de cuenta
 export const ACCOUNT_TYPE_LABELS_EN: Record<AccountType, string> = {
   [CASH_ACCOUNT]: 'Cash',
-  [INITIAL_BALANCE_ACCOUNT]: 'Initial Balance',
   [LOANS_RECEIVABLE_ACCOUNT]: 'Loans Receivable',
   [INVESTMENT_IN_STOCKS_ACCOUNT]: 'Investment in Stocks',
   [DIVIDENDS_PAYABLE_ACCOUNT]: 'Dividends Payable',
@@ -160,6 +147,5 @@ export const ACCOUNT_TYPE_LABELS_EN: Record<AccountType, string> = {
   [INSURANCE_INCOME_ACCOUNT]: 'Insurance Income',
   [DIVIDEND_EXPENSE_ACCOUNT]: 'Dividend Expense',
   [OTHER_EXPENSES_ACCOUNT]: 'Other Expenses',
-  [PENDING_CLASSIFICATION_ACCOUNT]: 'Pending Classification',
   [NOVELTY_LOSS_ACCOUNT]: 'Novelty Loss',
 };

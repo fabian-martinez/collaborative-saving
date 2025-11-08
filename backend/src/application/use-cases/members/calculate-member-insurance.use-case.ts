@@ -26,21 +26,15 @@ export class CalculateMemberInsuranceUseCase {
 
     const loans = await this.loanRepository.findActiveByMember(memberId);
 
-    const financingLoanIds = Array.from(
-      new Set(
-        subscriptions
-          .map((subscription) => subscription.financingLoanId)
-          .filter((id): id is string => Boolean(id)),
-      ),
+    const financingLoanIds = new Set(
+      subscriptions
+        .map((subscription) => subscription.financingLoanId)
+        .filter((id): id is string => Boolean(id)),
     );
 
-    const financingLoans = financingLoanIds.length
-      ? await this.loanRepository.findByIds(financingLoanIds)
-      : [];
-
     const activeFinancingLoanIds = new Set(
-      financingLoans
-        .filter((loan) => loan.status === 'active')
+      loans
+        .filter((loan) => financingLoanIds.has(loan.id))
         .map((loan) => loan.id),
     );
 

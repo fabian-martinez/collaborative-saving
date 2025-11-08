@@ -34,6 +34,13 @@ export const ENDPOINT_MAPPINGS_V2: Record<string, {
     method: 'GET',
     paramMapping: { memberId: 'id' },
   },
+  // V1: GET /dues/calculate-insurance/:memberId
+  // V2: GET /v2/members/:id/insurance
+  'dues/calculate-insurance/:memberId': {
+    v2: 'v2/members/:id/insurance',
+    method: 'GET',
+    paramMapping: { memberId: 'id' },
+  },
   // V1: POST /meetings/active/record-monthly-payment (con memberId en body)
   // V2: POST /v2/members/:id/payments
   // Nota: En V1 el memberId viene en el body, en V2 viene en la URL como :id

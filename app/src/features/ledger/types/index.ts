@@ -12,7 +12,6 @@ export type AccountType =
   | 'INSURANCE_INCOME'
   | 'DIVIDEND_EXPENSE'
   | 'OTHER_EXPENSES'
-  | 'PENDING_CLASSIFICATION'
   | 'NOVELTY_LOSS'
 
 export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
@@ -29,7 +28,6 @@ export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   INSURANCE_INCOME: 'Insurance Income',
   DIVIDEND_EXPENSE: 'Dividend Expense',
   OTHER_EXPENSES: 'Other Expenses',
-  PENDING_CLASSIFICATION: 'Pending Classification',
   NOVELTY_LOSS: 'Novelty Loss',
 }
 
