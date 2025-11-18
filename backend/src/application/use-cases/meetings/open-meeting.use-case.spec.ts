@@ -1,11 +1,15 @@
 import { OpenMeetingUseCase } from './open-meeting.use-case';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
+import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
+import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
 import { Meeting, MeetingStatus } from '@domain/entities/meeting.entity';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 
 describe('OpenMeetingUseCase', () => {
   let useCase: OpenMeetingUseCase;
   let meetingRepository: jest.Mocked<MeetingRepository>;
+  let ledgerEntryRepository: jest.Mocked<LedgerEntryRepository>;
+  let recordOperationUseCase: jest.Mocked<RecordOperationUseCase>;
   let findActiveSpy: jest.SpyInstance;
   let saveSpy: jest.SpyInstance;
 
@@ -18,10 +22,29 @@ describe('OpenMeetingUseCase', () => {
       findLatestClosed: jest.fn(),
     } as unknown as jest.Mocked<MeetingRepository>;
 
+    ledgerEntryRepository = {
+      findById: jest.fn(),
+      findByOperation: jest.fn(),
+      findByOperations: jest.fn(),
+      findByMeeting: jest.fn(),
+      findByAccountType: jest.fn(),
+      save: jest.fn(),
+      saveMany: jest.fn(),
+      sumByAccountType: jest.fn(),
+    } as unknown as jest.Mocked<LedgerEntryRepository>;
+
+    recordOperationUseCase = {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<RecordOperationUseCase>;
+
     findActiveSpy = jest.spyOn(meetingRepository, 'findActive');
     saveSpy = jest.spyOn(meetingRepository, 'save');
 
-    useCase = new OpenMeetingUseCase(meetingRepository);
+    useCase = new OpenMeetingUseCase(
+      meetingRepository,
+      ledgerEntryRepository,
+      recordOperationUseCase,
+    );
   });
 
   it('should open a meeting successfully', async () => {
@@ -34,6 +57,7 @@ describe('OpenMeetingUseCase', () => {
     meetingRepository.findActive.mockResolvedValue(null);
     const savedMeeting = Meeting.create(openDto);
     meetingRepository.save.mockResolvedValue(savedMeeting);
+    ledgerEntryRepository.sumByAccountType.mockResolvedValue(0); // No accumulated surplus
 
     // ACT
     const result = await useCase.execute(openDto);
@@ -58,6 +82,7 @@ describe('OpenMeetingUseCase', () => {
     meetingRepository.findActive.mockResolvedValue(null);
     const savedMeeting = Meeting.create(openDto);
     meetingRepository.save.mockResolvedValue(savedMeeting);
+    ledgerEntryRepository.sumByAccountType.mockResolvedValue(0); // No accumulated surplus
 
     // ACT
     const result = await useCase.execute(openDto);

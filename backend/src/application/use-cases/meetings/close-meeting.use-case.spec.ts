@@ -1,5 +1,7 @@
 import { CloseMeetingUseCase } from './close-meeting.use-case';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
+import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
+import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
 import { Meeting, MeetingStatus } from '@domain/entities/meeting.entity';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
@@ -7,8 +9,11 @@ import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 describe('CloseMeetingUseCase', () => {
   let useCase: CloseMeetingUseCase;
   let meetingRepository: jest.Mocked<MeetingRepository>;
+  let ledgerEntryRepository: jest.Mocked<LedgerEntryRepository>;
+  let recordOperationUseCase: jest.Mocked<RecordOperationUseCase>;
   let findByIdSpy: jest.SpyInstance;
   let saveSpy: jest.SpyInstance;
+  let findByMeetingSpy: jest.SpyInstance;
 
   beforeEach(() => {
     meetingRepository = {
@@ -19,10 +24,30 @@ describe('CloseMeetingUseCase', () => {
       findLatestClosed: jest.fn(),
     } as unknown as jest.Mocked<MeetingRepository>;
 
+    ledgerEntryRepository = {
+      findById: jest.fn(),
+      findByOperation: jest.fn(),
+      findByOperations: jest.fn(),
+      findByMeeting: jest.fn(),
+      findByAccountType: jest.fn(),
+      save: jest.fn(),
+      saveMany: jest.fn(),
+      sumByAccountType: jest.fn(),
+    } as unknown as jest.Mocked<LedgerEntryRepository>;
+
+    recordOperationUseCase = {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<RecordOperationUseCase>;
+
     findByIdSpy = jest.spyOn(meetingRepository, 'findById');
     saveSpy = jest.spyOn(meetingRepository, 'save');
+    findByMeetingSpy = jest.spyOn(ledgerEntryRepository, 'findByMeeting');
 
-    useCase = new CloseMeetingUseCase(meetingRepository);
+    useCase = new CloseMeetingUseCase(
+      meetingRepository,
+      ledgerEntryRepository,
+      recordOperationUseCase,
+    );
   });
 
   it('should close a meeting successfully', async () => {
@@ -34,6 +59,7 @@ describe('CloseMeetingUseCase', () => {
     const meetingId = activeMeeting.id;
 
     meetingRepository.findById.mockResolvedValue(activeMeeting);
+    ledgerEntryRepository.findByMeeting.mockResolvedValue([]); // No cash entries
     // Mock save to return a closed version
     // The use case will call close() on the meeting, then save it
     meetingRepository.save.mockImplementation(async (meeting) => {
@@ -46,6 +72,7 @@ describe('CloseMeetingUseCase', () => {
 
     // ASSERT
     expect(findByIdSpy).toHaveBeenCalledWith(meetingId);
+    expect(findByMeetingSpy).toHaveBeenCalledWith(meetingId);
     expect(saveSpy).toHaveBeenCalledTimes(1);
     expect(result.status).toBe(MeetingStatus.CLOSED);
     expect(result.id).toBe(meetingId);
@@ -55,6 +82,7 @@ describe('CloseMeetingUseCase', () => {
     // ARRANGE
     const meetingId = '550e8400-e29b-41d4-a716-446655440000';
     meetingRepository.findById.mockResolvedValue(null);
+    ledgerEntryRepository.findByMeeting.mockResolvedValue([]);
 
     // ACT & ASSERT
     await expect(useCase.execute({ meetingId })).rejects.toThrow(
@@ -74,6 +102,7 @@ describe('CloseMeetingUseCase', () => {
     closedMeeting.close();
 
     meetingRepository.findById.mockResolvedValue(closedMeeting);
+    ledgerEntryRepository.findByMeeting.mockResolvedValue([]);
 
     // ACT & ASSERT
     await expect(useCase.execute({ meetingId })).rejects.toThrow(
