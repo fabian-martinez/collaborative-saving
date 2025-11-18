@@ -28,6 +28,7 @@ import { GetActiveMeetingQueryHandler } from '@application/queries/meetings/get-
 import { GetRevaluationQueryHandler } from '@application/queries/meetings/get-revaluation.query-handler';
 import { RecordRevaluationUseCase } from '@application/use-cases/meetings/record-revaluation.use-case';
 import { OpenMeetingHttpDto } from '../dto/open-meeting-http.dto';
+import { CloseMeetingHttpDto } from '../dto/close-meeting-http.dto';
 import { MeetingResponseDto } from '@application/dto/meetings/meeting-response.dto';
 import { OpenMeetingResponseHttpDto } from '../dto/open-meeting-response-http.dto';
 import { OperationResponseHttpDto } from '../dto/operation-response-http.dto';
@@ -104,12 +105,16 @@ export class MeetingsV2Controller {
   @ApiOperation({
     summary: 'Close a meeting',
     description:
-      'Closes an active meeting. Once closed, no new operations can be added.',
+      'Closes an active meeting. Once closed, no new operations can be added. Any remaining CASH will be moved to ACCUMULATED_SURPLUS.',
   })
   @ApiParam({
     name: 'id',
     description: 'The unique identifier of the meeting',
     example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiBody({
+    type: CloseMeetingHttpDto,
+    required: false,
   })
   @ApiResponse({
     status: 200,
@@ -132,13 +137,18 @@ export class MeetingsV2Controller {
     description: 'Meeting not found',
   })
   @ApiBadRequestResponse({
-    description: 'Bad request - Meeting is already closed',
+    description:
+      'Bad request - Meeting is already closed or CASH balance is negative',
   })
   async close(
     @Param('id', ParseUUIDPipe) id: string,
+    @Body() body?: CloseMeetingHttpDto,
   ): Promise<OpenMeetingResponseHttpDto> {
     try {
-      const result = await this.closeMeetingUseCase.execute({ meetingId: id });
+      const result = await this.closeMeetingUseCase.execute({
+        meetingId: id,
+        authorizedBy: body?.authorizedBy,
+      });
       return this.mapMeetingToHttp(result);
     } catch (error: unknown) {
       if (error instanceof HttpException) {

@@ -11,6 +11,7 @@ import { PendingMemberPayment } from '@infrastructure/typeorm/entities/pending-m
 import { MeetingsV2Controller } from '../controllers/meetings.v2.controller';
 import { OpenMeetingUseCase } from '@application/use-cases/meetings/open-meeting.use-case';
 import { CloseMeetingUseCase } from '@application/use-cases/meetings/close-meeting.use-case';
+import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
 import { GetMeetingMonthlyPaymentsQueryHandler } from '@application/queries/meetings/get-meeting-monthly-payments.query-handler';
 import { GetMeetingsQueryHandler } from '@application/queries/meetings/get-meetings.query-handler';
 import { GetMeetingQueryHandler } from '@application/queries/meetings/get-meeting.query-handler';
@@ -187,14 +188,61 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
     },
     // Use cases
     {
+      provide: RecordOperationUseCase,
+      useFactory: (
+        operationRepo: OperationRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+        transactionMgr: TransactionManager,
+        balanceValidator: OperationBalanceValidator,
+      ) =>
+        new RecordOperationUseCase(
+          operationRepo,
+          ledgerEntryRepo,
+          transactionMgr,
+          balanceValidator,
+        ),
+      inject: [
+        OPERATION_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+        TRANSACTION_MANAGER,
+        OperationBalanceValidator,
+      ],
+    },
+    {
       provide: OpenMeetingUseCase,
-      useFactory: (repo: MeetingRepository) => new OpenMeetingUseCase(repo),
-      inject: [MEETING_REPOSITORY],
+      useFactory: (
+        meetingRepo: MeetingRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+        recordOperationUseCase: RecordOperationUseCase,
+      ) =>
+        new OpenMeetingUseCase(
+          meetingRepo,
+          ledgerEntryRepo,
+          recordOperationUseCase,
+        ),
+      inject: [
+        MEETING_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+        RecordOperationUseCase,
+      ],
     },
     {
       provide: CloseMeetingUseCase,
-      useFactory: (repo: MeetingRepository) => new CloseMeetingUseCase(repo),
-      inject: [MEETING_REPOSITORY],
+      useFactory: (
+        meetingRepo: MeetingRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+        recordOperationUseCase: RecordOperationUseCase,
+      ) =>
+        new CloseMeetingUseCase(
+          meetingRepo,
+          ledgerEntryRepo,
+          recordOperationUseCase,
+        ),
+      inject: [
+        MEETING_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+        RecordOperationUseCase,
+      ],
     },
     {
       provide: RecordRevaluationUseCase,
