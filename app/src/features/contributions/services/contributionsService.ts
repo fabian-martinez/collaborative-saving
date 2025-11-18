@@ -3,12 +3,18 @@ import type { MandatoryContribution } from '../types';
 
 const ENDPOINT_URL = '/mandatory-contributions';
 
-// Helper to ensure numeric fields are numbers, as the backend sends them as strings.
+// Helper to transform backend response (camelCase) to frontend format (snake_case)
 const transformContribution = (
-  contribution: Omit<MandatoryContribution, 'total'> & { total: string | number }
+  contribution: {
+    id: string;
+    assetType: string;
+    value: string | number;
+    total?: string | number;
+  }
 ): MandatoryContribution => ({
-  ...contribution,
-  total: Number(contribution.total),
+  id: contribution.id,
+  asset_type: contribution.assetType, // Map assetType to asset_type
+  total: Number(contribution.total ?? contribution.value), // Use total if available, otherwise value
 });
 
 export const contributionsService = {

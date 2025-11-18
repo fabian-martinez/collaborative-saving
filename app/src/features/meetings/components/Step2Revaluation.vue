@@ -127,9 +127,7 @@
                   >
                     <td>
                       {{
-                        (mandatoryContributions.find(
-                          (c: MandatoryContribution) => c.id === item.mandatoryContributionId
-                        )?.asset_type) || item.mandatoryContributionId
+                        getMandatoryContributionName(item.mandatoryContributionId)
                       }}
                     </td>
                     <td class="text-right font-bold">
@@ -188,6 +186,18 @@ function calculateInterestRate(interestGained: number, previousValue: number): s
   return rate.toFixed(2)
 }
 
+// Get mandatory contribution name by ID
+function getMandatoryContributionName(mandatoryContributionId: string): string {
+  const contribution = mandatoryContributions.value.find(
+    (c: MandatoryContribution) => c.id === mandatoryContributionId
+  )
+  if (contribution && contribution.asset_type) {
+    return contribution.asset_type
+  }
+  // Fallback: return a formatted version of the ID if not found
+  return `Aporte ${mandatoryContributionId.substring(0, 8)}...`
+}
+
 async function fetchPreview() {
   if (!activeMeetingStore.meetingId) {
     errorMessage.value =
@@ -200,10 +210,11 @@ async function fetchPreview() {
   errorMessage.value = ''
 
   try {
+    // Cargar primero los aportes obligatorios para tener los nombres disponibles
+    mandatoryContributions.value = await contributionsService.getContributions()
+    // Luego cargar el preview de la revalorización
     const data = await assetRevaluationService.getPreview(activeMeetingStore.meetingId)
     previewData.value = data
-    // Cargar los nombres de los aportes obligatorios
-    mandatoryContributions.value = await contributionsService.getContributions()
     status.value = 'success'
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Ocurrió un error desconocido.'
