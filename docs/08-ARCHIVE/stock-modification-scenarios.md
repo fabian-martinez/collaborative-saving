@@ -91,13 +91,12 @@ const response = await stocksService.processStockExchange({
 
 ### Diferencias Positivas (A favor del socio)
 Cuando el valor de las acciones origen es mayor que el destino:
-- **Efectivo:** El socio recibe la diferencia en efectivo
-- **Crédito:** Se abona la diferencia a un crédito existente del socio
+- **Efectivo:** El socio recibe la diferencia en efectivo; el sistema registra un `PendingMemberPayment` a favor del socio para que pueda cobrarse en caja o aplicar posteriormente. Alternativamente, el socio puede decidir abonarla a un crédito existente.
+- **Crédito:** Se abona la diferencia directamente a un crédito existente del socio.
 
 ### Diferencias Negativas (Debe pagar el socio)
 Cuando el valor de las acciones destino es mayor que el origen:
 - **Efectivo:** El socio paga la diferencia en efectivo
-- **Crédito:** Se crea un nuevo crédito para financiar la diferencia
   - `new_action_loan`: Crédito de Acción (2% interés)
   - `new_current_loan`: Crédito Corriente (2% interés)
 
