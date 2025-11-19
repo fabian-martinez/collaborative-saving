@@ -109,7 +109,10 @@ export class CreateLoanUseCase {
       status: this.calculateLoanStatus(disbursedAmount, dto.approvedAmount),
     });
 
-    // 6. Create accounting operation using RecordOperationUseCase
+    // 6. Persist loan before creating accounting operation to satisfy FK constraints
+    const savedLoan = await this.loanRepository.save(loan);
+
+    // 7. Create accounting operation using RecordOperationUseCase
     const operationDescription =
       dto.loanType === 'accion'
         ? `Desembolso de préstamo basado en acciones para el miembro ${member.name}`
@@ -118,7 +121,7 @@ export class CreateLoanUseCase {
     const ledgerEntries = this.createLedgerEntries(
       dto.loanType,
       disbursedAmount,
-      loan.id,
+      savedLoan.id,
     );
 
     const operationDto: RecordOperationDto = {
@@ -132,9 +135,6 @@ export class CreateLoanUseCase {
 
     const operationResult =
       await this.recordOperationUseCase.execute(operationDto);
-
-    // 7. Save loan
-    const savedLoan = await this.loanRepository.save(loan);
 
     // 8. Create LoanTransactionDetail for disbursement
     const transactionDetail = LoanTransactionDetail.create({

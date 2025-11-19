@@ -11,9 +11,11 @@ import type {
   StockChangesSectionData,
   StockOperationsResponse,
   MemberPaymentResponse,
+  MemberPurchase,
+  StockPurchaseRequest,
+  StockPurchaseResponse,
 } from '../types';
 import type { Operation } from '@/features/operations/types';
-import type { StocksForPurchase } from '@/features/stocks/types';
 import { operationsService } from '@/features/operations/services/operationsService';
 import { assetRevaluationService } from '@/features/meetings/services/assetRevaluationService';
 
@@ -73,14 +75,37 @@ class MeetingsService {
   }
 
   /**
-   * Compra de acciones para un socio existente
+   * Registra una compra de acciones para un miembro (API V2)
    */
-  buyStocks(meetingId: string, payload: StocksForPurchase): Promise<unknown> {
-    return api.post(`/meetings/${meetingId}/buy/stocks`, payload);
+  async createMemberStockPurchase(
+    memberId: string,
+    payload: StockPurchaseRequest,
+  ): Promise<StockPurchaseResponse> {
+    const body = {
+      stock_id: payload.stockId,
+      quantity: payload.quantity,
+      cash_amount: payload.cashAmount,
+      meeting_id: payload.meetingId,
+      loan_details: payload.loanDetails
+        ? {
+            interest_rate: payload.loanDetails.interestRate,
+            loan_type: payload.loanDetails.loanType,
+          }
+        : undefined,
+    };
+    return api.post(`/v2/members/${memberId}/purchase`, body);
   }
 
   /**
-   * Obtiene todas las operaciones de compra de acciones de una reunión
+   * Obtiene las compras de acciones de un miembro (API V2)
+   */
+  async getMemberPurchases(memberId: string, meetingId?: string): Promise<MemberPurchase[]> {
+    const query = meetingId ? `?meetingId=${meetingId}` : '';
+    return api.get(`/v2/members/${memberId}/purchases${query}`);
+  }
+
+  /**
+   * Obtiene todas las operaciones de compra de acciones de una reunión (legacy)
    */
   async getStockPurchaseOperations(meetingId: string) {
     return operationsService.getOperations({

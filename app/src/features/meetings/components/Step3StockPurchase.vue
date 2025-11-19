@@ -49,7 +49,7 @@
             <div v-if="showAllTransactions">
               <div v-if="registeredPurchases.length > 0" class="space-y-2">
                 <div v-for="op in registeredPurchases" :key="op.id" class="bg-base-100/50 p-2 rounded-md text-sm cursor-pointer hover:bg-primary/10 transition"
-                  @click="showOperationDetail(op)">
+                  @click="showOperationDetailFromOperation(op)">
                   <OperationDetails :operation="op" v-if="false" />
                   <!-- Solo resumen, el detalle va en el modal -->
                   <span class="font-semibold">{{ op.description }}</span>
@@ -66,24 +66,41 @@
               <p v-else class="text-base-content/60 italic text-sm text-center">Sin compras registradas aún.</p>
             </div>
             <div v-else>
-              
-              <div v-if="selectedMember && memberRegisteredPurchases(selectedMember.id).length > 0" class="space-y-2">
-                <div v-for="op in memberRegisteredPurchases(selectedMember.id)" :key="op.id" class="bg-base-100/50 p-2 rounded-md text-sm cursor-pointer hover:bg-primary/10 transition"
-                  @click="showOperationDetail(op)">
-                  <OperationDetails :operation="op" v-if="false" />
-                  <!-- Solo resumen, el detalle va en el modal -->
-                  <span class="font-semibold">{{ op.description }}</span>
-                  <span class="ml-2 text-xs text-base-content/60">
-                    <span v-if="typeof op.total_debit === 'number'">
-                      <CopyOnDblClickNumber :value="op.total_debit" />
-                    </span>
-                    <span v-else>
-                      N/D
-                    </span>
-                  </span>
-                </div>
+              <div v-if="!selectedMember" class="text-base-content/60 italic text-sm text-center">
+                Seleccione un socio para ver sus compras.
               </div>
-              <p v-else class="text-base-content/60 italic text-sm text-center">Este socio no ha realizado compras en la reunión.</p>
+              <div v-else>
+                <div v-if="isMemberPurchasesLoading(selectedMember.id)" class="text-sm text-center text-base-content/60 py-4">
+                  Cargando compras del socio...
+                </div>
+                <div v-else-if="memberPurchasesError" class="alert alert-error text-sm">
+                  {{ memberPurchasesError }}
+                </div>
+                <div v-else-if="memberRegisteredPurchases(selectedMember.id).length > 0" class="space-y-2">
+                  <div
+                    v-for="purchase in memberRegisteredPurchases(selectedMember.id)"
+                    :key="purchase.stockSubscriptionId"
+                    class="bg-base-100/50 p-3 rounded-md text-sm cursor-pointer hover:bg-primary/10 transition"
+                    @click="showMemberPurchaseOperation(purchase)"
+                  >
+                    <div class="flex justify-between items-center">
+                      <span class="font-semibold">
+                        {{ purchase.stockType }} · {{ purchase.quantity }} uds
+                      </span>
+                      <span class="text-xs text-base-content/60">
+                        <CopyOnDblClickNumber :value="purchase.totalValue" />
+                      </span>
+                    </div>
+                    <div class="flex justify-between text-xs text-base-content/60 mt-1">
+                      <span>{{ formatPurchaseDate(purchase.purchaseDate) }}</span>
+                      <span v-if="purchase.loan">Con financiamiento</span>
+                    </div>
+                  </div>
+                </div>
+                <p v-else class="text-base-content/60 italic text-sm text-center">
+                  Este socio no ha realizado compras en la reunión.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -94,6 +111,9 @@
           <p class="text-center">Seleccione un socio para registrar una compra.</p>
         </div>
         <div v-else class="bg-base-100 p-6 rounded-2xl shadow-lg font-sans">
+          <div v-if="operationDetailLoadingId && !selectedOperation" class="alert alert-info text-sm mb-4">
+            Cargando detalle de la operación...
+          </div>
           <div v-if="selectedOperation">
             <div class="flex justify-between items-center mb-4">
               <h2 class="text-2xl font-bold">Detalle de operación</h2>
@@ -207,24 +227,60 @@ import type { Stock, StocksForPurchase } from '@/features/stocks/types'
 import { stocksService } from '@/features/stocks/services/stocksService';
 import type { Operation } from '@/features/operations/types'
 import type { Member } from '@/features/members/types'
-// Service not used in current implementation
-// import { operationsService } from '@/features/operations/services/operationsService'
+import { operationsService } from '@/features/operations/services/operationsService'
 import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
+import type { MemberPurchase, StockPurchaseRequest } from '../types'
 
 type LocalLine = StocksForPurchase & { id: string, creditAmount: number }
 const stocks = ref<Stock[]>([])
 const registeredPurchases = ref<Operation[]>([])
+const memberPurchasesByMember = ref<Record<string, MemberPurchase[]>>({})
+const memberPurchasesError = ref<string | null>(null)
+const memberPurchasesLoadingMemberId = ref<string | null>(null)
+const operationDetailLoadingId = ref<string | null>(null)
 
 const activeMeetingStore = useActiveMeetingStore()
 
 onMounted(async () => {
   await activeMeetingStore.fetchMembers()
   stocks.value = await stocksService.getStocks()
-  registeredPurchases.value = (await meetingsService.getStockPurchaseOperations(activeMeetingStore.meetingId || '')).data
+  if (activeMeetingStore.meetingId) {
+    registeredPurchases.value = (await meetingsService.getStockPurchaseOperations(activeMeetingStore.meetingId)).data
+  }
 })
 
 async function getRegisteredPurchases() {
-  return (await meetingsService.getStockPurchaseOperations(activeMeetingStore.meetingId || '')).data
+  if (!activeMeetingStore.meetingId) {
+    return []
+  }
+  return (await meetingsService.getStockPurchaseOperations(activeMeetingStore.meetingId)).data
+}
+
+async function loadMemberPurchases(memberId: string) {
+  if (!memberId) {
+    return
+  }
+  if (!activeMeetingStore.meetingId) {
+    memberPurchasesError.value = 'No hay reunión activa.'
+    return
+  }
+  memberPurchasesLoadingMemberId.value = memberId
+  memberPurchasesError.value = null
+  try {
+    const purchases = await meetingsService.getMemberPurchases(
+      memberId,
+      activeMeetingStore.meetingId,
+    )
+    memberPurchasesByMember.value = {
+      ...memberPurchasesByMember.value,
+      [memberId]: purchases,
+    }
+  } catch (error) {
+    const err = error as { message?: string }
+    memberPurchasesError.value = err.message || 'Error al cargar las compras del socio.'
+  } finally {
+    memberPurchasesLoadingMemberId.value = null
+  }
 }
 
 // Estado de la UI de la compra de acciones
@@ -267,11 +323,12 @@ const totalPurchasedShares = computed(() =>
 )
 
 function memberRegisteredPurchases(memberId: string) {
-  return registeredPurchases.value.filter(p => p.member_id === memberId)
+  return memberPurchasesByMember.value[memberId] || []
 }
 function selectMemberAndReset(member: Member) {
   selectedMember.value = member
   selectedOperation.value = null
+  void loadMemberPurchases(member.id)
 }
 function resetForm() {
   form.value.stockId = ''
@@ -295,21 +352,38 @@ async function confirmLocalOperation() {
     alert('No hay reunión activa.');
     return
   }
+  const memberId = selectedMember.value?.id
+  if (!memberId) {
+    alert('Selecciona un socio antes de registrar compras.')
+    return
+  }
   isRegistering.value = true
   const meetingId = activeMeetingStore.meetingId
   try {
     for (const line of localLines.value) {
-      await meetingsService.buyStocks(meetingId, {
-        memberId: selectedMember.value?.id || '',
+      const payload: StockPurchaseRequest = {
         stockId: line.stockId,
         quantity: line.quantity,
         cashAmount: line.cashAmount,
-        loanDetails: line.loanDetails
-      })
+        meetingId,
+      }
+      const hasLoan = line.creditAmount > 0 && line.loanDetails
+      if (hasLoan) {
+        payload.loanDetails = {
+          interestRate: line.loanDetails!.interest_rate,
+          loanType: line.loanDetails!.loan_type,
+        }
+      }
+      await meetingsService.createMemberStockPurchase(memberId, payload)
     }
     localLines.value = []
     resetForm()
-    registeredPurchases.value = await getRegisteredPurchases()
+    await Promise.all([
+      loadMemberPurchases(memberId),
+      (async () => {
+        registeredPurchases.value = await getRegisteredPurchases()
+      })(),
+    ])
     alert('Compra(s) registrada(s) exitosamente.')
   } catch {
     alert('Error al registrar la(s) compra(s).')
@@ -321,6 +395,21 @@ async function confirmLocalOperation() {
 function stockName(id: string) {
   const s = stocks.value.find(s => s.id === id)
   return s ? s.type : '-'
+}
+
+function isMemberPurchasesLoading(memberId: string) {
+  return memberPurchasesLoadingMemberId.value === memberId
+}
+
+function formatPurchaseDate(value: string | Date) {
+  const date = typeof value === 'string' ? new Date(value) : value
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+  return new Intl.DateTimeFormat('es-CO', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(date)
 }
 
 // Estado y lógica para el modal de compra/edición de acción
@@ -382,11 +471,24 @@ function handleBuyModalSave(line: Partial<StocksForPurchase>) {
 
 // Estado para modal de detalle de operación
 const selectedOperation = ref<Operation | null>(null)
-function showOperationDetail(op: Operation) {
+function showOperationDetailFromOperation(op: Operation) {
   selectedOperation.value = op
+}
+async function showMemberPurchaseOperation(purchase: MemberPurchase) {
+  try {
+    operationDetailLoadingId.value = purchase.operationId
+    selectedOperation.value = null
+    const operation = await operationsService.findOne(purchase.operationId)
+    selectedOperation.value = operation
+  } catch {
+    alert('No se pudo cargar el detalle de la operación.')
+  } finally {
+    operationDetailLoadingId.value = null
+  }
 }
 function closeOperationDetail() {
   selectedOperation.value = null
+  operationDetailLoadingId.value = null
 }
 function hasPendingPurchase(memberId: string) {
   // Muestra la etiqueta si hay líneas en el recibo local, sin importar compras previas
@@ -395,7 +497,10 @@ function hasPendingPurchase(memberId: string) {
 
 function hasCompletedPurchase(memberId: string) {
   // Muestra la etiqueta si el socio ya ha realizado compras registradas en la reunión
-  return memberRegisteredPurchases(memberId).length > 0
+  if (memberRegisteredPurchases(memberId).length > 0) {
+    return true
+  }
+  return registeredPurchases.value.some(p => p.member_id === memberId)
 }
 
 // Members computed property not used in current implementation
