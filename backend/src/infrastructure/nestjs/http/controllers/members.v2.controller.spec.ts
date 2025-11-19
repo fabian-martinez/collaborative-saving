@@ -6,6 +6,9 @@ import { GetMemberDetailQueryHandler } from '@application/queries/members/get-me
 import { GetMemberDuesForActiveMeetingQueryHandler } from '@application/queries/members/get-member-dues-for-active-meeting.query-handler';
 import { GetMemberPaymentsQueryHandler } from '@application/queries/members/get-member-payments.query-handler';
 import { GetMemberPurchasesQueryHandler } from '@application/queries/members/get-member-purchases.query-handler';
+import { GetMemberStockExchangesQueryHandler } from '@application/queries/members/get-member-stock-exchanges.query-handler';
+import { GetMemberStockTransfersQueryHandler } from '@application/queries/members/get-member-stock-transfers.query-handler';
+import { GetMemberStockLoanPaymentsQueryHandler } from '@application/queries/members/get-member-stock-loan-payments.query-handler';
 import { CreateMemberUseCase } from '@application/use-cases/members/create-member.use-case';
 import { UpdateMemberUseCase } from '@application/use-cases/members/update-member.use-case';
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
@@ -22,6 +25,11 @@ import { PurchaseStockUseCase } from '@application/use-cases/members/purchase-st
 import { PurchaseStockResponseDto } from '@application/dto/members/purchase-stock-response.dto';
 import { PurchaseStockHttpDto } from '../dto/purchase-stock-http.dto';
 import { StockNotFoundException } from '@application/exceptions/stock-not-found.exception';
+import { ProcessStockExchangeUseCase } from '@application/use-cases/members/process-stock-exchange.use-case';
+import { ProcessStockTransferUseCase } from '@application/use-cases/members/process-stock-transfer.use-case';
+import { ProcessStockLoanPaymentUseCase } from '@application/use-cases/members/process-stock-loan-payment.use-case';
+import { StockOperationResponseDto } from '@application/dto/members/stock-operation-response.dto';
+import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
 
 describe('MembersV2Controller', () => {
   let controller: MembersV2Controller;
@@ -34,10 +42,19 @@ describe('MembersV2Controller', () => {
   let calculateMemberInsuranceUseCase: jest.Mocked<CalculateMemberInsuranceUseCase>;
   let purchaseStockUseCase: jest.Mocked<PurchaseStockUseCase>;
   let getMemberPurchasesQuery: jest.Mocked<GetMemberPurchasesQueryHandler>;
+  let getMemberStockExchangesQuery: jest.Mocked<GetMemberStockExchangesQueryHandler>;
+  let getMemberStockTransfersQuery: jest.Mocked<GetMemberStockTransfersQueryHandler>;
+  let getMemberStockLoanPaymentsQuery: jest.Mocked<GetMemberStockLoanPaymentsQueryHandler>;
+  let processStockExchangeUseCase: jest.Mocked<ProcessStockExchangeUseCase>;
+  let processStockTransferUseCase: jest.Mocked<ProcessStockTransferUseCase>;
+  let processStockLoanPaymentUseCase: jest.Mocked<ProcessStockLoanPaymentUseCase>;
 
   // Spies for execute methods to avoid 'this' scoping issues
   let getMembersQueryExecuteSpy: jest.SpyInstance;
   let getMemberDetailQueryExecuteSpy: jest.SpyInstance;
+  let getMemberStockExchangesQueryExecuteSpy: jest.SpyInstance;
+  let getMemberStockTransfersQueryExecuteSpy: jest.SpyInstance;
+  let getMemberStockLoanPaymentsQueryExecuteSpy: jest.SpyInstance;
   let createMemberUseCaseExecuteSpy: jest.SpyInstance;
   let updateMemberUseCaseExecuteSpy: jest.SpyInstance;
   let deleteMemberUseCaseExecuteSpy: jest.SpyInstance;
@@ -45,6 +62,9 @@ describe('MembersV2Controller', () => {
   let calculateMemberInsuranceUseCaseExecuteSpy: jest.SpyInstance;
   let purchaseStockUseCaseExecuteSpy: jest.SpyInstance;
   let getMemberPurchasesQueryExecuteSpy: jest.SpyInstance;
+  let processStockExchangeUseCaseExecuteSpy: jest.SpyInstance;
+  let processStockTransferUseCaseExecuteSpy: jest.SpyInstance;
+  let processStockLoanPaymentUseCaseExecuteSpy: jest.SpyInstance;
 
   const mockMemberResponse: MemberResponseDto = {
     id: '550e8400-e29b-41d4-a716-446655440000',
@@ -54,6 +74,11 @@ describe('MembersV2Controller', () => {
     status: 'active',
     registrationDate: new Date('2024-01-15'),
     createdAt: new Date('2024-01-15'),
+  };
+  const mockStockOperationResponse: StockOperationResponseDto = {
+    operationId: 'operation-123',
+    message: 'ok',
+    details: { foo: 'bar' },
   };
 
   beforeEach(async () => {
@@ -86,6 +111,24 @@ describe('MembersV2Controller', () => {
         },
         {
           provide: GetMemberPurchasesQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: GetMemberStockExchangesQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: GetMemberStockTransfersQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: GetMemberStockLoanPaymentsQueryHandler,
           useValue: {
             execute: jest.fn(),
           },
@@ -126,6 +169,24 @@ describe('MembersV2Controller', () => {
             execute: jest.fn(),
           },
         },
+        {
+          provide: ProcessStockExchangeUseCase,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: ProcessStockTransferUseCase,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: ProcessStockLoanPaymentUseCase,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -140,6 +201,19 @@ describe('MembersV2Controller', () => {
       CalculateMemberInsuranceUseCase,
     );
     purchaseStockUseCase = module.get(PurchaseStockUseCase);
+    getMemberPurchasesQuery = module.get(GetMemberPurchasesQueryHandler);
+    getMemberStockExchangesQuery = module.get(
+      GetMemberStockExchangesQueryHandler,
+    );
+    getMemberStockTransfersQuery = module.get(
+      GetMemberStockTransfersQueryHandler,
+    );
+    getMemberStockLoanPaymentsQuery = module.get(
+      GetMemberStockLoanPaymentsQueryHandler,
+    );
+    processStockExchangeUseCase = module.get(ProcessStockExchangeUseCase);
+    processStockTransferUseCase = module.get(ProcessStockTransferUseCase);
+    processStockLoanPaymentUseCase = module.get(ProcessStockLoanPaymentUseCase);
 
     // Create spies to avoid 'this' scoping issues
     getMembersQueryExecuteSpy = jest.spyOn(getMembersQuery, 'execute');
@@ -162,9 +236,32 @@ describe('MembersV2Controller', () => {
       purchaseStockUseCase,
       'execute',
     );
-    getMemberPurchasesQuery = module.get(GetMemberPurchasesQueryHandler);
+    processStockExchangeUseCaseExecuteSpy = jest.spyOn(
+      processStockExchangeUseCase,
+      'execute',
+    );
+    processStockTransferUseCaseExecuteSpy = jest.spyOn(
+      processStockTransferUseCase,
+      'execute',
+    );
+    processStockLoanPaymentUseCaseExecuteSpy = jest.spyOn(
+      processStockLoanPaymentUseCase,
+      'execute',
+    );
     getMemberPurchasesQueryExecuteSpy = jest.spyOn(
       getMemberPurchasesQuery,
+      'execute',
+    );
+    getMemberStockExchangesQueryExecuteSpy = jest.spyOn(
+      getMemberStockExchangesQuery,
+      'execute',
+    );
+    getMemberStockTransfersQueryExecuteSpy = jest.spyOn(
+      getMemberStockTransfersQuery,
+      'execute',
+    );
+    getMemberStockLoanPaymentsQueryExecuteSpy = jest.spyOn(
+      getMemberStockLoanPaymentsQuery,
       'execute',
     );
   });
@@ -799,6 +896,147 @@ describe('MembersV2Controller', () => {
     });
   });
 
+  describe('POST /v2/members/:id/purchase/exchange', () => {
+    const memberId = 'member-id-1';
+    const exchangeDto = {
+      meeting_id: 'meeting-id-1',
+      from_subscription_id: 'from-subscription-id',
+      from_quantity: 2,
+      to_stock_id: 'stock-id-1',
+      to_quantity: 1,
+      difference_handling: 'cash' as const,
+    };
+
+    it('regresa la respuesta en snake_case', async () => {
+      processStockExchangeUseCaseExecuteSpy.mockResolvedValue(
+        mockStockOperationResponse,
+      );
+
+      const result = await controller.exchangeStocks(memberId, exchangeDto);
+
+      expect(result).toEqual({
+        operation_id: mockStockOperationResponse.operationId,
+        message: mockStockOperationResponse.message,
+        details: mockStockOperationResponse.details,
+      });
+      expect(processStockExchangeUseCaseExecuteSpy).toHaveBeenCalledWith({
+        memberId,
+        meetingId: exchangeDto.meeting_id,
+        fromSubscriptionId: exchangeDto.from_subscription_id,
+        fromQuantity: exchangeDto.from_quantity,
+        toStockId: exchangeDto.to_stock_id,
+        toQuantity: exchangeDto.to_quantity,
+        differenceHandling: exchangeDto.difference_handling,
+        targetLoanId: undefined,
+        notes: undefined,
+      });
+    });
+
+    it('lanza HttpException 404 cuando no se encuentra el socio', async () => {
+      processStockExchangeUseCaseExecuteSpy.mockRejectedValue(
+        new MemberNotFoundException(memberId),
+      );
+
+      await expect(
+        controller.exchangeStocks(memberId, exchangeDto),
+      ).rejects.toBeInstanceOf(HttpException);
+
+      const error = (await controller
+        .exchangeStocks(memberId, exchangeDto)
+        .catch((e: unknown) => e)) as HttpException;
+      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
+    });
+  });
+
+  describe('POST /v2/members/:id/purchase/transfer', () => {
+    const memberId = 'member-id-1';
+    const transferDto = {
+      meeting_id: 'meeting-id-1',
+      from_subscription_id: 'from-subscription-id',
+      quantity: 1,
+      to_member_id: 'member-id-2',
+    };
+
+    it('procesa la transferencia correctamente', async () => {
+      processStockTransferUseCaseExecuteSpy.mockResolvedValue(
+        mockStockOperationResponse,
+      );
+
+      const result = await controller.transferStocks(memberId, transferDto);
+
+      expect(result.operation_id).toBe(mockStockOperationResponse.operationId);
+      expect(processStockTransferUseCaseExecuteSpy).toHaveBeenCalledWith({
+        memberId,
+        meetingId: transferDto.meeting_id,
+        fromSubscriptionId: transferDto.from_subscription_id,
+        quantity: transferDto.quantity,
+        toMemberId: transferDto.to_member_id,
+        notes: undefined,
+      });
+    });
+
+    it('devuelve 400 cuando la lógica de negocio falla', async () => {
+      processStockTransferUseCaseExecuteSpy.mockRejectedValue(
+        new InvalidRequestError('error'),
+      );
+
+      await expect(
+        controller.transferStocks(memberId, transferDto),
+      ).rejects.toBeInstanceOf(HttpException);
+
+      const error = (await controller
+        .transferStocks(memberId, transferDto)
+        .catch((e: unknown) => e)) as HttpException;
+      expect(error.getStatus()).toBe(HttpStatus.BAD_REQUEST);
+    });
+  });
+
+  describe('POST /v2/members/:id/purchase/loan-payment', () => {
+    const memberId = 'member-id-1';
+    const loanPaymentDto = {
+      meeting_id: 'meeting-id-1',
+      subscription_id: 'subscription-id',
+      quantity: 1,
+      loan_id: 'loan-id',
+    };
+
+    it('registra el pago con acciones', async () => {
+      processStockLoanPaymentUseCaseExecuteSpy.mockResolvedValue(
+        mockStockOperationResponse,
+      );
+
+      const result = await controller.payLoanWithStocks(
+        memberId,
+        loanPaymentDto,
+      );
+
+      expect(result.details).toEqual(mockStockOperationResponse.details);
+      expect(processStockLoanPaymentUseCaseExecuteSpy).toHaveBeenCalledWith({
+        memberId,
+        meetingId: loanPaymentDto.meeting_id,
+        subscriptionId: loanPaymentDto.subscription_id,
+        quantity: loanPaymentDto.quantity,
+        loanId: loanPaymentDto.loan_id,
+        notes: undefined,
+      });
+    });
+
+    it('responde con 404 cuando no se encuentra el préstamo', async () => {
+      processStockLoanPaymentUseCaseExecuteSpy.mockRejectedValue(
+        new LoanNotFoundException('loan-id'),
+      );
+
+      await expect(
+        controller.payLoanWithStocks(memberId, loanPaymentDto),
+      ).rejects.toBeInstanceOf(HttpException);
+
+      const error = (await controller
+        .payLoanWithStocks(memberId, loanPaymentDto)
+        .catch((e: unknown) => e)) as HttpException;
+      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
+    });
+  });
+
   describe('getPurchases', () => {
     const memberId = '550e8400-e29b-41d4-a716-446655440000';
     const meetingId = '750e8400-e29b-41d4-a716-446655440000';
@@ -902,6 +1140,232 @@ describe('MembersV2Controller', () => {
         .getPurchases(memberId, {})
         .catch((e: unknown) => e)) as HttpException;
       expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+    });
+  });
+
+  describe('GET /v2/members/:id/purchase/exchange', () => {
+    const memberId = '550e8400-e29b-41d4-a716-446655440000';
+    const meetingId = '750e8400-e29b-41d4-a716-446655440000';
+    const mockExchanges = [
+      {
+        operationId: 'op-exchange-1',
+        meetingId,
+        date: new Date('2024-01-15'),
+        description: 'Intercambio de acciones',
+        fromStockId: 'stock-from-1',
+        fromStockType: 'Acción Grande',
+        fromQuantity: 1,
+        fromValue: 1000000,
+        toStockId: 'stock-to-1',
+        toStockType: 'Acción Super',
+        toQuantity: 1,
+        toValue: 800000,
+        difference: 200000,
+        differenceHandling: 'cash' as const,
+        fromSubscriptionId: 'sub-from-1',
+        toSubscriptionId: 'sub-to-1',
+        pendingPaymentId: 'pending-1',
+        loanId: null,
+      },
+    ];
+
+    it('should return list of stock exchanges', async () => {
+      getMemberStockExchangesQueryExecuteSpy.mockResolvedValue(mockExchanges);
+
+      const result = await controller.getStockExchanges(memberId, {});
+
+      expect(getMemberStockExchangesQueryExecuteSpy).toHaveBeenCalledWith(
+        memberId,
+        { meetingId: undefined },
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        operation_id: mockExchanges[0].operationId,
+        meeting_id: mockExchanges[0].meetingId,
+        from_stock_type: mockExchanges[0].fromStockType,
+        to_stock_type: mockExchanges[0].toStockType,
+        difference: mockExchanges[0].difference,
+        pending_payment_id: mockExchanges[0].pendingPaymentId,
+      });
+    });
+
+    it('should filter by meetingId when provided', async () => {
+      getMemberStockExchangesQueryExecuteSpy.mockResolvedValue([
+        mockExchanges[0],
+      ]);
+
+      const result = await controller.getStockExchanges(memberId, {
+        meetingId,
+      });
+
+      expect(getMemberStockExchangesQueryExecuteSpy).toHaveBeenCalledWith(
+        memberId,
+        { meetingId },
+      );
+      expect(result).toHaveLength(1);
+    });
+
+    it('should throw HttpException when member not found', async () => {
+      getMemberStockExchangesQueryExecuteSpy.mockRejectedValue(
+        new MemberNotFoundException(memberId),
+      );
+
+      await expect(controller.getStockExchanges(memberId, {})).rejects.toThrow(
+        HttpException,
+      );
+
+      const error = (await controller
+        .getStockExchanges(memberId, {})
+        .catch((e: unknown) => e)) as HttpException;
+      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
+    });
+  });
+
+  describe('GET /v2/members/:id/purchase/transfer', () => {
+    const memberId = '550e8400-e29b-41d4-a716-446655440000';
+    const meetingId = '750e8400-e29b-41d4-a716-446655440000';
+    const mockTransfers = [
+      {
+        operationId: 'op-transfer-1',
+        meetingId,
+        date: new Date('2024-01-15'),
+        description: 'Transferencia de acciones',
+        stockId: 'stock-1',
+        stockType: 'Acción Mediana',
+        quantity: 2,
+        value: 1000000,
+        fromMemberId: memberId,
+        fromMemberName: 'Alice',
+        toMemberId: 'to-member-1',
+        toMemberName: 'Bob',
+        fromSubscriptionId: 'sub-from-1',
+        toSubscriptionId: 'sub-to-1',
+      },
+    ];
+
+    it('should return list of stock transfers', async () => {
+      getMemberStockTransfersQueryExecuteSpy.mockResolvedValue(mockTransfers);
+
+      const result = await controller.getStockTransfers(memberId, {});
+
+      expect(getMemberStockTransfersQueryExecuteSpy).toHaveBeenCalledWith(
+        memberId,
+        { meetingId: undefined },
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        operation_id: mockTransfers[0].operationId,
+        meeting_id: mockTransfers[0].meetingId,
+        stock_type: mockTransfers[0].stockType,
+        from_member_name: mockTransfers[0].fromMemberName,
+        to_member_name: mockTransfers[0].toMemberName,
+      });
+    });
+
+    it('should filter by meetingId when provided', async () => {
+      getMemberStockTransfersQueryExecuteSpy.mockResolvedValue([
+        mockTransfers[0],
+      ]);
+
+      const result = await controller.getStockTransfers(memberId, {
+        meetingId,
+      });
+
+      expect(getMemberStockTransfersQueryExecuteSpy).toHaveBeenCalledWith(
+        memberId,
+        { meetingId },
+      );
+      expect(result).toHaveLength(1);
+    });
+
+    it('should throw HttpException when member not found', async () => {
+      getMemberStockTransfersQueryExecuteSpy.mockRejectedValue(
+        new MemberNotFoundException(memberId),
+      );
+
+      await expect(controller.getStockTransfers(memberId, {})).rejects.toThrow(
+        HttpException,
+      );
+
+      const error = (await controller
+        .getStockTransfers(memberId, {})
+        .catch((e: unknown) => e)) as HttpException;
+      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
+    });
+  });
+
+  describe('GET /v2/members/:id/purchase/loan-payment', () => {
+    const memberId = '550e8400-e29b-41d4-a716-446655440000';
+    const meetingId = '750e8400-e29b-41d4-a716-446655440000';
+    const mockPayments = [
+      {
+        operationId: 'op-loan-payment-1',
+        meetingId,
+        date: new Date('2024-01-15'),
+        description: 'Pago de crédito con acciones',
+        stockId: 'stock-1',
+        stockType: 'Acción Corriente',
+        quantity: 2,
+        paymentValue: 600000,
+        loanId: 'loan-1',
+        loanType: 'accion',
+        previousBalance: 1000000,
+        newBalance: 400000,
+        subscriptionId: 'sub-1',
+        transactionDetailId: 'transaction-1',
+      },
+    ];
+
+    it('should return list of stock loan payments', async () => {
+      getMemberStockLoanPaymentsQueryExecuteSpy.mockResolvedValue(mockPayments);
+
+      const result = await controller.getStockLoanPayments(memberId, {});
+
+      expect(getMemberStockLoanPaymentsQueryExecuteSpy).toHaveBeenCalledWith(
+        memberId,
+        { meetingId: undefined },
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        operation_id: mockPayments[0].operationId,
+        meeting_id: mockPayments[0].meetingId,
+        stock_type: mockPayments[0].stockType,
+        payment_value: mockPayments[0].paymentValue,
+        loan_type: mockPayments[0].loanType,
+        previous_balance: mockPayments[0].previousBalance,
+        new_balance: mockPayments[0].newBalance,
+      });
+    });
+
+    it('should filter by meetingId when provided', async () => {
+      getMemberStockLoanPaymentsQueryExecuteSpy.mockResolvedValue([
+        mockPayments[0],
+      ]);
+
+      const result = await controller.getStockLoanPayments(memberId, {
+        meetingId,
+      });
+
+      expect(getMemberStockLoanPaymentsQueryExecuteSpy).toHaveBeenCalledWith(
+        memberId,
+        { meetingId },
+      );
+      expect(result).toHaveLength(1);
+    });
+
+    it('should throw HttpException when member not found', async () => {
+      getMemberStockLoanPaymentsQueryExecuteSpy.mockRejectedValue(
+        new MemberNotFoundException(memberId),
+      );
+
+      await expect(
+        controller.getStockLoanPayments(memberId, {}),
+      ).rejects.toThrow(HttpException);
+
+      const error = (await controller
+        .getStockLoanPayments(memberId, {})
+        .catch((e: unknown) => e)) as HttpException;
+      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
     });
   });
 });
