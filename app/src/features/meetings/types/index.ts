@@ -236,3 +236,42 @@ export interface MemberPaymentEntry {
   mandatoryContributionId?: string;
   stockSubscriptionId?: string;
 }
+
+export interface MemberPurchaseLoanInfo {
+  loanId: string;
+  approvedAmount: number;
+  interestRate: number;
+  status: string;
+}
+
+export interface MemberPurchase {
+  stockSubscriptionId: string;
+  stockId: string;
+  stockType: string;
+  quantity: number;
+  unitValue: number;
+  totalValue: number;
+  purchaseDate: string;
+  meetingId: string;
+  operationId: string;
+  loan?: MemberPurchaseLoanInfo | null;
+}
+
+export interface StockPurchaseRequest {
+  stockId: string;
+  quantity: number;
+  cashAmount: number;
+  meetingId?: string;
+  loanDetails?: {
+    interestRate: number;
+    loanType: string;
+  };
+}
+
+export interface StockPurchaseResponse {
+  operationId: string;
+  meetingId: string;
+  memberId: string;
+  stockSubscriptionId: string;
+  loanId?: string | null;
+}

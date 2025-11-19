@@ -5,6 +5,7 @@ export enum LoanStatus {
   ACTIVE = 'active',
   PAID = 'paid',
   DEFAULTED = 'defaulted',
+  CLOSED = 'closed',
 }
 
 export class Loan {
@@ -187,7 +188,8 @@ export class Loan {
       this._status !== LoanStatus.PENDING &&
       this._status !== LoanStatus.ACTIVE &&
       this._status !== LoanStatus.PAID &&
-      this._status !== LoanStatus.DEFAULTED
+      this._status !== LoanStatus.DEFAULTED &&
+      this._status !== LoanStatus.CLOSED
     ) {
       throw new Error(`Invalid Loan status: ${String(this._status)}`);
     }
