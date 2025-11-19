@@ -5,12 +5,16 @@ import { GetMembersQueryHandler } from '@application/queries/members/get-members
 import { GetMemberDetailQueryHandler } from '@application/queries/members/get-member-detail.query-handler';
 import { GetMemberDuesForActiveMeetingQueryHandler } from '@application/queries/members/get-member-dues-for-active-meeting.query-handler';
 import { GetMemberPaymentsQueryHandler } from '@application/queries/members/get-member-payments.query-handler';
+import { GetMemberPurchasesQueryHandler } from '@application/queries/members/get-member-purchases.query-handler';
 import { CreateMemberUseCase } from '@application/use-cases/members/create-member.use-case';
 import { UpdateMemberUseCase } from '@application/use-cases/members/update-member.use-case';
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
 import { RecordMonthlyPaymentsUseCase } from '@application/use-cases/members/record-monthly-payments.use-case';
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
 import { CalculateMemberInsuranceUseCase } from '@application/use-cases/members/calculate-member-insurance.use-case';
+import { PurchaseStockUseCase } from '@application/use-cases/members/purchase-stock.use-case';
+import { CreateLoanUseCase } from '@application/use-cases/loans/create-loan.use-case';
+import { LoansV2Module } from './loans-v2.module';
 import { TypeOrmMemberRepository } from '@infrastructure/typeorm/repositories/typeorm-member.repository';
 import { TypeOrmMeetingRepository } from '@infrastructure/typeorm/repositories/typeorm-meeting.repository';
 import { TypeOrmMandatoryContributionRepository } from '@infrastructure/typeorm/repositories/typeorm-mandatory-contribution.repository';
@@ -76,6 +80,7 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
       OperationEntity,
       LedgerEntryEntity,
     ]),
+    LoansV2Module,
   ],
   controllers: [MembersV2Controller],
   providers: [
@@ -184,6 +189,34 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
         PaymentMapperService,
       ],
     },
+    {
+      provide: GetMemberPurchasesQueryHandler,
+      useFactory: (
+        memberRepo: MemberRepository,
+        stockSubscriptionRepo: StockSubscriptionRepository,
+        stockRepo: StockRepository,
+        loanRepo: LoanRepository,
+        operationRepo: OperationRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+      ): GetMemberPurchasesQueryHandler => {
+        return new GetMemberPurchasesQueryHandler(
+          memberRepo,
+          stockSubscriptionRepo,
+          stockRepo,
+          loanRepo,
+          operationRepo,
+          ledgerEntryRepo,
+        );
+      },
+      inject: [
+        MEMBER_REPOSITORY,
+        STOCK_SUBSCRIPTION_REPOSITORY,
+        STOCK_REPOSITORY,
+        LOAN_REPOSITORY,
+        OPERATION_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+      ],
+    },
     // Use cases
     {
       provide: CreateMemberUseCase,
@@ -267,6 +300,33 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
         LOAN_REPOSITORY,
         LOAN_TRANSACTION_DETAIL_REPOSITORY,
         OPERATION_REPOSITORY,
+        RecordOperationUseCase,
+      ],
+    },
+    {
+      provide: PurchaseStockUseCase,
+      useFactory: (
+        memberRepo: MemberRepository,
+        meetingRepo: MeetingRepository,
+        stockRepo: StockRepository,
+        stockSubscriptionRepo: StockSubscriptionRepository,
+        createLoanUseCase: CreateLoanUseCase,
+        recordOperationUseCase: RecordOperationUseCase,
+      ) =>
+        new PurchaseStockUseCase(
+          memberRepo,
+          meetingRepo,
+          stockRepo,
+          stockSubscriptionRepo,
+          createLoanUseCase,
+          recordOperationUseCase,
+        ),
+      inject: [
+        MEMBER_REPOSITORY,
+        MEETING_REPOSITORY,
+        STOCK_REPOSITORY,
+        STOCK_SUBSCRIPTION_REPOSITORY,
+        CreateLoanUseCase,
         RecordOperationUseCase,
       ],
     },
