@@ -6,6 +6,9 @@ import { GetMemberDetailQueryHandler } from '@application/queries/members/get-me
 import { GetMemberDuesForActiveMeetingQueryHandler } from '@application/queries/members/get-member-dues-for-active-meeting.query-handler';
 import { GetMemberPaymentsQueryHandler } from '@application/queries/members/get-member-payments.query-handler';
 import { GetMemberPurchasesQueryHandler } from '@application/queries/members/get-member-purchases.query-handler';
+import { GetMemberStockExchangesQueryHandler } from '@application/queries/members/get-member-stock-exchanges.query-handler';
+import { GetMemberStockTransfersQueryHandler } from '@application/queries/members/get-member-stock-transfers.query-handler';
+import { GetMemberStockLoanPaymentsQueryHandler } from '@application/queries/members/get-member-stock-loan-payments.query-handler';
 import { CreateMemberUseCase } from '@application/use-cases/members/create-member.use-case';
 import { UpdateMemberUseCase } from '@application/use-cases/members/update-member.use-case';
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
@@ -29,6 +32,7 @@ import { StockSubscription } from '@infrastructure/typeorm/entities/stock-subscr
 import { Loan } from '@infrastructure/typeorm/entities/loan.entity';
 import { LoanTransactionDetail } from '@infrastructure/typeorm/entities/loan-transaction-detail.entity';
 import { Stock } from '@infrastructure/typeorm/entities/stock.entity';
+import { PendingMemberPayment } from '@infrastructure/typeorm/entities/pending-member-payment.entity';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { MandatoryContributionRepository } from '@domain/ports/repositories/mandatory-contribution-repository.port';
@@ -36,6 +40,7 @@ import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-su
 import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
 import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
+import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pending-member-payment-repository.port';
 import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
@@ -48,6 +53,10 @@ import { Operation } from '@infrastructure/typeorm/entities/operation.entity';
 import { LedgerEntry } from '@infrastructure/typeorm/entities/ledger-entry.entity';
 import { Operation as OperationEntity } from '@infrastructure/typeorm/entities/operation.entity';
 import { LedgerEntry as LedgerEntryEntity } from '@infrastructure/typeorm/entities/ledger-entry.entity';
+import { TypeOrmPendingMemberPaymentRepository } from '@infrastructure/typeorm/repositories/typeorm-pending-member-payment.repository';
+import { ProcessStockExchangeUseCase } from '@application/use-cases/members/process-stock-exchange.use-case';
+import { ProcessStockTransferUseCase } from '@application/use-cases/members/process-stock-transfer.use-case';
+import { ProcessStockLoanPaymentUseCase } from '@application/use-cases/members/process-stock-loan-payment.use-case';
 
 const MEMBER_REPOSITORY = Symbol('MemberRepository');
 const MEETING_REPOSITORY = Symbol('MeetingRepository');
@@ -63,6 +72,9 @@ const STOCK_REPOSITORY = Symbol('StockRepository');
 const OPERATION_REPOSITORY = Symbol('OperationRepository');
 const LEDGER_ENTRY_REPOSITORY = Symbol('LedgerEntryRepository');
 const TRANSACTION_MANAGER = Symbol('TransactionManager');
+const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
+  'PendingMemberPaymentRepository',
+);
 
 @Module({
   imports: [
@@ -74,6 +86,7 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
       Loan,
       LoanTransactionDetail,
       Stock,
+      PendingMemberPayment,
       Operation,
       LedgerEntry,
       // Domain entities for hexagonal architecture
@@ -112,6 +125,10 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
     {
       provide: STOCK_REPOSITORY,
       useClass: TypeOrmStockRepository,
+    },
+    {
+      provide: PENDING_MEMBER_PAYMENT_REPOSITORY,
+      useClass: TypeOrmPendingMemberPaymentRepository,
     },
     {
       provide: OPERATION_REPOSITORY,
@@ -213,6 +230,93 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
         STOCK_SUBSCRIPTION_REPOSITORY,
         STOCK_REPOSITORY,
         LOAN_REPOSITORY,
+        OPERATION_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+      ],
+    },
+    {
+      provide: GetMemberStockExchangesQueryHandler,
+      useFactory: (
+        memberRepo: MemberRepository,
+        stockRepo: StockRepository,
+        stockSubscriptionRepo: StockSubscriptionRepository,
+        operationRepo: OperationRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+        pendingMemberPaymentRepo: PendingMemberPaymentRepository,
+        loanRepo: LoanRepository,
+      ): GetMemberStockExchangesQueryHandler => {
+        return new GetMemberStockExchangesQueryHandler(
+          memberRepo,
+          stockRepo,
+          stockSubscriptionRepo,
+          operationRepo,
+          ledgerEntryRepo,
+          pendingMemberPaymentRepo,
+          loanRepo,
+        );
+      },
+      inject: [
+        MEMBER_REPOSITORY,
+        STOCK_REPOSITORY,
+        STOCK_SUBSCRIPTION_REPOSITORY,
+        OPERATION_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+        PENDING_MEMBER_PAYMENT_REPOSITORY,
+        LOAN_REPOSITORY,
+      ],
+    },
+    {
+      provide: GetMemberStockTransfersQueryHandler,
+      useFactory: (
+        memberRepo: MemberRepository,
+        stockRepo: StockRepository,
+        stockSubscriptionRepo: StockSubscriptionRepository,
+        operationRepo: OperationRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+      ): GetMemberStockTransfersQueryHandler => {
+        return new GetMemberStockTransfersQueryHandler(
+          memberRepo,
+          stockRepo,
+          stockSubscriptionRepo,
+          operationRepo,
+          ledgerEntryRepo,
+        );
+      },
+      inject: [
+        MEMBER_REPOSITORY,
+        STOCK_REPOSITORY,
+        STOCK_SUBSCRIPTION_REPOSITORY,
+        OPERATION_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+      ],
+    },
+    {
+      provide: GetMemberStockLoanPaymentsQueryHandler,
+      useFactory: (
+        memberRepo: MemberRepository,
+        stockRepo: StockRepository,
+        stockSubscriptionRepo: StockSubscriptionRepository,
+        loanRepo: LoanRepository,
+        loanTransactionDetailRepo: LoanTransactionDetailRepository,
+        operationRepo: OperationRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+      ): GetMemberStockLoanPaymentsQueryHandler => {
+        return new GetMemberStockLoanPaymentsQueryHandler(
+          memberRepo,
+          stockRepo,
+          stockSubscriptionRepo,
+          loanRepo,
+          loanTransactionDetailRepo,
+          operationRepo,
+          ledgerEntryRepo,
+        );
+      },
+      inject: [
+        MEMBER_REPOSITORY,
+        STOCK_REPOSITORY,
+        STOCK_SUBSCRIPTION_REPOSITORY,
+        LOAN_REPOSITORY,
+        LOAN_TRANSACTION_DETAIL_REPOSITORY,
         OPERATION_REPOSITORY,
         LEDGER_ENTRY_REPOSITORY,
       ],
@@ -327,6 +431,93 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
         STOCK_REPOSITORY,
         STOCK_SUBSCRIPTION_REPOSITORY,
         CreateLoanUseCase,
+        RecordOperationUseCase,
+      ],
+    },
+    {
+      provide: ProcessStockExchangeUseCase,
+      useFactory: (
+        memberRepo: MemberRepository,
+        meetingRepo: MeetingRepository,
+        stockRepo: StockRepository,
+        stockSubscriptionRepo: StockSubscriptionRepository,
+        pendingPaymentRepo: PendingMemberPaymentRepository,
+        loanRepo: LoanRepository,
+        loanTransactionDetailRepo: LoanTransactionDetailRepository,
+        recordOperationUseCase: RecordOperationUseCase,
+      ) =>
+        new ProcessStockExchangeUseCase(
+          memberRepo,
+          meetingRepo,
+          stockRepo,
+          stockSubscriptionRepo,
+          pendingPaymentRepo,
+          loanRepo,
+          loanTransactionDetailRepo,
+          recordOperationUseCase,
+        ),
+      inject: [
+        MEMBER_REPOSITORY,
+        MEETING_REPOSITORY,
+        STOCK_REPOSITORY,
+        STOCK_SUBSCRIPTION_REPOSITORY,
+        PENDING_MEMBER_PAYMENT_REPOSITORY,
+        LOAN_REPOSITORY,
+        LOAN_TRANSACTION_DETAIL_REPOSITORY,
+        RecordOperationUseCase,
+      ],
+    },
+    {
+      provide: ProcessStockTransferUseCase,
+      useFactory: (
+        memberRepo: MemberRepository,
+        meetingRepo: MeetingRepository,
+        stockRepo: StockRepository,
+        stockSubscriptionRepo: StockSubscriptionRepository,
+        recordOperationUseCase: RecordOperationUseCase,
+      ) =>
+        new ProcessStockTransferUseCase(
+          memberRepo,
+          meetingRepo,
+          stockRepo,
+          stockSubscriptionRepo,
+          recordOperationUseCase,
+        ),
+      inject: [
+        MEMBER_REPOSITORY,
+        MEETING_REPOSITORY,
+        STOCK_REPOSITORY,
+        STOCK_SUBSCRIPTION_REPOSITORY,
+        RecordOperationUseCase,
+      ],
+    },
+    {
+      provide: ProcessStockLoanPaymentUseCase,
+      useFactory: (
+        memberRepo: MemberRepository,
+        meetingRepo: MeetingRepository,
+        stockRepo: StockRepository,
+        stockSubscriptionRepo: StockSubscriptionRepository,
+        loanRepo: LoanRepository,
+        loanTransactionDetailRepo: LoanTransactionDetailRepository,
+        recordOperationUseCase: RecordOperationUseCase,
+      ) =>
+        new ProcessStockLoanPaymentUseCase(
+          memberRepo,
+          meetingRepo,
+          stockRepo,
+          stockSubscriptionRepo,
+          loanRepo,
+          loanTransactionDetailRepo,
+          recordOperationUseCase,
+        ),
+      inject: [
+        MEMBER_REPOSITORY,
+        MEETING_REPOSITORY,
+        STOCK_REPOSITORY,
+        STOCK_SUBSCRIPTION_REPOSITORY,
+        LOAN_REPOSITORY,
+        LOAN_TRANSACTION_DETAIL_REPOSITORY,
         RecordOperationUseCase,
       ],
     },

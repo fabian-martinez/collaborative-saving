@@ -36,6 +36,9 @@ import { GetMemberDetailQueryHandler } from '@application/queries/members/get-me
 import { GetMemberDuesForActiveMeetingQueryHandler } from '@application/queries/members/get-member-dues-for-active-meeting.query-handler';
 import { GetMemberPaymentsQueryHandler } from '@application/queries/members/get-member-payments.query-handler';
 import { GetMemberPurchasesQueryHandler } from '@application/queries/members/get-member-purchases.query-handler';
+import { GetMemberStockExchangesQueryHandler } from '@application/queries/members/get-member-stock-exchanges.query-handler';
+import { GetMemberStockTransfersQueryHandler } from '@application/queries/members/get-member-stock-transfers.query-handler';
+import { GetMemberStockLoanPaymentsQueryHandler } from '@application/queries/members/get-member-stock-loan-payments.query-handler';
 import { UpdateMemberHttpDto } from '../dto/update-member-http.dto';
 import { CreateMemberHttpDto } from '../dto/create-member-http.dto';
 import { RecordMonthlyPaymentsUseCase } from '@application/use-cases/members/record-monthly-payments.use-case';
@@ -46,6 +49,7 @@ import { MemberDueResponseHttpDto } from '../dto/member-due-response-http.dto';
 import { RecordMonthlyPaymentsResponseHttpDto } from '../dto/record-monthly-payments-response-http.dto';
 import { GetMemberPaymentsQueryHttpDto } from '../dto/get-member-payments-query-http.dto';
 import { GetMemberPurchasesQueryHttpDto } from '../dto/get-member-purchases-query-http.dto';
+import { GetMemberStockModificationsQueryHttpDto } from '../dto/get-member-stock-modifications-query-http.dto';
 import { MemberPaymentResponseHttpDto } from '../dto/member-payment-response-http.dto';
 import { MemberPurchaseResponseHttpDto } from '../dto/member-purchase-response-http.dto';
 import { MemberPaymentResponseDto } from '@application/dto/members/member-payment-response.dto';
@@ -59,6 +63,22 @@ import { PurchaseStockResponseHttpDto } from '../dto/purchase-stock-response-htt
 import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
 import { StockNotFoundException } from '@application/exceptions/stock-not-found.exception';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
+import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
+import { InvalidRequestError } from '@domain/errors/invalid-request.error';
+import { ProcessStockExchangeUseCase } from '@application/use-cases/members/process-stock-exchange.use-case';
+import { ProcessStockTransferUseCase } from '@application/use-cases/members/process-stock-transfer.use-case';
+import { ProcessStockLoanPaymentUseCase } from '@application/use-cases/members/process-stock-loan-payment.use-case';
+import { StockExchangeHttpDto } from '../dto/stock-exchange-http.dto';
+import { StockTransferHttpDto } from '../dto/stock-transfer-http.dto';
+import { StockLoanPaymentHttpDto } from '../dto/stock-loan-payment-http.dto';
+import { StockOperationResponseHttpDto } from '../dto/stock-operation-response-http.dto';
+import { StockOperationResponseDto } from '@application/dto/members/stock-operation-response.dto';
+import { StockExchangeResponseHttpDto } from '../dto/stock-exchange-response-http.dto';
+import { StockTransferResponseHttpDto } from '../dto/stock-transfer-response-http.dto';
+import { StockLoanPaymentResponseHttpDto } from '../dto/stock-loan-payment-response-http.dto';
+import { StockExchangeResponseDto } from '@application/dto/members/stock-exchange-response.dto';
+import { StockTransferResponseDto } from '@application/dto/members/stock-transfer-response.dto';
+import { StockLoanPaymentResponseDto } from '@application/dto/members/stock-loan-payment-response.dto';
 
 @ApiTags('Members V2')
 @Controller('v2/members')
@@ -69,12 +89,18 @@ export class MembersV2Controller {
     private readonly getMemberDuesQuery: GetMemberDuesForActiveMeetingQueryHandler,
     private readonly getMemberPaymentsQuery: GetMemberPaymentsQueryHandler,
     private readonly getMemberPurchasesQuery: GetMemberPurchasesQueryHandler,
+    private readonly getMemberStockExchangesQuery: GetMemberStockExchangesQueryHandler,
+    private readonly getMemberStockTransfersQuery: GetMemberStockTransfersQueryHandler,
+    private readonly getMemberStockLoanPaymentsQuery: GetMemberStockLoanPaymentsQueryHandler,
     private readonly createMemberUseCase: CreateMemberUseCase,
     private readonly updateMemberUseCase: UpdateMemberUseCase,
     private readonly deleteMemberUseCase: DeleteMemberUseCase,
     private readonly recordMonthlyPaymentsUseCase: RecordMonthlyPaymentsUseCase,
     private readonly calculateMemberInsuranceUseCase: CalculateMemberInsuranceUseCase,
     private readonly purchaseStockUseCase: PurchaseStockUseCase,
+    private readonly processStockExchangeUseCase: ProcessStockExchangeUseCase,
+    private readonly processStockTransferUseCase: ProcessStockTransferUseCase,
+    private readonly processStockLoanPaymentUseCase: ProcessStockLoanPaymentUseCase,
   ) {}
 
   @Get()
@@ -712,6 +738,318 @@ export class MembersV2Controller {
     }
   }
 
+  @Post(':id/purchase/exchange')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Intercambiar acciones de un tipo a otro',
+    description:
+      'Permite convertir acciones existentes en otro tipo administrando las diferencias vía efectivo o crédito.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del socio que realiza el intercambio',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiBody({ type: StockExchangeHttpDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Intercambio procesado correctamente',
+    type: StockOperationResponseHttpDto,
+  })
+  @ApiBadRequestResponse({ description: 'Datos inválidos para el intercambio' })
+  @ApiNotFoundResponse({
+    description: 'No se encontró el socio, la suscripción o la reunión',
+  })
+  @ApiInternalServerErrorResponse({ description: 'Error interno del servidor' })
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  async exchangeStocks(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: StockExchangeHttpDto,
+  ): Promise<StockOperationResponseHttpDto> {
+    try {
+      const result = await this.processStockExchangeUseCase.execute({
+        memberId: id,
+        meetingId: dto.meeting_id,
+        fromSubscriptionId: dto.from_subscription_id,
+        fromQuantity: dto.from_quantity,
+        toStockId: dto.to_stock_id,
+        toQuantity: dto.to_quantity,
+        differenceHandling: dto.difference_handling,
+        targetLoanId: dto.target_loan_id,
+        notes: dto.notes,
+      });
+      return this.mapStockOperationResponseToHttp(result);
+    } catch (error) {
+      return this.handleStockOperationError(error);
+    }
+  }
+
+  @Post(':id/purchase/transfer')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Transferir acciones a otro socio',
+    description:
+      'Traslada acciones de una suscripción existente hacia otro socio, ajustando ambas suscripciones y registrando los asientos correspondientes.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del socio que cede las acciones',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiBody({ type: StockTransferHttpDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Transferencia registrada correctamente',
+    type: StockOperationResponseHttpDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Datos inválidos para la transferencia',
+  })
+  @ApiNotFoundResponse({
+    description: 'No se encontró el socio, la suscripción o la reunión',
+  })
+  @ApiInternalServerErrorResponse({ description: 'Error interno del servidor' })
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  async transferStocks(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: StockTransferHttpDto,
+  ): Promise<StockOperationResponseHttpDto> {
+    try {
+      const result = await this.processStockTransferUseCase.execute({
+        memberId: id,
+        meetingId: dto.meeting_id,
+        fromSubscriptionId: dto.from_subscription_id,
+        quantity: dto.quantity,
+        toMemberId: dto.to_member_id,
+        notes: dto.notes,
+      });
+      return this.mapStockOperationResponseToHttp(result);
+    } catch (error) {
+      return this.handleStockOperationError(error);
+    }
+  }
+
+  @Post(':id/purchase/loan-payment')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Pagar un crédito usando acciones',
+    description:
+      'Reduce el saldo de un préstamo aplicando acciones existentes y genera el asiento contable del pago.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del socio que amortiza el crédito',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiBody({ type: StockLoanPaymentHttpDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Pago con acciones registrado',
+    type: StockOperationResponseHttpDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Datos inválidos para el pago con acciones',
+  })
+  @ApiNotFoundResponse({
+    description:
+      'No se encontró el socio, la suscripción, el préstamo o la reunión',
+  })
+  @ApiInternalServerErrorResponse({ description: 'Error interno del servidor' })
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  async payLoanWithStocks(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: StockLoanPaymentHttpDto,
+  ): Promise<StockOperationResponseHttpDto> {
+    try {
+      const result = await this.processStockLoanPaymentUseCase.execute({
+        memberId: id,
+        meetingId: dto.meeting_id,
+        subscriptionId: dto.subscription_id,
+        quantity: dto.quantity,
+        loanId: dto.loan_id,
+        notes: dto.notes,
+      });
+      return this.mapStockOperationResponseToHttp(result);
+    } catch (error) {
+      return this.handleStockOperationError(error);
+    }
+  }
+
+  @Get(':id/purchase/exchange')
+  @ApiOperation({
+    summary: 'Obtener intercambios de acciones de un socio',
+    description:
+      'Retorna todos los intercambios de acciones realizados por un socio, con filtrado opcional por reunión.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del socio',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiQuery({
+    name: 'meetingId',
+    required: false,
+    description: 'Filtrar por ID de reunión',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de intercambios obtenida correctamente',
+    type: [StockExchangeResponseHttpDto],
+  })
+  @ApiBadRequestResponse({
+    description: 'Parámetros de consulta inválidos',
+  })
+  @ApiNotFoundResponse({
+    description: 'Socio no encontrado',
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Error interno del servidor',
+  })
+  async getStockExchanges(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: GetMemberStockModificationsQueryHttpDto,
+  ): Promise<StockExchangeResponseHttpDto[]> {
+    try {
+      const exchanges = await this.getMemberStockExchangesQuery.execute(id, {
+        meetingId: query.meetingId,
+      });
+      return exchanges.map((exchange) => this.mapStockExchangeToHttp(exchange));
+    } catch (error) {
+      if (error instanceof MemberNotFoundException) {
+        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':id/purchase/transfer')
+  @ApiOperation({
+    summary: 'Obtener transferencias de acciones de un socio',
+    description:
+      'Retorna todas las transferencias de acciones realizadas por un socio (como origen), con filtrado opcional por reunión.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del socio',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiQuery({
+    name: 'meetingId',
+    required: false,
+    description: 'Filtrar por ID de reunión',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de transferencias obtenida correctamente',
+    type: [StockTransferResponseHttpDto],
+  })
+  @ApiBadRequestResponse({
+    description: 'Parámetros de consulta inválidos',
+  })
+  @ApiNotFoundResponse({
+    description: 'Socio no encontrado',
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Error interno del servidor',
+  })
+  async getStockTransfers(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: GetMemberStockModificationsQueryHttpDto,
+  ): Promise<StockTransferResponseHttpDto[]> {
+    try {
+      const transfers = await this.getMemberStockTransfersQuery.execute(id, {
+        meetingId: query.meetingId,
+      });
+      return transfers.map((transfer) => this.mapStockTransferToHttp(transfer));
+    } catch (error) {
+      if (error instanceof MemberNotFoundException) {
+        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':id/purchase/loan-payment')
+  @ApiOperation({
+    summary: 'Obtener pagos con acciones de un socio',
+    description:
+      'Retorna todos los pagos de créditos realizados con acciones por un socio, con filtrado opcional por reunión.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del socio',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiQuery({
+    name: 'meetingId',
+    required: false,
+    description: 'Filtrar por ID de reunión',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de pagos con acciones obtenida correctamente',
+    type: [StockLoanPaymentResponseHttpDto],
+  })
+  @ApiBadRequestResponse({
+    description: 'Parámetros de consulta inválidos',
+  })
+  @ApiNotFoundResponse({
+    description: 'Socio no encontrado',
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Error interno del servidor',
+  })
+  async getStockLoanPayments(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: GetMemberStockModificationsQueryHttpDto,
+  ): Promise<StockLoanPaymentResponseHttpDto[]> {
+    try {
+      const payments = await this.getMemberStockLoanPaymentsQuery.execute(id, {
+        meetingId: query.meetingId,
+      });
+      return payments.map((payment) => this.mapStockLoanPaymentToHttp(payment));
+    } catch (error) {
+      if (error instanceof MemberNotFoundException) {
+        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+      }
+      throw error;
+    }
+  }
+
+  private handleStockOperationError(error: unknown): never {
+    if (
+      error instanceof MemberNotFoundException ||
+      error instanceof StockNotFoundException ||
+      error instanceof MeetingNotFoundException ||
+      error instanceof LoanNotFoundException
+    ) {
+      throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+    }
+    if (error instanceof InvalidRequestError) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+    if (error instanceof HttpException) {
+      throw error;
+    }
+    throw new HttpException(
+      error instanceof Error ? error.message : 'Internal server error',
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
+  }
+
+  private mapStockOperationResponseToHttp(
+    response: StockOperationResponseDto,
+  ): StockOperationResponseHttpDto {
+    return {
+      operation_id: response.operationId,
+      message: response.message,
+      details: response.details,
+    };
+  }
+
   private mapRecordMonthlyPaymentsToHttp(
     r: RecordMonthlyPaymentsResponseDto,
   ): RecordMonthlyPaymentsResponseHttpDto {
@@ -796,6 +1134,73 @@ export class MembersV2Controller {
       beneficiary: m.beneficiary,
       registration_date: m.registrationDate,
       created_at: m.createdAt,
+    };
+  }
+
+  private mapStockExchangeToHttp(
+    exchange: StockExchangeResponseDto,
+  ): StockExchangeResponseHttpDto {
+    return {
+      operation_id: exchange.operationId,
+      meeting_id: exchange.meetingId,
+      date: exchange.date,
+      description: exchange.description,
+      from_stock_id: exchange.fromStockId,
+      from_stock_type: exchange.fromStockType,
+      from_quantity: exchange.fromQuantity,
+      from_value: exchange.fromValue,
+      to_stock_id: exchange.toStockId,
+      to_stock_type: exchange.toStockType,
+      to_quantity: exchange.toQuantity,
+      to_value: exchange.toValue,
+      difference: exchange.difference,
+      difference_handling: exchange.differenceHandling,
+      from_subscription_id: exchange.fromSubscriptionId,
+      to_subscription_id: exchange.toSubscriptionId,
+      pending_payment_id: exchange.pendingPaymentId,
+      loan_id: exchange.loanId,
+    };
+  }
+
+  private mapStockTransferToHttp(
+    transfer: StockTransferResponseDto,
+  ): StockTransferResponseHttpDto {
+    return {
+      operation_id: transfer.operationId,
+      meeting_id: transfer.meetingId,
+      date: transfer.date,
+      description: transfer.description,
+      stock_id: transfer.stockId,
+      stock_type: transfer.stockType,
+      quantity: transfer.quantity,
+      value: transfer.value,
+      from_member_id: transfer.fromMemberId,
+      from_member_name: transfer.fromMemberName,
+      to_member_id: transfer.toMemberId,
+      to_member_name: transfer.toMemberName,
+      from_subscription_id: transfer.fromSubscriptionId,
+      to_subscription_id: transfer.toSubscriptionId,
+    };
+  }
+
+  private mapStockLoanPaymentToHttp(
+    payment: StockLoanPaymentResponseDto,
+  ): StockLoanPaymentResponseHttpDto {
+    return {
+      operation_id: payment.operationId,
+      meeting_id: payment.meetingId,
+      date: payment.date,
+      description: payment.description,
+      stock_id: payment.stockId,
+      stock_type: payment.stockType,
+      quantity: payment.quantity,
+      payment_value: payment.paymentValue,
+      loan_id: payment.loanId,
+      loan_type: payment.loanType,
+      previous_balance: payment.previousBalance,
+      new_balance: payment.newBalance,
+      subscription_id: payment.subscriptionId,
+      transaction_detail_id: payment.transactionDetailId,
     };
   }
 }
