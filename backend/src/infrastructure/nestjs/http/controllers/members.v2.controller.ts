@@ -35,6 +35,7 @@ import { GetMembersQueryHandler } from '@application/queries/members/get-members
 import { GetMemberDetailQueryHandler } from '@application/queries/members/get-member-detail.query-handler';
 import { GetMemberDuesForActiveMeetingQueryHandler } from '@application/queries/members/get-member-dues-for-active-meeting.query-handler';
 import { GetMemberPaymentsQueryHandler } from '@application/queries/members/get-member-payments.query-handler';
+import { GetMemberPurchasesQueryHandler } from '@application/queries/members/get-member-purchases.query-handler';
 import { UpdateMemberHttpDto } from '../dto/update-member-http.dto';
 import { CreateMemberHttpDto } from '../dto/create-member-http.dto';
 import { RecordMonthlyPaymentsUseCase } from '@application/use-cases/members/record-monthly-payments.use-case';
@@ -44,10 +45,20 @@ import { MemberResponseHttpDto } from '../dto/member-response-http.dto';
 import { MemberDueResponseHttpDto } from '../dto/member-due-response-http.dto';
 import { RecordMonthlyPaymentsResponseHttpDto } from '../dto/record-monthly-payments-response-http.dto';
 import { GetMemberPaymentsQueryHttpDto } from '../dto/get-member-payments-query-http.dto';
+import { GetMemberPurchasesQueryHttpDto } from '../dto/get-member-purchases-query-http.dto';
 import { MemberPaymentResponseHttpDto } from '../dto/member-payment-response-http.dto';
+import { MemberPurchaseResponseHttpDto } from '../dto/member-purchase-response-http.dto';
 import { MemberPaymentResponseDto } from '@application/dto/members/member-payment-response.dto';
+import { MemberPurchaseResponseDto } from '@application/dto/members/member-purchase-response.dto';
 import { PaymentFilterType } from '@domain/enums/payment-filter-type.enum';
 import { CalculateMemberInsuranceUseCase } from '@application/use-cases/members/calculate-member-insurance.use-case';
+import { PurchaseStockUseCase } from '@application/use-cases/members/purchase-stock.use-case';
+import { PurchaseStockResponseDto } from '@application/dto/members/purchase-stock-response.dto';
+import { PurchaseStockHttpDto } from '../dto/purchase-stock-http.dto';
+import { PurchaseStockResponseHttpDto } from '../dto/purchase-stock-response-http.dto';
+import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
+import { StockNotFoundException } from '@application/exceptions/stock-not-found.exception';
+import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 
 @ApiTags('Members V2')
 @Controller('v2/members')
@@ -57,11 +68,13 @@ export class MembersV2Controller {
     private readonly getMemberDetailQuery: GetMemberDetailQueryHandler,
     private readonly getMemberDuesQuery: GetMemberDuesForActiveMeetingQueryHandler,
     private readonly getMemberPaymentsQuery: GetMemberPaymentsQueryHandler,
+    private readonly getMemberPurchasesQuery: GetMemberPurchasesQueryHandler,
     private readonly createMemberUseCase: CreateMemberUseCase,
     private readonly updateMemberUseCase: UpdateMemberUseCase,
     private readonly deleteMemberUseCase: DeleteMemberUseCase,
     private readonly recordMonthlyPaymentsUseCase: RecordMonthlyPaymentsUseCase,
     private readonly calculateMemberInsuranceUseCase: CalculateMemberInsuranceUseCase,
+    private readonly purchaseStockUseCase: PurchaseStockUseCase,
   ) {}
 
   @Get()
@@ -458,6 +471,60 @@ export class MembersV2Controller {
     return payments.map((payment) => this.mapPaymentToHttp(payment));
   }
 
+  @Get(':id/purchases')
+  @ApiOperation({
+    summary: 'Get member stock purchases',
+    description:
+      'Retrieves all stock purchases made by a member. Supports filtering by meeting ID.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The UUID of the member',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiQuery({
+    name: 'meetingId',
+    required: false,
+    description: 'Filter by meeting ID',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Member purchases retrieved successfully',
+    type: [MemberPurchaseResponseHttpDto],
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid UUID format or invalid query parameters',
+  })
+  @ApiNotFoundResponse({
+    description: 'Member not found',
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error',
+  })
+  async getPurchases(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: GetMemberPurchasesQueryHttpDto,
+  ): Promise<MemberPurchaseResponseHttpDto[]> {
+    try {
+      const purchases = await this.getMemberPurchasesQuery.execute(id, {
+        meetingId: query.meetingId,
+      });
+      return purchases.map((purchase) => this.mapPurchaseToHttp(purchase));
+    } catch (e: unknown) {
+      if (e instanceof MemberNotFoundException) {
+        throw new HttpException(e.message, HttpStatus.NOT_FOUND);
+      }
+      if (e instanceof HttpException) {
+        throw e;
+      }
+      throw new HttpException(
+        e instanceof Error ? e.message : 'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Get(':id/insurance')
   @ApiOperation({
     summary: 'Calculate insurance amount for a member',
@@ -578,6 +645,73 @@ export class MembersV2Controller {
     }
   }
 
+  @Post(':id/purchase')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Purchase stocks for a member',
+    description:
+      'Records a stock purchase for a member. Supports cash payment, loan financing, or a combination of both. The memberId is extracted from the URL path parameter.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The UUID of the member',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiBody({ type: PurchaseStockHttpDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Stock purchase recorded successfully',
+    type: PurchaseStockResponseHttpDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid request data or validation failed',
+  })
+  @ApiNotFoundResponse({
+    description: 'Member, stock, or meeting not found',
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error',
+  })
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  async purchaseStock(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: PurchaseStockHttpDto,
+  ): Promise<PurchaseStockResponseHttpDto> {
+    try {
+      const result = await this.purchaseStockUseCase.execute({
+        memberId: id,
+        stockId: dto.stock_id,
+        quantity: dto.quantity,
+        cashAmount: dto.cash_amount,
+        loanDetails: dto.loan_details
+          ? {
+              interest_rate: dto.loan_details.interest_rate,
+              loan_type: dto.loan_details.loan_type,
+            }
+          : undefined,
+        meetingId: dto.meeting_id,
+      });
+      return this.mapPurchaseStockToHttp(result);
+    } catch (error: unknown) {
+      if (error instanceof MemberNotFoundException) {
+        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+      }
+      if (error instanceof StockNotFoundException) {
+        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+      }
+      if (error instanceof MeetingNotFoundException) {
+        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+      }
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   private mapRecordMonthlyPaymentsToHttp(
     r: RecordMonthlyPaymentsResponseDto,
   ): RecordMonthlyPaymentsResponseHttpDto {
@@ -588,6 +722,42 @@ export class MembersV2Controller {
       total_amount: r.totalAmount,
       ledger_entry_ids: r.ledgerEntryIds,
     } as RecordMonthlyPaymentsResponseHttpDto;
+  }
+
+  private mapPurchaseStockToHttp(
+    r: PurchaseStockResponseDto,
+  ): PurchaseStockResponseHttpDto {
+    return {
+      operation_id: r.operationId,
+      meeting_id: r.meetingId,
+      member_id: r.memberId,
+      stock_subscription_id: r.stockSubscriptionId,
+      loan_id: r.loanId ?? null,
+    };
+  }
+
+  private mapPurchaseToHttp(
+    purchase: MemberPurchaseResponseDto,
+  ): MemberPurchaseResponseHttpDto {
+    return {
+      stock_subscription_id: purchase.stockSubscriptionId,
+      stock_id: purchase.stockId,
+      stock_type: purchase.stockType,
+      quantity: purchase.quantity,
+      unit_value: purchase.unitValue,
+      total_value: purchase.totalValue,
+      purchase_date: purchase.purchaseDate,
+      meeting_id: purchase.meetingId,
+      operation_id: purchase.operationId,
+      loan: purchase.loan
+        ? {
+            loan_id: purchase.loan.loanId,
+            approved_amount: purchase.loan.approvedAmount,
+            interest_rate: purchase.loan.interestRate,
+            status: purchase.loan.status,
+          }
+        : null,
+    };
   }
 
   private mapPaymentToHttp(

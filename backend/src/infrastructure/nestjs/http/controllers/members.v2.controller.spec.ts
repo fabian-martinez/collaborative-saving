@@ -5,6 +5,7 @@ import { GetMembersQueryHandler } from '@application/queries/members/get-members
 import { GetMemberDetailQueryHandler } from '@application/queries/members/get-member-detail.query-handler';
 import { GetMemberDuesForActiveMeetingQueryHandler } from '@application/queries/members/get-member-dues-for-active-meeting.query-handler';
 import { GetMemberPaymentsQueryHandler } from '@application/queries/members/get-member-payments.query-handler';
+import { GetMemberPurchasesQueryHandler } from '@application/queries/members/get-member-purchases.query-handler';
 import { CreateMemberUseCase } from '@application/use-cases/members/create-member.use-case';
 import { UpdateMemberUseCase } from '@application/use-cases/members/update-member.use-case';
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
@@ -17,6 +18,10 @@ import { MemberNotFoundException } from '@application/exceptions/member-not-foun
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { CalculateMemberInsuranceUseCase } from '@application/use-cases/members/calculate-member-insurance.use-case';
+import { PurchaseStockUseCase } from '@application/use-cases/members/purchase-stock.use-case';
+import { PurchaseStockResponseDto } from '@application/dto/members/purchase-stock-response.dto';
+import { PurchaseStockHttpDto } from '../dto/purchase-stock-http.dto';
+import { StockNotFoundException } from '@application/exceptions/stock-not-found.exception';
 
 describe('MembersV2Controller', () => {
   let controller: MembersV2Controller;
@@ -27,6 +32,8 @@ describe('MembersV2Controller', () => {
   let deleteMemberUseCase: jest.Mocked<DeleteMemberUseCase>;
   let recordMonthlyPaymentsUseCase: jest.Mocked<RecordMonthlyPaymentsUseCase>;
   let calculateMemberInsuranceUseCase: jest.Mocked<CalculateMemberInsuranceUseCase>;
+  let purchaseStockUseCase: jest.Mocked<PurchaseStockUseCase>;
+  let getMemberPurchasesQuery: jest.Mocked<GetMemberPurchasesQueryHandler>;
 
   // Spies for execute methods to avoid 'this' scoping issues
   let getMembersQueryExecuteSpy: jest.SpyInstance;
@@ -36,6 +43,8 @@ describe('MembersV2Controller', () => {
   let deleteMemberUseCaseExecuteSpy: jest.SpyInstance;
   let recordMonthlyPaymentsUseCaseExecuteSpy: jest.SpyInstance;
   let calculateMemberInsuranceUseCaseExecuteSpy: jest.SpyInstance;
+  let purchaseStockUseCaseExecuteSpy: jest.SpyInstance;
+  let getMemberPurchasesQueryExecuteSpy: jest.SpyInstance;
 
   const mockMemberResponse: MemberResponseDto = {
     id: '550e8400-e29b-41d4-a716-446655440000',
@@ -76,6 +85,12 @@ describe('MembersV2Controller', () => {
           },
         },
         {
+          provide: GetMemberPurchasesQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
           provide: CreateMemberUseCase,
           useValue: {
             execute: jest.fn(),
@@ -105,6 +120,12 @@ describe('MembersV2Controller', () => {
             execute: jest.fn(),
           },
         },
+        {
+          provide: PurchaseStockUseCase,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -118,6 +139,7 @@ describe('MembersV2Controller', () => {
     calculateMemberInsuranceUseCase = module.get(
       CalculateMemberInsuranceUseCase,
     );
+    purchaseStockUseCase = module.get(PurchaseStockUseCase);
 
     // Create spies to avoid 'this' scoping issues
     getMembersQueryExecuteSpy = jest.spyOn(getMembersQuery, 'execute');
@@ -134,6 +156,15 @@ describe('MembersV2Controller', () => {
     );
     calculateMemberInsuranceUseCaseExecuteSpy = jest.spyOn(
       calculateMemberInsuranceUseCase,
+      'execute',
+    );
+    purchaseStockUseCaseExecuteSpy = jest.spyOn(
+      purchaseStockUseCase,
+      'execute',
+    );
+    getMemberPurchasesQuery = module.get(GetMemberPurchasesQueryHandler);
+    getMemberPurchasesQueryExecuteSpy = jest.spyOn(
+      getMemberPurchasesQuery,
       'execute',
     );
   });
@@ -560,6 +591,317 @@ describe('MembersV2Controller', () => {
         capitalPayment,
       });
       expect(result).toEqual({ insuranceAmount: 5678 });
+    });
+  });
+
+  describe('POST /v2/members/:id/purchase', () => {
+    const memberId = '550e8400-e29b-41d4-a716-446655440000';
+    const mockPurchaseResponse: PurchaseStockResponseDto = {
+      operationId: 'operation-id-1',
+      meetingId: 'meeting-id-1',
+      memberId: memberId,
+      stockSubscriptionId: 'subscription-id-1',
+      loanId: null,
+    };
+
+    it('should successfully purchase stocks with cash payment', async () => {
+      const dto: PurchaseStockHttpDto = {
+        stock_id: 'stock-id-1',
+        quantity: 2,
+        cash_amount: 200000,
+      };
+
+      purchaseStockUseCaseExecuteSpy.mockResolvedValue(mockPurchaseResponse);
+
+      const result = await controller.purchaseStock(memberId, dto);
+
+      expect(result).toEqual({
+        operation_id: 'operation-id-1',
+        meeting_id: 'meeting-id-1',
+        member_id: memberId,
+        stock_subscription_id: 'subscription-id-1',
+        loan_id: null,
+      });
+
+      expect(purchaseStockUseCaseExecuteSpy).toHaveBeenCalledWith({
+        memberId: memberId,
+        stockId: dto.stock_id,
+        quantity: dto.quantity,
+        cashAmount: dto.cash_amount,
+        loanDetails: undefined,
+        meetingId: undefined,
+      });
+    });
+
+    it('should successfully purchase stocks with loan financing', async () => {
+      const dto: PurchaseStockHttpDto = {
+        stock_id: 'stock-id-1',
+        quantity: 2,
+        cash_amount: 0,
+        loan_details: {
+          interest_rate: 0.02,
+          loan_type: 'accion',
+        },
+      };
+
+      const responseWithLoan: PurchaseStockResponseDto = {
+        ...mockPurchaseResponse,
+        loanId: 'loan-id-1',
+      };
+
+      purchaseStockUseCaseExecuteSpy.mockResolvedValue(responseWithLoan);
+
+      const result = await controller.purchaseStock(memberId, dto);
+
+      expect(result).toEqual({
+        operation_id: 'operation-id-1',
+        meeting_id: 'meeting-id-1',
+        member_id: memberId,
+        stock_subscription_id: 'subscription-id-1',
+        loan_id: 'loan-id-1',
+      });
+
+      expect(purchaseStockUseCaseExecuteSpy).toHaveBeenCalledWith({
+        memberId: memberId,
+        stockId: dto.stock_id,
+        quantity: dto.quantity,
+        cashAmount: dto.cash_amount,
+        loanDetails: {
+          interest_rate: dto.loan_details!.interest_rate,
+          loan_type: dto.loan_details!.loan_type,
+        },
+        meetingId: undefined,
+      });
+    });
+
+    it('should successfully purchase stocks with partial payment and loan', async () => {
+      const dto: PurchaseStockHttpDto = {
+        stock_id: 'stock-id-1',
+        quantity: 2,
+        cash_amount: 100000,
+        loan_details: {
+          interest_rate: 0.02,
+          loan_type: 'accion',
+        },
+        meeting_id: 'meeting-id-1',
+      };
+
+      const responseWithLoan: PurchaseStockResponseDto = {
+        ...mockPurchaseResponse,
+        loanId: 'loan-id-1',
+        meetingId: 'meeting-id-1',
+      };
+
+      purchaseStockUseCaseExecuteSpy.mockResolvedValue(responseWithLoan);
+
+      const result = await controller.purchaseStock(memberId, dto);
+
+      expect(result).toEqual({
+        operation_id: 'operation-id-1',
+        meeting_id: 'meeting-id-1',
+        member_id: memberId,
+        stock_subscription_id: 'subscription-id-1',
+        loan_id: 'loan-id-1',
+      });
+
+      expect(purchaseStockUseCaseExecuteSpy).toHaveBeenCalledWith({
+        memberId: memberId,
+        stockId: dto.stock_id,
+        quantity: dto.quantity,
+        cashAmount: dto.cash_amount,
+        loanDetails: {
+          interest_rate: dto.loan_details!.interest_rate,
+          loan_type: dto.loan_details!.loan_type,
+        },
+        meetingId: dto.meeting_id,
+      });
+    });
+
+    it('should return 404 when member is not found', async () => {
+      const dto: PurchaseStockHttpDto = {
+        stock_id: 'stock-id-1',
+        quantity: 1,
+        cash_amount: 100000,
+      };
+
+      purchaseStockUseCaseExecuteSpy.mockRejectedValue(
+        new MemberNotFoundException(memberId),
+      );
+
+      await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow(
+        HttpException,
+      );
+    });
+
+    it('should return 404 when stock is not found', async () => {
+      const dto: PurchaseStockHttpDto = {
+        stock_id: 'non-existent-stock',
+        quantity: 1,
+        cash_amount: 100000,
+      };
+
+      purchaseStockUseCaseExecuteSpy.mockRejectedValue(
+        new StockNotFoundException('non-existent-stock'),
+      );
+
+      await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow(
+        HttpException,
+      );
+    });
+
+    it('should return 404 when meeting is not found', async () => {
+      const dto: PurchaseStockHttpDto = {
+        stock_id: 'stock-id-1',
+        quantity: 1,
+        cash_amount: 100000,
+        meeting_id: 'non-existent-meeting',
+      };
+
+      purchaseStockUseCaseExecuteSpy.mockRejectedValue(
+        new MeetingNotFoundException('non-existent-meeting'),
+      );
+
+      await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow(
+        HttpException,
+      );
+    });
+
+    it('should return 400 when validation fails', async () => {
+      const dto: PurchaseStockHttpDto = {
+        stock_id: 'stock-id-1',
+        quantity: 0, // Invalid quantity
+        cash_amount: 100000,
+      };
+
+      purchaseStockUseCaseExecuteSpy.mockRejectedValue(
+        new InvalidRequestError('Quantity must be greater than zero'),
+      );
+
+      await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow(
+        HttpException,
+      );
+    });
+
+    it('should return 500 when an unexpected error occurs', async () => {
+      const dto: PurchaseStockHttpDto = {
+        stock_id: 'stock-id-1',
+        quantity: 1,
+        cash_amount: 100000,
+      };
+
+      purchaseStockUseCaseExecuteSpy.mockRejectedValue(
+        new Error('Unexpected error'),
+      );
+
+      await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow(
+        HttpException,
+      );
+    });
+  });
+
+  describe('getPurchases', () => {
+    const memberId = '550e8400-e29b-41d4-a716-446655440000';
+    const meetingId = '750e8400-e29b-41d4-a716-446655440000';
+    const mockPurchases = [
+      {
+        stockSubscriptionId: '880e8400-e29b-41d4-a716-446655440003',
+        stockId: '770e8400-e29b-41d4-a716-446655440002',
+        stockType: 'Acción A',
+        quantity: 2,
+        unitValue: 100000,
+        totalValue: 200000,
+        purchaseDate: new Date('2024-01-15'),
+        meetingId,
+        operationId: '990e8400-e29b-41d4-a716-446655440004',
+        loan: null,
+      },
+      {
+        stockSubscriptionId: 'aa0e8400-e29b-41d4-a716-446655440006',
+        stockId: 'bb0e8400-e29b-41d4-a716-446655440007',
+        stockType: 'Acción B',
+        quantity: 1,
+        unitValue: 150000,
+        totalValue: 150000,
+        purchaseDate: new Date('2024-01-20'),
+        meetingId,
+        operationId: 'cc0e8400-e29b-41d4-a716-446655440008',
+        loan: {
+          loanId: 'dd0e8400-e29b-41d4-a716-446655440009',
+          approvedAmount: 100000,
+          interestRate: 0.02,
+          status: 'active',
+        },
+      },
+    ];
+
+    it('should return purchases successfully', async () => {
+      getMemberPurchasesQueryExecuteSpy.mockResolvedValue(mockPurchases);
+
+      const result = await controller.getPurchases(memberId, {});
+
+      expect(getMemberPurchasesQueryExecuteSpy).toHaveBeenCalledWith(memberId, {
+        meetingId: undefined,
+      });
+      expect(result).toHaveLength(2);
+      expect(result[0]).toMatchObject({
+        stock_subscription_id: mockPurchases[0].stockSubscriptionId,
+        stock_id: mockPurchases[0].stockId,
+        stock_type: mockPurchases[0].stockType,
+        quantity: mockPurchases[0].quantity,
+        unit_value: mockPurchases[0].unitValue,
+        total_value: mockPurchases[0].totalValue,
+        purchase_date: mockPurchases[0].purchaseDate,
+        meeting_id: mockPurchases[0].meetingId,
+        operation_id: mockPurchases[0].operationId,
+        loan: null,
+      });
+      expect(result[1].loan).toMatchObject({
+        loan_id: mockPurchases[1].loan!.loanId,
+        approved_amount: mockPurchases[1].loan!.approvedAmount,
+        interest_rate: mockPurchases[1].loan!.interestRate,
+        status: mockPurchases[1].loan!.status,
+      });
+    });
+
+    it('should filter by meetingId when provided', async () => {
+      getMemberPurchasesQueryExecuteSpy.mockResolvedValue([mockPurchases[0]]);
+
+      const result = await controller.getPurchases(memberId, {
+        meetingId,
+      });
+
+      expect(getMemberPurchasesQueryExecuteSpy).toHaveBeenCalledWith(memberId, {
+        meetingId,
+      });
+      expect(result).toHaveLength(1);
+    });
+
+    it('should throw HttpException when member not found', async () => {
+      getMemberPurchasesQueryExecuteSpy.mockRejectedValue(
+        new MemberNotFoundException(memberId),
+      );
+
+      await expect(controller.getPurchases(memberId, {})).rejects.toThrow(
+        HttpException,
+      );
+
+      const error = (await controller
+        .getPurchases(memberId, {})
+        .catch((e: unknown) => e)) as HttpException;
+      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it('should throw HttpException with INTERNAL_SERVER_ERROR for unknown errors', async () => {
+      getMemberPurchasesQueryExecuteSpy.mockRejectedValue('String error');
+
+      await expect(controller.getPurchases(memberId, {})).rejects.toThrow(
+        HttpException,
+      );
+
+      const error = (await controller
+        .getPurchases(memberId, {})
+        .catch((e: unknown) => e)) as HttpException;
+      expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
     });
   });
 });
