@@ -27,7 +27,7 @@ import { MandatoryContributionsV2Module } from './infrastructure/nestjs/http/mod
     }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      url: process.env.DATABASE_URL,
+      url: process.env.DATABASE_TEST_URL || process.env.DATABASE_URL,
       autoLoadEntities: true,
       synchronize: false, // Recommended to be false in production
     }),
