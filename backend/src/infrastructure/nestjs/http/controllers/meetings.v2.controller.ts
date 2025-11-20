@@ -22,6 +22,10 @@ import {
 import { OpenMeetingUseCase } from '@application/use-cases/meetings/open-meeting.use-case';
 import { CloseMeetingUseCase } from '@application/use-cases/meetings/close-meeting.use-case';
 import { GetMeetingMonthlyPaymentsQueryHandler } from '@application/queries/meetings/get-meeting-monthly-payments.query-handler';
+import { GetMeetingPurchasesQueryHandler } from '@application/queries/meetings/get-meeting-purchases.query-handler';
+import { GetMeetingStockTransfersQueryHandler } from '@application/queries/meetings/get-meeting-stock-transfers.query-handler';
+import { GetMeetingStockExchangesQueryHandler } from '@application/queries/meetings/get-meeting-stock-exchanges.query-handler';
+import { GetMeetingStockLoanPaymentsQueryHandler } from '@application/queries/meetings/get-meeting-stock-loan-payments.query-handler';
 import { GetMeetingsQueryHandler } from '@application/queries/meetings/get-meetings.query-handler';
 import { GetMeetingQueryHandler } from '@application/queries/meetings/get-meeting.query-handler';
 import { GetActiveMeetingQueryHandler } from '@application/queries/meetings/get-active-meeting.query-handler';
@@ -63,6 +67,10 @@ export class MeetingsV2Controller {
     private readonly openMeetingUseCase: OpenMeetingUseCase,
     private readonly closeMeetingUseCase: CloseMeetingUseCase,
     private readonly getMeetingMonthlyPaymentsQuery: GetMeetingMonthlyPaymentsQueryHandler,
+    private readonly getMeetingPurchasesQuery: GetMeetingPurchasesQueryHandler,
+    private readonly getMeetingStockTransfersQuery: GetMeetingStockTransfersQueryHandler,
+    private readonly getMeetingStockExchangesQuery: GetMeetingStockExchangesQueryHandler,
+    private readonly getMeetingStockLoanPaymentsQuery: GetMeetingStockLoanPaymentsQueryHandler,
     private readonly getMeetingsQuery: GetMeetingsQueryHandler,
     private readonly getMeetingQuery: GetMeetingQueryHandler,
     private readonly getActiveMeetingQuery: GetActiveMeetingQueryHandler,
@@ -362,6 +370,162 @@ export class MeetingsV2Controller {
   ): Promise<OperationResponseHttpDto[]> {
     try {
       const payments = await this.getMeetingMonthlyPaymentsQuery.execute(id);
+      return payments.map((p) => this.mapOperationToHttp(p));
+    } catch (error: unknown) {
+      if (error instanceof MeetingNotFoundException) {
+        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+      }
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get(':id/purchases')
+  @ApiOperation({
+    summary: 'Get stock purchases for a meeting',
+    description:
+      'Returns all stock purchase operations for a specific meeting.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The unique identifier of the meeting',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Stock purchases retrieved successfully',
+    type: [OperationResponseHttpDto],
+  })
+  @ApiNotFoundResponse({
+    description: 'Meeting not found',
+  })
+  async getPurchases(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<OperationResponseHttpDto[]> {
+    try {
+      const purchases = await this.getMeetingPurchasesQuery.execute(id);
+      return purchases.map((p) => this.mapOperationToHttp(p));
+    } catch (error: unknown) {
+      if (error instanceof MeetingNotFoundException) {
+        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+      }
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get(':id/transfers')
+  @ApiOperation({
+    summary: 'Get stock transfers for a meeting',
+    description:
+      'Returns all stock transfer operations for a specific meeting.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The unique identifier of the meeting',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Stock transfers retrieved successfully',
+    type: [OperationResponseHttpDto],
+  })
+  @ApiNotFoundResponse({
+    description: 'Meeting not found',
+  })
+  async getTransfers(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<OperationResponseHttpDto[]> {
+    try {
+      const transfers = await this.getMeetingStockTransfersQuery.execute(id);
+      return transfers.map((t) => this.mapOperationToHttp(t));
+    } catch (error: unknown) {
+      if (error instanceof MeetingNotFoundException) {
+        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+      }
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get(':id/exchanges')
+  @ApiOperation({
+    summary: 'Get stock exchanges for a meeting',
+    description:
+      'Returns all stock exchange operations for a specific meeting.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The unique identifier of the meeting',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Stock exchanges retrieved successfully',
+    type: [OperationResponseHttpDto],
+  })
+  @ApiNotFoundResponse({
+    description: 'Meeting not found',
+  })
+  async getExchanges(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<OperationResponseHttpDto[]> {
+    try {
+      const exchanges = await this.getMeetingStockExchangesQuery.execute(id);
+      return exchanges.map((e) => this.mapOperationToHttp(e));
+    } catch (error: unknown) {
+      if (error instanceof MeetingNotFoundException) {
+        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+      }
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get(':id/stock-loan-payments')
+  @ApiOperation({
+    summary: 'Get stock loan payments for a meeting',
+    description:
+      'Returns all stock loan payment operations for a specific meeting.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The unique identifier of the meeting',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Stock loan payments retrieved successfully',
+    type: [OperationResponseHttpDto],
+  })
+  @ApiNotFoundResponse({
+    description: 'Meeting not found',
+  })
+  async getStockLoanPayments(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<OperationResponseHttpDto[]> {
+    try {
+      const payments = await this.getMeetingStockLoanPaymentsQuery.execute(id);
       return payments.map((p) => this.mapOperationToHttp(p));
     } catch (error: unknown) {
       if (error instanceof MeetingNotFoundException) {
