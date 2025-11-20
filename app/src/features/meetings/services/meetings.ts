@@ -131,6 +131,7 @@ class MeetingsService {
     
     if (apiVersionStore.isV2) {
       // V2: usar endpoint que retorna reunión activa con summary incluido
+      // El sistema de mapeo automático convertirá /meetings/active a /v2/meetings/active
       const response = await api.get<{
         id: string;
         date: Date;
@@ -149,7 +150,7 @@ class MeetingsService {
           participantsCount?: number;
           duration?: string;
         };
-      }>('/v2/meetings/active');
+      }>('/meetings/active');
       
       return {
         totalCollected: response.summary?.totalCollected,
@@ -192,15 +193,15 @@ class MeetingsService {
       try {
         const activeMeeting = await this.findActive();
         if (activeMeeting && activeMeeting.id === meetingId) {
-          // Es la reunión activa, usar endpoint específico
-          url = '/v2/meetings/active';
+          // Es la reunión activa, usar endpoint específico (el mapeo automático lo convertirá)
+          url = '/meetings/active';
         } else {
-          // No es la reunión activa, usar endpoint con ID
-          url = `/v2/meetings/${meetingId}?includeSummary=true`;
+          // No es la reunión activa, usar endpoint con ID (el mapeo automático lo convertirá)
+          url = `/meetings/${meetingId}?includeSummary=true`;
         }
       } catch {
         // Si falla obtener la reunión activa, usar el endpoint con ID
-        url = `/v2/meetings/${meetingId}?includeSummary=true`;
+        url = `/meetings/${meetingId}?includeSummary=true`;
       }
       
       const response = await api.get<{
@@ -256,15 +257,15 @@ class MeetingsService {
       try {
         const activeMeeting = await this.findActive();
         if (activeMeeting && activeMeeting.id === meetingId) {
-          // Es la reunión activa, usar endpoint específico
-          url = '/v2/meetings/active';
+          // Es la reunión activa, usar endpoint específico (el mapeo automático lo convertirá)
+          url = '/meetings/active';
         } else {
-          // No es la reunión activa, usar endpoint con ID
-          url = `/v2/meetings/${meetingId}?includeSummary=true`;
+          // No es la reunión activa, usar endpoint con ID (el mapeo automático lo convertirá)
+          url = `/meetings/${meetingId}?includeSummary=true`;
         }
       } catch {
         // Si falla obtener la reunión activa, usar el endpoint con ID
-        url = `/v2/meetings/${meetingId}?includeSummary=true`;
+        url = `/meetings/${meetingId}?includeSummary=true`;
       }
       
       const response = await api.get<{
