@@ -39,7 +39,7 @@ describe('Disbursement Plan (e2e)', () => {
     await entityManager.query('DELETE FROM "members"');
   });
 
-  describe('GET /v2/meetings/:id/disbursement-plan/preview', () => {
+  describe('GET /v2/meetings/:id/disbursement-plan', () => {
     it('should return empty plan when no pending payments', async () => {
       // Create a meeting
       const meetingRes = await request(app.getHttpServer())
@@ -50,7 +50,7 @@ describe('Disbursement Plan (e2e)', () => {
 
       // Get preview
       const response = await request(app.getHttpServer())
-        .get(`/v2/meetings/${meetingId}/disbursement-plan/preview`)
+        .get(`/v2/meetings/${meetingId}/disbursement-plan`)
         .expect(200);
 
       expect(response.body).toMatchObject({
@@ -92,7 +92,7 @@ describe('Disbursement Plan (e2e)', () => {
 
       // Get preview
       const response = await request(app.getHttpServer())
-        .get(`/v2/meetings/${meetingId}/disbursement-plan/preview`)
+        .get(`/v2/meetings/${meetingId}/disbursement-plan`)
         .expect(200);
 
       expect((response.body as { plan: unknown[] }).plan).toHaveLength(1);
@@ -111,12 +111,12 @@ describe('Disbursement Plan (e2e)', () => {
 
     it('should return 404 when meeting not found', async () => {
       await request(app.getHttpServer())
-        .get('/v2/meetings/non-existent-id/disbursement-plan/preview')
+        .get('/v2/meetings/non-existent-id/disbursement-plan')
         .expect(404);
     });
   });
 
-  describe('POST /v2/meetings/:id/disbursement-plan/execute', () => {
+  describe('POST /v2/meetings/:id/disbursement-plan', () => {
     it('should return 400 when meeting is closed', async () => {
       // Create and close meeting
       const meetingRes = await request(app.getHttpServer())
@@ -132,7 +132,7 @@ describe('Disbursement Plan (e2e)', () => {
 
       // Try to execute plan
       await request(app.getHttpServer())
-        .post(`/v2/meetings/${meetingId}/disbursement-plan/execute`)
+        .post(`/v2/meetings/${meetingId}/disbursement-plan`)
         .send({
           plan: [],
         })
@@ -180,7 +180,7 @@ describe('Disbursement Plan (e2e)', () => {
 
       // Try to execute plan (no cash available)
       await request(app.getHttpServer())
-        .post(`/v2/meetings/${meetingId}/disbursement-plan/execute`)
+        .post(`/v2/meetings/${meetingId}/disbursement-plan`)
         .send({
           plan: [
             {
@@ -203,13 +203,13 @@ describe('Disbursement Plan (e2e)', () => {
 
       // Missing plan
       await request(app.getHttpServer())
-        .post(`/v2/meetings/${meetingId}/disbursement-plan/execute`)
+        .post(`/v2/meetings/${meetingId}/disbursement-plan`)
         .send({})
         .expect(400);
 
       // Invalid plan item
       await request(app.getHttpServer())
-        .post(`/v2/meetings/${meetingId}/disbursement-plan/execute`)
+        .post(`/v2/meetings/${meetingId}/disbursement-plan`)
         .send({
           plan: [
             {

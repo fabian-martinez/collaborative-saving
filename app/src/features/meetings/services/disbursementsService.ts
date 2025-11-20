@@ -1,10 +1,11 @@
 import { api } from '@/services/api'
+import { normalizeToSnakeCase } from '@/shared/utils'
 import type { DisbursementPlan } from '../types'
 
 export default {
   // Obtiene el plan de desembolso pendiente y el efectivo disponible
   async getDisbursementPlanPreview(meetingId: string) {
-    return api.get(`/meetings/${meetingId}/disbursement-plan/preview`)
+    return api.get(`/meetings/${meetingId}/disbursement-plan`)
   },
   // Ejecuta el plan de desembolso
   async executeDisbursementPlan(meetingId: string, plan: DisbursementPlan[]) {
@@ -17,6 +18,8 @@ export default {
       pendingMemberPaymentId: item.pendingMemberPaymentId,
       loanId: item.loanId
     })))
-    return api.post(`/meetings/${meetingId}/disbursement-plan/execute`, { plan })
+    // Convertir el plan de camelCase a snake_case antes de enviarlo al backend
+    const planSnakeCase = normalizeToSnakeCase(plan)
+    return api.post(`/meetings/${meetingId}/disbursement-plan`, { plan: planSnakeCase })
   },
 } 
