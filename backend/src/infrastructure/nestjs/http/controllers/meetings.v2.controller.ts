@@ -37,6 +37,24 @@ import { RevaluationResponseHttpDto } from '../dto/revaluation-response-http.dto
 import { RevaluationResultDto } from '@application/dto/meetings/revaluation-result.dto';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { IncludeSummaryQueryDto } from '../dto/include-summary-query.dto';
+import { GetDisbursementPlanPreviewQueryHandler } from '@application/queries/meetings/get-disbursement-plan-preview.query-handler';
+import { ExecuteDisbursementPlanUseCase } from '@application/use-cases/meetings/execute-disbursement-plan.use-case';
+import { DisbursementPlanPreviewDto } from '@application/dto/meetings/disbursement-plan-preview.dto';
+import { ExecuteDisbursementPlanDto } from '@application/dto/meetings/execute-disbursement-plan.dto';
+import { ExecuteDisbursementPlanResponseDto } from '@application/dto/meetings/execute-disbursement-plan-response.dto';
+import {
+  DisbursementPlanItemDto,
+  DisbursementType,
+} from '@application/dto/meetings/disbursement-plan-item.dto';
+import { DisbursementPlanPreviewResponseHttpDto } from '../dto/meetings/disbursement-plan-preview-http.dto';
+import { ExecuteDisbursementPlanHttpDto } from '../dto/meetings/execute-disbursement-plan-http.dto';
+import { ExecuteDisbursementPlanResponseHttpDto } from '../dto/meetings/execute-disbursement-plan-response-http.dto';
+import {
+  DisbursementPlanItemHttpDto,
+  DisbursementTypeHttp,
+} from '../dto/meetings/disbursement-plan-item-http.dto';
+import { BusinessRuleError } from '@domain/errors/business-rule.error';
+import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 
 @ApiTags('Meetings V2')
 @Controller('v2/meetings')
@@ -50,6 +68,8 @@ export class MeetingsV2Controller {
     private readonly getActiveMeetingQuery: GetActiveMeetingQueryHandler,
     private readonly getRevaluationQuery: GetRevaluationQueryHandler,
     private readonly recordRevaluationUseCase: RecordRevaluationUseCase,
+    private readonly getDisbursementPlanPreviewQuery: GetDisbursementPlanPreviewQueryHandler,
+    private readonly executeDisbursementPlanUseCase: ExecuteDisbursementPlanUseCase,
   ) {}
 
   @Post()
@@ -526,6 +546,236 @@ export class MeetingsV2Controller {
       status: result.status,
       executed_at: result.executedAt,
       operation_id: result.operationId,
+    };
+  }
+
+  @Get(':id/disbursement-plan/preview')
+  @ApiOperation({
+    summary: 'Get disbursement plan preview',
+    description:
+      'Returns a preview of pending disbursements for a meeting, including available cash and total to disburse. Does not validate if available cash >= total requested.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The unique identifier of the meeting',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Disbursement plan preview retrieved successfully',
+    type: DisbursementPlanPreviewResponseHttpDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Meeting not found',
+  })
+  async getDisbursementPlanPreview(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<DisbursementPlanPreviewResponseHttpDto> {
+    try {
+      const result = await this.getDisbursementPlanPreviewQuery.execute(id);
+      return this.mapDisbursementPlanPreviewToHttp(result);
+    } catch (error: unknown) {
+      if (error instanceof MeetingNotFoundException) {
+        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+      }
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post(':id/disbursement-plan/execute')
+  @ApiOperation({
+    summary: 'Execute disbursement plan',
+    description:
+      'Executes a disbursement plan for a meeting. Validates that available cash >= total requested before executing. All disbursements are executed atomically in a single transaction.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The unique identifier of the meeting',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiBody({
+    type: ExecuteDisbursementPlanHttpDto,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Disbursement plan executed successfully',
+    type: ExecuteDisbursementPlanResponseHttpDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Meeting not found',
+  })
+  @ApiBadRequestResponse({
+    description:
+      'Bad request - Invalid disbursement plan, insufficient cash, or invalid meeting state',
+  })
+  async executeDisbursementPlan(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ExecuteDisbursementPlanHttpDto,
+  ): Promise<ExecuteDisbursementPlanResponseHttpDto> {
+    try {
+      const executeDto: ExecuteDisbursementPlanDto = {
+        meetingId: id,
+        plan: dto.plan.map((item) =>
+          this.mapDisbursementPlanItemFromHttp(item),
+        ),
+      };
+      const result =
+        await this.executeDisbursementPlanUseCase.execute(executeDto);
+      return this.mapExecuteDisbursementPlanResponseToHttp(result);
+    } catch (error: unknown) {
+      if (error instanceof MeetingNotFoundException) {
+        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+      }
+      if (
+        error instanceof BusinessRuleError ||
+        error instanceof InvalidRequestError
+      ) {
+        throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      }
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  private mapDisbursementPlanPreviewToHttp(
+    dto: DisbursementPlanPreviewDto,
+  ): DisbursementPlanPreviewResponseHttpDto {
+    return {
+      plan: dto.plan.map((item) => this.mapDisbursementPlanItemToHttp(item)),
+      available_cash: dto.availableCash,
+      total_to_disburse: dto.totalToDisburse,
+    };
+  }
+
+  private mapDisbursementPlanItemToHttp(
+    item: DisbursementPlanItemDto,
+  ): DisbursementPlanItemHttpDto {
+    const result: DisbursementPlanItemHttpDto = {
+      member_id: item.memberId,
+      type: this.mapDisbursementTypeToHttp(item.type),
+      amount: item.amount,
+    };
+
+    if (item.status) result.status = item.status;
+    if (item.notes) result.notes = item.notes;
+    if (item.loanId) result.loan_id = item.loanId;
+    if (item.stockSubscriptionId)
+      result.stock_subscription_id = item.stockSubscriptionId;
+    if (item.pendingMemberPaymentId)
+      result.pending_member_payment_id = item.pendingMemberPaymentId;
+    if (item.disbursementStockRequest) {
+      result.disbursement_stock_request = {
+        stock_id: item.disbursementStockRequest.stockId,
+        stock_withdrawal_quantity:
+          item.disbursementStockRequest.stockWithdrawalQuantity,
+      };
+    }
+    if (item.newLoanRequest) {
+      result.new_loan_request = {
+        member_id: item.newLoanRequest.memberId,
+        amount: item.newLoanRequest.amount,
+        loan_type: item.newLoanRequest.loanType,
+        approved_amount: item.newLoanRequest.approvedAmount,
+        monthly_payment_amount: item.newLoanRequest.monthlyPaymentAmount,
+        interest_rate: item.newLoanRequest.interestRate,
+        notes: item.newLoanRequest.notes,
+      };
+    }
+
+    return result;
+  }
+
+  private mapDisbursementPlanItemFromHttp(
+    item: DisbursementPlanItemHttpDto,
+  ): DisbursementPlanItemDto {
+    const result: DisbursementPlanItemDto = {
+      memberId: item.member_id,
+      type: this.mapDisbursementTypeFromHttp(item.type),
+      amount: item.amount,
+    };
+
+    if (item.status) result.status = item.status;
+    if (item.notes) result.notes = item.notes;
+    if (item.loan_id) result.loanId = item.loan_id;
+    if (item.stock_subscription_id)
+      result.stockSubscriptionId = item.stock_subscription_id;
+    if (item.pending_member_payment_id)
+      result.pendingMemberPaymentId = item.pending_member_payment_id;
+    if (item.disbursement_stock_request) {
+      result.disbursementStockRequest = {
+        stockId: item.disbursement_stock_request.stock_id,
+        stockWithdrawalQuantity:
+          item.disbursement_stock_request.stock_withdrawal_quantity,
+      };
+    }
+    if (item.new_loan_request) {
+      result.newLoanRequest = {
+        memberId: item.new_loan_request.member_id,
+        amount: item.new_loan_request.amount,
+        loanType: item.new_loan_request.loan_type,
+        approvedAmount: item.new_loan_request.approved_amount,
+        monthlyPaymentAmount: item.new_loan_request.monthly_payment_amount,
+        interestRate: item.new_loan_request.interest_rate,
+        notes: item.new_loan_request.notes,
+      };
+    }
+
+    return result;
+  }
+
+  private mapDisbursementTypeToHttp(
+    type: DisbursementType,
+  ): DisbursementTypeHttp {
+    switch (type) {
+      case DisbursementType.DIVIDEND:
+        return DisbursementTypeHttp.DIVIDEND;
+      case DisbursementType.WITHDRAWAL:
+        return DisbursementTypeHttp.WITHDRAWAL;
+      case DisbursementType.LOAN:
+        return DisbursementTypeHttp.LOAN;
+      case DisbursementType.OTHER:
+        return DisbursementTypeHttp.OTHER;
+      default:
+        return DisbursementTypeHttp.OTHER;
+    }
+  }
+
+  private mapDisbursementTypeFromHttp(
+    type: DisbursementTypeHttp,
+  ): DisbursementType {
+    switch (type) {
+      case DisbursementTypeHttp.DIVIDEND:
+        return DisbursementType.DIVIDEND;
+      case DisbursementTypeHttp.WITHDRAWAL:
+        return DisbursementType.WITHDRAWAL;
+      case DisbursementTypeHttp.LOAN:
+        return DisbursementType.LOAN;
+      case DisbursementTypeHttp.OTHER:
+        return DisbursementType.OTHER;
+      default:
+        return DisbursementType.OTHER;
+    }
+  }
+
+  private mapExecuteDisbursementPlanResponseToHttp(
+    dto: ExecuteDisbursementPlanResponseDto,
+  ): ExecuteDisbursementPlanResponseHttpDto {
+    return {
+      success: dto.success,
+      processed_items: dto.processedItems,
+      total_disbursed: dto.totalDisbursed,
+      total_requested: dto.totalRequested,
     };
   }
 }
