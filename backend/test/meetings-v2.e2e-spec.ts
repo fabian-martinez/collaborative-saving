@@ -96,12 +96,22 @@ interface LoanResponse {
   outstanding_balance: number;
 }
 
+interface OperationResponseHttpDto {
+  id: string;
+  member_id: string;
+  meeting_id: string;
+  type: string;
+  date: string;
+  description: string;
+}
+
 describe('Meetings V2 E2E Tests', () => {
   let app: INestApplication<App>;
   let entityManager: EntityManager;
 
   // Test data IDs
   let member1Id: string;
+  let member2Id: string;
   let stock1Id: string; // Acción Grande
   let stock2Id: string; // Acción Mediana
   let meetingId: string;
@@ -155,7 +165,7 @@ describe('Meetings V2 E2E Tests', () => {
     const member1Body = member1Res.body as MemberResponse;
     member1Id = member1Body.id;
 
-    await request(app.getHttpServer())
+    const member2Res = await request(app.getHttpServer())
       .post('/v2/members')
       .send({
         name: 'Socio 2',
@@ -163,6 +173,8 @@ describe('Meetings V2 E2E Tests', () => {
         identification_number: '987654321',
       })
       .expect(201);
+    const member2Body = member2Res.body as MemberResponse;
+    member2Id = member2Body.id;
 
     // Create stocks
     const stock1Res = await request(app.getHttpServer())
@@ -781,6 +793,216 @@ describe('Meetings V2 E2E Tests', () => {
       // The test passes if it either succeeds (if validation is not enforced)
       // or fails with 400 (if validation is enforced)
       expect([200, 400]).toContain(closeRes.status);
+    });
+  });
+
+  describe('Meeting Operations Query Endpoints', () => {
+    beforeEach(async () => {
+      // Create meeting for operations
+      const meetingRes = await request(app.getHttpServer())
+        .post('/v2/meetings')
+        .send({
+          date: new Date().toISOString(),
+          notes: 'Reunión para consulta de operaciones',
+        })
+        .expect(201);
+      const meetingBody = meetingRes.body as MeetingResponse;
+      meetingId = meetingBody.id;
+    });
+
+    it('should get purchases for a meeting', async () => {
+      // Create a purchase operation
+      await request(app.getHttpServer())
+        .post(`/v2/members/${member1Id}/purchase`)
+        .send({
+          stock_id: stock1Id,
+          quantity: 1,
+          cash_amount: 10000,
+          meeting_id: meetingId,
+        })
+        .expect(201);
+
+      // Query purchases endpoint
+      const purchasesRes = await request(app.getHttpServer())
+        .get(`/v2/meetings/${meetingId}/purchases`)
+        .expect(200);
+      const purchasesBody = purchasesRes.body as OperationResponseHttpDto[];
+      expect(Array.isArray(purchasesBody)).toBe(true);
+      expect(purchasesBody.length).toBeGreaterThan(0);
+      expect(purchasesBody[0].type).toBe('STOCK_PURCHASE');
+      expect(purchasesBody[0].meeting_id).toBe(meetingId);
+    });
+
+    it('should get transfers for a meeting', async () => {
+      // First create a purchase to have stocks to transfer
+      const purchaseRes = await request(app.getHttpServer())
+        .post(`/v2/members/${member1Id}/purchase`)
+        .send({
+          stock_id: stock1Id,
+          quantity: 2,
+          cash_amount: 20000,
+          meeting_id: meetingId,
+        })
+        .expect(201);
+      const purchaseBody = purchaseRes.body as PurchaseStockResponse;
+
+      // Get subscriptions to find the one to transfer
+      const subscriptionsRes = await request(app.getHttpServer())
+        .get(`/v2/members/${member1Id}/purchases?meetingId=${meetingId}`)
+        .expect(200);
+      const subscriptionsBody = subscriptionsRes.body as PurchaseResponse[];
+      const subscription = subscriptionsBody.find(
+        (s) => s.stock_subscription_id === purchaseBody.stock_subscription_id,
+      );
+
+      if (subscription) {
+        // Create a transfer operation to member2
+        await request(app.getHttpServer())
+          .post(`/v2/members/${member1Id}/purchase/transfer`)
+          .send({
+            meeting_id: meetingId,
+            from_subscription_id: subscription.stock_subscription_id,
+            quantity: 0.5,
+            to_member_id: member2Id,
+          })
+          .expect(201);
+
+        // Query transfers endpoint
+        const transfersRes = await request(app.getHttpServer())
+          .get(`/v2/meetings/${meetingId}/transfers`)
+          .expect(200);
+        const transfersBody = transfersRes.body as OperationResponseHttpDto[];
+        expect(Array.isArray(transfersBody)).toBe(true);
+        expect(transfersBody.length).toBeGreaterThan(0);
+        expect(transfersBody[0].type).toBe('STOCK_TRANSFER');
+        expect(transfersBody[0].meeting_id).toBe(meetingId);
+      }
+    });
+
+    it('should get exchanges for a meeting', async () => {
+      // First create purchases for exchange
+      await request(app.getHttpServer())
+        .post(`/v2/members/${member1Id}/purchase`)
+        .send({
+          stock_id: stock1Id,
+          quantity: 2,
+          cash_amount: 20000,
+          meeting_id: meetingId,
+        })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .post(`/v2/members/${member1Id}/purchase`)
+        .send({
+          stock_id: stock2Id,
+          quantity: 4,
+          cash_amount: 20000,
+          meeting_id: meetingId,
+        })
+        .expect(201);
+
+      // Get subscriptions
+      const subscriptionsRes = await request(app.getHttpServer())
+        .get(`/v2/members/${member1Id}/purchases?meetingId=${meetingId}`)
+        .expect(200);
+      const subscriptionsBody = subscriptionsRes.body as PurchaseResponse[];
+      const stock2Subscription = subscriptionsBody.find(
+        (s) => s.stock_id === stock2Id,
+      );
+
+      if (stock2Subscription) {
+        // Create an exchange operation
+        await request(app.getHttpServer())
+          .post(`/v2/members/${member1Id}/purchase/exchange`)
+          .send({
+            meeting_id: meetingId,
+            from_subscription_id: stock2Subscription.stock_subscription_id,
+            from_quantity: 1,
+            to_stock_id: stock1Id,
+            to_quantity: 0.5,
+            difference_handling: 'cash',
+          })
+          .expect(201);
+
+        // Query exchanges endpoint
+        const exchangesRes = await request(app.getHttpServer())
+          .get(`/v2/meetings/${meetingId}/exchanges`)
+          .expect(200);
+        const exchangesBody = exchangesRes.body as OperationResponseHttpDto[];
+        expect(Array.isArray(exchangesBody)).toBe(true);
+        expect(exchangesBody.length).toBeGreaterThan(0);
+        expect(exchangesBody[0].type).toBe('STOCK_MODIFICATION');
+        expect(exchangesBody[0].meeting_id).toBe(meetingId);
+      }
+    });
+
+    it('should get stock loan payments for a meeting', async () => {
+      // Create a purchase with loan
+      const purchaseRes = await request(app.getHttpServer())
+        .post(`/v2/members/${member1Id}/purchase`)
+        .send({
+          stock_id: stock1Id,
+          quantity: 2,
+          cash_amount: 10000,
+          loan_details: {
+            interest_rate: 0.02,
+            loan_type: 'accion',
+          },
+          meeting_id: meetingId,
+        })
+        .expect(201);
+      const purchaseBody = purchaseRes.body as PurchaseStockResponse;
+      const subscriptionIdForPayment = purchaseBody.stock_subscription_id;
+      const loanIdForPayment = purchaseBody.loan_id!;
+
+      // Create a stock loan payment
+      await request(app.getHttpServer())
+        .post(`/v2/members/${member1Id}/purchase/loan-payment`)
+        .send({
+          meeting_id: meetingId,
+          subscription_id: subscriptionIdForPayment,
+          quantity: 0.5,
+          loan_id: loanIdForPayment,
+          notes: 'Pago parcial con acciones',
+        })
+        .expect(201);
+
+      // Query stock loan payments endpoint
+      const loanPaymentsRes = await request(app.getHttpServer())
+        .get(`/v2/meetings/${meetingId}/stock-loan-payments`)
+        .expect(200);
+      const loanPaymentsBody =
+        loanPaymentsRes.body as OperationResponseHttpDto[];
+      expect(Array.isArray(loanPaymentsBody)).toBe(true);
+      expect(loanPaymentsBody.length).toBeGreaterThan(0);
+      expect(loanPaymentsBody[0].type).toBe('STOCK_LOAN_PAYMENT');
+      expect(loanPaymentsBody[0].meeting_id).toBe(meetingId);
+    });
+
+    it('should return empty array when no operations exist', async () => {
+      // Query purchases endpoint for meeting with no purchases
+      const purchasesRes = await request(app.getHttpServer())
+        .get(`/v2/meetings/${meetingId}/purchases`)
+        .expect(200);
+      const purchasesBody = purchasesRes.body as OperationResponseHttpDto[];
+      expect(Array.isArray(purchasesBody)).toBe(true);
+      expect(purchasesBody.length).toBe(0);
+    });
+
+    it('should return 404 for non-existent meeting', async () => {
+      const nonExistentId = '00000000-0000-0000-0000-000000000000';
+      await request(app.getHttpServer())
+        .get(`/v2/meetings/${nonExistentId}/purchases`)
+        .expect(404);
+      await request(app.getHttpServer())
+        .get(`/v2/meetings/${nonExistentId}/transfers`)
+        .expect(404);
+      await request(app.getHttpServer())
+        .get(`/v2/meetings/${nonExistentId}/exchanges`)
+        .expect(404);
+      await request(app.getHttpServer())
+        .get(`/v2/meetings/${nonExistentId}/stock-loan-payments`)
+        .expect(404);
     });
   });
 });

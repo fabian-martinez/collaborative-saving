@@ -15,6 +15,10 @@ import { OpenMeetingUseCase } from '@application/use-cases/meetings/open-meeting
 import { CloseMeetingUseCase } from '@application/use-cases/meetings/close-meeting.use-case';
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
 import { GetMeetingMonthlyPaymentsQueryHandler } from '@application/queries/meetings/get-meeting-monthly-payments.query-handler';
+import { GetMeetingPurchasesQueryHandler } from '@application/queries/meetings/get-meeting-purchases.query-handler';
+import { GetMeetingStockTransfersQueryHandler } from '@application/queries/meetings/get-meeting-stock-transfers.query-handler';
+import { GetMeetingStockExchangesQueryHandler } from '@application/queries/meetings/get-meeting-stock-exchanges.query-handler';
+import { GetMeetingStockLoanPaymentsQueryHandler } from '@application/queries/meetings/get-meeting-stock-loan-payments.query-handler';
 import { GetMeetingsQueryHandler } from '@application/queries/meetings/get-meetings.query-handler';
 import { GetMeetingQueryHandler } from '@application/queries/meetings/get-meeting.query-handler';
 import { GetActiveMeetingQueryHandler } from '@application/queries/meetings/get-active-meeting.query-handler';
@@ -196,6 +200,39 @@ const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
         operationRepo: OperationRepository,
       ) =>
         new GetMeetingMonthlyPaymentsQueryHandler(meetingRepo, operationRepo),
+      inject: [MEETING_REPOSITORY, OPERATION_REPOSITORY],
+    },
+    {
+      provide: GetMeetingPurchasesQueryHandler,
+      useFactory: (
+        meetingRepo: MeetingRepository,
+        operationRepo: OperationRepository,
+      ) => new GetMeetingPurchasesQueryHandler(meetingRepo, operationRepo),
+      inject: [MEETING_REPOSITORY, OPERATION_REPOSITORY],
+    },
+    {
+      provide: GetMeetingStockTransfersQueryHandler,
+      useFactory: (
+        meetingRepo: MeetingRepository,
+        operationRepo: OperationRepository,
+      ) => new GetMeetingStockTransfersQueryHandler(meetingRepo, operationRepo),
+      inject: [MEETING_REPOSITORY, OPERATION_REPOSITORY],
+    },
+    {
+      provide: GetMeetingStockExchangesQueryHandler,
+      useFactory: (
+        meetingRepo: MeetingRepository,
+        operationRepo: OperationRepository,
+      ) => new GetMeetingStockExchangesQueryHandler(meetingRepo, operationRepo),
+      inject: [MEETING_REPOSITORY, OPERATION_REPOSITORY],
+    },
+    {
+      provide: GetMeetingStockLoanPaymentsQueryHandler,
+      useFactory: (
+        meetingRepo: MeetingRepository,
+        operationRepo: OperationRepository,
+      ) =>
+        new GetMeetingStockLoanPaymentsQueryHandler(meetingRepo, operationRepo),
       inject: [MEETING_REPOSITORY, OPERATION_REPOSITORY],
     },
     {
