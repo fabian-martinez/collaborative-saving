@@ -549,7 +549,7 @@ export class MeetingsV2Controller {
     };
   }
 
-  @Get(':id/disbursement-plan/preview')
+  @Get(':id/disbursement-plan')
   @ApiOperation({
     summary: 'Get disbursement plan preview',
     description:
@@ -588,7 +588,7 @@ export class MeetingsV2Controller {
     }
   }
 
-  @Post(':id/disbursement-plan/execute')
+  @Post(':id/disbursement-plan')
   @ApiOperation({
     summary: 'Execute disbursement plan',
     description:

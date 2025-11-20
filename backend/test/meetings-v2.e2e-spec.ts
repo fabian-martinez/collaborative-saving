@@ -357,7 +357,7 @@ describe('Meetings V2 E2E Tests', () => {
 
       // 11. Get disbursement plan preview
       const disbursementPreviewRes = await request(app.getHttpServer())
-        .get(`/v2/meetings/${meetingId}/disbursement-plan/preview`)
+        .get(`/v2/meetings/${meetingId}/disbursement-plan`)
         .expect(200);
       const disbursementPreviewBody =
         disbursementPreviewRes.body as DisbursementPlanPreviewResponse;
@@ -371,7 +371,7 @@ describe('Meetings V2 E2E Tests', () => {
         disbursementPreviewBody.plan.length > 0
       ) {
         const executePlanRes = await request(app.getHttpServer())
-          .post(`/v2/meetings/${meetingId}/disbursement-plan/execute`)
+          .post(`/v2/meetings/${meetingId}/disbursement-plan`)
           .send({
             plan: disbursementPreviewBody.plan.map((item) => ({
               member_id: item.member_id,
@@ -733,7 +733,7 @@ describe('Meetings V2 E2E Tests', () => {
 
       // Try to execute plan (should fail due to insufficient cash)
       await request(app.getHttpServer())
-        .post(`/v2/meetings/${meetingId}/disbursement-plan/execute`)
+        .post(`/v2/meetings/${meetingId}/disbursement-plan`)
         .send({
           plan: [
             {

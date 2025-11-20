@@ -71,6 +71,27 @@ export const ENDPOINT_MAPPINGS_V2: Record<string, {
     method: 'POST',
     paramMapping: { id: 'id' },
   },
+  // V1: PATCH /meetings/:id/close
+  // V2: PATCH /v2/meetings/:id/close
+  'meetings/:id/close': {
+    v2: 'v2/meetings/:id/close',
+    method: 'PATCH',
+    paramMapping: { id: 'id' },
+  },
+  // V1: GET /meetings/:id/disbursement-plan/preview
+  // V2: GET /v2/meetings/:id/disbursement-plan
+  'meetings/:id/disbursement-plan/preview': {
+    v2: 'v2/meetings/:id/disbursement-plan',
+    method: 'GET',
+    paramMapping: { id: 'id' },
+  },
+  // V1: POST /meetings/:id/disbursement-plan/execute
+  // V2: POST /v2/meetings/:id/disbursement-plan
+  'meetings/:id/disbursement-plan/execute': {
+    v2: 'v2/meetings/:id/disbursement-plan',
+    method: 'POST',
+    paramMapping: { id: 'id' },
+  },
 }
 
 /**
