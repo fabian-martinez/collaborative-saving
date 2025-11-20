@@ -8,6 +8,8 @@ import { StockSubscription } from '@infrastructure/typeorm/entities/stock-subscr
 import { Loan } from '@infrastructure/typeorm/entities/loan.entity';
 import { StockValueHistory } from '@infrastructure/typeorm/entities/stock-value-history.entity';
 import { PendingMemberPayment } from '@infrastructure/typeorm/entities/pending-member-payment.entity';
+import { LoanTransactionDetail } from '@infrastructure/typeorm/entities/loan-transaction-detail.entity';
+import { Member } from '@infrastructure/typeorm/entities/member.entity';
 import { MeetingsV2Controller } from '../controllers/meetings.v2.controller';
 import { OpenMeetingUseCase } from '@application/use-cases/meetings/open-meeting.use-case';
 import { CloseMeetingUseCase } from '@application/use-cases/meetings/close-meeting.use-case';
@@ -18,6 +20,13 @@ import { GetMeetingQueryHandler } from '@application/queries/meetings/get-meetin
 import { GetActiveMeetingQueryHandler } from '@application/queries/meetings/get-active-meeting.query-handler';
 import { GetRevaluationQueryHandler } from '@application/queries/meetings/get-revaluation.query-handler';
 import { RecordRevaluationUseCase } from '@application/use-cases/meetings/record-revaluation.use-case';
+import { GetDisbursementPlanPreviewQueryHandler } from '@application/queries/meetings/get-disbursement-plan-preview.query-handler';
+import { ExecuteDisbursementPlanUseCase } from '@application/use-cases/meetings/execute-disbursement-plan.use-case';
+import { ProcessLoanDisbursementUseCase } from '@application/use-cases/meetings/process-loan-disbursement.use-case';
+import { ProcessStockWithdrawalDisbursementUseCase } from '@application/use-cases/meetings/process-stock-withdrawal-disbursement.use-case';
+import { ProcessDividendDisbursementUseCase } from '@application/use-cases/meetings/process-dividend-disbursement.use-case';
+import { CreateLoanUseCase } from '@application/use-cases/loans/create-loan.use-case';
+import { LoansV2Module } from './loans-v2.module';
 import { MeetingSummaryService } from '@application/services/meeting-summary.service';
 import { TypeOrmMeetingRepository } from '@infrastructure/typeorm/repositories/typeorm-meeting.repository';
 import { TypeOrmOperationRepository } from '@infrastructure/typeorm/repositories/typeorm-operation.repository';
@@ -28,8 +37,11 @@ import { TypeOrmLoanRepository } from '@infrastructure/typeorm/repositories/type
 import { TypeOrmStockValueHistoryRepository } from '@infrastructure/typeorm/repositories/typeorm-stock-value-history.repository';
 import { TypeOrmPendingMemberPaymentRepository } from '@infrastructure/typeorm/repositories/typeorm-pending-member-payment.repository';
 import { TypeOrmTransactionManager } from '@infrastructure/services/transaction-manager/typeorm-transaction-manager.service';
+import { TypeOrmMemberRepository } from '@infrastructure/typeorm/repositories/typeorm-member.repository';
+import { TypeOrmLoanTransactionDetailRepository } from '@infrastructure/typeorm/repositories/typeorm-loan-transaction-detail.repository';
 import { AssetRevaluationDomainService } from '@domain/services/asset-revaluation.service';
 import { OperationBalanceValidator } from '@domain/services/operation-balance-validator.service';
+import { StockWithdrawalCalculator } from '@domain/services/stock-withdrawal-calculator.service';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
@@ -39,6 +51,8 @@ import { LoanRepository } from '@domain/ports/repositories/loan-repository.port'
 import { StockValueHistoryRepository } from '@domain/ports/repositories/stock-value-history-repository.port';
 import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pending-member-payment-repository.port';
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
+import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
+import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
 
 const MEETING_REPOSITORY = Symbol('MeetingRepository');
 const OPERATION_REPOSITORY = Symbol('OperationRepository');
@@ -51,6 +65,10 @@ const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
   'PendingMemberPaymentRepository',
 );
 const TRANSACTION_MANAGER = Symbol('TransactionManager');
+const MEMBER_REPOSITORY = Symbol('MemberRepository');
+const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
+  'LoanTransactionDetailRepository',
+);
 
 @Module({
   imports: [
@@ -63,7 +81,10 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
       Loan,
       StockValueHistory,
       PendingMemberPayment,
+      LoanTransactionDetail,
+      Member,
     ]),
+    LoansV2Module,
   ],
   controllers: [MeetingsV2Controller],
   providers: [
@@ -104,7 +125,16 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
       provide: TRANSACTION_MANAGER,
       useClass: TypeOrmTransactionManager,
     },
+    {
+      provide: MEMBER_REPOSITORY,
+      useClass: TypeOrmMemberRepository,
+    },
+    {
+      provide: LOAN_TRANSACTION_DETAIL_REPOSITORY,
+      useClass: TypeOrmLoanTransactionDetailRepository,
+    },
     // Domain Services
+    StockWithdrawalCalculator,
     {
       provide: AssetRevaluationDomainService,
       useFactory: (
@@ -185,6 +215,18 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
         OPERATION_REPOSITORY,
         AssetRevaluationDomainService,
       ],
+    },
+    {
+      provide: GetDisbursementPlanPreviewQueryHandler,
+      useFactory: (
+        pendingPaymentRepo: PendingMemberPaymentRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+      ) =>
+        new GetDisbursementPlanPreviewQueryHandler(
+          pendingPaymentRepo,
+          ledgerEntryRepo,
+        ),
+      inject: [PENDING_MEMBER_PAYMENT_REPOSITORY, LEDGER_ENTRY_REPOSITORY],
     },
     // Use cases
     {
@@ -281,6 +323,114 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
         TRANSACTION_MANAGER,
         AssetRevaluationDomainService,
         OperationBalanceValidator,
+      ],
+    },
+    {
+      provide: ProcessDividendDisbursementUseCase,
+      useFactory: (
+        pendingPaymentRepo: PendingMemberPaymentRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+        recordOperationUseCase: RecordOperationUseCase,
+      ) =>
+        new ProcessDividendDisbursementUseCase(
+          pendingPaymentRepo,
+          ledgerEntryRepo,
+          recordOperationUseCase,
+        ),
+      inject: [
+        PENDING_MEMBER_PAYMENT_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+        RecordOperationUseCase,
+      ],
+    },
+    {
+      provide: ProcessLoanDisbursementUseCase,
+      useFactory: (
+        loanRepo: LoanRepository,
+        pendingPaymentRepo: PendingMemberPaymentRepository,
+        loanTransactionDetailRepo: LoanTransactionDetailRepository,
+        memberRepo: MemberRepository,
+        meetingRepo: MeetingRepository,
+        createLoanUseCase: CreateLoanUseCase,
+        recordOperationUseCase: RecordOperationUseCase,
+      ) =>
+        new ProcessLoanDisbursementUseCase(
+          loanRepo,
+          pendingPaymentRepo,
+          loanTransactionDetailRepo,
+          memberRepo,
+          meetingRepo,
+          createLoanUseCase,
+          recordOperationUseCase,
+        ),
+      inject: [
+        LOAN_REPOSITORY,
+        PENDING_MEMBER_PAYMENT_REPOSITORY,
+        LOAN_TRANSACTION_DETAIL_REPOSITORY,
+        MEMBER_REPOSITORY,
+        MEETING_REPOSITORY,
+        CreateLoanUseCase,
+        RecordOperationUseCase,
+      ],
+    },
+    {
+      provide: ProcessStockWithdrawalDisbursementUseCase,
+      useFactory: (
+        stockRepo: StockRepository,
+        stockSubscriptionRepo: StockSubscriptionRepository,
+        pendingPaymentRepo: PendingMemberPaymentRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+        stockWithdrawalCalculator: StockWithdrawalCalculator,
+        recordOperationUseCase: RecordOperationUseCase,
+      ) =>
+        new ProcessStockWithdrawalDisbursementUseCase(
+          stockRepo,
+          stockSubscriptionRepo,
+          pendingPaymentRepo,
+          ledgerEntryRepo,
+          stockWithdrawalCalculator,
+          recordOperationUseCase,
+        ),
+      inject: [
+        STOCK_REPOSITORY,
+        STOCK_SUBSCRIPTION_REPOSITORY,
+        PENDING_MEMBER_PAYMENT_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+        StockWithdrawalCalculator,
+        RecordOperationUseCase,
+      ],
+    },
+    {
+      provide: ExecuteDisbursementPlanUseCase,
+      useFactory: (
+        meetingRepo: MeetingRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+        pendingPaymentRepo: PendingMemberPaymentRepository,
+        transactionManager: TransactionManager,
+        processLoanDisbursementUseCase: ProcessLoanDisbursementUseCase,
+        processStockWithdrawalDisbursementUseCase: ProcessStockWithdrawalDisbursementUseCase,
+        processDividendDisbursementUseCase: ProcessDividendDisbursementUseCase,
+        recordOperationUseCase: RecordOperationUseCase,
+      ) =>
+        new ExecuteDisbursementPlanUseCase(
+          meetingRepo,
+          ledgerEntryRepo,
+          pendingPaymentRepo,
+          transactionManager,
+          processLoanDisbursementUseCase,
+          processStockWithdrawalDisbursementUseCase,
+          processDividendDisbursementUseCase,
+          recordOperationUseCase,
+        ),
+      inject: [
+        MEETING_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+        PENDING_MEMBER_PAYMENT_REPOSITORY,
+        TRANSACTION_MANAGER,
+        ProcessLoanDisbursementUseCase,
+        ProcessStockWithdrawalDisbursementUseCase,
+        ProcessDividendDisbursementUseCase,
+        RecordOperationUseCase,
       ],
     },
     // Services

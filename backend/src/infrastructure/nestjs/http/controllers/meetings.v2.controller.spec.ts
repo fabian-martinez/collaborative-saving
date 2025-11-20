@@ -3,6 +3,8 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { MeetingsV2Controller } from './meetings.v2.controller';
 import { OpenMeetingUseCase } from '@application/use-cases/meetings/open-meeting.use-case';
 import { CloseMeetingUseCase } from '@application/use-cases/meetings/close-meeting.use-case';
+import { GetDisbursementPlanPreviewQueryHandler } from '@application/queries/meetings/get-disbursement-plan-preview.query-handler';
+import { ExecuteDisbursementPlanUseCase } from '@application/use-cases/meetings/execute-disbursement-plan.use-case';
 import { GetMeetingMonthlyPaymentsQueryHandler } from '@application/queries/meetings/get-meeting-monthly-payments.query-handler';
 import { GetMeetingsQueryHandler } from '@application/queries/meetings/get-meetings.query-handler';
 import { GetMeetingQueryHandler } from '@application/queries/meetings/get-meeting.query-handler';
@@ -96,6 +98,18 @@ describe('MeetingsV2Controller', () => {
         },
         {
           provide: RecordRevaluationUseCase,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: GetDisbursementPlanPreviewQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: ExecuteDisbursementPlanUseCase,
           useValue: {
             execute: jest.fn(),
           },
