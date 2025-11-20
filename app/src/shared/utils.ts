@@ -71,4 +71,48 @@ export function normalizeToCamelCase<T>(obj: T): T {
 
   // Para primitivos, Date, etc., devolver tal cual
   return obj;
+}
+
+/**
+ * Convierte una cadena de camelCase a snake_case
+ * Ejemplo: 'monthlyContribution' -> 'monthly_contribution'
+ */
+function camelToSnake(str: string): string {
+  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+}
+
+/**
+ * Convierte un objeto o array de camelCase a snake_case
+ * Maneja objetos anidados y arrays recursivamente.
+ * 
+ * @param obj - El objeto o array a convertir
+ * @returns El objeto convertido con propiedades en snake_case
+ */
+export function normalizeToSnakeCase<T>(obj: T): T {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  // Si es un array, convertir cada elemento
+  if (Array.isArray(obj)) {
+    return obj.map(item => normalizeToSnakeCase(item)) as T;
+  }
+
+  // Si es un objeto plano (no Date, no primitivos)
+  if (typeof obj === 'object' && obj.constructor === Object) {
+    const converted: Record<string, unknown> = {};
+    
+    for (const [key, value] of Object.entries(obj)) {
+      // Convertir la clave de camelCase a snake_case
+      const snakeKey = camelToSnake(key);
+      
+      // Convertir recursivamente el valor
+      converted[snakeKey] = normalizeToSnakeCase(value);
+    }
+    
+    return converted as T;
+  }
+
+  // Para primitivos, Date, etc., devolver tal cual
+  return obj;
 } 
