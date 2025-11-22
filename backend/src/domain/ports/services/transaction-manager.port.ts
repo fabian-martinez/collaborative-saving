@@ -12,7 +12,7 @@ export interface TransactionContext {
   execute<T>(operation: () => Promise<T>): Promise<T>;
 }
 
-export interface TransactionManager {
+export abstract class TransactionManager {
   /**
    * Execute an operation within a transaction.
    * If the operation succeeds, commits the transaction.
@@ -22,7 +22,7 @@ export interface TransactionManager {
    * @returns The result of the operation
    * @throws Any error thrown by the operation, after rolling back the transaction
    */
-  execute<T>(
+  abstract execute<T>(
     operation: (context: TransactionContext) => Promise<T>,
   ): Promise<T>;
 }

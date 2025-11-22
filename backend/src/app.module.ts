@@ -19,6 +19,8 @@ import { MembersV2Module } from './infrastructure/nestjs/http/modules/members-v2
 import { StocksV2Module } from './infrastructure/nestjs/http/modules/stocks-v2.module';
 import { MeetingsV2Module } from './infrastructure/nestjs/http/modules/meetings-v2.module';
 import { MandatoryContributionsV2Module } from './infrastructure/nestjs/http/modules/mandatory-contributions-v2.module';
+import { EventBusModule } from './infrastructure/services/event-bus/event-bus.module';
+import { TransactionManagerModule } from './infrastructure/services/transaction-manager/transaction-manager.module';
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { MandatoryContributionsV2Module } from './infrastructure/nestjs/http/mod
       autoLoadEntities: true,
       synchronize: false, // Recommended to be false in production
     }),
+    EventBusModule,
+    TransactionManagerModule,
     MeetingsModule,
     MembersModule,
     StocksModule,

@@ -9,7 +9,7 @@
 
 ### Estado General
 - ✅ **Semana 1-2**: Diseño arquitectónico - **100% COMPLETADO**
-- ⏳ **Semana 3-4**: Infraestructura base - **60% COMPLETADO** (en progreso)
+- ✅ **Semana 3-4**: Infraestructura base - **100% COMPLETADO**
 - ⏳ **Semana 5-10**: Migración de funcionalidades - **20% COMPLETADO** (Members migrado)
 - ⏳ **Semana 11-12**: Funcionalidades faltantes - **0% PENDIENTE**
 
@@ -110,8 +110,8 @@ Semana 3-4: Implementar infraestructura base
    - ⚠️ Carpetas creadas pero **vacías**:
      - `infrastructure/services/event-bus/` (vacía)
      - `infrastructure/services/transaction-manager/` (vacía)
-   - ⚠️ Interfaces no definidas en `domain/ports/services/`
-   - **Estado**: 0% implementado
+   - ✅ Interfaces definidas en `domain/ports/services/`
+   - **Estado**: 100% implementado (TransactionManager y EventBus listos)
 
 ##### ❌ **PENDIENTE**:
 
@@ -120,11 +120,11 @@ Semana 3-4: Implementar infraestructura base
    - ❌ Falta: `LoanRepository`, `StockRepository`, `MeetingRepository`, `OperationRepository`, etc.
    - **Nota**: Members funciona como ejemplo, pero falta replicar para otros dominios
 
-**Conclusión**: ⏳ **60% COMPLETADO**
+**Conclusión**: ✅ **100% COMPLETADO**
 - ✅ Estructura base creada
 - ✅ Members completamente migrado (ejemplo funcional)
 - ✅ Tests base implementados (TDD funcionando)
-- ⚠️ Servicios transversales pendientes
+- ✅ Servicios transversales implementados (EventBus, TransactionManager)
 - ❌ Falta replicar para otros dominios
 
 ---
@@ -205,7 +205,7 @@ Semana 11-12: Implementar funcionalidades faltantes CON nueva arquitectura
 | Fase | Plan | Real | Progreso | Estado |
 |------|------|------|----------|--------|
 | Semana 1-2: Diseño | 100% | 100% | 100% | ✅ COMPLETADO |
-| Semana 3-4: Infraestructura | 100% | 60% | 60% | ⏳ EN PROGRESO |
+| Semana 3-4: Infraestructura | 100% | 100% | 100% | ✅ COMPLETADO |
 | Semana 5-10: Migración | 100% | 20% | 20% | ⏳ EN PROGRESO |
 | Semana 11-12: Faltantes | 100% | 0% | 0% | ❌ PENDIENTE |
 
@@ -251,9 +251,9 @@ Semana 11-12: Implementar funcionalidades faltantes CON nueva arquitectura
 ### 🔴 **Alta Prioridad**
 
 1. **Servicios Transversales** (Semana 3-4):
-   - ⚠️ `EventBus`: Carpeta creada pero vacía
-   - ⚠️ `TransactionManager`: Carpeta creada pero vacía
-   - **Impacto**: Necesarios para casos de uso complejos (transacciones, eventos de dominio)
+   - ✅ `EventBus`: Implementado (`NestjsEventBus`)
+   - ✅ `TransactionManager`: Implementado (`TypeOrmTransactionManager`)
+   - **Impacto**: Listos para soportar casos de uso complejos
 
 2. **Migración de Módulos** (Semana 5-10):
    - ❌ Stocks: 0% migrado
