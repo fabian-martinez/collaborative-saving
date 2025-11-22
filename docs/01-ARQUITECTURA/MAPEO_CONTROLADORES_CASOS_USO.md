@@ -1,6 +1,7 @@
 # Mapeo: Controladores → Casos de Uso
 
 **Fecha**: 2025-01-20  
+**Última actualización**: 2025-11-20  
 **Objetivo**: Mapear cada endpoint de controladores actuales a casos de uso de la arquitectura hexagonal v2
 
 ## 📋 Resumen Ejecutivo
@@ -19,22 +20,28 @@ Este documento mapea **50+ endpoints** de **11 controladores** a **21 casos de u
 
 | Endpoint | Método | Tipo | Caso de Uso / Query Handler | Estado | Prioridad |
 |----------|--------|------|------------------------------|--------|-----------|
-| `GET /members` | Read | Query | `GetMembersQueryHandler` | ⏳ Pendiente | Media |
-| `GET /members/:id` | Read | Query | `GetMemberDetailQueryHandler` | ⏳ Pendiente | Alta |
-| `GET /members/:id/stocks` | Read | Query | `GetMemberStocksQueryHandler` | ⏳ Pendiente | Media |
-| `GET /members/:id/loans` | Read | Query | `GetMemberLoansQueryHandler` | ⏳ Pendiente | Media |
-| `GET /members/:id/debt-capacity` | Read | Query | `GetMemberDebtCapacityQueryHandler` | ⏳ Pendiente | Alta |
-| `GET /members/:id/summary` | Read | Query | `GetMemberSummaryQueryHandler` | ⏳ Pendiente | Alta |
+| `GET /members` | Read | Query | `GetMembersQueryHandler` | ✅ Implementado | Media |
+| `GET /members/:id` | Read | Query | `GetMemberDetailQueryHandler` | ✅ Implementado | Alta |
+| `GET /members/:id/stocks` | Read | Query | `GetMemberStocksQueryHandler` | ⏳ Pendiente | Baja |
+| `GET /members/:id/loans` | Read | Query | `GetMemberLoansQueryHandler` | ⏳ Pendiente | Alta |
+| `GET /members/:id/debt-capacity` | Read | Query | `GetMemberDebtCapacityQueryHandler` | ⏳ Pendiente | Baja |
+| `GET /members/:id/summary` | Read | Query | `GetMemberSummaryQueryHandler` | ⏳ Pendiente | Baja |
 | `GET /members/:id/stocks/:stockId/history` | Read | Query | `GetMemberStockHistoryQueryHandler` | ⏳ Pendiente | Baja |
-| `GET /members/:id/loans/:loanId/installments` | Read | Query | `GetMemberLoanInstallmentsQueryHandler` | ⏳ Pendiente | Media |
-| `GET /members/:id/payments` | Read | Query | `GetMemberPaymentsQueryHandler` | ⏳ Pendiente | **Alta** |
-| `GET /members/:id/dues` | Read | Query | `GetMemberDuesForActiveMeetingQueryHandler` | ⏳ Pendiente | **Alta** |
+| `GET /members/:id/loans/:loanId/installments` | Read | Query | `GetMemberLoanInstallmentsQueryHandler` | ⏳ Pendiente | Baja |
+| `GET /members/:id/payments` | Read | Query | `GetMemberPaymentsQueryHandler` | ✅ Implementado | **Alta** |
+| `GET /members/:id/dues` | Read | Query | `GetMemberDuesForActiveMeetingQueryHandler` | ✅ Implementado | **Alta** |
+| `GET /members/:id/insurance` | Read | Query | `CalculateMemberInsuranceUseCase` | ✅ Implementado | Media |
+| `GET /members/:id/purchases` | Read | Query | `GetMemberPurchasesQueryHandler` | ✅ Implementado | Media |
 | `GET /members/debt-capacity/summary` | Read | Query | `GetOrganizationDebtCapacityQueryHandler` | ⏳ Pendiente | Baja |
 | `GET /members/debt-capacity/organization-stats` | Read | Query | `GetOrganizationDebtStatsQueryHandler` | ⏳ Pendiente | Baja |
-| `POST /members` | Write | Command | ✅ `CreateMemberUseCase` | ⏳ Pendiente | **Alta** |
-| `POST /members/:id/payments` | Write | Command | ✅ `RecordMonthlyPaymentsUseCase` | ⏳ Pendiente | **Alta** |
-| `PATCH /members/:id` | Write | Command | ✅ `UpdateMemberUseCase` | ⏳ Pendiente | **Alta** |
-| `DELETE /members/:id` | Write | Command | ✅ `DeleteMemberUseCase` (borrado lógico) | ⏳ Pendiente | **Alta** |
+| `POST /members` | Write | Command | ✅ `CreateMemberUseCase` | ✅ Implementado | **Alta** |
+| `POST /members/:id/payments` | Write | Command | ✅ `RecordMonthlyPaymentsUseCase` | ✅ Implementado | **Alta** |
+| `POST /members/:id/purchase` | Write | Command | ✅ `PurchaseStockUseCase` | ✅ Implementado | **Alta** |
+| `POST /members/:id/purchase/exchange` | Write | Command | ✅ `ProcessStockExchangeUseCase` | ✅ Implementado | Media |
+| `POST /members/:id/purchase/transfer` | Write | Command | ✅ `ProcessStockTransferUseCase` | ✅ Implementado | Media |
+| `POST /members/:id/purchase/loan-payment` | Write | Command | ✅ `ProcessStockLoanPaymentUseCase` | ✅ Implementado | Media |
+| `PATCH /members/:id` | Write | Command | ✅ `UpdateMemberUseCase` | ✅ Implementado | **Alta** |
+| `DELETE /members/:id` | Write | Command | ✅ `DeleteMemberUseCase` (borrado lógico) | ✅ Implementado | **Alta** |
 
 **Endpoints sin mapeo directo**: 2 (`POST /members/:id/deactivate`, `POST /members/:id/reactivate` - no se implementarán en v2)  
 **Casos de uso necesarios**: 4 (Create, RecordMonthlyPayments, Update, Delete lógico)  
@@ -58,16 +65,21 @@ Este documento mapea **50+ endpoints** de **11 controladores** a **21 casos de u
 
 | Endpoint | Método | Tipo | Caso de Uso / Query Handler | Estado | Prioridad |
 |----------|--------|------|------------------------------|--------|-----------|
-| `GET /meetings` | Read | Query | `GetMeetingsQueryHandler` | ⏳ Pendiente | Baja |
-| `GET /meetings/active` | Read | Query | `GetActiveMeetingQueryHandler` | ⏳ Pendiente | Alta |
-| `GET /meetings/:id/summary` | Read | Query | `GetMeetingSummaryQueryHandler` | ⏳ Pendiente | Alta |
-| `GET /meetings/:id/monthly-payments` | Read | Query | `GetMeetingMonthlyPaymentsQueryHandler` | ⏳ Pendiente | Media |
-| `POST /meetings` | Write | Command | ✅ `OpenMeetingUseCase` | ⏳ Pendiente | **Alta** |
-| `POST /meetings/:meetingId/buy/stocks` | Write | Command | ✅ `CreateStockSubscriptionUseCase` | ⏳ Pendiente | **Alta** |
-| `POST /meetings/:meetingId/withdraw/stocks` | Write | Command | ✅ `ModifyStockSubscriptionUseCase` (con withdraw) | ⏳ Pendiente | **Alta** |
-| `GET /meetings/:id/disbursement-plan/preview` | Read | Query | ✅ `PreviewDisbursementPlanUseCase` | ⏳ Pendiente | **Alta** |
-| `POST /meetings/:id/disbursement-plan/execute` | Write | Command | ✅ `ExecuteDisbursementPlanUseCase` | ⏳ Pendiente | **Alta** |
-| `PATCH /meetings/:id/close` | Write | Command | ✅ `CloseMeetingUseCase` | ⏳ Pendiente | **Alta** |
+| `GET /meetings` | Read | Query | `GetMeetingsQueryHandler` | ✅ Implementado | Baja |
+| `GET /meetings/active` | Read | Query | `GetActiveMeetingQueryHandler` | ✅ Implementado | Alta |
+| `GET /meetings/:id` | Read | Query | `GetMeetingQueryHandler` | ✅ Implementado | Alta |
+| `GET /meetings/:id/summary` | Read | Query | `GetMeetingSummaryQueryHandler` | ⏳ Pendiente | Baja |
+| `GET /meetings/:id/payments` | Read | Query | `GetMeetingMonthlyPaymentsQueryHandler` | ✅ Implementado | Media |
+| `GET /meetings/:id/purchases` | Read | Query | `GetMeetingPurchasesQueryHandler` | ✅ Implementado | Media |
+| `GET /meetings/:id/transfers` | Read | Query | `GetMeetingStockTransfersQueryHandler` | ✅ Implementado | Media |
+| `GET /meetings/:id/exchanges` | Read | Query | `GetMeetingStockExchangesQueryHandler` | ✅ Implementado | Media |
+| `GET /meetings/:id/stock-loan-payments` | Read | Query | `GetMeetingStockLoanPaymentsQueryHandler` | ✅ Implementado | Media |
+| `GET /meetings/:id/revaluation` | Read | Query | `GetRevaluationQueryHandler` | ✅ Implementado | Media |
+| `PATCH /meetings/:id/revaluation/confirm` | Write | Command | ✅ `RecordRevaluationUseCase` | ✅ Implementado | Media |
+| `GET /meetings/:id/disbursement-plan` | Read | Query | ✅ `PreviewDisbursementPlanUseCase` | ✅ Implementado | **Alta** |
+| `POST /meetings/:id/disbursement-plan` | Write | Command | ✅ `ExecuteDisbursementPlanUseCase` | ✅ Implementado | **Alta** |
+| `POST /meetings` | Write | Command | ✅ `OpenMeetingUseCase` | ✅ Implementado | **Alta** |
+| `PATCH /meetings/:id/close` | Write | Command | ✅ `CloseMeetingUseCase` | ✅ Implementado | **Alta** |
 
 **Endpoints sin mapeo directo**: 0  
 **Casos de uso necesarios**: 5 (Open, CreateStockSubscription, ModifyStockSubscription, Preview/ExecuteDisbursement, Close)  
@@ -81,13 +93,14 @@ Este documento mapea **50+ endpoints** de **11 controladores** a **21 casos de u
 
 | Endpoint | Método | Tipo | Caso de Uso / Query Handler | Estado | Prioridad |
 |----------|--------|------|------------------------------|--------|-----------|
-| `GET /stocks` | Read | Query | `GetStocksQueryHandler` | ⏳ Pendiente | Baja |
-| `GET /stocks/:id` | Read | Query | `GetStockDetailQueryHandler` | ⏳ Pendiente | Media |
-| `GET /stocks/member/:memberId/summary` | Read | Query | `GetMemberStocksSummaryQueryHandler` | ⏳ Pendiente | Media |
+| `GET /stocks` | Read | Query | `GetStocksQueryHandler` | ✅ Implementado | Baja |
+| `GET /stocks/:id` | Read | Query | `GetStockDetailQueryHandler` | ✅ Implementado | Media |
+| `GET /stocks/member/:memberId/summary` | Read | Query | `GetMemberStocksSummaryQueryHandler` | ⏳ Pendiente | Baja |
 | `GET /stocks/organization/summary` | Read | Query | `GetOrganizationStocksSummaryQueryHandler` | ⏳ Pendiente | Baja |
 | `GET /stocks/performance/analysis` | Read | Query | `GetStocksPerformanceAnalysisQueryHandler` | ⏳ Pendiente | Baja |
-| `POST /stocks` | Write | Command | ✅ `CreateStockUseCase` | ⏳ Pendiente | **Alta** |
-| `PATCH /stocks/:id` | Write | Command | ✅ `UpdateStockUseCase` | ⏳ Pendiente | **Alta** |
+| `GET /stocks/history` | Read | Query | `GetStocksHistoryQueryHandler` | ⏳ Pendiente | Baja |
+| `POST /stocks` | Write | Command | ✅ `CreateStockUseCase` | ✅ Implementado | **Alta** |
+| `PATCH /stocks/:id` | Write | Command | ✅ `UpdateStockUseCase` | ✅ Implementado | **Alta** |
 | `POST /stocks/:id/revaluation/preview` | Write | Query | ✅ `PreviewMonthlyRevaluationUseCase` | ⏳ Pendiente | Media |
 | `POST /stocks/:id/revaluation/approve` | Write | Command | ✅ `ApproveMonthlyRevaluationUseCase` | ⏳ Pendiente | Media |
 | `POST /stocks/:id/revaluation/record` | Write | Command | ✅ `RecordMonthlyRevaluationUseCase` | ⏳ Pendiente | Media |
@@ -103,8 +116,11 @@ Este documento mapea **50+ endpoints** de **11 controladores** a **21 casos de u
 | Endpoint | Método | Tipo | Caso de Uso / Query Handler | Estado | Prioridad |
 |----------|--------|------|------------------------------|--------|-----------|
 | `GET /loans` | Read | Query | `GetLoansQueryHandler` | ⏳ Pendiente | Baja |
-| `GET /loans/:id` | Read | Query | `GetLoanDetailQueryHandler` | ⏳ Pendiente | Alta |
-| `GET /loans/member/:memberId/summary` | Read | Query | `GetMemberLoansSummaryQueryHandler` | ⏳ Pendiente | Media |
+| `GET /loans/:id` | Read | Query | `GetLoanDetailQueryHandler` | ⏳ Pendiente | **Alta** |
+| `GET /loans/member/:memberId` | Read | Query | `GetMemberLoansQueryHandler` | ⏳ Pendiente | **Alta** |
+| `GET /loans/member/:memberId/active` | Read | Query | `GetMemberActiveLoansQueryHandler` | ⏳ Pendiente | **Alta** |
+| `GET /loans/member/:memberId/capacity` | Read | Query | `GetMemberDebtCapacityQueryHandler` | ⏳ Pendiente | **Alta** |
+| `GET /loans/member/:memberId/summary` | Read | Query | `GetMemberLoansSummaryQueryHandler` | ⏳ Pendiente | Baja |
 | `GET /loans/organization/summary` | Read | Query | `GetOrganizationLoansSummaryQueryHandler` | ⏳ Pendiente | Baja |
 | `GET /loans/performance/analysis` | Read | Query | `GetLoansPerformanceAnalysisQueryHandler` | ⏳ Pendiente | Baja |
 | `GET /loans/risk/assessment` | Read | Query | `GetLoansRiskAssessmentQueryHandler` | ⏳ Pendiente | Media |
@@ -141,8 +157,8 @@ Este documento mapea **50+ endpoints** de **11 controladores** a **21 casos de u
 
 | Endpoint | Método | Tipo | Caso de Uso / Query Handler | Estado | Prioridad |
 |----------|--------|------|------------------------------|--------|-----------|
-| `GET /operations` | Read | Query | `GetOperationsQueryHandler` | ⏳ Pendiente | Media |
-| `GET /operations/:id` | Read | Query | `GetOperationDetailQueryHandler` | ⏳ Pendiente | Media |
+| `GET /operations` | Read | Query | `GetOperationsQueryHandler` | ⏳ Pendiente | **Alta** |
+| `GET /operations/:id` | Read | Query | `GetOperationDetailQueryHandler` | ⏳ Pendiente | **Alta** |
 | `POST /operations` | Write | Command | ✅ `RecordOperationUseCase` | ⏳ Pendiente | **Alta** |
 
 **Endpoints sin mapeo directo**: 0  
@@ -190,7 +206,8 @@ Este documento mapea **50+ endpoints** de **11 controladores** a **21 casos de u
 
 | Endpoint | Método | Tipo | Caso de Uso / Query Handler | Estado | Prioridad |
 |----------|--------|------|------------------------------|--------|-----------|
-| `GET /dividends` | Read | Query | `GetDividendsQueryHandler` | ⏳ Pendiente | Baja |
+| `GET /dividends/pending` | Read | Query | `GetDividendsQueryHandler` | ⏳ Pendiente | Baja |
+| `GET /dividends/history` | Read | Query | `GetDividendsHistoryQueryHandler` | ⏳ Pendiente | Baja |
 | `POST /dividends` | Write | Command | ⚠️ **Puede ser parte de** `CreatePendingMemberPaymentUseCase` | ⏳ Pendiente | Media |
 
 **Endpoints sin mapeo directo**: 1  
@@ -390,6 +407,55 @@ Todos los endpoints `GET` requieren Query Handlers siguiendo el patrón CQRS.
 13. **Query Handlers** (implementar según necesidad)
     - Prioridad: Media/Baja (según uso)
 
+### Fase 7: Endpoints Críticos Faltantes (Sprint 12-13) - NUEVO
+
+**Objetivo**: Implementar endpoints críticos identificados en análisis del frontend
+
+14. **Operations (Consultas)**
+    - `GetOperationsQueryHandler` - `GET /v2/operations`
+    - `GetOperationDetailQueryHandler` - `GET /v2/operations/:id`
+    - Prioridad: **Alta** (usado frecuentemente en frontend)
+
+15. **Loans (Consultas)**
+    - `GetLoanDetailQueryHandler` - `GET /v2/loans/:id`
+    - `GetMemberLoansQueryHandler` - `GET /v2/members/:id/loans` o `GET /v2/loans/member/:id`
+    - `GetMemberActiveLoansQueryHandler` - `GET /v2/members/:id/loans/active` o `GET /v2/loans/member/:id/active`
+    - `GetMemberDebtCapacityQueryHandler` - `GET /v2/members/:id/debt-capacity` o `GET /v2/loans/member/:id/capacity`
+    - Prioridad: **Alta** (usado en flujos principales)
+
+16. **Stock Subscriptions (Consultas)**
+    - `GetMemberStockSubscriptionsQueryHandler` - `GET /v2/members/:id/stock-subscriptions`
+    - Prioridad: **Alta** (necesario para vista de acciones)
+
+### Fase 8: Endpoints de Historial y Reportes (Sprint 14) - NUEVO
+
+**Objetivo**: Implementar endpoints de historial y reportes
+
+17. **Stocks History**
+    - `GetStocksHistoryQueryHandler` - `GET /v2/stocks/history`
+    - Prioridad: Media
+
+18. **Dividends**
+    - `GetDividendsQueryHandler` - `GET /v2/dividends/pending`
+    - `GetDividendsHistoryQueryHandler` - `GET /v2/dividends/history`
+    - Prioridad: Media
+
+### Fase 9: Endpoints de Vista de Detalle (Sprint 15+) - NUEVO
+
+**Objetivo**: Implementar endpoints de resumen para mejorar rendimiento (opcional, pueden construirse en frontend)
+
+19. **Member Detail Endpoints**
+    - `GetMemberSummaryQueryHandler` - `GET /v2/members/:id/summary`
+    - `GetMemberStocksQueryHandler` - `GET /v2/members/:id/stocks`
+    - `GetMemberStockHistoryQueryHandler` - `GET /v2/members/:id/stocks/:stockId/history`
+    - `GetMemberLoanInstallmentsQueryHandler` - `GET /v2/members/:id/loans/:loanId/installments`
+    - Prioridad: Baja (pueden construirse combinando otros endpoints V2)
+
+20. **Organization Stats**
+    - `GetOrganizationDebtCapacityQueryHandler` - `GET /v2/members/debt-capacity/summary`
+    - `GetOrganizationDebtStatsQueryHandler` - `GET /v2/members/debt-capacity/organization-stats`
+    - Prioridad: Baja (reportes ejecutivos)
+
 ---
 
 ## 📝 Contratos por Caso de Uso
@@ -565,4 +631,199 @@ Todos los endpoints `GET` requieren Query Handlers siguiendo el patrón CQRS.
 ### Módulo: Accounting
 
 #### RecordOperationUseCase
-- **Input**: `
+- **Input**: `RecordOperationDto` (operation data)
+- **Output**: `RecordOperationResponseDto` (operationId, ledgerEntryIds[])
+- **Puertos**: `OperationRepository`, `LedgerEntryRepository`
+- **Endpoints mapeados**: `POST /operations`
+
+---
+
+## 🔍 Análisis de Endpoints Faltantes en V2 (2025-11-20)
+
+### Resumen del Análisis
+
+Se realizó un análisis exhaustivo del código del frontend para identificar todos los endpoints V1 que se están llamando directamente, comparándolos con los endpoints V2 disponibles en el backend. Este análisis reveló **23 endpoints críticos** que aún no tienen equivalente V2.
+
+### Endpoints Críticos Faltantes (Prioridad Alta)
+
+#### 1. Operations (2 endpoints)
+| Endpoint V1 | Estado V2 | Prioridad | Query Handler Necesario |
+|-------------|-----------|-----------|------------------------|
+| `GET /operations/:id` | ⏳ Falta | **Alta** | `GetOperationDetailQueryHandler` |
+| `GET /operations?meetingId=X&operationType=Y` | ⏳ Falta | **Alta** | `GetOperationsQueryHandler` |
+
+**Uso actual**: `operationsService.ts` - Usado para consultar operaciones con filtros y detalles específicos.
+
+#### 2. Loans (4 endpoints)
+| Endpoint V1 | Estado V2 | Prioridad | Query Handler Necesario |
+|-------------|-----------|-----------|------------------------|
+| `GET /loans/:id` | ⏳ Falta | **Alta** | `GetLoanDetailQueryHandler` |
+| `GET /loans/member/:memberId` | ⏳ Falta | **Alta** | `GetMemberLoansQueryHandler` |
+| `GET /loans/member/:memberId/active` | ⏳ Falta | **Alta** | `GetMemberActiveLoansQueryHandler` |
+| `GET /loans/member/:memberId/capacity` | ⏳ Falta | **Alta** | `GetMemberDebtCapacityQueryHandler` |
+
+**Uso actual**: `loansService.ts` - Usado para consultar préstamos de miembros, activos y capacidad de deuda.
+
+#### 3. Stock Subscriptions (1 endpoint)
+| Endpoint V1 | Estado V2 | Prioridad | Query Handler Necesario |
+|-------------|-----------|-----------|------------------------|
+| `GET /stock-subscriptions/member/:memberId` | ⏳ Falta | **Alta** | `GetMemberStockSubscriptionsQueryHandler` |
+
+**Uso actual**: `stocksService.ts` - Usado para consultar suscripciones de acciones de un miembro.
+
+**Nota**: Los endpoints V2 de members ya tienen `/v2/members/:id/purchases` pero falta el equivalente para suscripciones completas.
+
+### Endpoints de Prioridad Media
+
+#### 4. Stocks History (1 endpoint)
+| Endpoint V1 | Estado V2 | Prioridad | Query Handler Necesario |
+|-------------|-----------|-----------|------------------------|
+| `GET /stocks/history` | ⏳ Falta | Media | `GetStocksHistoryQueryHandler` |
+
+**Uso actual**: `stocksService.ts` - Usado para consultar historial de acciones.
+
+#### 5. Dividends (2 endpoints)
+| Endpoint V1 | Estado V2 | Prioridad | Query Handler Necesario |
+|-------------|-----------|-----------|------------------------|
+| `GET /dividends/pending` | ⏳ Falta | Media | `GetDividendsQueryHandler` |
+| `GET /dividends/history` | ⏳ Falta | Media | `GetDividendsHistoryQueryHandler` |
+
+**Uso actual**: `dividendsService.ts` - Usado para consultar dividendos pendientes e historial.
+
+### Endpoints de Prioridad Baja (Vista de Detalle del Miembro)
+
+Estos endpoints se usan principalmente en `useMemberDetail.ts` para mostrar información consolidada del miembro. Pueden construirse en el frontend combinando otros endpoints V2, pero sería más eficiente tener endpoints dedicados.
+
+#### 6. Member Detail Endpoints (6 endpoints)
+| Endpoint V1 | Estado V2 | Prioridad | Query Handler Necesario |
+|-------------|-----------|-----------|------------------------|
+| `GET /members/:id/summary` | ⏳ Falta | Baja | `GetMemberSummaryQueryHandler` |
+| `GET /members/:id/stocks` | ⏳ Falta | Baja | `GetMemberStocksQueryHandler` |
+| `GET /members/:id/loans` | ⏳ Falta | Baja | `GetMemberLoansQueryHandler` |
+| `GET /members/:id/debt-capacity` | ⏳ Falta | Baja | `GetMemberDebtCapacityQueryHandler` |
+| `GET /members/:id/stocks/:stockId/history` | ⏳ Falta | Baja | `GetMemberStockHistoryQueryHandler` |
+| `GET /members/:id/loans/:loanId/installments` | ⏳ Falta | Baja | `GetMemberLoanInstallmentsQueryHandler` |
+
+**Uso actual**: `membersService.ts` y `useMemberDetail.ts` - Usados en la vista de detalle del miembro.
+
+**Alternativa**: Estos endpoints pueden construirse combinando:
+- `/v2/members/:id/purchases` para stocks
+- `/v2/members/:id/payments` para transacciones
+- Endpoints de loans cuando estén disponibles
+
+#### 7. Organization Stats (2 endpoints)
+| Endpoint V1 | Estado V2 | Prioridad | Query Handler Necesario |
+|-------------|-----------|-----------|------------------------|
+| `GET /members/debt-capacity/summary` | ⏳ Falta | Baja | `GetOrganizationDebtCapacityQueryHandler` |
+| `GET /members/debt-capacity/organization-stats` | ⏳ Falta | Baja | `GetOrganizationDebtStatsQueryHandler` |
+
+**Uso actual**: `membersService.ts` - Posiblemente usado en dashboards o reportes ejecutivos.
+
+#### 8. Legacy Endpoints (1 endpoint)
+| Endpoint V1 | Estado V2 | Prioridad | Notas |
+|-------------|-----------|-----------|-------|
+| `POST /members/:memberId/contributions` | ⏳ Falta | Baja | Legacy, considerar deprecar |
+
+**Uso actual**: `membersService.ts` - Marcado como legacy, mantener por compatibilidad si se usa.
+
+### Endpoints Duplicados (No requieren migración)
+
+Estos endpoints tienen funcionalidad duplicada con otros endpoints ya migrados:
+
+| Endpoint V1 | Equivalente V2 | Estado |
+|-------------|----------------|--------|
+| `GET /stocks/member/:memberId/summary` | `GET /v2/members/:id/purchases` | Duplicado |
+| `GET /stocks/:stockId/member/:memberId/history` | `GET /members/:memberId/stocks/:stockId/history` | Duplicado |
+
+---
+
+## 📋 Plan de Migración Actualizado
+
+### Fase 7: Endpoints Críticos Faltantes (Sprint 12-13)
+
+**Objetivo**: Implementar endpoints críticos identificados en el análisis
+
+#### Prioridad Alta (8 endpoints)
+
+1. **Operations**
+   - `GetOperationsQueryHandler` - `GET /v2/operations`
+   - `GetOperationDetailQueryHandler` - `GET /v2/operations/:id`
+   - Prioridad: **Alta** (usado frecuentemente)
+
+2. **Loans**
+   - `GetLoanDetailQueryHandler` - `GET /v2/loans/:id`
+   - `GetMemberLoansQueryHandler` - `GET /v2/members/:id/loans`
+   - `GetMemberActiveLoansQueryHandler` - `GET /v2/members/:id/loans/active`
+   - `GetMemberDebtCapacityQueryHandler` - `GET /v2/members/:id/debt-capacity` (o `/v2/loans/member/:id/capacity`)
+   - Prioridad: **Alta** (usado en flujos principales)
+
+3. **Stock Subscriptions**
+   - `GetMemberStockSubscriptionsQueryHandler` - `GET /v2/members/:id/stock-subscriptions`
+   - Prioridad: **Alta** (necesario para vista de acciones del miembro)
+
+#### Prioridad Media (3 endpoints)
+
+4. **Stocks History**
+   - `GetStocksHistoryQueryHandler` - `GET /v2/stocks/history`
+   - Prioridad: Media
+
+5. **Dividends**
+   - `GetDividendsQueryHandler` - `GET /v2/dividends/pending`
+   - `GetDividendsHistoryQueryHandler` - `GET /v2/dividends/history`
+   - Prioridad: Media
+
+### Fase 8: Endpoints de Vista de Detalle (Sprint 14+)
+
+**Objetivo**: Implementar endpoints de resumen y estadísticas para mejorar rendimiento
+
+#### Prioridad Baja (8 endpoints)
+
+6. **Member Detail Endpoints**
+   - `GetMemberSummaryQueryHandler` - `GET /v2/members/:id/summary`
+   - `GetMemberStocksQueryHandler` - `GET /v2/members/:id/stocks`
+   - `GetMemberLoansQueryHandler` - `GET /v2/members/:id/loans` (duplicado con loans)
+   - `GetMemberDebtCapacityQueryHandler` - `GET /v2/members/:id/debt-capacity` (duplicado con loans)
+   - `GetMemberStockHistoryQueryHandler` - `GET /v2/members/:id/stocks/:stockId/history`
+   - `GetMemberLoanInstallmentsQueryHandler` - `GET /v2/members/:id/loans/:loanId/installments`
+   - Prioridad: Baja (pueden construirse en frontend)
+
+7. **Organization Stats**
+   - `GetOrganizationDebtCapacityQueryHandler` - `GET /v2/members/debt-capacity/summary`
+   - `GetOrganizationDebtStatsQueryHandler` - `GET /v2/members/debt-capacity/organization-stats`
+   - Prioridad: Baja (reportes ejecutivos)
+
+---
+
+## 📊 Resumen de Estado Actualizado
+
+### Endpoints V2 Implementados ✅
+
+- **Members**: 11/17 endpoints (65%)
+- **Meetings**: 14/14 endpoints (100%) ✅
+- **Stocks**: 4/11 endpoints (36%)
+- **Loans**: 0/14 endpoints (0%) ⚠️
+- **Operations**: 0/3 endpoints (0%) ⚠️
+- **Dividends**: 0/3 endpoints (0%) ⚠️
+- **Mandatory Contributions**: 5/5 endpoints (100%) ✅
+
+### Endpoints Críticos Pendientes
+
+- **Alta Prioridad**: 8 endpoints
+- **Media Prioridad**: 3 endpoints
+- **Baja Prioridad**: 8 endpoints
+
+**Total pendiente**: 19 endpoints críticos + 8 endpoints de baja prioridad = 27 endpoints
+
+---
+
+## 🎯 Recomendaciones
+
+1. **Implementar primero** los 8 endpoints de prioridad alta (Operations y Loans)
+2. **Considerar** construir endpoints de baja prioridad en el frontend combinando otros endpoints V2
+3. **Mantener** endpoints legacy solo si se usan activamente
+4. **Deprecar** endpoints duplicados una vez migrados los principales
+
+---
+
+**Última actualización**: 2025-11-20  
+**Próxima revisión**: Después de implementar Fase 7
