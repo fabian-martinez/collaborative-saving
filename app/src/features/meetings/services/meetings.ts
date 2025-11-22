@@ -105,13 +105,55 @@ class MeetingsService {
   }
 
   /**
-   * Obtiene todas las operaciones de compra de acciones de una reunión (legacy)
+   * Obtiene todas las operaciones de compra de acciones de una reunión (V2)
+   * @deprecated Use getMeetingPurchases instead
    */
   async getStockPurchaseOperations(meetingId: string) {
+    const apiVersionStore = useApiVersionStore();
+    
+    if (apiVersionStore.isV2) {
+      // V2: usar nuevo endpoint específico
+      const operations = await api.get(`/v2/meetings/${meetingId}/purchases`);
+      // Mantener compatibilidad con formato anterior que retornaba { data: Operation[] }
+      return {
+        data: operations || [],
+        total: operations?.length || 0,
+      };
+    }
+    
+    // Legacy: usar endpoint genérico
     return operationsService.getOperations({
       meetingId,
       operationType: 'STOCK_PURCHASE',
     });
+  }
+
+  /**
+   * Obtiene las compras de acciones de una reunión (V2)
+   */
+  async getMeetingPurchases(meetingId: string): Promise<Operation[]> {
+    return api.get(`/v2/meetings/${meetingId}/purchases`);
+  }
+
+  /**
+   * Obtiene las transferencias de acciones de una reunión (V2)
+   */
+  async getMeetingTransfers(meetingId: string): Promise<Operation[]> {
+    return api.get(`/v2/meetings/${meetingId}/transfers`);
+  }
+
+  /**
+   * Obtiene los intercambios de acciones de una reunión (V2)
+   */
+  async getMeetingExchanges(meetingId: string): Promise<Operation[]> {
+    return api.get(`/v2/meetings/${meetingId}/exchanges`);
+  }
+
+  /**
+   * Obtiene los pagos de préstamo con acciones de una reunión (V2)
+   */
+  async getMeetingStockLoanPayments(meetingId: string): Promise<Operation[]> {
+    return api.get(`/v2/meetings/${meetingId}/stock-loan-payments`);
   }
 
   /**

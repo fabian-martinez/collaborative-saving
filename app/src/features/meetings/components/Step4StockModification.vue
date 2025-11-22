@@ -947,11 +947,11 @@ const memberOperations = computed(() => {
         toStockType: op.details?.toStockType as string,
         toQuantity: op.details?.toQuantity as number,
       }),
-      ...(op.type === 'STOCK_TRANSFER' && {
+      ...(op.type === 'TRANSFER' && {
         toMemberName: op.details?.toMemberName as string,
         fromMemberName: op.details?.fromMemberName as string,
       }),
-      ...(op.type === 'STOCK_LOAN_PAYMENT' && {
+      ...(op.type === 'LOAN_PAYMENT' && {
         loanType: (op.details?.loanDetails as any)?.[0]?.loanType as string,
       })
     }))
@@ -982,11 +982,11 @@ const memberOperations = computed(() => {
         toStockType: op.details?.toStockType as string,
         toQuantity: op.details?.toQuantity as number,
       }),
-      ...(op.type === 'STOCK_TRANSFER' && {
+      ...(op.type === 'TRANSFER' && {
         toMemberName: op.details?.toMemberName as string,
         fromMemberName: op.details?.fromMemberName as string,
       }),
-      ...(op.type === 'STOCK_LOAN_PAYMENT' && {
+      ...(op.type === 'LOAN_PAYMENT' && {
         loanType: (op.details?.loanDetails as any)?.[0]?.loanType as string,
       })
     }))
@@ -995,15 +995,64 @@ const memberOperations = computed(() => {
   }
 })
 
+// Helper para obtener nombre del miembro
+function getMemberName(memberId: string): string {
+  const member = members.value.find(m => m.id === memberId)
+  return member?.name || 'Desconocido'
+}
+
+// Helper para mapear tipos de operación V2 al formato esperado por el componente
+function mapOperationType(type: string): string {
+  switch (type) {
+    case 'STOCK_TRANSFER':
+      return 'TRANSFER'
+    case 'STOCK_LOAN_PAYMENT':
+      return 'LOAN_PAYMENT'
+    case 'STOCK_MODIFICATION':
+      return 'STOCK_MODIFICATION'
+    default:
+      return type
+  }
+}
+
+// Helper para mapear operaciones V2 al formato esperado
+function mapV2OperationsToLegacyFormat(operations: Array<{
+  id: string;
+  type: string;
+  description: string;
+  date: string;
+  memberId: string;
+  meetingId: string;
+}>): Array<{
+  id: string;
+  type: string;
+  description: string;
+  date: string;
+  details: Record<string, unknown>;
+  memberId: string;
+  memberName: string;
+}> {
+  return operations.map(op => ({
+    id: op.id,
+    type: mapOperationType(op.type),
+    description: op.description,
+    date: op.date,
+    details: {}, // Los nuevos endpoints no retornan details, usar objeto vacío
+    memberId: op.memberId,
+    memberName: getMemberName(op.memberId),
+  }))
+}
+
 // Métodos
 onMounted(async () => {
   await activeMeetingStore.fetchMembers()
   availableStocks.value = await stocksService.getStocks()
   
-  // Cargar todas las operaciones de la reunión al inicializar
+  // Cargar todas las operaciones de la reunión al inicializar usando V2
   if (activeMeetingStore.meetingId) {
     try {
-      allOperations.value = await stocksService.getAllStockOperationsForMeeting(activeMeetingStore.meetingId)
+      const v2Operations = await stocksService.getMeetingStockOperations(activeMeetingStore.meetingId)
+      allOperations.value = mapV2OperationsToLegacyFormat(v2Operations)
     } catch (err) {
       console.error('Error al cargar todas las operaciones:', err)
     }
@@ -1040,11 +1089,18 @@ async function selectMember(member: { id: string; name: string }) {
     const [subscriptions, loans, operations] = await Promise.all([
       stocksService.getStockSubscriptionsByMember(member.id),
       loansService.getActiveLoansByMember(member.id),
-      activeMeetingStore.meetingId ? stocksService.getStockOperationsForMemberInMeeting(member.id, activeMeetingStore.meetingId) : Promise.resolve([])
+      activeMeetingStore.meetingId ? stocksService.getMemberStockOperationsInMeeting(member.id, activeMeetingStore.meetingId) : Promise.resolve([])
     ])
     memberSubscriptions.value = subscriptions.filter(sub => sub.status === 'active')
     memberLoans.value = loans.filter(loan => loan.outstanding_balance > 0)
-    existingOperations.value = operations
+    // Mapear operaciones V2 al formato esperado
+    existingOperations.value = operations.map(op => ({
+      id: op.id,
+      type: mapOperationType(op.type),
+      description: op.description,
+      date: op.date,
+      details: {}, // Los nuevos endpoints no retornan details
+    }))
   } catch (err) {
     error.value = 'Error al cargar datos del socio'
     console.error(err)
@@ -1172,10 +1228,11 @@ async function confirmModification() {
     // Actualizar las suscripciones del socio y recargar operaciones
     await selectMember(selectedMember.value)
     
-    // Recargar todas las operaciones de la reunión
+    // Recargar todas las operaciones de la reunión usando V2
     if (activeMeetingStore.meetingId) {
       try {
-        allOperations.value = await stocksService.getAllStockOperationsForMeeting(activeMeetingStore.meetingId)
+        const v2Operations = await stocksService.getMeetingStockOperations(activeMeetingStore.meetingId)
+        allOperations.value = mapV2OperationsToLegacyFormat(v2Operations)
       } catch (err) {
         console.error('Error al recargar todas las operaciones:', err)
       }
@@ -1267,10 +1324,11 @@ async function confirmTransfer() {
     // Actualizar las suscripciones del socio y recargar operaciones
     await selectMember(selectedMember.value)
     
-    // Recargar todas las operaciones de la reunión
+    // Recargar todas las operaciones de la reunión usando V2
     if (activeMeetingStore.meetingId) {
       try {
-        allOperations.value = await stocksService.getAllStockOperationsForMeeting(activeMeetingStore.meetingId)
+        const v2Operations = await stocksService.getMeetingStockOperations(activeMeetingStore.meetingId)
+        allOperations.value = mapV2OperationsToLegacyFormat(v2Operations)
       } catch (err) {
         console.error('Error al recargar todas las operaciones:', err)
       }
@@ -1372,10 +1430,11 @@ async function confirmLoanPayment() {
     // Actualizar las suscripciones y préstamos del socio y recargar operaciones
     await selectMember(selectedMember.value)
     
-    // Recargar todas las operaciones de la reunión
+    // Recargar todas las operaciones de la reunión usando V2
     if (activeMeetingStore.meetingId) {
       try {
-        allOperations.value = await stocksService.getAllStockOperationsForMeeting(activeMeetingStore.meetingId)
+        const v2Operations = await stocksService.getMeetingStockOperations(activeMeetingStore.meetingId)
+        allOperations.value = mapV2OperationsToLegacyFormat(v2Operations)
       } catch (err) {
         console.error('Error al recargar todas las operaciones:', err)
       }

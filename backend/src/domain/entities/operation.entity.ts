@@ -86,7 +86,11 @@ export class Operation {
     if (!this._meetingId) {
       throw new Error('Operation meetingId is required');
     }
-    if (this._date > new Date()) {
+    // Allow a small margin (5 minutes) to handle time differences between server and database
+    // This is common in distributed systems and prevents false positives
+    const now = new Date();
+    const maxAllowedDate = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes in the future
+    if (this._date > maxAllowedDate) {
       throw new Error('Operation date cannot be in the future');
     }
   }

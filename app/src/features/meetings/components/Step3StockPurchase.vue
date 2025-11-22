@@ -245,6 +245,8 @@ onMounted(async () => {
   await activeMeetingStore.fetchMembers()
   stocks.value = await stocksService.getStocks()
   if (activeMeetingStore.meetingId) {
+    // Usar endpoint legacy que retorna operaciones completas con ledger_entries
+    // Los nuevos endpoints V2 no incluyen ledger_entries que son necesarios para cálculos
     registeredPurchases.value = (await meetingsService.getStockPurchaseOperations(activeMeetingStore.meetingId)).data
   }
 })
@@ -253,6 +255,7 @@ async function getRegisteredPurchases() {
   if (!activeMeetingStore.meetingId) {
     return []
   }
+  // Usar endpoint legacy que retorna operaciones completas con ledger_entries
   return (await meetingsService.getStockPurchaseOperations(activeMeetingStore.meetingId)).data
 }
 
@@ -310,16 +313,16 @@ const form = ref({
 
 const totalCashRegistered = computed(() =>
   registeredPurchases.value
-    .flatMap(op => op.ledger_entries)
-    .filter(entry => entry.account_type === 'CASH')
-    .reduce((sum, entry) => sum + Number(entry.amount), 0)
+    .flatMap(op => op.ledger_entries || [])
+    .filter(entry => entry && entry.account_type === 'CASH')
+    .reduce((sum, entry) => sum + Number(entry.amount || 0), 0)
 )
 
 const totalPurchasedShares = computed(() =>
   registeredPurchases.value
-    .flatMap(op => op.ledger_entries)
-    .filter(entry => entry.account_type === 'STOCK_CAPITAL')
-    .reduce((sum, entry) => sum + Number(entry.amount), 0)
+    .flatMap(op => op.ledger_entries || [])
+    .filter(entry => entry && entry.account_type === 'STOCK_CAPITAL')
+    .reduce((sum, entry) => sum + Number(entry.amount || 0), 0)
 )
 
 function memberRegisteredPurchases(memberId: string) {
@@ -500,7 +503,11 @@ function hasCompletedPurchase(memberId: string) {
   if (memberRegisteredPurchases(memberId).length > 0) {
     return true
   }
-  return registeredPurchases.value.some(p => p.member_id === memberId)
+  // Compatible con ambos formatos: member_id (snake_case) y memberId (camelCase)
+  return registeredPurchases.value.some(p => {
+    const opMemberId = (p as any).member_id || (p as any).memberId
+    return opMemberId === memberId
+  })
 }
 
 // Members computed property not used in current implementation
