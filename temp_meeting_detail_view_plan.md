@@ -1,4 +1,4 @@
-# Plan de Implementación: Detalle de la Reunión (MeetingDetailView.vue)
+# [PARTIALLY COMPLETED] Plan de Implementación: Detalle de la Reunión (MeetingDetailView.vue)
 
 ## 1. Definir el modelo de datos y endpoints necesarios
 - Revisar el modelo de "Meeting" en el backend y asegurarse de que expone:

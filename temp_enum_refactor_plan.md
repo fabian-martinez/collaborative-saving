@@ -1,4 +1,4 @@
-# Plan de Refactorización de Enums y Tipos en el Backend
+# [COMPLETED] Plan de Refactorización de Enums y Tipos en el Backend
 
 ## Objetivo
 Centralizar y estandarizar el uso de enums y tipos en el backend para mejorar la mantenibilidad, robustez y consistencia del código.

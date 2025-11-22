@@ -1,4 +1,4 @@
-# Plan temporal: Servicio de Resumen de Reunión
+# [COMPLETED] Plan temporal: Servicio de Resumen de Reunión
 
 ## 1. Definición general
 Implementar un endpoint flexible para obtener un resumen de la reunión, calculando solo los totales solicitados mediante un parámetro `fields`.
