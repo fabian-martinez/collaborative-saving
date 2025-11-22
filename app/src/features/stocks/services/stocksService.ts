@@ -168,6 +168,73 @@ export const stocksService = {
     return api.get<StockHistoryData[]>(url);
   },
 
+  /**
+   * Obtiene todas las operaciones de acciones de una reunión usando endpoints V2
+   * Combina transfers, exchanges y stock loan payments
+   */
+  getMeetingStockOperations: async (meetingId: string): Promise<Array<{
+    id: string;
+    type: string;
+    description: string;
+    date: string;
+    memberId: string;
+    meetingId: string;
+  }>> => {
+    const [transfers, exchanges, loanPayments] = await Promise.all([
+      api.get<Array<{
+        id: string;
+        memberId: string;
+        meetingId: string;
+        type: string;
+        date: string;
+        description: string;
+      }>>(`/v2/meetings/${meetingId}/transfers`),
+      api.get<Array<{
+        id: string;
+        memberId: string;
+        meetingId: string;
+        type: string;
+        date: string;
+        description: string;
+      }>>(`/v2/meetings/${meetingId}/exchanges`),
+      api.get<Array<{
+        id: string;
+        memberId: string;
+        meetingId: string;
+        type: string;
+        date: string;
+        description: string;
+      }>>(`/v2/meetings/${meetingId}/stock-loan-payments`),
+    ]);
+
+    // Combinar operaciones (los tipos ya vienen correctos del backend)
+    return [
+      ...transfers,
+      ...exchanges,
+      ...loanPayments,
+    ];
+  },
+
+  /**
+   * Obtiene las operaciones de acciones de un miembro en una reunión usando endpoints V2
+   * Filtra las operaciones por memberId después de obtenerlas
+   */
+  getMemberStockOperationsInMeeting: async (memberId: string, meetingId: string): Promise<Array<{
+    id: string;
+    type: string;
+    description: string;
+    date: string;
+    memberId: string;
+    meetingId: string;
+  }>> => {
+    const allOperations = await stocksService.getMeetingStockOperations(meetingId);
+    return allOperations.filter(op => op.memberId === memberId);
+  },
+
+  /**
+   * @deprecated Use getStockOperationsForMemberInMeetingV2 instead
+   * Obtiene las operaciones de acciones de un miembro en una reunión (legacy)
+   */
   getStockOperationsForMemberInMeeting: async (memberId: string, meetingId: string): Promise<Array<{
     id: string;
     type: string;
@@ -184,6 +251,10 @@ export const stocksService = {
     }>>(`/stocks/operations/member/${memberId}/meeting/${meetingId}`);
   },
 
+  /**
+   * @deprecated Use getMeetingStockOperations instead
+   * Obtiene todas las operaciones de acciones de una reunión (legacy)
+   */
   getAllStockOperationsForMeeting: async (meetingId: string): Promise<Array<{
     id: string;
     type: string;
