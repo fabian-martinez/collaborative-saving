@@ -1,25 +1,35 @@
 <template>
   <div class="p-4 bg-base-200 rounded-lg shadow-sm font-sans">
     <div class="flex justify-between items-start mb-3">
-      <div>
-        <p class="font-semibold text-base leading-tight">{{ getAccountName(operation.type) }}</p>
+      <div class="flex-1">
+        <p class="font-semibold text-base leading-tight mb-1">{{ getAccountName(operation.type) }}</p>
+        <!-- Mostrar descripción de manera más prominente si existe -->
+        <p v-if="operation.description && operation.description.trim()" class="text-sm text-base-content/80 font-medium mb-1">
+          {{ operation.description }}
+        </p>
         <p class="text-xs text-base-content/60">
-          Tipo: <span class="font-mono">{{ operation.description }}</span>
+          Tipo de operación: <span class="font-mono">{{ operation.type }}</span>
         </p>
       </div>
     </div>
     
-    <div v-if="(operation.ledger_entries && operation.ledger_entries.length) || ((operation as any).ledgerEntries && (operation as any).ledgerEntries.length)" class="space-y-2 text-sm">
+    <div v-if="(operation.ledger_entries && operation.ledger_entries.length) || ((operation as Operation & { ledgerEntries?: Operation['ledger_entries'] }).ledgerEntries && (operation as Operation & { ledgerEntries?: Operation['ledger_entries'] }).ledgerEntries?.length)" class="space-y-3 mt-4">
         <div 
             v-for="entry in creditEntries" 
             :key="entry.id" 
-            class="flex justify-between items-center bg-base-100/50 p-2 rounded-md"
+            class="bg-base-100/50 p-3 rounded-md border border-base-300/30"
         >
-            <div>
-                <span class="text-base-content/80">{{ getAccountName(entry.account_type || (entry as any).accountType) }}</span>
-                <p class="text-xs text-base-content/60">{{ entry.description }}</p>
+            <div class="flex justify-between items-start mb-2">
+                <span class="text-base-content/90 font-semibold text-sm">{{ getAccountName(entry.account_type || (entry as Operation['ledger_entries'][0] & { accountType?: string }).accountType || '') }}</span>
+                <span class="font-mono text-error font-bold text-base ml-2">{{ formatNumber(-Number(entry.amount)) }}</span>
             </div>
-            <span class="font-mono text-error font-medium">{{ formatNumber(-Number(entry.amount)) }}</span>
+            <!-- Mostrar descripción de la entrada siempre que exista -->
+            <p v-if="entry.description && entry.description.trim()" class="text-sm text-base-content/70 mt-1 leading-relaxed">
+              {{ entry.description }}
+            </p>
+            <p v-else class="text-xs text-base-content/50 italic mt-1">
+              Sin descripción adicional
+            </p>
         </div>
     </div>
 
@@ -44,8 +54,9 @@ const props = defineProps<{
 
 const creditEntries = computed(() => {
     // Compatibilidad con ambos formatos: ledger_entries (snake_case) o ledgerEntries (camelCase)
-    const entries = props.operation.ledger_entries || (props.operation as any).ledgerEntries || [];
-    return entries.filter((e: any) => {
+    const operationAny = props.operation as Operation & { ledgerEntries?: Operation['ledger_entries'] };
+    const entries = props.operation.ledger_entries || operationAny.ledgerEntries || [];
+    return entries.filter((e: Operation['ledger_entries'][0] & { accountType?: string }) => {
       const accountType = e.account_type || e.accountType;
       return accountType !== CASH_ACCOUNT;
     });

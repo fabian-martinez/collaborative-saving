@@ -6,6 +6,10 @@ import { CloseMeetingUseCase } from '@application/use-cases/meetings/close-meeti
 import { GetDisbursementPlanPreviewQueryHandler } from '@application/queries/meetings/get-disbursement-plan-preview.query-handler';
 import { ExecuteDisbursementPlanUseCase } from '@application/use-cases/meetings/execute-disbursement-plan.use-case';
 import { GetMeetingMonthlyPaymentsQueryHandler } from '@application/queries/meetings/get-meeting-monthly-payments.query-handler';
+import { GetMeetingPurchasesQueryHandler } from '@application/queries/meetings/get-meeting-purchases.query-handler';
+import { GetMeetingStockTransfersQueryHandler } from '@application/queries/meetings/get-meeting-stock-transfers.query-handler';
+import { GetMeetingStockExchangesQueryHandler } from '@application/queries/meetings/get-meeting-stock-exchanges.query-handler';
+import { GetMeetingStockLoanPaymentsQueryHandler } from '@application/queries/meetings/get-meeting-stock-loan-payments.query-handler';
 import { GetMeetingsQueryHandler } from '@application/queries/meetings/get-meetings.query-handler';
 import { GetMeetingQueryHandler } from '@application/queries/meetings/get-meeting.query-handler';
 import { GetActiveMeetingQueryHandler } from '@application/queries/meetings/get-active-meeting.query-handler';
@@ -23,6 +27,14 @@ describe('MeetingsV2Controller', () => {
   let openMeetingUseCase: jest.Mocked<OpenMeetingUseCase>;
   let closeMeetingUseCase: jest.Mocked<CloseMeetingUseCase>;
   let getMeetingMonthlyPaymentsQuery: jest.Mocked<GetMeetingMonthlyPaymentsQueryHandler>;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  let _getMeetingPurchasesQuery: jest.Mocked<GetMeetingPurchasesQueryHandler>;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  let _getMeetingStockTransfersQuery: jest.Mocked<GetMeetingStockTransfersQueryHandler>;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  let _getMeetingStockExchangesQuery: jest.Mocked<GetMeetingStockExchangesQueryHandler>;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  let _getMeetingStockLoanPaymentsQuery: jest.Mocked<GetMeetingStockLoanPaymentsQueryHandler>;
   let getMeetingsQuery: jest.Mocked<GetMeetingsQueryHandler>;
   let getMeetingQuery: jest.Mocked<GetMeetingQueryHandler>;
   let getActiveMeetingQuery: jest.Mocked<GetActiveMeetingQueryHandler>;
@@ -68,6 +80,30 @@ describe('MeetingsV2Controller', () => {
         },
         {
           provide: GetMeetingMonthlyPaymentsQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: GetMeetingPurchasesQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: GetMeetingStockTransfersQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: GetMeetingStockExchangesQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: GetMeetingStockLoanPaymentsQueryHandler,
           useValue: {
             execute: jest.fn(),
           },
@@ -122,6 +158,16 @@ describe('MeetingsV2Controller', () => {
     closeMeetingUseCase = module.get(CloseMeetingUseCase);
     getMeetingMonthlyPaymentsQuery = module.get(
       GetMeetingMonthlyPaymentsQueryHandler,
+    );
+    _getMeetingPurchasesQuery = module.get(GetMeetingPurchasesQueryHandler);
+    _getMeetingStockTransfersQuery = module.get(
+      GetMeetingStockTransfersQueryHandler,
+    );
+    _getMeetingStockExchangesQuery = module.get(
+      GetMeetingStockExchangesQueryHandler,
+    );
+    _getMeetingStockLoanPaymentsQuery = module.get(
+      GetMeetingStockLoanPaymentsQueryHandler,
     );
     getMeetingsQuery = module.get(GetMeetingsQueryHandler);
     getMeetingQuery = module.get(GetMeetingQueryHandler);

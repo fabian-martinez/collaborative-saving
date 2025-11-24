@@ -67,7 +67,7 @@ const editablePrincipal = ref(0);
 
 const originalOutstandingBalance = computed(() => {
   if (!due.value || !due.value.details) return 0;
-  return due.value.details.outstanding_balance;
+  return due.value.details.outstandingBalance ?? due.value.details.outstanding_balance ?? 0;
 });
 
 watch(due, (newDue) => {

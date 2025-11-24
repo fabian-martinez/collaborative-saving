@@ -156,6 +156,7 @@ export class RecordMonthlyPaymentsUseCase {
     // 7. Process payments and map to ledger entries
     const allEntries: RecordOperationDto['entries'] = [];
     let totalAmount = 0;
+    const paymentDescriptions: string[] = [];
 
     for (const payment of dto.payments) {
       totalAmount += payment.amount;
@@ -165,14 +166,29 @@ export class RecordMonthlyPaymentsUseCase {
           : undefined;
       const entries = this.mapPaymentToLedgerEntries(payment, paymentInfo);
       allEntries.push(...entries);
+      
+      // Collect payment descriptions for operation description
+      if (payment.description) {
+        paymentDescriptions.push(payment.description);
+      }
     }
 
     // 8. Create operation using RecordOperationUseCase
+    // Build detailed operation description
+    let operationDescription: string;
+    if (paymentDescriptions.length > 0) {
+      // Use detailed payment descriptions if available
+      operationDescription = `Pago mensual ${member.name}: ${paymentDescriptions.join('; ')}`;
+    } else {
+      // Fallback to generic description
+      operationDescription = `Monthly payments for member ${member.name}`;
+    }
+
     const operationDto: RecordOperationDto = {
       memberId: dto.memberId,
       meetingId: activeMeeting.id,
       type: OperationType.MONTHLY_PAYMENT,
-      description: `Monthly payments for member ${member.name}`,
+      description: operationDescription,
       entries: allEntries,
     };
 
@@ -245,101 +261,135 @@ export class RecordMonthlyPaymentsUseCase {
 
     switch (payment.type) {
       case PaymentType.STOCK_FEE:
+        // Build description with amount if not provided
+        const stockFeeDescription = payment.description || `Cuota de acciones: ${payment.amount.toFixed(2)}`;
+        
         // Cash entry (debit - money received)
         entries.push({
           accountType: CASH_ACCOUNT,
           amount: payment.amount,
-          description: payment.description || 'Stock fee payment',
+          description: stockFeeDescription,
           stockId: payment.referenceId || null,
         });
         // Stock capital entry (credit - increase capital)
         entries.push({
           accountType: STOCK_CAPITAL_ACCOUNT,
           amount: -payment.amount,
-          description: payment.description || 'Stock fee payment',
+          description: stockFeeDescription,
           stockId: payment.referenceId || null,
         });
         break;
 
       case PaymentType.MANDATORY_CONTRIBUTION:
+        // Build description with amount if not provided
+        const mandatoryDescription = payment.description || `Aporte obligatorio: ${payment.amount.toFixed(2)}`;
+        
         // Cash entry (debit - money received)
         entries.push({
           accountType: CASH_ACCOUNT,
           amount: payment.amount,
-          description: payment.description || 'Mandatory contribution',
+          description: mandatoryDescription,
           mandatoryContributionId: payment.referenceId || null,
         });
         // Mandatory contribution income entry (credit - income)
         entries.push({
           accountType: MANDATORY_CONTRIBUTION_INCOME_ACCOUNT,
           amount: -payment.amount,
-          description: payment.description || 'Mandatory contribution',
+          description: mandatoryDescription,
           mandatoryContributionId: payment.referenceId || null,
         });
         break;
 
       case PaymentType.FEE:
+        // Build description with amount if not provided
+        const feeDescription = payment.description || `Multa/otro pago: ${payment.amount.toFixed(2)}`;
+        
         // Cash entry (debit - money received)
         entries.push({
           accountType: CASH_ACCOUNT,
           amount: payment.amount,
-          description: payment.description || 'Fee payment',
+          description: feeDescription,
         });
         // Fee income entry (credit - income)
         entries.push({
           accountType: FEE_INCOME_ACCOUNT,
           amount: -payment.amount,
-          description: payment.description || 'Fee payment',
+          description: feeDescription,
         });
         break;
 
       case PaymentType.INSURANCE:
+        // Build description with amount if not provided
+        const insuranceDescription = payment.description || `Seguro de deuda: ${payment.amount.toFixed(2)}`;
+        
         // Cash entry (debit - money received)
         entries.push({
           accountType: CASH_ACCOUNT,
           amount: payment.amount,
-          description: payment.description || 'Insurance payment',
+          description: insuranceDescription,
         });
         // Insurance income entry (credit - income)
         entries.push({
           accountType: INSURANCE_INCOME_ACCOUNT,
           amount: -payment.amount,
-          description: payment.description || 'Insurance payment',
+          description: insuranceDescription,
         });
         break;
 
       case PaymentType.NOVELTY:
         // Novelty is special: it represents a loss/discount
+        // Build description with amount if not provided
+        const noveltyDescription = payment.description || `Novedad/descuento: ${payment.amount.toFixed(2)}`;
+        
         // Cash entry (credit - money goes out or negative entry)
         entries.push({
           accountType: CASH_ACCOUNT,
           amount: -payment.amount,
-          description: payment.description || 'Novelty payment',
+          description: noveltyDescription,
         });
         // Novelty loss entry (debit - loss)
         entries.push({
           accountType: NOVELTY_LOSS_ACCOUNT,
           amount: payment.amount,
-          description: payment.description || 'Novelty payment',
+          description: noveltyDescription,
         });
         break;
 
       case PaymentType.LOAN_PAYMENT: {
         // Loan payment ledger entries
+        const interestPaid = loanPaymentInfo?.interestPaid ?? 0;
+        const principalPaid = loanPaymentInfo?.principalPaid ?? payment.amount;
+        
+        // Build detailed description if not provided
+        let cashDescription = payment.description;
+        if (!cashDescription) {
+          if (interestPaid > 0 && principalPaid > 0) {
+            cashDescription = `Pago préstamo - Capital: ${principalPaid.toFixed(2)}, Intereses: ${interestPaid.toFixed(2)}`;
+          } else if (principalPaid > 0) {
+            cashDescription = `Pago préstamo - Capital: ${principalPaid.toFixed(2)}`;
+          } else {
+            cashDescription = 'Loan payment';
+          }
+        }
+        
         // Cash entry (debit - money received)
         entries.push({
           accountType: CASH_ACCOUNT,
           amount: payment.amount,
-          description: payment.description || 'Loan payment',
+          description: cashDescription,
           loanId: payment.referenceId || null,
         });
 
         // Interest income entry (credit - income) if interest was paid
-        if (loanPaymentInfo && loanPaymentInfo.interestPaid > 0) {
+        if (interestPaid > 0) {
+          let interestDescription = payment.description;
+          if (!interestDescription) {
+            interestDescription = `Intereses préstamo: ${interestPaid.toFixed(2)}`;
+          }
           entries.push({
             accountType: INTEREST_INCOME_ACCOUNT,
-            amount: -loanPaymentInfo.interestPaid,
-            description: payment.description || 'Loan interest payment',
+            amount: -interestPaid,
+            description: interestDescription,
             loanId: payment.referenceId || null,
           });
         }
@@ -347,13 +397,15 @@ export class RecordMonthlyPaymentsUseCase {
         // Loans receivable entry (credit - reduce loan balance) for principal portion
         // Note: The actual loan balance update is handled by loan.recordPayment()
         // in step 9 of the execute method
-        const principalAmount =
-          loanPaymentInfo?.principalPaid ?? payment.amount;
-        if (principalAmount > 0) {
+        if (principalPaid > 0) {
+          let principalDescription = payment.description;
+          if (!principalDescription) {
+            principalDescription = `Abono capital préstamo: ${principalPaid.toFixed(2)}`;
+          }
           entries.push({
             accountType: LOANS_RECEIVABLE_ACCOUNT,
-            amount: -principalAmount,
-            description: payment.description || 'Loan principal payment',
+            amount: -principalPaid,
+            description: principalDescription,
             loanId: payment.referenceId || null,
           });
         }

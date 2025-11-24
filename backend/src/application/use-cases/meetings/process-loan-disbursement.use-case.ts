@@ -82,6 +82,36 @@ export class ProcessLoanDisbursementUseCase {
         );
       }
 
+      // Calcular el término del préstamo usando la fórmula de amortización
+      // n = -log(1 - (P * r) / A) / log(1 + r)
+      // donde: n = número de períodos, P = principal, r = tasa mensual, A = pago mensual
+      let calculatedTerm: number;
+      const principal = item.newLoanRequest.approvedAmount;
+      const monthlyRate = item.newLoanRequest.interestRate / 12;
+      const monthlyPayment = item.newLoanRequest.monthlyPaymentAmount;
+
+      if (monthlyPayment <= 0) {
+        // Si el pago mensual es 0, usar un término por defecto de 24 meses
+        calculatedTerm = 80;
+      } else if (monthlyRate <= 0) {
+        // Si no hay interés, calcular término simple
+        calculatedTerm = Math.ceil(principal / monthlyPayment);
+      } else {
+        // Calcular usando fórmula de amortización
+        const numerator = 1 - (principal * monthlyRate) / monthlyPayment;
+        if (numerator <= 0) {
+          // El pago mensual es muy pequeño, usar cálculo simple
+          calculatedTerm = Math.ceil(principal / monthlyPayment);
+        } else {
+          calculatedTerm = Math.ceil(
+            -Math.log(numerator) / Math.log(1 + monthlyRate),
+          );
+        }
+      }
+
+      // Asegurar que el término sea al menos 1
+      calculatedTerm = Math.max(1, calculatedTerm);
+
       // CreateLoanUseCase ya maneja efectivo disponible y desembolsos parciales
       await this.createLoanUseCase.execute({
         memberId: item.memberId,
@@ -91,7 +121,7 @@ export class ProcessLoanDisbursementUseCase {
         disbursedAmount: Math.min(item.amount, availableCash),
         monthlyPaymentAmount: item.newLoanRequest.monthlyPaymentAmount,
         interestRate: item.newLoanRequest.interestRate,
-        term: 0, // Se calculará según tipo de préstamo
+        term: calculatedTerm,
         guaranteedStockId: null,
         outstandingBalance: item.newLoanRequest.approvedAmount,
       });
