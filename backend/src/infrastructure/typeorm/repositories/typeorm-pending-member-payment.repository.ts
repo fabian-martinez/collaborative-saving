@@ -43,9 +43,39 @@ export class TypeOrmPendingMemberPaymentRepository
   async findPendingByMeeting(
     meetingId: string,
   ): Promise<PendingMemberPaymentDomain[]> {
+    console.log(
+      `[TypeOrmPendingMemberPaymentRepository] findPendingByMeeting - meetingId: ${meetingId}`,
+    );
+    console.log(
+      `[TypeOrmPendingMemberPaymentRepository] Buscando TODOS los pagos pendientes activos (sin filtrar por reunión)`,
+    );
+
+    // Buscar TODOS los pagos pendientes activos, sin importar la reunión
+    // Esto permite que pagos pendientes de reuniones anteriores puedan ser pagados en la reunión actual
     const entities = await this.repo.find({
-      where: { meetingId, status: 'pending' },
+      where: { status: 'pending' },
+      order: { createdAt: 'ASC' }, // Ordenar por fecha de creación para mantener consistencia
     });
+
+    console.log(
+      `[TypeOrmPendingMemberPaymentRepository] Found ${entities.length} pending payments (all meetings)`,
+    );
+    entities.forEach((e, idx) => {
+      console.log(
+        `[TypeOrmPendingMemberPaymentRepository] Entity ${idx + 1}:`,
+        {
+          id: e.id,
+          memberId: e.memberId,
+          meetingId: e.meetingId,
+          referenceMeetingId: e.referenceMeetingId,
+          type: e.type,
+          status: e.status,
+          amount: e.amount,
+          notes: e.notes,
+        },
+      );
+    });
+
     return entities.map((e) => PendingMemberPaymentMapper.toDomain(e));
   }
 

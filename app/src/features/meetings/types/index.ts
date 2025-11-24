@@ -12,7 +12,8 @@ export interface MemberDue {
   details?: {
     interest: number;
     principal: number;
-    outstanding_balance: number;
+    outstandingBalance: number; // camelCase después de normalización del API
+    outstanding_balance?: number; // Mantener compatibilidad con snake_case por si acaso
   };
   monthlyContribution?: number;
   stockQuantity?: number;

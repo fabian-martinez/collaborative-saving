@@ -56,7 +56,7 @@
               </div>
             </div>
             <div v-if="due.details" class="w-full pl-4 mt-2 space-y-1 text-md text-base-content/80 border-l-2 border-base-300/80">
-              <div class="flex justify-between"><span>Saldo actual:</span> <span>{{ formatNumber(due.details.outstanding_balance) }}</span></div>
+              <div class="flex justify-between"><span>Saldo actual:</span> <span>{{ formatNumber(due.details.outstandingBalance ?? due.details.outstanding_balance ?? 0) }}</span></div>
               <div class="flex justify-between"><span>Abono Capital:</span> <span>{{ formatNumber(payments[due.originalIndex].amount - due.details.interest) }}</span></div>
               <div class="flex justify-between"><span>Intereses:</span> <span class="font-semibold text-accent">{{ formatNumber(due.details.interest) }}</span></div>
               <div v-if="due.creationDate" class="flex justify-between text-sm text-base-content/60"><span>Fecha préstamo:</span> <span>{{ formatDate(due.creationDate) }}</span></div>
