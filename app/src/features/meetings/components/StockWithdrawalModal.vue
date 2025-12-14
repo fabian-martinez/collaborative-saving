@@ -43,8 +43,15 @@
         </div>
         
         <div class="mb-4">
+          <label class="label cursor-pointer justify-start gap-3">
+            <input type="checkbox" v-model="autoMatchAmount" class="checkbox checkbox-primary" />
+            <span class="label-text">Igualar monto entregado al valor estimado</span>
+          </label>
+        </div>
+        
+        <div class="mb-4">
           <label class="block font-semibold mb-1">Monto entregado</label>
-          <input type="number" min="0" :max="estimatedTotal" v-model.number="deliveredAmount" class="input input-bordered w-full" step="any" />
+          <input type="number" min="0" :max="estimatedTotal" v-model.number="deliveredAmount" class="input input-bordered w-full" step="any" :disabled="autoMatchAmount" />
         </div>
         
         <div class="mb-4">
@@ -95,34 +102,63 @@ const emits = defineEmits(['save', 'cancel'])
 
 const withdrawals = ref<Withdrawal[]>([])
 const deliveredAmount = ref(0)
+const autoMatchAmount = ref(true)
+
+// Helper para encontrar un stock por su ID
+const findStockById = (stockId: string) => {
+  return (props.memberStocks || []).find(s => s.stockId === stockId)
+}
+
+const estimatedTotal = computed(() => {
+  return withdrawals.value.reduce((sum, w) => {
+    const stock = findStockById(w.stockId)
+    return sum + (w.quantity * (stock?.currentValue || 0))
+  }, 0)
+})
 
 watch(() => props.memberStocks, (newStocks) => {
   withdrawals.value = (newStocks || []).map(stock => ({ stockId: stock.stockId, quantity: 0 }))
   deliveredAmount.value = 0
 }, { immediate: true })
 
-const estimatedTotal = computed(() => {
-  return withdrawals.value.reduce((sum, w, idx) => {
-    const stock = (props.memberStocks || [])[idx]
-    return sum + (w.quantity * (stock?.currentValue || 0))
-  }, 0)
-})
+// Cuando autoMatchAmount está activado, igualar deliveredAmount con estimatedTotal
+watch([autoMatchAmount, estimatedTotal], ([isAuto, total]) => {
+  if (isAuto) {
+    deliveredAmount.value = total
+  }
+}, { immediate: true })
 
 const withdrawalSummary = computed(() => {
   return withdrawals.value
-    .map((w, idx) => ({
-      stockId: w.stockId,
-      stockType: (props.memberStocks || [])[idx]?.stockType || '',
-      quantity: w.quantity,
-      currentValue: (props.memberStocks || [])[idx]?.currentValue || 0,
-      total: w.quantity * ((props.memberStocks || [])[idx]?.currentValue || 0)
-    }))
+    .map((w) => {
+      const stock = findStockById(w.stockId)
+      return {
+        stockId: w.stockId,
+        stockType: stock?.stockType || '',
+        quantity: w.quantity,
+        currentValue: stock?.currentValue || 0,
+        total: w.quantity * (stock?.currentValue || 0)
+      }
+    })
     .filter(item => item.quantity > 0)
 })
 
 function saveWithdrawal() {
+  // Mapear withdrawals con los datos completos de stockType y currentValue
+  const withdrawalsWithDetails = withdrawals.value
+    .map((w) => {
+      const stock = findStockById(w.stockId)
+      return {
+        stockId: w.stockId,
+        stockType: stock?.stockType || '',
+        quantity: w.quantity,
+        currentValue: stock?.currentValue || 0
+      }
+    })
+    .filter(w => w.quantity > 0)
+  
   emits('save', {
-    withdrawals: withdrawals.value,
+    withdrawals: withdrawalsWithDetails,
     estimatedTotal: estimatedTotal.value,
     deliveredAmount: deliveredAmount.value,
     pending: estimatedTotal.value - deliveredAmount.value
