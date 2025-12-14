@@ -255,6 +255,7 @@
       v-if="selectedMember"
       :show="showStockWithdrawalModal"
       :member="selectedMember"
+      :memberStocks="memberStocksForWithdrawal"
       @save="handleSaveStockWithdrawal"
       @cancel="closeStockWithdrawalModal"
     />
@@ -393,6 +394,18 @@ const maxCapacity = computed(() => {
   // El máximo disponible es la diferencia
   const max = (totalStockValue * 2.0) - totalNonStockLoans
   return max > 0 ? max : 0
+})
+
+// Convertir suscripciones de acciones al formato esperado por el modal de retiro
+const memberStocksForWithdrawal = computed(() => {
+  return memberStockSubscriptions.value
+    .filter(sub => sub.stock && sub.status === 'active' && sub.quantity > 0)
+    .map(sub => ({
+      stockId: sub.id, // Usar el ID de la suscripción como identificador único
+      stockType: sub.stock!.type || 'accion',
+      quantity: Number(sub.quantity),
+      currentValue: Number(sub.stock!.value)
+    }))
 })
 
 const router = useRouter()
@@ -568,6 +581,9 @@ function hasDividends(memberId: string) {
   return dividendsByMember.value[memberId]?.length > 0
 }
 function openStockWithdrawalModal() {
+  if (!selectedMember.value) {
+    return
+  }
   showStockWithdrawalModal.value = true
 }
 function closeStockWithdrawalModal() {
