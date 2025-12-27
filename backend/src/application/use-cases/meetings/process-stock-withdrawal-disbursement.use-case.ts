@@ -69,7 +69,8 @@ export class ProcessStockWithdrawalDisbursementUseCase {
       throw new BusinessRuleError('El valor de la acción debe ser > 0');
     }
 
-    const requestedQuantity = requestedAmount / stockValue;
+    // Redondear a 10 decimales para evitar problemas de precisión de punto flotante
+    const requestedQuantity = Math.round((requestedAmount / stockValue) * 1e10) / 1e10;
 
     // 4. Obtener suscripciones del socio para este stock
     const allSubscriptions =

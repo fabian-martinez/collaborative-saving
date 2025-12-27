@@ -366,7 +366,7 @@ const editingPendingIdx = ref<number | null>(null)
 const editingPendingType = ref<'loan' | 'withdrawal' | 'dividend' | 'other' | null>(null)
 // Estado local para préstamos y retiros NO confirmados
 const localLoansByMember = ref<Record<string, Array<{ type: string; approved: number; delivered: number }>>>({})
-const localWithdrawalsByMember = ref<Record<string, Array<{ stockType: string; quantity: number; estimatedValue: number; deliveredAmount: number; pending: number }>>>({})
+const localWithdrawalsByMember = ref<Record<string, Array<{ stockType: string; quantity: number; estimatedValue: number; deliveredAmount: number; pending: number; stockId?: string; withdrawals?: Array<{ stockId: string; quantity: number }> }>>>({})
 
 const memberStockSubscriptions = ref<StockSubscription[]>([])
 const memberLoans = ref<Loan[]>([])
@@ -401,7 +401,7 @@ const memberStocksForWithdrawal = computed(() => {
   return memberStockSubscriptions.value
     .filter(sub => sub.stock && sub.status === 'active' && sub.quantity > 0)
     .map(sub => ({
-      stockId: sub.id, // Usar el ID de la suscripción como identificador único
+      stockId: sub.stockId, // Usar el stockId (ID del tipo de acción), no sub.id (ID de la suscripción)
       stockType: sub.stock!.type || 'accion',
       quantity: Number(sub.quantity),
       currentValue: Number(sub.stock!.value)
@@ -537,13 +537,15 @@ function handleSaveLoan(loan: { type: string; approved: number; delivered: numbe
   if (!selectedMember.value) return
   if (editingPendingIdx.value !== null && editingPendingType.value === 'loan') {
     const transactions = [...pendingTransactions.value]
+    const originalTransaction = transactions[editingPendingIdx.value]
     transactions[editingPendingIdx.value] = {
-      id: transactions[editingPendingIdx.value].id,
+      id: originalTransaction.id,
       memberId: selectedMember.value.id,
       type: 'loan',
       description: loan.type,
       amount: loan.delivered,
-      originalAmount: loan.approved
+      originalAmount: loan.approved,
+      loanId: originalTransaction.loanId // Preservar el loanId
     }
     pendingTransactions.value = transactions
     closeModal()
@@ -591,31 +593,39 @@ function closeStockWithdrawalModal() {
   editingPendingIdx.value = null
   editingPendingType.value = null
 }
-function handleSaveStockWithdrawal(withdrawalData: { deliveredAmount: number; estimatedTotal: number; withdrawals: Array<{ stockType: string; quantity: number; currentValue: number }>; pending: number }) {
+function handleSaveStockWithdrawal(withdrawalData: { deliveredAmount: number; estimatedTotal: number; withdrawals: Array<{ stockId: string; stockType: string; quantity: number; currentValue: number }>; pending: number }) {
   if (!selectedMember.value) return
   if (editingPendingIdx.value !== null && editingPendingType.value === 'withdrawal') {
     const transactions = [...pendingTransactions.value]
+    const originalTransaction = transactions[editingPendingIdx.value]
     transactions[editingPendingIdx.value] = {
-      id: transactions[editingPendingIdx.value].id,
+      id: originalTransaction.id,
       memberId: selectedMember.value.id,
       type: 'withdrawal',
       description: 'Retiro de Acciones (Editado)',
       amount: withdrawalData.deliveredAmount,
-      originalAmount: withdrawalData.estimatedTotal
+      originalAmount: withdrawalData.estimatedTotal,
+      loanId: originalTransaction.loanId // Preservar el loanId si existe
     }
     pendingTransactions.value = transactions
     closeStockWithdrawalModal()
     return
   }
   const withdrawals = [...localWithdrawals.value]
+  // Guardar cada retiro individualmente con la estructura completa incluyendo stockId y el array withdrawals
   const formattedWithdrawals = withdrawalData.withdrawals
     .filter((w: { quantity: number }) => w.quantity > 0)
-    .map((w: { stockType: string; quantity: number; currentValue: number }) => ({
+    .map((w: { stockId: string; stockType: string; quantity: number; currentValue: number }) => ({
       stockType: w.stockType || 'Desconocido',
       quantity: w.quantity,
       estimatedValue: w.quantity * (w.currentValue || 0),
       deliveredAmount: withdrawalData.deliveredAmount,
-      pending: withdrawalData.pending
+      pending: withdrawalData.pending,
+      stockId: w.stockId, // Agregar stockId para el caso legacy
+      withdrawals: [{
+        stockId: w.stockId,
+        quantity: w.quantity
+      }] // Array con este retiro específico
     }))
   withdrawals.push(...formattedWithdrawals)
   localWithdrawals.value = withdrawals
@@ -725,106 +735,152 @@ async function aplicarDesembolsos() {
       // Préstamos
       if (localLoansByMember.value[member.id]) {
         for (const loan of localLoansByMember.value[member.id]) {
-          let interestRate = null;
+          const loanAmount = Number(loan.delivered);
+          // Validar que el monto sea válido
+          if (loanAmount <= 0) {
+            console.warn(`Skipping loan with invalid amount: ${loanAmount}`, loan);
+            continue;
+          }
+          
+          let interestRate = 0;
           if (loan.type === 'corriente') interestRate = 0.015;
           else if (loan.type === 'agil' || loan.type === 'prioritario') interestRate = 0.02;
-          plan.push({
-            ...loan,
+          
+          const planItem: DisbursementPlan = {
             memberId: member.id,
             type: 'loan',
+            amount: loanAmount,
             status: 'pending',
-            amount: Number(loan.delivered),
             newLoanRequest: {
               memberId: member.id,
-              amount: Number(loan.delivered),
+              amount: loanAmount,
               loanType: loan.type as 'corriente' | 'agil' | 'accion' | 'prioritario',
-              approvedAmount: Number(loan.approved),
+              approvedAmount: Number(loan.approved) || loanAmount,
               monthlyPaymentAmount: 0,
-              interestRate: interestRate || 0,
+              interestRate: interestRate,
               notes: ''
             }
-          })
+          }
+          plan.push(planItem)
         }
       }
       // Retiros (enviar cada retiro individualmente)
       if (localWithdrawalsByMember.value[member.id]) {
         for (const withdrawal of localWithdrawalsByMember.value[member.id]) {
+          const withdrawalAmount = Number(withdrawal.deliveredAmount);
+          // Validar que el monto sea válido
+          if (withdrawalAmount <= 0) {
+            console.warn(`Skipping withdrawal with invalid amount: ${withdrawalAmount}`, withdrawal);
+            continue;
+          }
+          
           const withdrawalWithDetails = withdrawal as { withdrawals?: Array<{ stockId: string; quantity: number }> };
           if (typeof withdrawalWithDetails.withdrawals !== 'undefined' && Array.isArray(withdrawalWithDetails.withdrawals)) {
             for (const w of withdrawalWithDetails.withdrawals) {
-              plan.push({
-                ...withdrawal,
+              if (!w.stockId) {
+                console.warn(`Skipping withdrawal with missing stockId`, w);
+                continue;
+              }
+              
+              const planItem: DisbursementPlan = {
                 memberId: member.id,
                 type: 'withdrawal',
+                amount: withdrawalAmount,
                 status: 'pending',
-                amount: Number(withdrawal.deliveredAmount),
                 disbursementStockRequest: {
-                  stockId: w.stockId || '',
-                  stockWithdrawalQuantity: w.quantity || 0
+                  stockId: w.stockId,
+                  stockWithdrawalQuantity: Math.round(w.quantity || 0)
                 }
-              })
+              }
+              plan.push(planItem)
             }
           } else {
             // Caso legacy: solo un retiro
-            plan.push({
-              ...withdrawal,
+            // Validar que haya stockId disponible (requerido por v2)
+            const legacyStockId = (withdrawal as { stockId?: string }).stockId;
+            if (!legacyStockId) {
+              console.warn(`Skipping legacy withdrawal with missing stockId`, withdrawal);
+              continue;
+            }
+            
+            const planItem: DisbursementPlan = {
               memberId: member.id,
               type: 'withdrawal',
+              amount: withdrawalAmount,
               status: 'pending',
-              amount: Number(withdrawal.deliveredAmount),
               disbursementStockRequest: {
-                stockId: '',
-                stockWithdrawalQuantity: withdrawal.quantity || 0
+                stockId: legacyStockId,
+                stockWithdrawalQuantity: Math.round(withdrawal.quantity || 0)
               }
-            })
+            }
+            plan.push(planItem)
           }
         }
       }
       // Pendientes
       if (pendingTransactionsByMember.value[member.id]) {
         for (const pending of pendingTransactionsByMember.value[member.id]) {
-          console.log('Processing pending transaction:', pending)
-          let typeApi = 'otro';
+          let typeApi: 'loan' | 'withdrawal' | 'dividend' | 'other' = 'other';
           const amountApi = Number(pending.amount || 0);
           if (pending.type === 'loan') typeApi = 'loan';
-          else if (pending.type === 'withdrawal') typeApi = 'retiro_accion';
+          else if (pending.type === 'withdrawal') typeApi = 'withdrawal';
           else if (pending.type === 'dividend') typeApi = 'dividend';
-          const planItem = {
+          
+          // Validar que el monto sea válido
+          if (amountApi <= 0) {
+            console.warn(`Skipping pending transaction with invalid amount: ${amountApi}`, pending);
+            continue;
+          }
+          
+          const planItem: DisbursementPlan = {
             memberId: member.id,
-            type: typeApi as 'loan' | 'withdrawal' | 'dividend' | 'other',
+            type: typeApi,
             amount: amountApi,
-            status: 'pending' as 'pending' | 'approved' | 'delivered',
-            notes: pending.description,
-            loanId: pending.loanId,
+            status: 'pending',
+            ...(pending.description && { notes: pending.description }),
+            ...(pending.loanId && { loanId: pending.loanId }),
             ...(pending.id && pending.id !== '' && { pendingMemberPaymentId: pending.id })
           }
-          console.log('Created plan item:', planItem)
           plan.push(planItem)
         }
       }
       // Dividendos
       if (dividendsByMember.value[member.id]) {
         for (const dividend of dividendsByMember.value[member.id]) {
-          plan.push({
-            ...dividend,
+          const dividendAmount = Number(dividend.amount);
+          // Validar que el monto sea válido
+          if (dividendAmount <= 0) {
+            console.warn(`Skipping dividend with invalid amount: ${dividendAmount}`, dividend);
+            continue;
+          }
+          
+          const planItem: DisbursementPlan = {
             memberId: member.id,
             type: 'dividend',
-            status: 'pending',
-            amount: Number(dividend.amount)
-          })
+            amount: dividendAmount,
+            status: 'pending'
+          }
+          plan.push(planItem)
         }
       }
       // Otros desembolsos
       if (localOtherDisbursementsByMember.value[member.id]) {
         for (const other of localOtherDisbursementsByMember.value[member.id]) {
-          plan.push({
-            ...other,
+          const otherAmount = Number(other.amount);
+          // Validar que el monto sea válido
+          if (otherAmount <= 0) {
+            console.warn(`Skipping other disbursement with invalid amount: ${otherAmount}`, other);
+            continue;
+          }
+          
+          const planItem: DisbursementPlan = {
             memberId: member.id,
             type: 'other',
+            amount: otherAmount,
             status: 'pending',
-            notes: other.description,
-            amount: Number(other.amount)
-          })
+            ...(other.description && { notes: other.description })
+          }
+          plan.push(planItem)
         }
       }
     }

@@ -43,7 +43,9 @@ export class StockWithdrawalCalculator {
       0,
     );
 
-    if (requestedQuantity > totalWithdrawable) {
+    // Usar tolerancia (epsilon) para manejar errores de precisión de punto flotante
+    const epsilon = 0.0001;
+    if (requestedQuantity > totalWithdrawable + epsilon) {
       throw new Error(
         `Requested quantity (${requestedQuantity}) exceeds available withdrawable quantity (${totalWithdrawable})`,
       );
@@ -105,6 +107,9 @@ export class StockWithdrawalCalculator {
   ): boolean {
     const withdrawableQuantity =
       this.calculateWithdrawableQuantity(subscriptions);
-    return withdrawableQuantity >= requestedQuantity;
+    // Usar tolerancia (epsilon) para manejar errores de precisión de punto flotante
+    // Si la diferencia es menor a 0.0001, se considera igual
+    const epsilon = 0.0001;
+    return withdrawableQuantity >= requestedQuantity - epsilon;
   }
 }

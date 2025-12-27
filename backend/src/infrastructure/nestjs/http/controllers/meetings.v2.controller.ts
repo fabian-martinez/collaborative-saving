@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   HttpStatus,
   HttpException,
+  Logger,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -63,6 +64,8 @@ import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 @ApiTags('Meetings V2')
 @Controller('v2/meetings')
 export class MeetingsV2Controller {
+  private readonly logger = new Logger(MeetingsV2Controller.name);
+
   constructor(
     private readonly openMeetingUseCase: OpenMeetingUseCase,
     private readonly closeMeetingUseCase: CloseMeetingUseCase,
@@ -737,7 +740,17 @@ export class MeetingsV2Controller {
   ): Promise<DisbursementPlanPreviewResponseHttpDto> {
     try {
       const result = await this.getDisbursementPlanPreviewQuery.execute(id);
-      return this.mapDisbursementPlanPreviewToHttp(result);
+      this.logger.log(
+        `Disbursement plan preview for meeting ${id}: ${result.plan.length} items`,
+      );
+      const mappedResult = this.mapDisbursementPlanPreviewToHttp(result);
+      this.logger.log(
+        `Mapped result - First 3 items types: ${mappedResult.plan
+          .slice(0, 3)
+          .map((item) => `${item.type} (${typeof item.type})`)
+          .join(', ')}`,
+      );
+      return mappedResult;
     } catch (error: unknown) {
       if (error instanceof MeetingNotFoundException) {
         throw new HttpException(error.message, HttpStatus.NOT_FOUND);
@@ -782,6 +795,7 @@ export class MeetingsV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ExecuteDisbursementPlanHttpDto,
   ): Promise<ExecuteDisbursementPlanResponseHttpDto> {
+    console.log('dto', dto);
     try {
       const executeDto: ExecuteDisbursementPlanDto = {
         meetingId: id,
@@ -815,8 +829,17 @@ export class MeetingsV2Controller {
   private mapDisbursementPlanPreviewToHttp(
     dto: DisbursementPlanPreviewDto,
   ): DisbursementPlanPreviewResponseHttpDto {
+    const mappedPlan = dto.plan.map((item) =>
+      this.mapDisbursementPlanItemToHttp(item),
+    );
+    this.logger.log(
+      `Mapped ${mappedPlan.length} items. Sample types: ${mappedPlan
+        .slice(0, 5)
+        .map((i) => i.type)
+        .join(', ')}`,
+    );
     return {
-      plan: dto.plan.map((item) => this.mapDisbursementPlanItemToHttp(item)),
+      plan: mappedPlan,
       available_cash: dto.availableCash,
       total_to_disburse: dto.totalToDisburse,
     };
@@ -825,35 +848,53 @@ export class MeetingsV2Controller {
   private mapDisbursementPlanItemToHttp(
     item: DisbursementPlanItemDto,
   ): DisbursementPlanItemHttpDto {
+    const mappedType = this.mapDisbursementTypeToHttp(item.type);
+    // El tipo ya es un string ('dividend', 'withdrawal', etc.)
+    this.logger.debug(
+      `Mapping item: originalType=${item.type}, mappedType=${mappedType}, typeOf=${typeof mappedType}, pendingMemberPaymentId=${item.pendingMemberPaymentId}`,
+    );
     const result: DisbursementPlanItemHttpDto = {
       member_id: item.memberId,
-      type: this.mapDisbursementTypeToHttp(item.type),
+      type: mappedType,
       amount: item.amount,
     };
+    this.logger.debug(
+      `Result type: ${result.type}, typeOf=${typeof result.type}`,
+    );
 
     if (item.status) result.status = item.status;
     if (item.notes) result.notes = item.notes;
     if (item.loanId) result.loan_id = item.loanId;
     if (item.stockSubscriptionId)
       result.stock_subscription_id = item.stockSubscriptionId;
-    if (item.pendingMemberPaymentId)
+    // Siempre asignar pendingMemberPaymentId si existe
+    if (item.pendingMemberPaymentId) {
       result.pending_member_payment_id = item.pendingMemberPaymentId;
+      this.logger.debug(
+        `Assigned pending_member_payment_id: ${item.pendingMemberPaymentId}`,
+      );
+    } else {
+      this.logger.warn(
+        `Missing pendingMemberPaymentId for item type=${item.type}, memberId=${item.memberId}, amount=${item.amount}`,
+      );
+    }
     if (item.disbursementStockRequest) {
+      const stockRequest = item.disbursementStockRequest;
       result.disbursement_stock_request = {
-        stock_id: item.disbursementStockRequest.stockId,
-        stock_withdrawal_quantity:
-          item.disbursementStockRequest.stockWithdrawalQuantity,
+        stock_id: stockRequest.stockId,
+        stock_withdrawal_quantity: stockRequest.stockWithdrawalQuantity,
       };
     }
     if (item.newLoanRequest) {
+      const loanRequest = item.newLoanRequest;
       result.new_loan_request = {
-        member_id: item.newLoanRequest.memberId,
-        amount: item.newLoanRequest.amount,
-        loan_type: item.newLoanRequest.loanType,
-        approved_amount: item.newLoanRequest.approvedAmount,
-        monthly_payment_amount: item.newLoanRequest.monthlyPaymentAmount,
-        interest_rate: item.newLoanRequest.interestRate,
-        notes: item.newLoanRequest.notes,
+        member_id: loanRequest.memberId,
+        amount: loanRequest.amount,
+        loan_type: loanRequest.loanType,
+        approved_amount: loanRequest.approvedAmount,
+        monthly_payment_amount: loanRequest.monthlyPaymentAmount,
+        interest_rate: loanRequest.interestRate,
+        notes: loanRequest.notes,
       };
     }
 
@@ -901,6 +942,8 @@ export class MeetingsV2Controller {
   private mapDisbursementTypeToHttp(
     type: DisbursementType,
   ): DisbursementTypeHttp {
+    // Mapear directamente usando el valor del enum (que es string)
+    // Devolver el valor del enum DisbursementTypeHttp para asegurar la serialización correcta
     switch (type) {
       case DisbursementType.DIVIDEND:
         return DisbursementTypeHttp.DIVIDEND;
@@ -916,20 +959,19 @@ export class MeetingsV2Controller {
   }
 
   private mapDisbursementTypeFromHttp(
-    type: DisbursementTypeHttp,
+    type: DisbursementTypeHttp | string,
   ): DisbursementType {
-    switch (type) {
-      case DisbursementTypeHttp.DIVIDEND:
-        return DisbursementType.DIVIDEND;
-      case DisbursementTypeHttp.WITHDRAWAL:
-        return DisbursementType.WITHDRAWAL;
-      case DisbursementTypeHttp.LOAN:
-        return DisbursementType.LOAN;
-      case DisbursementTypeHttp.OTHER:
-        return DisbursementType.OTHER;
-      default:
-        return DisbursementType.OTHER;
-    }
+    const typeMap: Record<DisbursementTypeHttp, DisbursementType> = {
+      [DisbursementTypeHttp.DIVIDEND]: DisbursementType.DIVIDEND,
+      [DisbursementTypeHttp.WITHDRAWAL]: DisbursementType.WITHDRAWAL,
+      [DisbursementTypeHttp.LOAN]: DisbursementType.LOAN,
+      [DisbursementTypeHttp.OTHER]: DisbursementType.OTHER,
+    };
+
+    const enumType =
+      typeof type === 'string' ? (type as DisbursementTypeHttp) : type;
+
+    return typeMap[enumType] ?? DisbursementType.OTHER;
   }
 
   private mapExecuteDisbursementPlanResponseToHttp(

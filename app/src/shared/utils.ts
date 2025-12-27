@@ -95,7 +95,24 @@ export function normalizeToSnakeCase<T>(obj: T): T {
 
   // Si es un array, convertir cada elemento
   if (Array.isArray(obj)) {
-    return obj.map(item => normalizeToSnakeCase(item)) as T;
+    // #region agent log
+    if (Array.isArray(obj) && obj.length > 0 && typeof obj[0] === 'object' && obj[0] !== null && 'amount' in obj[0]) {
+      const totalBefore = (obj as any[]).reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0);
+      const logBeforeNormalize = {location:'utils.ts:98',message:'Before normalizing array to snake_case',data:{arrayLength:obj.length,totalAmount:totalBefore},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'};
+      console.log('[DEBUG]', logBeforeNormalize);
+      fetch('http://127.0.0.1:7242/ingest/19720b58-fc2b-4eb6-83b3-0fb7d6fdf01a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logBeforeNormalize)}).catch(()=>{});
+    }
+    // #endregion
+    const result = obj.map(item => normalizeToSnakeCase(item)) as T;
+    // #region agent log
+    if (Array.isArray(result) && result.length > 0 && typeof result[0] === 'object' && result[0] !== null && 'amount' in result[0]) {
+      const totalAfter = (result as any[]).reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0);
+      const logAfterNormalize = {location:'utils.ts:105',message:'After normalizing array to snake_case',data:{arrayLength:result.length,totalAmount:totalAfter},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'};
+      console.log('[DEBUG]', logAfterNormalize);
+      fetch('http://127.0.0.1:7242/ingest/19720b58-fc2b-4eb6-83b3-0fb7d6fdf01a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logAfterNormalize)}).catch(()=>{});
+    }
+    // #endregion
+    return result;
   }
 
   // Si es un objeto plano (no Date, no primitivos)
