@@ -872,6 +872,7 @@ const selectedSubscription = computed(() =>
   memberSubscriptions.value.find(sub => sub.id === transferForm.value.subscriptionId)
 )
 
+
 const selectedSubscriptionForLoan = computed(() => 
   memberSubscriptions.value.find(sub => sub.id === loanPaymentForm.value.subscriptionId)
 )
@@ -1092,7 +1093,13 @@ async function selectMember(member: { id: string; name: string }) {
       activeMeetingStore.meetingId ? stocksService.getMemberStockOperationsInMeeting(member.id, activeMeetingStore.meetingId) : Promise.resolve([])
     ])
     memberSubscriptions.value = subscriptions.filter(sub => sub.status === 'active')
-    memberLoans.value = loans.filter(loan => loan.outstanding_balance > 0)
+    // Asegurar que outstanding_balance sea número antes del filtro
+    memberLoans.value = loans
+      .map(loan => ({
+        ...loan,
+        outstanding_balance: Number(loan.outstanding_balance)
+      }))
+      .filter(loan => loan.outstanding_balance > 0)
     // Mapear operaciones V2 al formato esperado
     existingOperations.value = operations.map(op => ({
       id: op.id,
@@ -1345,7 +1352,39 @@ async function confirmTransfer() {
 }
 
 // Funciones de pago de crédito
-function openLoanPaymentModal() {
+async function openLoanPaymentModal() {
+  // Verificar que hay un miembro seleccionado
+  if (!selectedMember.value) {
+    error.value = 'Debe seleccionar un socio primero'
+    return
+  }
+  
+  // Cargar préstamos si no están cargados o si el miembro cambió
+  const shouldLoadLoans = memberLoans.value.length === 0 || 
+      (memberLoans.value[0] && memberLoans.value[0].member_id !== selectedMember.value.id)
+  
+  if (shouldLoadLoans) {
+    try {
+      isLoading.value = true
+      const loans = await loansService.getActiveLoansByMember(selectedMember.value.id)
+      
+      // Asegurar que outstanding_balance sea número antes del filtro
+      // El servicio ya maneja la conversión, pero verificamos por si acaso
+      const mappedLoans = loans.map(loan => ({
+        ...loan,
+        outstanding_balance: Number(loan.outstanding_balance)
+      }))
+      
+      memberLoans.value = mappedLoans.filter(loan => loan.outstanding_balance > 0)
+    } catch (err) {
+      error.value = 'Error al cargar préstamos del socio'
+      console.error(err)
+      return
+    } finally {
+      isLoading.value = false
+    }
+  }
+  
   showLoanPaymentModal.value = true
   loanPaymentForm.value = {
     subscriptionId: '',

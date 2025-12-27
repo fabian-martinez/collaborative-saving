@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { TypeOrmStockSubscriptionRepository } from './typeorm-stock-subscription.repository';
 import { StockSubscription as StockSubscriptionEntity } from '../entities/stock-subscription.entity';
 import { StockSubscription as StockSubscriptionDomain } from '@domain/entities/stock-subscription.entity';
+import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 
 describe('TypeOrmStockSubscriptionRepository', () => {
   let repository: TypeOrmStockSubscriptionRepository;
@@ -17,12 +18,21 @@ describe('TypeOrmStockSubscriptionRepository', () => {
       update: jest.fn(),
     };
 
+    const mockTransactionManager: TransactionManager = {
+      execute: jest.fn(),
+      getActiveQueryRunner: jest.fn().mockReturnValue(null),
+    } as unknown as TransactionManager;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TypeOrmStockSubscriptionRepository,
         {
           provide: getRepositoryToken(StockSubscriptionEntity),
           useValue: mockTypeOrmRepo,
+        },
+        {
+          provide: TransactionManager,
+          useValue: mockTransactionManager,
         },
       ],
     }).compile();
