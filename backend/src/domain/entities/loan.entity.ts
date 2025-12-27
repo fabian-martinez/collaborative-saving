@@ -102,6 +102,33 @@ export class Loan {
     this.validateInvariants();
   }
 
+  updateTerms(data: {
+    interestRate?: number;
+    monthlyPaymentAmount?: number;
+    term?: number;
+  }): void {
+    if (data.interestRate !== undefined) {
+      if (data.interestRate < 0 || data.interestRate > 1) {
+        throw new Error('Interest rate must be between 0 and 1');
+      }
+      this._interestRate = data.interestRate;
+    }
+    if (data.monthlyPaymentAmount !== undefined) {
+      if (data.monthlyPaymentAmount < 0) {
+        throw new Error('Monthly payment amount cannot be negative');
+      }
+      this._monthlyPaymentAmount = data.monthlyPaymentAmount;
+    }
+    if (data.term !== undefined) {
+      if (data.term < 1) {
+        throw new Error('Loan term must be >= 1');
+      }
+      this._term = data.term;
+    }
+
+    this.validateInvariants();
+  }
+
   disburse(amount: number): void {
     if (amount <= 0) {
       throw new Error('Disbursement amount must be > 0');

@@ -19,6 +19,7 @@ import { MembersV2Module } from './infrastructure/nestjs/http/modules/members-v2
 import { StocksV2Module } from './infrastructure/nestjs/http/modules/stocks-v2.module';
 import { MeetingsV2Module } from './infrastructure/nestjs/http/modules/meetings-v2.module';
 import { MandatoryContributionsV2Module } from './infrastructure/nestjs/http/modules/mandatory-contributions-v2.module';
+import { LoansV2Module } from './infrastructure/nestjs/http/modules/loans-v2.module';
 import { EventBusModule } from './infrastructure/services/event-bus/event-bus.module';
 import { TransactionManagerModule } from './infrastructure/services/transaction-manager/transaction-manager.module';
 
@@ -51,6 +52,7 @@ import { TransactionManagerModule } from './infrastructure/services/transaction-
     StocksV2Module,
     MeetingsV2Module,
     MandatoryContributionsV2Module,
+    LoansV2Module,
   ],
   controllers: [AppController],
   providers: [AppService],

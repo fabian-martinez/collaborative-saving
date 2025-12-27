@@ -2,7 +2,12 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CreateLoanUseCase } from '@application/use-cases/loans/create-loan.use-case';
 import { RecordLoanPaymentUseCase } from '@application/use-cases/loans/record-loan-payment.use-case';
+import { UpdateLoanTermsUseCase } from '@application/use-cases/loans/update-loan-terms.use-case';
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
+import { GetLoansQueryHandler } from '@application/queries/loans/get-loans.query-handler';
+import { GetLoanDetailQueryHandler } from '@application/queries/loans/get-loan-detail.query-handler';
+import { GetMemberLoansQueryHandler } from '@application/queries/loans/get-member-loans.query-handler';
+import { LoansV2Controller } from '../controllers/loans.v2.controller';
 import { TypeOrmMemberRepository } from '@infrastructure/typeorm/repositories/typeorm-member.repository';
 import { TypeOrmMeetingRepository } from '@infrastructure/typeorm/repositories/typeorm-meeting.repository';
 import { TypeOrmLoanRepository } from '@infrastructure/typeorm/repositories/typeorm-loan.repository';
@@ -26,6 +31,7 @@ import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pendi
 import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
+import { EventBus } from '@domain/ports/services/event-bus.port';
 import { OperationBalanceValidator } from '@domain/services/operation-balance-validator.service';
 
 const MEMBER_REPOSITORY = Symbol('MemberRepository');
@@ -89,6 +95,25 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
     },
     // Domain services
     OperationBalanceValidator,
+    // Query handlers
+    {
+      provide: GetLoansQueryHandler,
+      useFactory: (loanRepo: LoanRepository) =>
+        new GetLoansQueryHandler(loanRepo),
+      inject: [LOAN_REPOSITORY],
+    },
+    {
+      provide: GetLoanDetailQueryHandler,
+      useFactory: (loanRepo: LoanRepository) =>
+        new GetLoanDetailQueryHandler(loanRepo),
+      inject: [LOAN_REPOSITORY],
+    },
+    {
+      provide: GetMemberLoansQueryHandler,
+      useFactory: (loanRepo: LoanRepository) =>
+        new GetMemberLoansQueryHandler(loanRepo),
+      inject: [LOAN_REPOSITORY],
+    },
     // Use cases
     {
       provide: RecordOperationUseCase,
@@ -156,7 +181,14 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
         RecordOperationUseCase,
       ],
     },
+    {
+      provide: UpdateLoanTermsUseCase,
+      useFactory: (loanRepo: LoanRepository, eventBus: EventBus) =>
+        new UpdateLoanTermsUseCase(loanRepo, eventBus),
+      inject: [LOAN_REPOSITORY, EventBus],
+    },
   ],
+  controllers: [LoansV2Controller],
   exports: [CreateLoanUseCase, RecordLoanPaymentUseCase],
 })
 export class LoansV2Module {}
