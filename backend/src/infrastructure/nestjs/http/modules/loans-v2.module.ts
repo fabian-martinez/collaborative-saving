@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CreateLoanUseCase } from '@application/use-cases/loans/create-loan.use-case';
+import { RecordLoanPaymentUseCase } from '@application/use-cases/loans/record-loan-payment.use-case';
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
 import { TypeOrmMemberRepository } from '@infrastructure/typeorm/repositories/typeorm-member.repository';
 import { TypeOrmMeetingRepository } from '@infrastructure/typeorm/repositories/typeorm-meeting.repository';
@@ -137,7 +138,25 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
         RecordOperationUseCase,
       ],
     },
+    {
+      provide: RecordLoanPaymentUseCase,
+      useFactory: (
+        loanRepo: LoanRepository,
+        loanTransactionDetailRepo: LoanTransactionDetailRepository,
+        recordOperationUseCase: RecordOperationUseCase,
+      ) =>
+        new RecordLoanPaymentUseCase(
+          loanRepo,
+          loanTransactionDetailRepo,
+          recordOperationUseCase,
+        ),
+      inject: [
+        LOAN_REPOSITORY,
+        LOAN_TRANSACTION_DETAIL_REPOSITORY,
+        RecordOperationUseCase,
+      ],
+    },
   ],
-  exports: [CreateLoanUseCase],
+  exports: [CreateLoanUseCase, RecordLoanPaymentUseCase],
 })
 export class LoansV2Module {}

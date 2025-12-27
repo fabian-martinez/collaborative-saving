@@ -11,6 +11,7 @@ import { Stock } from '../stocks/entities/stock.entity';
 import { Operation } from '../operations/entities/operation.entity';
 import { RecordMonthlyPaymentsUseCase } from '@application/use-cases/members/record-monthly-payments.use-case';
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
+import { RecordLoanPaymentUseCase } from '@application/use-cases/loans/record-loan-payment.use-case';
 import { TypeOrmMemberRepository } from '@infrastructure/typeorm/repositories/typeorm-member.repository';
 import { TypeOrmMeetingRepository } from '@infrastructure/typeorm/repositories/typeorm-meeting.repository';
 import { TypeOrmOperationRepository } from '@infrastructure/typeorm/repositories/typeorm-operation.repository';
@@ -117,30 +118,45 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
       ],
     },
     {
+      provide: RecordLoanPaymentUseCase,
+      useFactory: (
+        loanRepo: LoanRepository,
+        loanTransactionDetailRepo: LoanTransactionDetailRepository,
+        recordOperationUseCase: RecordOperationUseCase,
+      ) =>
+        new RecordLoanPaymentUseCase(
+          loanRepo,
+          loanTransactionDetailRepo,
+          recordOperationUseCase,
+        ),
+      inject: [
+        LOAN_REPOSITORY,
+        LOAN_TRANSACTION_DETAIL_REPOSITORY,
+        RecordOperationUseCase,
+      ],
+    },
+    {
       provide: RecordMonthlyPaymentsUseCase,
       useFactory: (
         memberRepo: MemberRepository,
         meetingRepo: MeetingRepository,
-        loanRepo: LoanRepository,
-        loanTransactionDetailRepo: LoanTransactionDetailRepository,
         operationRepo: OperationRepository,
         recordOperationUseCase: RecordOperationUseCase,
+        recordLoanPaymentUseCase: RecordLoanPaymentUseCase,
       ) =>
         new RecordMonthlyPaymentsUseCase(
           memberRepo,
           meetingRepo,
-          loanRepo,
-          loanTransactionDetailRepo,
           operationRepo,
           recordOperationUseCase,
+          recordLoanPaymentUseCase,
         ),
       inject: [
         MEMBER_REPOSITORY,
         MEETING_REPOSITORY,
-        LOAN_REPOSITORY,
-        LOAN_TRANSACTION_DETAIL_REPOSITORY,
         OPERATION_REPOSITORY,
         RecordOperationUseCase,
+        RecordLoanPaymentUseCase,
       ],
     },
     // Repository instances for direct injection if needed

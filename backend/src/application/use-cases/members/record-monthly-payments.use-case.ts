@@ -6,23 +6,17 @@ import {
 } from '@application/dto/members/payment-item.dto';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
-import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
-import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
 import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
+import { RecordLoanPaymentUseCase } from '@application/use-cases/loans/record-loan-payment.use-case';
 import { RecordOperationDto } from '@application/dto/accounting/record-operation.dto';
 import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
-import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
 import { InvalidPaymentException } from '@application/exceptions/invalid-payment.exception';
 import { DuplicateMonthlyPaymentException } from '@application/exceptions/duplicate-monthly-payment.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { OperationType } from '@domain/enums/operation-type.enum';
 import { Meeting } from '@domain/entities/meeting.entity';
-import {
-  LoanTransactionDetail,
-  LoanTransactionType,
-} from '@domain/entities/loan-transaction-detail.entity';
 import {
   CASH_ACCOUNT,
   STOCK_CAPITAL_ACCOUNT,
@@ -30,8 +24,6 @@ import {
   FEE_INCOME_ACCOUNT,
   INSURANCE_INCOME_ACCOUNT,
   NOVELTY_LOSS_ACCOUNT,
-  LOANS_RECEIVABLE_ACCOUNT,
-  INTEREST_INCOME_ACCOUNT,
 } from '@domain/constants/account-types';
 
 /**
@@ -39,15 +31,17 @@ import {
  *
  * Orchestrates the recording of monthly payments from a member.
  * Processes multiple payment types and creates the corresponding accounting entries.
+ *
+ * Loan payments are delegated to RecordLoanPaymentUseCase to maintain
+ * separation of responsibilities between the members and loans modules.
  */
 export class RecordMonthlyPaymentsUseCase {
   constructor(
     private readonly memberRepository: MemberRepository,
     private readonly meetingRepository: MeetingRepository,
-    private readonly loanRepository: LoanRepository,
-    private readonly loanTransactionDetailRepository: LoanTransactionDetailRepository,
     private readonly operationRepository: OperationRepository,
     private readonly recordOperationUseCase: RecordOperationUseCase,
+    private readonly recordLoanPaymentUseCase: RecordLoanPaymentUseCase,
   ) {}
 
   async execute(
@@ -106,18 +100,9 @@ export class RecordMonthlyPaymentsUseCase {
       }
     }
 
-    // 6. Validate loan payments, calculate interest/principal, and prepare loan updates
-    const loanPayments: Array<{
-      loanId: string;
-      amount: number;
-      interestPaid: number;
-      principalPaid: number;
-      description?: string;
-    }> = [];
-    const loanPaymentInfo = new Map<
-      string,
-      { interestPaid: number; principalPaid: number }
-    >();
+    // 6. Separate loan payments from other payments
+    const loanPayments: PaymentItemDto[] = [];
+    const otherPayments: PaymentItemDto[] = [];
 
     for (const payment of dto.payments) {
       if (payment.type === PaymentType.LOAN_PAYMENT) {
@@ -126,144 +111,112 @@ export class RecordMonthlyPaymentsUseCase {
             'Loan payment must include a referenceId (loan ID)',
           );
         }
-        // Validate loan exists
-        const loan = await this.loanRepository.findById(payment.referenceId);
-        if (!loan) {
-          throw new LoanNotFoundException(payment.referenceId);
-        }
-
-        // Calculate interest and principal
-        const interestDue = loan.calculateInterestDue();
-        const interestPaid = Math.min(payment.amount, interestDue);
-        const principalPaid = payment.amount - interestPaid;
-
-        loanPayments.push({
-          loanId: payment.referenceId,
-          amount: payment.amount,
-          interestPaid,
-          principalPaid,
-          description: payment.description,
-        });
-
-        // Store payment breakdown for ledger entries mapping
-        loanPaymentInfo.set(payment.referenceId, {
-          interestPaid,
-          principalPaid,
-        });
+        loanPayments.push(payment);
+      } else {
+        otherPayments.push(payment);
       }
     }
 
-    // 7. Process payments and map to ledger entries
+    // 7. Process loan payments using RecordLoanPaymentUseCase (delegated to loans module)
+    const loanPaymentResults: Array<{
+      loanId: string;
+      operationId: string;
+      interestPaid: number;
+      principalPaid: number;
+    }> = [];
+
+    for (const loanPayment of loanPayments) {
+      const result = await this.recordLoanPaymentUseCase.execute({
+        loanId: loanPayment.referenceId!,
+        meetingId: activeMeeting.id,
+        totalPaymentAmount: loanPayment.amount,
+        notes: loanPayment.description,
+      });
+
+      loanPaymentResults.push({
+        loanId: result.loanId,
+        operationId: result.operationId,
+        interestPaid: result.interestPaid,
+        principalPaid: result.principalPaid,
+      });
+    }
+
+    // 8. Process other payments and map to ledger entries
     const allEntries: RecordOperationDto['entries'] = [];
-    let totalAmount = 0;
+    let nonLoanTotalAmount = 0;
     const paymentDescriptions: string[] = [];
 
-    for (const payment of dto.payments) {
-      totalAmount += payment.amount;
-      const paymentInfo =
-        payment.type === PaymentType.LOAN_PAYMENT && payment.referenceId
-          ? loanPaymentInfo.get(payment.referenceId)
-          : undefined;
-      const entries = this.mapPaymentToLedgerEntries(payment, paymentInfo);
+    for (const payment of otherPayments) {
+      nonLoanTotalAmount += payment.amount;
+      const entries = this.mapPaymentToLedgerEntries(payment);
       allEntries.push(...entries);
-      
+
       // Collect payment descriptions for operation description
       if (payment.description) {
         paymentDescriptions.push(payment.description);
       }
     }
 
-    // 8. Create operation using RecordOperationUseCase
-    // Build detailed operation description
-    let operationDescription: string;
-    if (paymentDescriptions.length > 0) {
-      // Use detailed payment descriptions if available
-      operationDescription = `Pago mensual ${member.name}: ${paymentDescriptions.join('; ')}`;
-    } else {
-      // Fallback to generic description
-      operationDescription = `Monthly payments for member ${member.name}`;
+    // 9. Create operation using RecordOperationUseCase (only for non-loan payments)
+    let mainOperationId: string | null = null;
+    let mainLedgerEntryIds: string[] = [];
+
+    if (otherPayments.length > 0) {
+      // Build detailed operation description
+      let operationDescription: string;
+      if (paymentDescriptions.length > 0) {
+        operationDescription = `Pago mensual ${member.name}: ${paymentDescriptions.join('; ')}`;
+      } else {
+        operationDescription = `Monthly payments for member ${member.name}`;
+      }
+
+      const operationDto: RecordOperationDto = {
+        memberId: dto.memberId,
+        meetingId: activeMeeting.id,
+        type: OperationType.MONTHLY_PAYMENT,
+        description: operationDescription,
+        entries: allEntries,
+      };
+
+      const result = await this.recordOperationUseCase.execute(operationDto);
+      mainOperationId = result.operationId;
+      mainLedgerEntryIds = result.ledgerEntryIds;
     }
 
-    const operationDto: RecordOperationDto = {
-      memberId: dto.memberId,
-      meetingId: activeMeeting.id,
-      type: OperationType.MONTHLY_PAYMENT,
-      description: operationDescription,
-      entries: allEntries,
-    };
+    // 10. Calculate total amount (including loan payments)
+    const loanTotalAmount = loanPayments.reduce((sum, p) => sum + p.amount, 0);
+    const totalAmount = nonLoanTotalAmount + loanTotalAmount;
 
-    const result = await this.recordOperationUseCase.execute(operationDto);
+    // 11. Return response
+    // Use main operation ID if available, otherwise use the first loan payment operation ID
+    const responseOperationId =
+      mainOperationId || loanPaymentResults[0]?.operationId || '';
 
-    // 9. Process loan payments: update loans and create transaction details
-    for (const loanPayment of loanPayments) {
-      // Get the loan again to ensure we have the latest state
-      const loan = await this.loanRepository.findById(loanPayment.loanId);
-      if (!loan) {
-        // This should not happen since we validated earlier, but handle it gracefully
-        throw new LoanNotFoundException(loanPayment.loanId);
-      }
-
-      // Apply domain logic: record payment (updates internal state)
-      loan.recordPayment(loanPayment.principalPaid, loanPayment.interestPaid);
-
-      // Save updated loan
-      await this.loanRepository.save(loan);
-
-      // Create loan transaction detail for interest payment if applicable
-      if (loanPayment.interestPaid > 0) {
-        const interestTransactionDetail = LoanTransactionDetail.create({
-          loanId: loan.id,
-          transactionType: LoanTransactionType.INTEREST_PAYMENT,
-          amount: loanPayment.interestPaid,
-          notes: loanPayment.description || null,
-          operationId: result.operationId,
-        });
-        await this.loanTransactionDetailRepository.save(
-          interestTransactionDetail,
-        );
-      }
-
-      // Create loan transaction detail for principal payment if applicable
-      if (loanPayment.principalPaid > 0) {
-        const principalTransactionDetail = LoanTransactionDetail.create({
-          loanId: loan.id,
-          transactionType: LoanTransactionType.PRINCIPAL_PAYMENT,
-          amount: loanPayment.principalPaid,
-          notes: loanPayment.description || null,
-          operationId: result.operationId,
-        });
-        await this.loanTransactionDetailRepository.save(
-          principalTransactionDetail,
-        );
-      }
-    }
-
-    // 10. Return response
     return {
-      operationId: result.operationId,
+      operationId: responseOperationId,
       meetingId: activeMeeting.id,
       memberId: dto.memberId,
       totalAmount,
-      ledgerEntryIds: result.ledgerEntryIds,
+      ledgerEntryIds: mainLedgerEntryIds,
     };
   }
 
   /**
    * Maps a payment item to ledger entries based on payment type
+   * Note: LOAN_PAYMENT is not handled here - it's delegated to RecordLoanPaymentUseCase
    * @param payment - The payment item to map
-   * @param loanPaymentInfo - Optional interest/principal breakdown for loan payments
    */
   private mapPaymentToLedgerEntries(
     payment: PaymentItemDto,
-    loanPaymentInfo?: { interestPaid: number; principalPaid: number },
   ): RecordOperationDto['entries'] {
     const entries: RecordOperationDto['entries'] = [];
 
     switch (payment.type) {
-      case PaymentType.STOCK_FEE:
-        // Build description with amount if not provided
-        const stockFeeDescription = payment.description || `Cuota de acciones: ${payment.amount.toFixed(2)}`;
-        
+      case PaymentType.STOCK_FEE: {
+        const stockFeeDescription =
+          payment.description ||
+          `Cuota de acciones: ${payment.amount.toFixed(2)}`;
+
         // Cash entry (debit - money received)
         entries.push({
           accountType: CASH_ACCOUNT,
@@ -279,11 +232,13 @@ export class RecordMonthlyPaymentsUseCase {
           stockId: payment.referenceId || null,
         });
         break;
+      }
 
-      case PaymentType.MANDATORY_CONTRIBUTION:
-        // Build description with amount if not provided
-        const mandatoryDescription = payment.description || `Aporte obligatorio: ${payment.amount.toFixed(2)}`;
-        
+      case PaymentType.MANDATORY_CONTRIBUTION: {
+        const mandatoryDescription =
+          payment.description ||
+          `Aporte obligatorio: ${payment.amount.toFixed(2)}`;
+
         // Cash entry (debit - money received)
         entries.push({
           accountType: CASH_ACCOUNT,
@@ -299,11 +254,13 @@ export class RecordMonthlyPaymentsUseCase {
           mandatoryContributionId: payment.referenceId || null,
         });
         break;
+      }
 
-      case PaymentType.FEE:
-        // Build description with amount if not provided
-        const feeDescription = payment.description || `Multa/otro pago: ${payment.amount.toFixed(2)}`;
-        
+      case PaymentType.FEE: {
+        const feeDescription =
+          payment.description ||
+          `Multa/otro pago: ${payment.amount.toFixed(2)}`;
+
         // Cash entry (debit - money received)
         entries.push({
           accountType: CASH_ACCOUNT,
@@ -317,11 +274,13 @@ export class RecordMonthlyPaymentsUseCase {
           description: feeDescription,
         });
         break;
+      }
 
-      case PaymentType.INSURANCE:
-        // Build description with amount if not provided
-        const insuranceDescription = payment.description || `Seguro de deuda: ${payment.amount.toFixed(2)}`;
-        
+      case PaymentType.INSURANCE: {
+        const insuranceDescription =
+          payment.description ||
+          `Seguro de deuda: ${payment.amount.toFixed(2)}`;
+
         // Cash entry (debit - money received)
         entries.push({
           accountType: CASH_ACCOUNT,
@@ -335,12 +294,13 @@ export class RecordMonthlyPaymentsUseCase {
           description: insuranceDescription,
         });
         break;
+      }
 
-      case PaymentType.NOVELTY:
-        // Novelty is special: it represents a loss/discount
-        // Build description with amount if not provided
-        const noveltyDescription = payment.description || `Novedad/descuento: ${payment.amount.toFixed(2)}`;
-        
+      case PaymentType.NOVELTY: {
+        const noveltyDescription =
+          payment.description ||
+          `Novedad/descuento: ${payment.amount.toFixed(2)}`;
+
         // Cash entry (credit - money goes out or negative entry)
         entries.push({
           accountType: CASH_ACCOUNT,
@@ -354,63 +314,14 @@ export class RecordMonthlyPaymentsUseCase {
           description: noveltyDescription,
         });
         break;
-
-      case PaymentType.LOAN_PAYMENT: {
-        // Loan payment ledger entries
-        const interestPaid = loanPaymentInfo?.interestPaid ?? 0;
-        const principalPaid = loanPaymentInfo?.principalPaid ?? payment.amount;
-        
-        // Build detailed description if not provided
-        let cashDescription = payment.description;
-        if (!cashDescription) {
-          if (interestPaid > 0 && principalPaid > 0) {
-            cashDescription = `Pago préstamo - Capital: ${principalPaid.toFixed(2)}, Intereses: ${interestPaid.toFixed(2)}`;
-          } else if (principalPaid > 0) {
-            cashDescription = `Pago préstamo - Capital: ${principalPaid.toFixed(2)}`;
-          } else {
-            cashDescription = 'Loan payment';
-          }
-        }
-        
-        // Cash entry (debit - money received)
-        entries.push({
-          accountType: CASH_ACCOUNT,
-          amount: payment.amount,
-          description: cashDescription,
-          loanId: payment.referenceId || null,
-        });
-
-        // Interest income entry (credit - income) if interest was paid
-        if (interestPaid > 0) {
-          let interestDescription = payment.description;
-          if (!interestDescription) {
-            interestDescription = `Intereses préstamo: ${interestPaid.toFixed(2)}`;
-          }
-          entries.push({
-            accountType: INTEREST_INCOME_ACCOUNT,
-            amount: -interestPaid,
-            description: interestDescription,
-            loanId: payment.referenceId || null,
-          });
-        }
-
-        // Loans receivable entry (credit - reduce loan balance) for principal portion
-        // Note: The actual loan balance update is handled by loan.recordPayment()
-        // in step 9 of the execute method
-        if (principalPaid > 0) {
-          let principalDescription = payment.description;
-          if (!principalDescription) {
-            principalDescription = `Abono capital préstamo: ${principalPaid.toFixed(2)}`;
-          }
-          entries.push({
-            accountType: LOANS_RECEIVABLE_ACCOUNT,
-            amount: -principalPaid,
-            description: principalDescription,
-            loanId: payment.referenceId || null,
-          });
-        }
-        break;
       }
+
+      case PaymentType.LOAN_PAYMENT:
+        // Loan payments are handled by RecordLoanPaymentUseCase
+        // This case should never be reached due to filtering in execute()
+        throw new InvalidRequestError(
+          'Loan payments should be processed through RecordLoanPaymentUseCase',
+        );
 
       default:
         throw new InvalidRequestError(
