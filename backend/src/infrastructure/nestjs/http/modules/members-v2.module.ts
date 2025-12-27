@@ -17,6 +17,7 @@ import { RecordOperationUseCase } from '@application/use-cases/accounting/record
 import { CalculateMemberInsuranceUseCase } from '@application/use-cases/members/calculate-member-insurance.use-case';
 import { PurchaseStockUseCase } from '@application/use-cases/members/purchase-stock.use-case';
 import { CreateLoanUseCase } from '@application/use-cases/loans/create-loan.use-case';
+import { RecordLoanPaymentUseCase } from '@application/use-cases/loans/record-loan-payment.use-case';
 import { LoansV2Module } from './loans-v2.module';
 import { TypeOrmMemberRepository } from '@infrastructure/typeorm/repositories/typeorm-member.repository';
 import { TypeOrmMeetingRepository } from '@infrastructure/typeorm/repositories/typeorm-meeting.repository';
@@ -385,26 +386,23 @@ const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
       useFactory: (
         memberRepo: MemberRepository,
         meetingRepo: MeetingRepository,
-        loanRepo: LoanRepository,
-        loanTransactionDetailRepo: LoanTransactionDetailRepository,
         operationRepo: OperationRepository,
         recordOperationUseCase: RecordOperationUseCase,
+        recordLoanPaymentUseCase: RecordLoanPaymentUseCase,
       ) =>
         new RecordMonthlyPaymentsUseCase(
           memberRepo,
           meetingRepo,
-          loanRepo,
-          loanTransactionDetailRepo,
           operationRepo,
           recordOperationUseCase,
+          recordLoanPaymentUseCase,
         ),
       inject: [
         MEMBER_REPOSITORY,
         MEETING_REPOSITORY,
-        LOAN_REPOSITORY,
-        LOAN_TRANSACTION_DETAIL_REPOSITORY,
         OPERATION_REPOSITORY,
         RecordOperationUseCase,
+        RecordLoanPaymentUseCase,
       ],
     },
     {
@@ -442,9 +440,9 @@ const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
         stockRepo: StockRepository,
         stockSubscriptionRepo: StockSubscriptionRepository,
         pendingPaymentRepo: PendingMemberPaymentRepository,
-        loanRepo: LoanRepository,
-        loanTransactionDetailRepo: LoanTransactionDetailRepository,
         recordOperationUseCase: RecordOperationUseCase,
+        createLoanUseCase: CreateLoanUseCase,
+        recordLoanPaymentUseCase: RecordLoanPaymentUseCase,
       ) =>
         new ProcessStockExchangeUseCase(
           memberRepo,
@@ -452,9 +450,9 @@ const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
           stockRepo,
           stockSubscriptionRepo,
           pendingPaymentRepo,
-          loanRepo,
-          loanTransactionDetailRepo,
           recordOperationUseCase,
+          createLoanUseCase,
+          recordLoanPaymentUseCase,
         ),
       inject: [
         MEMBER_REPOSITORY,
@@ -462,9 +460,9 @@ const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
         STOCK_REPOSITORY,
         STOCK_SUBSCRIPTION_REPOSITORY,
         PENDING_MEMBER_PAYMENT_REPOSITORY,
-        LOAN_REPOSITORY,
-        LOAN_TRANSACTION_DETAIL_REPOSITORY,
         RecordOperationUseCase,
+        CreateLoanUseCase,
+        RecordLoanPaymentUseCase,
       ],
     },
     {
@@ -498,27 +496,24 @@ const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
         meetingRepo: MeetingRepository,
         stockRepo: StockRepository,
         stockSubscriptionRepo: StockSubscriptionRepository,
-        loanRepo: LoanRepository,
-        loanTransactionDetailRepo: LoanTransactionDetailRepository,
         recordOperationUseCase: RecordOperationUseCase,
+        recordLoanPaymentUseCase: RecordLoanPaymentUseCase,
       ) =>
         new ProcessStockLoanPaymentUseCase(
           memberRepo,
           meetingRepo,
           stockRepo,
           stockSubscriptionRepo,
-          loanRepo,
-          loanTransactionDetailRepo,
           recordOperationUseCase,
+          recordLoanPaymentUseCase,
         ),
       inject: [
         MEMBER_REPOSITORY,
         MEETING_REPOSITORY,
         STOCK_REPOSITORY,
         STOCK_SUBSCRIPTION_REPOSITORY,
-        LOAN_REPOSITORY,
-        LOAN_TRANSACTION_DETAIL_REPOSITORY,
         RecordOperationUseCase,
+        RecordLoanPaymentUseCase,
       ],
     },
     // Repository instances for direct injection if needed

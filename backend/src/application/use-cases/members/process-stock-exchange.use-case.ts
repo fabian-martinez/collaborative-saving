@@ -5,14 +5,14 @@ import { MeetingRepository } from '@domain/ports/repositories/meeting-repository
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-subscription-repository.port';
 import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pending-member-payment-repository.port';
-import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
-import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
+import { CreateLoanUseCase } from '@application/use-cases/loans/create-loan.use-case';
+import { RecordLoanPaymentUseCase } from '@application/use-cases/loans/record-loan-payment.use-case';
+import { RecordLoanPaymentResponseDto } from '@application/dto/loans/record-loan-payment-response.dto';
 import { RecordOperationDto } from '@application/dto/accounting/record-operation.dto';
 import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { StockNotFoundException } from '@application/exceptions/stock-not-found.exception';
-import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { Meeting } from '@domain/entities/meeting.entity';
 import { StockSubscription } from '@domain/entities/stock-subscription.entity';
@@ -20,21 +20,25 @@ import {
   PendingMemberPayment,
   PendingMemberPaymentType,
 } from '@domain/entities/pending-member-payment.entity';
-import { Loan, LoanStatus } from '@domain/entities/loan.entity';
-import {
-  LoanTransactionDetail,
-  LoanTransactionType,
-} from '@domain/entities/loan-transaction-detail.entity';
 import { OperationType } from '@domain/enums/operation-type.enum';
 import {
   CASH_ACCOUNT,
-  LOANS_RECEIVABLE_ACCOUNT,
   STOCK_CAPITAL_ACCOUNT,
 } from '@domain/constants/account-types';
 
 const DEFAULT_DIFFERENCE_LOAN_INTEREST = 0.02;
 const DEFAULT_DIFFERENCE_LOAN_TERM = 24;
 
+/**
+ * Process Stock Exchange Use Case
+ *
+ * Orchestrates the exchange of stocks between different types for a member.
+ * Handles the difference between stock values through cash or credit.
+ *
+ * Loan creation and payments are delegated to the loans module:
+ * - CreateLoanUseCase for new loans when financing the difference
+ * - RecordLoanPaymentUseCase for payments to existing loans
+ */
 export class ProcessStockExchangeUseCase {
   constructor(
     private readonly memberRepository: MemberRepository,
@@ -42,9 +46,9 @@ export class ProcessStockExchangeUseCase {
     private readonly stockRepository: StockRepository,
     private readonly stockSubscriptionRepository: StockSubscriptionRepository,
     private readonly pendingMemberPaymentRepository: PendingMemberPaymentRepository,
-    private readonly loanRepository: LoanRepository,
-    private readonly loanTransactionDetailRepository: LoanTransactionDetailRepository,
     private readonly recordOperationUseCase: RecordOperationUseCase,
+    private readonly createLoanUseCase: CreateLoanUseCase,
+    private readonly recordLoanPaymentUseCase: RecordLoanPaymentUseCase,
   ) {}
 
   async execute(dto: StockExchangeDto): Promise<StockOperationResponseDto> {
@@ -124,6 +128,7 @@ export class ProcessStockExchangeUseCase {
     await this.stockSubscriptionRepository.save(fromSubscription);
     await this.stockSubscriptionRepository.save(destinationSubscription);
 
+    // Build ledger entries for the stock exchange operation
     const ledgerEntries: RecordOperationDto['entries'] = [
       {
         accountType: STOCK_CAPITAL_ACCOUNT,
@@ -141,7 +146,7 @@ export class ProcessStockExchangeUseCase {
       },
     ];
 
-    const details: Record<string, any> = {
+    const details: Record<string, unknown> = {
       memberId: dto.memberId,
       meetingId: meeting.id,
       fromSubscriptionId: fromSubscription.id,
@@ -152,9 +157,7 @@ export class ProcessStockExchangeUseCase {
       differenceHandling: dto.differenceHandling ?? 'cash',
     };
 
-    const postOperationActions: Array<(operationId: string) => Promise<void>> =
-      [];
-
+    // Handle the difference
     if (difference !== 0) {
       const handling = dto.differenceHandling ?? 'cash';
       if (handling === 'credit') {
@@ -163,15 +166,13 @@ export class ProcessStockExchangeUseCase {
           difference,
           ledgerEntries,
           details,
-          postOperationActions,
           meeting,
         });
       } else {
-        this.handleDifferenceWithCash({
+        await this.handleDifferenceWithCash({
           difference,
           ledgerEntries,
           details,
-          postOperationActions,
           meeting,
           memberId: dto.memberId,
           stockSubscriptionId: fromSubscription.id,
@@ -180,6 +181,7 @@ export class ProcessStockExchangeUseCase {
       }
     }
 
+    // Create the main stock modification operation
     const operationDto: RecordOperationDto = {
       memberId: dto.memberId,
       meetingId: meeting.id,
@@ -193,10 +195,6 @@ export class ProcessStockExchangeUseCase {
 
     const operationResult =
       await this.recordOperationUseCase.execute(operationDto);
-
-    for (const action of postOperationActions) {
-      await action(operationResult.operationId);
-    }
 
     return {
       operationId: operationResult.operationId,
@@ -243,22 +241,18 @@ export class ProcessStockExchangeUseCase {
     return { subscription: created, isNew: true };
   }
 
+  /**
+   * Handle difference with credit (loan creation or loan payment)
+   * Delegates to loans module use cases
+   */
   private async handleDifferenceWithCredit(params: {
     dto: StockExchangeDto;
     difference: number;
     ledgerEntries: RecordOperationDto['entries'];
-    details: Record<string, any>;
-    postOperationActions: Array<(operationId: string) => Promise<void>>;
+    details: Record<string, unknown>;
     meeting: Meeting;
   }): Promise<void> {
-    const {
-      dto,
-      difference,
-      ledgerEntries,
-      details,
-      postOperationActions,
-      meeting,
-    } = params;
+    const { dto, difference, ledgerEntries, details, meeting } = params;
 
     if (!dto.targetLoanId) {
       throw new InvalidRequestError(
@@ -267,107 +261,142 @@ export class ProcessStockExchangeUseCase {
     }
 
     if (difference > 0) {
-      if (
-        dto.targetLoanId === 'new_action_loan' ||
-        dto.targetLoanId === 'new_current_loan'
-      ) {
-        throw new InvalidRequestError(
-          'Para abonos a crédito existente se debe enviar un ID de crédito válido',
-        );
-      }
-      const loan = await this.loanRepository.findById(dto.targetLoanId);
-      if (!loan) {
-        throw new LoanNotFoundException(dto.targetLoanId);
-      }
-      if (loan.memberId !== dto.memberId) {
-        throw new InvalidRequestError(
-          'El crédito seleccionado no pertenece al socio',
-        );
-      }
-      if (difference > loan.outstandingBalance) {
-        throw new InvalidRequestError(
-          'La diferencia excede el saldo del crédito objetivo',
-        );
-      }
-
-      ledgerEntries.push({
-        accountType: LOANS_RECEIVABLE_ACCOUNT,
-        amount: -difference,
-        description:
-          'Abono a crédito por diferencia en intercambio de acciones',
-        loanId: loan.id,
-      });
-
-      postOperationActions.push(async (operationId: string) => {
-        loan.recordPayment(difference, 0);
-        await this.loanRepository.save(loan);
-        const detail = LoanTransactionDetail.create({
-          loanId: loan.id,
-          transactionType: LoanTransactionType.PRINCIPAL_PAYMENT,
-          amount: difference,
-          notes:
-            dto.notes ??
-            'Abono automático por diferencia de intercambio de acciones',
-          operationId,
-        });
-        await this.loanTransactionDetailRepository.save(detail);
-        details.loan = {
-          loanId: loan.id,
-          transactionDetailId: detail.id,
-          newBalance: loan.outstandingBalance,
-        };
+      // Member has value to apply to an existing loan
+      await this.handleLoanPayment({
+        dto,
+        difference,
+        ledgerEntries,
+        details,
+        meeting,
       });
     } else {
-      const absoluteDifference = Math.abs(difference);
-      const loan = await this.createDifferenceLoan({
-        amount: absoluteDifference,
-        memberId: dto.memberId,
+      // Member needs financing - create a new loan
+      await this.handleLoanCreation({
+        dto,
+        absoluteDifference: Math.abs(difference),
+        ledgerEntries,
+        details,
         meeting,
-        targetLoanId: dto.targetLoanId,
-      });
-
-      ledgerEntries.push({
-        accountType: LOANS_RECEIVABLE_ACCOUNT,
-        amount: absoluteDifference,
-        description: 'Financiamiento de diferencia por intercambio de acciones',
-        loanId: loan.id,
-      });
-
-      postOperationActions.push(async (operationId: string) => {
-        const detail = LoanTransactionDetail.create({
-          loanId: loan.id,
-          transactionType: LoanTransactionType.DISBURSEMENT,
-          amount: absoluteDifference,
-          notes:
-            dto.notes ??
-            'Crédito generado para financiar diferencia de intercambio de acciones',
-          operationId,
-        });
-        await this.loanTransactionDetailRepository.save(detail);
-        details.loan = {
-          loanId: loan.id,
-          transactionDetailId: detail.id,
-          loanType: loan.loanType,
-        };
       });
     }
   }
 
-  private handleDifferenceWithCash(params: {
+  /**
+   * Handle payment to an existing loan using RecordLoanPaymentUseCase
+   */
+  private async handleLoanPayment(params: {
+    dto: StockExchangeDto;
     difference: number;
     ledgerEntries: RecordOperationDto['entries'];
-    details: Record<string, any>;
-    postOperationActions: Array<(operationId: string) => Promise<void>>;
+    details: Record<string, unknown>;
+    meeting: Meeting;
+  }): Promise<void> {
+    const { dto, difference, ledgerEntries, details, meeting } = params;
+
+    if (
+      dto.targetLoanId === 'new_action_loan' ||
+      dto.targetLoanId === 'new_current_loan'
+    ) {
+      throw new InvalidRequestError(
+        'Para abonos a crédito existente se debe enviar un ID de crédito válido',
+      );
+    }
+
+    // Use RecordLoanPaymentUseCase with all payment going to principal
+    const paymentResult: RecordLoanPaymentResponseDto =
+      await this.recordLoanPaymentUseCase.execute({
+        loanId: dto.targetLoanId!,
+        meetingId: meeting.id,
+        totalPaymentAmount: difference,
+        forcedInterestAmount: 0,
+        forcedPrincipalAmount: difference,
+        notes:
+          dto.notes ??
+          'Abono automático por diferencia de intercambio de acciones',
+      });
+
+    // Add the balancing entry to the stock modification operation
+    // Note: The actual loan update is handled by RecordLoanPaymentUseCase in a separate operation
+    ledgerEntries.push({
+      accountType: CASH_ACCOUNT,
+      amount: -difference,
+      description: 'Diferencia aplicada a crédito existente',
+    });
+
+    details.loan = {
+      loanId: paymentResult.loanId,
+      operationId: paymentResult.operationId,
+      principalPaid: paymentResult.principalPaid,
+      newBalance: paymentResult.newOutstandingBalance,
+    };
+  }
+
+  /**
+   * Handle creation of a new loan using CreateLoanUseCase
+   */
+  private async handleLoanCreation(params: {
+    dto: StockExchangeDto;
+    absoluteDifference: number;
+    ledgerEntries: RecordOperationDto['entries'];
+    details: Record<string, unknown>;
+    meeting: Meeting;
+  }): Promise<void> {
+    const { dto, absoluteDifference, ledgerEntries, details, meeting } = params;
+
+    let loanType: 'corriente' | 'agil' | 'accion';
+    if (dto.targetLoanId === 'new_action_loan') {
+      loanType = 'accion';
+    } else if (dto.targetLoanId === 'new_current_loan') {
+      loanType = 'corriente';
+    } else {
+      throw new InvalidRequestError(
+        'Para financiar la diferencia debes usar new_action_loan o new_current_loan',
+      );
+    }
+
+    // Use CreateLoanUseCase to create the loan
+    const loanResult = await this.createLoanUseCase.execute({
+      memberId: dto.memberId,
+      meetingId: meeting.id,
+      loanType,
+      approvedAmount: absoluteDifference,
+      disbursedAmount: absoluteDifference,
+      monthlyPaymentAmount: 0,
+      interestRate: DEFAULT_DIFFERENCE_LOAN_INTEREST,
+      term: DEFAULT_DIFFERENCE_LOAN_TERM,
+    });
+
+    // Add the balancing entry to the stock modification operation
+    // Note: The loan disbursement ledger entries are handled by CreateLoanUseCase in a separate operation
+    ledgerEntries.push({
+      accountType: CASH_ACCOUNT,
+      amount: absoluteDifference,
+      description: 'Financiamiento de diferencia por intercambio de acciones',
+    });
+
+    details.loan = {
+      loanId: loanResult.loanId,
+      operationId: loanResult.operationId,
+      loanType,
+    };
+  }
+
+  /**
+   * Handle difference with cash
+   */
+  private async handleDifferenceWithCash(params: {
+    difference: number;
+    ledgerEntries: RecordOperationDto['entries'];
+    details: Record<string, unknown>;
     meeting: Meeting;
     memberId: string;
     stockSubscriptionId: string;
     notes?: string;
-  }): void {
+  }): Promise<void> {
     const {
       difference,
       ledgerEntries,
       details,
-      postOperationActions,
       meeting,
       memberId,
       stockSubscriptionId,
@@ -376,6 +405,7 @@ export class ProcessStockExchangeUseCase {
 
     const absoluteDifference = Math.abs(difference);
     if (difference > 0) {
+      // Member has value to receive
       ledgerEntries.push({
         accountType: CASH_ACCOUNT,
         amount: -absoluteDifference,
@@ -383,19 +413,19 @@ export class ProcessStockExchangeUseCase {
         stockSubscriptionId,
       });
 
-      postOperationActions.push(async () => {
-        const pending = PendingMemberPayment.create({
-          memberId,
-          meetingId: meeting.id,
-          type: PendingMemberPaymentType.STOCK_WITHDRAWAL,
-          amount: absoluteDifference,
-          notes: notes ?? 'Pendiente a favor por intercambio de acciones',
-          stockSubscriptionId,
-        });
-        const saved = await this.pendingMemberPaymentRepository.save(pending);
-        details.pendingPaymentId = saved.id;
+      // Create pending payment for the member
+      const pending = PendingMemberPayment.create({
+        memberId,
+        meetingId: meeting.id,
+        type: PendingMemberPaymentType.STOCK_WITHDRAWAL,
+        amount: absoluteDifference,
+        notes: notes ?? 'Pendiente a favor por intercambio de acciones',
+        stockSubscriptionId,
       });
+      const saved = await this.pendingMemberPaymentRepository.save(pending);
+      details.pendingPaymentId = saved.id;
     } else {
+      // Member needs to pay
       ledgerEntries.push({
         accountType: CASH_ACCOUNT,
         amount: absoluteDifference,
@@ -404,40 +434,5 @@ export class ProcessStockExchangeUseCase {
         stockSubscriptionId,
       });
     }
-  }
-
-  private async createDifferenceLoan(params: {
-    amount: number;
-    memberId: string;
-    meeting: Meeting;
-    targetLoanId: string;
-  }): Promise<Loan> {
-    const { amount, memberId, targetLoanId } = params;
-    let loanType: 'accion' | 'corriente';
-    if (targetLoanId === 'new_action_loan') {
-      loanType = 'accion';
-    } else if (targetLoanId === 'new_current_loan') {
-      loanType = 'corriente';
-    } else {
-      throw new InvalidRequestError(
-        'Para financiar la diferencia debes usar new_action_loan o new_current_loan',
-      );
-    }
-
-    const loan = Loan.create({
-      memberId,
-      loanType,
-      approvedAmount: amount,
-      monthlyPaymentAmount: 0,
-      interestRate: DEFAULT_DIFFERENCE_LOAN_INTEREST,
-      term: DEFAULT_DIFFERENCE_LOAN_TERM,
-    });
-    loan.disburse(amount);
-    loan.update({
-      outstandingBalance: amount,
-      status: LoanStatus.ACTIVE,
-    });
-
-    return this.loanRepository.save(loan);
   }
 }
