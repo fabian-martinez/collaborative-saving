@@ -18,6 +18,11 @@ export class TypeOrmLoanRepository implements LoanRepository {
     return entity ? LoanMapper.toDomain(entity) : null;
   }
 
+  async findAll(): Promise<LoanDomain[]> {
+    const entities = await this.repo.find();
+    return entities.map((e) => LoanMapper.toDomain(e));
+  }
+
   async findByMember(memberId: string): Promise<LoanDomain[]> {
     const entities = await this.repo.find({ where: { memberId } });
     return entities.map((e) => LoanMapper.toDomain(e));
