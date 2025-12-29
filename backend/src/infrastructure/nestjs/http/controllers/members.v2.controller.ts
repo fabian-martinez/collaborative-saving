@@ -39,6 +39,7 @@ import { GetMemberPurchasesQueryHandler } from '@application/queries/members/get
 import { GetMemberStockExchangesQueryHandler } from '@application/queries/members/get-member-stock-exchanges.query-handler';
 import { GetMemberStockTransfersQueryHandler } from '@application/queries/members/get-member-stock-transfers.query-handler';
 import { GetMemberStockLoanPaymentsQueryHandler } from '@application/queries/members/get-member-stock-loan-payments.query-handler';
+import { GetMemberPaymentScheduleQueryHandler } from '@application/queries/members/get-member-payment-schedule.query-handler';
 import { UpdateMemberHttpDto } from '../dto/update-member-http.dto';
 import { CreateMemberHttpDto } from '../dto/create-member-http.dto';
 import { RecordMonthlyPaymentsUseCase } from '@application/use-cases/members/record-monthly-payments.use-case';
@@ -79,6 +80,9 @@ import { StockLoanPaymentResponseHttpDto } from '../dto/stock-loan-payment-respo
 import { StockExchangeResponseDto } from '@application/dto/members/stock-exchange-response.dto';
 import { StockTransferResponseDto } from '@application/dto/members/stock-transfer-response.dto';
 import { StockLoanPaymentResponseDto } from '@application/dto/members/stock-loan-payment-response.dto';
+import { GetPaymentScheduleQueryHttpDto } from '../dto/get-payment-schedule-query-http.dto';
+import { PaymentScheduleResponseHttpDto } from '../dto/payment-schedule-response-http.dto';
+import { PaymentScheduleResponseDto } from '@application/dto/members/payment-schedule-response.dto';
 
 @ApiTags('Members V2')
 @Controller('v2/members')
@@ -92,6 +96,7 @@ export class MembersV2Controller {
     private readonly getMemberStockExchangesQuery: GetMemberStockExchangesQueryHandler,
     private readonly getMemberStockTransfersQuery: GetMemberStockTransfersQueryHandler,
     private readonly getMemberStockLoanPaymentsQuery: GetMemberStockLoanPaymentsQueryHandler,
+    private readonly getMemberPaymentScheduleQuery: GetMemberPaymentScheduleQueryHandler,
     private readonly createMemberUseCase: CreateMemberUseCase,
     private readonly updateMemberUseCase: UpdateMemberUseCase,
     private readonly deleteMemberUseCase: DeleteMemberUseCase,
@@ -1019,6 +1024,55 @@ export class MembersV2Controller {
     }
   }
 
+  @Get(':id/payment-schedule')
+  @ApiOperation({
+    summary: 'Get member payment schedule',
+    description:
+      'Retrieves complete payment schedule for a member including historical and projected payments. Supports optional filtering by number of months to project.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The UUID of the member',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiQuery({
+    name: 'months',
+    required: false,
+    description: 'Number of months to project forward',
+    type: Number,
+    example: 12,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Payment schedule retrieved successfully',
+    type: PaymentScheduleResponseHttpDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid UUID format or invalid query parameters',
+  })
+  @ApiNotFoundResponse({
+    description: 'Member not found',
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error',
+  })
+  async getPaymentSchedule(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: GetPaymentScheduleQueryHttpDto,
+  ): Promise<PaymentScheduleResponseHttpDto> {
+    try {
+      const schedule = await this.getMemberPaymentScheduleQuery.execute(id, {
+        months: query.months,
+      });
+      return this.mapPaymentScheduleToHttp(schedule);
+    } catch (error) {
+      if (error instanceof MemberNotFoundException) {
+        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+      }
+      throw error;
+    }
+  }
+
   private handleStockOperationError(error: unknown): never {
     if (
       error instanceof MemberNotFoundException ||
@@ -1201,6 +1255,47 @@ export class MembersV2Controller {
       new_balance: payment.newBalance,
       subscription_id: payment.subscriptionId,
       transaction_detail_id: payment.transactionDetailId,
+    };
+  }
+
+  private mapPaymentScheduleToHttp(
+    schedule: PaymentScheduleResponseDto,
+  ): PaymentScheduleResponseHttpDto {
+    return {
+      memberId: schedule.memberId,
+      historicalPayments: schedule.historicalPayments.map((item) => ({
+        date: item.date,
+        type: item.type,
+        loanId: item.loanId,
+        loanType: item.loanType,
+        totalAmount: item.totalAmount,
+        interestAmount: item.interestAmount,
+        principalAmount: item.principalAmount,
+        status: item.status,
+        operationId: item.operationId,
+        remainingBalance: item.remainingBalance,
+        paymentNumber: item.paymentNumber,
+      })),
+      projectedPayments: schedule.projectedPayments.map((item) => ({
+        date: item.date,
+        type: item.type,
+        loanId: item.loanId,
+        loanType: item.loanType,
+        totalAmount: item.totalAmount,
+        interestAmount: item.interestAmount,
+        principalAmount: item.principalAmount,
+        status: item.status,
+        operationId: item.operationId,
+        remainingBalance: item.remainingBalance,
+        paymentNumber: item.paymentNumber,
+      })),
+      summary: {
+        totalPaid: schedule.summary.totalPaid,
+        totalPending: schedule.summary.totalPending,
+        nextPaymentDate: schedule.summary.nextPaymentDate,
+        nextPaymentAmount: schedule.summary.nextPaymentAmount,
+        totalOutstandingBalance: schedule.summary.totalOutstandingBalance,
+      },
     };
   }
 }

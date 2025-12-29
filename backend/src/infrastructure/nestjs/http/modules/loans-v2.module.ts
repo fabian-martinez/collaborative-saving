@@ -7,6 +7,8 @@ import { RecordOperationUseCase } from '@application/use-cases/accounting/record
 import { GetLoansQueryHandler } from '@application/queries/loans/get-loans.query-handler';
 import { GetLoanDetailQueryHandler } from '@application/queries/loans/get-loan-detail.query-handler';
 import { GetMemberLoansQueryHandler } from '@application/queries/loans/get-member-loans.query-handler';
+import { GetPaymentPlanSimulationQueryHandler } from '@application/queries/loans/get-payment-plan-simulation.query-handler';
+import { SimulateLoanPaymentPlanUseCase } from '@application/use-cases/loans/simulate-loan-payment-plan.use-case';
 import { LoansV2Controller } from '../controllers/loans.v2.controller';
 import { TypeOrmMemberRepository } from '@infrastructure/typeorm/repositories/typeorm-member.repository';
 import { TypeOrmMeetingRepository } from '@infrastructure/typeorm/repositories/typeorm-meeting.repository';
@@ -33,6 +35,7 @@ import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-r
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 import { EventBus } from '@domain/ports/services/event-bus.port';
 import { OperationBalanceValidator } from '@domain/services/operation-balance-validator.service';
+import { AmortizationCalculatorService } from '@domain/services/amortization-calculator.service';
 
 const MEMBER_REPOSITORY = Symbol('MemberRepository');
 const MEETING_REPOSITORY = Symbol('MeetingRepository');
@@ -95,6 +98,7 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
     },
     // Domain services
     OperationBalanceValidator,
+    AmortizationCalculatorService,
     // Query handlers
     {
       provide: GetLoansQueryHandler,
@@ -113,6 +117,12 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
       useFactory: (loanRepo: LoanRepository) =>
         new GetMemberLoansQueryHandler(loanRepo),
       inject: [LOAN_REPOSITORY],
+    },
+    {
+      provide: GetPaymentPlanSimulationQueryHandler,
+      useFactory: (amortizationService: AmortizationCalculatorService) =>
+        new GetPaymentPlanSimulationQueryHandler(amortizationService),
+      inject: [AmortizationCalculatorService],
     },
     // Use cases
     {
@@ -186,6 +196,14 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
       useFactory: (loanRepo: LoanRepository, eventBus: EventBus) =>
         new UpdateLoanTermsUseCase(loanRepo, eventBus),
       inject: [LOAN_REPOSITORY, EventBus],
+    },
+    {
+      provide: SimulateLoanPaymentPlanUseCase,
+      useFactory: (
+        loanRepo: LoanRepository,
+        amortizationService: AmortizationCalculatorService,
+      ) => new SimulateLoanPaymentPlanUseCase(loanRepo, amortizationService),
+      inject: [LOAN_REPOSITORY, AmortizationCalculatorService],
     },
   ],
   controllers: [LoansV2Controller],
