@@ -642,7 +642,7 @@ Todos los endpoints `GET` requieren Query Handlers siguiendo el patrón CQRS.
 
 ### Resumen del Análisis
 
-Se realizó un análisis exhaustivo del código del frontend para identificar todos los endpoints V1 que se están llamando directamente, comparándolos con los endpoints V2 disponibles en el backend. Este análisis reveló **23 endpoints críticos** que aún no tienen equivalente V2.
+Se realizó un análisis exhaustivo del código del frontend para identificar todos los endpoints V1 que se están llamando directamente, comparándolos con los endpoints V2 disponibles en el backend. Este análisis reveló **27 endpoints críticos** que aún no tienen equivalente V2 (incluyendo operaciones y entradas contables).
 
 ### Endpoints Críticos Faltantes (Prioridad Alta)
 
@@ -654,7 +654,19 @@ Se realizó un análisis exhaustivo del código del frontend para identificar to
 
 **Uso actual**: `operationsService.ts` - Usado para consultar operaciones con filtros y detalles específicos.
 
-#### 2. Loans (4 endpoints)
+#### 2. Ledger Entries (4 endpoints)
+| Endpoint V1 | Estado V2 | Prioridad | Query Handler Necesario |
+|-------------|-----------|-----------|------------------------|
+| `GET /ledger-entries` | ⏳ Falta | **Media** | `GetLedgerEntriesQueryHandler` |
+| `GET /ledger-entries/account-types` | ⏳ Falta | Baja | `GetAccountTypesQueryHandler` |
+| `GET /ledger-entries/meeting/:meetingId` | ⏳ Falta | **Alta** | `GetMeetingLedgerEntriesQueryHandler` |
+| `GET /ledger-entries/account-type/:accountType` | ⏳ Falta | Media | `GetLedgerEntriesByAccountTypeQueryHandler` |
+
+**Uso actual**: `ledgerService.ts` y `ledgerApi` - Usado para consultar asientos contables con filtros, búsqueda por texto, y visualización del libro contable. Crítico para auditoría y trazabilidad contable.
+
+**Nota**: Las Ledger Entries se crean indirectamente a través de `RecordOperationUseCase`, pero las consultas son esenciales para el sistema contable.
+
+#### 3. Loans (4 endpoints)
 | Endpoint V1 | Estado V2 | Prioridad | Query Handler Necesario |
 |-------------|-----------|-----------|------------------------|
 | `GET /loans/:id` | ⏳ Falta | **Alta** | `GetLoanDetailQueryHandler` |
@@ -664,7 +676,7 @@ Se realizó un análisis exhaustivo del código del frontend para identificar to
 
 **Uso actual**: `loansService.ts` - Usado para consultar préstamos de miembros, activos y capacidad de deuda.
 
-#### 3. Stock Subscriptions (1 endpoint)
+#### 4. Stock Subscriptions (1 endpoint)
 | Endpoint V1 | Estado V2 | Prioridad | Query Handler Necesario |
 |-------------|-----------|-----------|------------------------|
 | `GET /stock-subscriptions/member/:memberId` | ⏳ Falta | **Alta** | `GetMemberStockSubscriptionsQueryHandler` |
@@ -675,14 +687,14 @@ Se realizó un análisis exhaustivo del código del frontend para identificar to
 
 ### Endpoints de Prioridad Media
 
-#### 4. Stocks History (1 endpoint)
+#### 5. Stocks History (1 endpoint)
 | Endpoint V1 | Estado V2 | Prioridad | Query Handler Necesario |
 |-------------|-----------|-----------|------------------------|
 | `GET /stocks/history` | ⏳ Falta | Media | `GetStocksHistoryQueryHandler` |
 
 **Uso actual**: `stocksService.ts` - Usado para consultar historial de acciones.
 
-#### 5. Dividends (2 endpoints)
+#### 6. Dividends (2 endpoints)
 | Endpoint V1 | Estado V2 | Prioridad | Query Handler Necesario |
 |-------------|-----------|-----------|------------------------|
 | `GET /dividends/pending` | ⏳ Falta | Media | `GetDividendsQueryHandler` |
@@ -694,7 +706,7 @@ Se realizó un análisis exhaustivo del código del frontend para identificar to
 
 Estos endpoints se usan principalmente en `useMemberDetail.ts` para mostrar información consolidada del miembro. Pueden construirse en el frontend combinando otros endpoints V2, pero sería más eficiente tener endpoints dedicados.
 
-#### 6. Member Detail Endpoints (6 endpoints)
+#### 7. Member Detail Endpoints (6 endpoints)
 | Endpoint V1 | Estado V2 | Prioridad | Query Handler Necesario |
 |-------------|-----------|-----------|------------------------|
 | `GET /members/:id/summary` | ⏳ Falta | Baja | `GetMemberSummaryQueryHandler` |
@@ -711,7 +723,7 @@ Estos endpoints se usan principalmente en `useMemberDetail.ts` para mostrar info
 - `/v2/members/:id/payments` para transacciones
 - Endpoints de loans cuando estén disponibles
 
-#### 7. Organization Stats (2 endpoints)
+#### 8. Organization Stats (2 endpoints)
 | Endpoint V1 | Estado V2 | Prioridad | Query Handler Necesario |
 |-------------|-----------|-----------|------------------------|
 | `GET /members/debt-capacity/summary` | ⏳ Falta | Baja | `GetOrganizationDebtCapacityQueryHandler` |
@@ -719,7 +731,7 @@ Estos endpoints se usan principalmente en `useMemberDetail.ts` para mostrar info
 
 **Uso actual**: `membersService.ts` - Posiblemente usado en dashboards o reportes ejecutivos.
 
-#### 8. Legacy Endpoints (1 endpoint)
+#### 9. Legacy Endpoints (1 endpoint)
 | Endpoint V1 | Estado V2 | Prioridad | Notas |
 |-------------|-----------|-----------|-------|
 | `POST /members/:memberId/contributions` | ⏳ Falta | Baja | Legacy, considerar deprecar |
@@ -743,31 +755,40 @@ Estos endpoints tienen funcionalidad duplicada con otros endpoints ya migrados:
 
 **Objetivo**: Implementar endpoints críticos identificados en el análisis
 
-#### Prioridad Alta (8 endpoints)
+#### Prioridad Alta (10 endpoints)
 
 1. **Operations**
    - `GetOperationsQueryHandler` - `GET /v2/operations`
    - `GetOperationDetailQueryHandler` - `GET /v2/operations/:id`
    - Prioridad: **Alta** (usado frecuentemente)
 
-2. **Loans**
+2. **Ledger Entries (Consulta por Reunión)**
+   - `GetMeetingLedgerEntriesQueryHandler` - `GET /v2/ledger-entries/meeting/:meetingId`
+   - Prioridad: **Alta** (crítico para auditoría contable de reuniones)
+
+3. **Loans**
    - `GetLoanDetailQueryHandler` - `GET /v2/loans/:id`
    - `GetMemberLoansQueryHandler` - `GET /v2/members/:id/loans`
    - `GetMemberActiveLoansQueryHandler` - `GET /v2/members/:id/loans/active`
    - `GetMemberDebtCapacityQueryHandler` - `GET /v2/members/:id/debt-capacity` (o `/v2/loans/member/:id/capacity`)
    - Prioridad: **Alta** (usado en flujos principales)
 
-3. **Stock Subscriptions**
+4. **Stock Subscriptions**
    - `GetMemberStockSubscriptionsQueryHandler` - `GET /v2/members/:id/stock-subscriptions`
    - Prioridad: **Alta** (necesario para vista de acciones del miembro)
 
-#### Prioridad Media (3 endpoints)
+#### Prioridad Media (5 endpoints)
 
-4. **Stocks History**
+5. **Ledger Entries (Consultas Generales)**
+   - `GetLedgerEntriesQueryHandler` - `GET /v2/ledger-entries`
+   - `GetLedgerEntriesByAccountTypeQueryHandler` - `GET /v2/ledger-entries/account-type/:accountType`
+   - Prioridad: Media (esencial para libro contable y auditoría)
+
+6. **Stocks History**
    - `GetStocksHistoryQueryHandler` - `GET /v2/stocks/history`
    - Prioridad: Media
 
-5. **Dividends**
+7. **Dividends**
    - `GetDividendsQueryHandler` - `GET /v2/dividends/pending`
    - `GetDividendsHistoryQueryHandler` - `GET /v2/dividends/history`
    - Prioridad: Media
@@ -776,9 +797,13 @@ Estos endpoints tienen funcionalidad duplicada con otros endpoints ya migrados:
 
 **Objetivo**: Implementar endpoints de resumen y estadísticas para mejorar rendimiento
 
-#### Prioridad Baja (8 endpoints)
+#### Prioridad Baja (9 endpoints)
 
-6. **Member Detail Endpoints**
+8. **Ledger Entries (Tipos de Cuenta)**
+   - `GetAccountTypesQueryHandler` - `GET /v2/ledger-entries/account-types`
+   - Prioridad: Baja (utilidad para filtros en frontend)
+
+9. **Member Detail Endpoints**
    - `GetMemberSummaryQueryHandler` - `GET /v2/members/:id/summary`
    - `GetMemberStocksQueryHandler` - `GET /v2/members/:id/stocks`
    - `GetMemberLoansQueryHandler` - `GET /v2/members/:id/loans` (duplicado con loans)
@@ -787,7 +812,7 @@ Estos endpoints tienen funcionalidad duplicada con otros endpoints ya migrados:
    - `GetMemberLoanInstallmentsQueryHandler` - `GET /v2/members/:id/loans/:loanId/installments`
    - Prioridad: Baja (pueden construirse en frontend)
 
-7. **Organization Stats**
+10. **Organization Stats**
    - `GetOrganizationDebtCapacityQueryHandler` - `GET /v2/members/debt-capacity/summary`
    - `GetOrganizationDebtStatsQueryHandler` - `GET /v2/members/debt-capacity/organization-stats`
    - Prioridad: Baja (reportes ejecutivos)
@@ -803,27 +828,36 @@ Estos endpoints tienen funcionalidad duplicada con otros endpoints ya migrados:
 - **Stocks**: 4/11 endpoints (36%)
 - **Loans**: 0/14 endpoints (0%) ⚠️
 - **Operations**: 0/3 endpoints (0%) ⚠️
+- **Ledger Entries**: 0/4 endpoints (0%) ⚠️
 - **Dividends**: 0/3 endpoints (0%) ⚠️
 - **Mandatory Contributions**: 5/5 endpoints (100%) ✅
 
 ### Endpoints Críticos Pendientes
 
-- **Alta Prioridad**: 8 endpoints
-- **Media Prioridad**: 3 endpoints
-- **Baja Prioridad**: 8 endpoints
+- **Alta Prioridad**: 10 endpoints (Operations: 2, Ledger Entries: 1, Loans: 4, Stock Subscriptions: 1)
+- **Media Prioridad**: 5 endpoints (Ledger Entries: 2, Stocks History: 1, Dividends: 2)
+- **Baja Prioridad**: 9 endpoints (Ledger Entries: 1, Member Detail: 6, Organization Stats: 2)
 
-**Total pendiente**: 19 endpoints críticos + 8 endpoints de baja prioridad = 27 endpoints
+**Total pendiente**: 15 endpoints críticos + 9 endpoints de baja prioridad = 24 endpoints
 
 ---
 
 ## 🎯 Recomendaciones
 
-1. **Implementar primero** los 8 endpoints de prioridad alta (Operations y Loans)
-2. **Considerar** construir endpoints de baja prioridad en el frontend combinando otros endpoints V2
-3. **Mantener** endpoints legacy solo si se usan activamente
-4. **Deprecar** endpoints duplicados una vez migrados los principales
+1. **Implementar primero** los 10 endpoints de prioridad alta (Operations: 2, Ledger Entries: 1, Loans: 4, Stock Subscriptions: 1)
+2. **Implementar después** los 5 endpoints de prioridad media, especialmente las consultas de Ledger Entries que son críticas para el sistema contable
+3. **Considerar** construir endpoints de baja prioridad en el frontend combinando otros endpoints V2
+4. **Mantener** endpoints legacy solo si se usan activamente
+5. **Deprecar** endpoints duplicados una vez migrados los principales
+
+**Nota importante**: Las consultas de Ledger Entries son esenciales para la auditoría contable y el libro contable. Aunque algunas tienen prioridad media, deben implementarse temprano debido a su importancia para la trazabilidad financiera.
 
 ---
 
-**Última actualización**: 2025-11-20  
+**Última actualización**: 2025-01-15  
 **Próxima revisión**: Después de implementar Fase 7
+
+**Cambios recientes**:
+- ✅ Agregadas consultas de Ledger Entries (4 endpoints) al plan de migración
+- ✅ Actualizado conteo de endpoints pendientes: 27 → 24 endpoints
+- ✅ Reorganizada priorización: 10 alta, 5 media, 9 baja

@@ -9,6 +9,7 @@ import { GetMemberPurchasesQueryHandler } from '@application/queries/members/get
 import { GetMemberStockExchangesQueryHandler } from '@application/queries/members/get-member-stock-exchanges.query-handler';
 import { GetMemberStockTransfersQueryHandler } from '@application/queries/members/get-member-stock-transfers.query-handler';
 import { GetMemberStockLoanPaymentsQueryHandler } from '@application/queries/members/get-member-stock-loan-payments.query-handler';
+import { GetMemberPaymentScheduleQueryHandler } from '@application/queries/members/get-member-payment-schedule.query-handler';
 import { CreateMemberUseCase } from '@application/use-cases/members/create-member.use-case';
 import { UpdateMemberUseCase } from '@application/use-cases/members/update-member.use-case';
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
@@ -47,6 +48,7 @@ import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-r
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 import { OperationBalanceValidator } from '@domain/services/operation-balance-validator.service';
 import { PaymentMapperService } from '@domain/services/payment-mapper.service';
+import { PaymentProjectionService } from '@domain/services/payment-projection.service';
 import { TypeOrmOperationRepository } from '@infrastructure/typeorm/repositories/typeorm-operation.repository';
 import { TypeOrmLedgerEntryRepository } from '@infrastructure/typeorm/repositories/typeorm-ledger-entry.repository';
 import { TypeOrmTransactionManager } from '@infrastructure/services/transaction-manager/typeorm-transaction-manager.service';
@@ -322,6 +324,34 @@ const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
         LEDGER_ENTRY_REPOSITORY,
       ],
     },
+    {
+      provide: GetMemberPaymentScheduleQueryHandler,
+      useFactory: (
+        memberRepo: MemberRepository,
+        loanRepo: LoanRepository,
+        loanTransactionDetailRepo: LoanTransactionDetailRepository,
+        operationRepo: OperationRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+        paymentProjectionService: PaymentProjectionService,
+      ): GetMemberPaymentScheduleQueryHandler => {
+        return new GetMemberPaymentScheduleQueryHandler(
+          memberRepo,
+          loanRepo,
+          loanTransactionDetailRepo,
+          operationRepo,
+          ledgerEntryRepo,
+          paymentProjectionService,
+        );
+      },
+      inject: [
+        MEMBER_REPOSITORY,
+        LOAN_REPOSITORY,
+        LOAN_TRANSACTION_DETAIL_REPOSITORY,
+        OPERATION_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+        PaymentProjectionService,
+      ],
+    },
     // Use cases
     {
       provide: CreateMemberUseCase,
@@ -359,6 +389,7 @@ const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
     // Domain services
     OperationBalanceValidator,
     PaymentMapperService,
+    PaymentProjectionService,
     // Use cases
     {
       provide: RecordOperationUseCase,

@@ -9,6 +9,7 @@ import { GetMemberPurchasesQueryHandler } from '@application/queries/members/get
 import { GetMemberStockExchangesQueryHandler } from '@application/queries/members/get-member-stock-exchanges.query-handler';
 import { GetMemberStockTransfersQueryHandler } from '@application/queries/members/get-member-stock-transfers.query-handler';
 import { GetMemberStockLoanPaymentsQueryHandler } from '@application/queries/members/get-member-stock-loan-payments.query-handler';
+import { GetMemberPaymentScheduleQueryHandler } from '@application/queries/members/get-member-payment-schedule.query-handler';
 import { CreateMemberUseCase } from '@application/use-cases/members/create-member.use-case';
 import { UpdateMemberUseCase } from '@application/use-cases/members/update-member.use-case';
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
@@ -45,6 +46,8 @@ describe('MembersV2Controller', () => {
   let getMemberStockExchangesQuery: jest.Mocked<GetMemberStockExchangesQueryHandler>;
   let getMemberStockTransfersQuery: jest.Mocked<GetMemberStockTransfersQueryHandler>;
   let getMemberStockLoanPaymentsQuery: jest.Mocked<GetMemberStockLoanPaymentsQueryHandler>;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  let getMemberPaymentScheduleQuery: jest.Mocked<GetMemberPaymentScheduleQueryHandler>;
   let processStockExchangeUseCase: jest.Mocked<ProcessStockExchangeUseCase>;
   let processStockTransferUseCase: jest.Mocked<ProcessStockTransferUseCase>;
   let processStockLoanPaymentUseCase: jest.Mocked<ProcessStockLoanPaymentUseCase>;
@@ -134,6 +137,12 @@ describe('MembersV2Controller', () => {
           },
         },
         {
+          provide: GetMemberPaymentScheduleQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
           provide: CreateMemberUseCase,
           useValue: {
             execute: jest.fn(),
@@ -210,6 +219,9 @@ describe('MembersV2Controller', () => {
     );
     getMemberStockLoanPaymentsQuery = module.get(
       GetMemberStockLoanPaymentsQueryHandler,
+    );
+    getMemberPaymentScheduleQuery = module.get(
+      GetMemberPaymentScheduleQueryHandler,
     );
     processStockExchangeUseCase = module.get(ProcessStockExchangeUseCase);
     processStockTransferUseCase = module.get(ProcessStockTransferUseCase);
