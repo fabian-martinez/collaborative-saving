@@ -11,7 +11,7 @@ import { SimplifiedRecordTransactionsDto } from '../src/meetings/dto/simplified-
 import { Operation } from '../src/operations/entities/operation.entity';
 import { Loan } from '../src/loans/entities/loan.entity';
 import { Meeting } from '../src/meetings/entities/meeting.entity';
-import { PaymentType } from '../src/common/enums/payment-type.enum';
+import { PaymentType } from '../src/domain/enums/payment-type.enum';
 
 describe('Business Use Case (e2e)', () => {
   let app: INestApplication;

@@ -5,7 +5,7 @@ import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { EntityManager } from 'typeorm';
 import { runMigrations, cleanDatabase } from './database-setup';
-import { PaymentType } from '../src/common/enums/payment-type.enum';
+import { PaymentType } from '../src/domain/enums/payment-type.enum';
 
 // Helper function to safely query database with type assertion
 function queryTyped<T>(queryPromise: Promise<unknown>): Promise<Array<T>> {

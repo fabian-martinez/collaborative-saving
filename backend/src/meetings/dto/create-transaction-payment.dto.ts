@@ -8,7 +8,7 @@ import {
   IsUUID,
   IsOptional,
 } from 'class-validator';
-import { PaymentType } from '../../common/enums/payment-type.enum';
+import { PaymentType } from '../../domain/enums/payment-type.enum';
 
 export class CreateTransactionPaymentDto {
   @ApiProperty({

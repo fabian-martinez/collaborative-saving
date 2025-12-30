@@ -1,12 +1,8 @@
 import { randomUUID } from 'crypto';
+import { LoanStatus } from '../enums/loan-status.enum';
 
-export enum LoanStatus {
-  PENDING = 'pending',
-  ACTIVE = 'active',
-  PAID = 'paid',
-  DEFAULTED = 'defaulted',
-  CLOSED = 'closed',
-}
+// Re-export for backward compatibility
+export { LoanStatus };
 
 export class Loan {
   constructor(

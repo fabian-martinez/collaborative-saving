@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { PendingMemberPayment } from '../meetings/entities/pending-member-payment.entity';
-import { PendingPaymentType } from '../common/enums/pending-payment-type.enum';
+import { PendingPaymentType } from '../domain/enums/pending-payment-type.enum';
 
 @Injectable()
 export class DividendsService {

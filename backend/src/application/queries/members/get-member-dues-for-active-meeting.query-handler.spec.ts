@@ -18,7 +18,8 @@ import {
 import { Stock } from '@domain/entities/stock.entity';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
-import { MemberDueType } from '@application/dto/members/member-due-response.dto';
+import { PaymentType } from '@domain/enums/payment-type.enum';
+import { MemberDueResponseDto } from '@application/dto/members/member-due-response.dto';
 
 describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
   let queryHandler: GetMemberDuesForActiveMeetingQueryHandler;
@@ -204,7 +205,8 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
         .mockResolvedValueOnce(stock2);
 
       // ACT
-      const result = await queryHandler.execute(memberId);
+      const result: MemberDueResponseDto[] =
+        await queryHandler.execute(memberId);
 
       // ASSERT
       expect(findActiveSpy).toHaveBeenCalledTimes(1);
@@ -213,17 +215,18 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
 
       // Verificar mandatory contributions
       const mandatoryDues = result.filter(
-        (due) => due.type === MemberDueType.MANDATORY_CONTRIBUTION,
+        (due) =>
+          (due.type as PaymentType) === PaymentType.MANDATORY_CONTRIBUTION,
       );
       expect(mandatoryDues).toHaveLength(2);
       expect(mandatoryDues).toContainEqual({
-        type: MemberDueType.MANDATORY_CONTRIBUTION,
+        type: PaymentType.MANDATORY_CONTRIBUTION,
         description: 'insurance',
         amount: 5000,
         referenceId: mandatoryContributions[0].id,
       });
       expect(mandatoryDues).toContainEqual({
-        type: MemberDueType.MANDATORY_CONTRIBUTION,
+        type: PaymentType.MANDATORY_CONTRIBUTION,
         description: 'fee',
         amount: 10000,
         referenceId: mandatoryContributions[1].id,
@@ -231,11 +234,11 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
 
       // Verificar stock fees (debe agrupar stock-1: 5 + 3 = 8)
       const stockDues = result.filter(
-        (due) => due.type === MemberDueType.STOCK_FEE,
+        (due) => (due.type as PaymentType) === PaymentType.STOCK_FEE,
       );
       expect(stockDues).toHaveLength(2);
       expect(stockDues).toContainEqual({
-        type: MemberDueType.STOCK_FEE,
+        type: PaymentType.STOCK_FEE,
         description: 'Cuota de acción: Type A',
         amount: 16000, // 8 * 2000
         referenceId: stock1.id,
@@ -243,7 +246,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
         stockQuantity: 8,
       });
       expect(stockDues).toContainEqual({
-        type: MemberDueType.STOCK_FEE,
+        type: PaymentType.STOCK_FEE,
         description: 'Cuota de acción: Type B',
         amount: 6000, // 2 * 3000
         referenceId: stock2.id,
@@ -253,11 +256,11 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
 
       // Verificar loan payment
       const loanDues = result.filter(
-        (due) => due.type === MemberDueType.LOAN_PAYMENT,
+        (due) => (due.type as PaymentType) === PaymentType.LOAN_PAYMENT,
       );
       expect(loanDues).toHaveLength(1);
       expect(loanDues[0]).toMatchObject({
-        type: MemberDueType.LOAN_PAYMENT,
+        type: PaymentType.LOAN_PAYMENT,
         description: 'Cuota préstamo: personal',
         amount: 7000, // 5000 (principal) + 2000 (2% de 100000)
         referenceId: activeLoans[0].id,
@@ -324,7 +327,8 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       findActiveByMemberLoanSpy.mockResolvedValue([]);
 
       // ACT
-      const result = await queryHandler.execute(memberId);
+      const result: MemberDueResponseDto[] =
+        await queryHandler.execute(memberId);
 
       // ASSERT
       expect(result).toEqual([]);
@@ -359,12 +363,14 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       findActiveByMemberLoanSpy.mockResolvedValue([]);
 
       // ACT
-      const result = await queryHandler.execute(memberId);
+      const result: MemberDueResponseDto[] =
+        await queryHandler.execute(memberId);
 
       // ASSERT
       expect(result).toHaveLength(2);
       const mandatoryDues = result.filter(
-        (due) => due.type === MemberDueType.MANDATORY_CONTRIBUTION,
+        (due) =>
+          (due.type as PaymentType) === PaymentType.MANDATORY_CONTRIBUTION,
       );
       expect(mandatoryDues).toHaveLength(2);
       expect(mandatoryDues[0].amount).toBeGreaterThan(0);
@@ -395,11 +401,12 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       findActiveByMemberLoanSpy.mockResolvedValue([]);
 
       // ACT
-      const result = await queryHandler.execute(memberId);
+      const result: MemberDueResponseDto[] =
+        await queryHandler.execute(memberId);
 
       // ASSERT
       const stockDues = result.filter(
-        (due) => due.type === MemberDueType.STOCK_FEE,
+        (due) => (due.type as PaymentType) === PaymentType.STOCK_FEE,
       );
       expect(stockDues).toHaveLength(0);
     });
@@ -443,11 +450,12 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       findByIdStockSpy.mockResolvedValue(stock);
 
       // ACT
-      const result = await queryHandler.execute(memberId);
+      const result: MemberDueResponseDto[] =
+        await queryHandler.execute(memberId);
 
       // ASSERT
       const stockDues = result.filter(
-        (due) => due.type === MemberDueType.STOCK_FEE,
+        (due) => (due.type as PaymentType) === PaymentType.STOCK_FEE,
       );
       expect(stockDues).toHaveLength(0);
     });
@@ -494,11 +502,12 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       findByLoanAndMeetingSpy.mockResolvedValue([interestPayment]);
 
       // ACT
-      const result = await queryHandler.execute(memberId);
+      const result: MemberDueResponseDto[] =
+        await queryHandler.execute(memberId);
 
       // ASSERT
       const loanDues = result.filter(
-        (due) => due.type === MemberDueType.LOAN_PAYMENT,
+        (due) => (due.type as PaymentType) === PaymentType.LOAN_PAYMENT,
       );
       expect(loanDues).toHaveLength(0);
       expect(findByLoanAndMeetingSpy).toHaveBeenCalledWith(
@@ -550,11 +559,12 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       findByLoanAndMeetingSpy.mockResolvedValue([principalPayment]);
 
       // ACT
-      const result = await queryHandler.execute(memberId);
+      const result: MemberDueResponseDto[] =
+        await queryHandler.execute(memberId);
 
       // ASSERT
       const loanDues = result.filter(
-        (due) => due.type === MemberDueType.LOAN_PAYMENT,
+        (due) => (due.type as PaymentType) === PaymentType.LOAN_PAYMENT,
       );
       expect(loanDues).toHaveLength(1);
       expect(loanDues[0].referenceId).toBe(activeLoans[0].id);
@@ -599,11 +609,12 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       findByLoanAndMeetingSpy.mockResolvedValue([]);
 
       // ACT
-      const result = await queryHandler.execute(memberId);
+      const result: MemberDueResponseDto[] =
+        await queryHandler.execute(memberId);
 
       // ASSERT
       const loanDues = result.filter(
-        (due) => due.type === MemberDueType.LOAN_PAYMENT,
+        (due) => (due.type as PaymentType) === PaymentType.LOAN_PAYMENT,
       );
       expect(loanDues).toHaveLength(0);
     });
@@ -654,11 +665,12 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
         .mockResolvedValueOnce([]); // Segundo préstamo sin pago
 
       // ACT
-      const result = await queryHandler.execute(memberId);
+      const result: MemberDueResponseDto[] =
+        await queryHandler.execute(memberId);
 
       // ASSERT
       const loanDues = result.filter(
-        (due) => due.type === MemberDueType.LOAN_PAYMENT,
+        (due) => (due.type as PaymentType) === PaymentType.LOAN_PAYMENT,
       );
       expect(loanDues).toHaveLength(2);
       expect(loanDues[0].description).toBe('Cuota préstamo: personal');
@@ -705,11 +717,12 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       findByLoanAndMeetingSpy.mockResolvedValue([]);
 
       // ACT
-      const result = await queryHandler.execute(memberId);
+      const result: MemberDueResponseDto[] =
+        await queryHandler.execute(memberId);
 
       // ASSERT
       const loanDues = result.filter(
-        (due) => due.type === MemberDueType.LOAN_PAYMENT,
+        (due) => (due.type as PaymentType) === PaymentType.LOAN_PAYMENT,
       );
       expect(loanDues).toHaveLength(1);
       expect(loanDues[0].creationDate).toBe('2024-01-15');
@@ -748,11 +761,12 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       findByIdStockSpy.mockResolvedValue(null); // Stock no encontrado
 
       // ACT
-      const result = await queryHandler.execute(memberId);
+      const result: MemberDueResponseDto[] =
+        await queryHandler.execute(memberId);
 
       // ASSERT
       const stockDues = result.filter(
-        (due) => due.type === MemberDueType.STOCK_FEE,
+        (due) => (due.type as PaymentType) === PaymentType.STOCK_FEE,
       );
       expect(stockDues).toHaveLength(0);
     });

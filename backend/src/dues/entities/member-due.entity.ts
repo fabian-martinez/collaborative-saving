@@ -1,11 +1,7 @@
+import { PaymentType } from '../../domain/enums/payment-type.enum';
+
 export interface MemberDue {
-  type:
-    | 'mandatory_contribution'
-    | 'stock_fee'
-    | 'loan_payment'
-    | 'fee'
-    | 'insurance'
-    | 'novelty';
+  type: PaymentType;
   description: string;
   amount: number;
   referenceId?: string;

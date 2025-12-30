@@ -7,7 +7,7 @@ import { Meeting } from './entities/meeting.entity';
 import { OperationsService } from '../operations/operations.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { CreateTransactionPaymentDto } from './dto/create-transaction-payment.dto';
-import { PaymentType } from '../common/enums/payment-type.enum';
+import { PaymentType } from '../domain/enums/payment-type.enum';
 import {
   NotFoundException,
   BadRequestException,

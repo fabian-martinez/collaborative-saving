@@ -1,3 +1,9 @@
+/**
+ * Operation Type Enum
+ *
+ * Types of operations that can be recorded in the system.
+ * This enum represents all possible operation types in the domain.
+ */
 export enum OperationType {
   MANDATORY_CONTRIBUTION = 'MANDATORY_CONTRIBUTION',
   STOCK_FEE = 'STOCK_FEE',

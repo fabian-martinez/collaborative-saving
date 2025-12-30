@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { Member } from '../../members/entities/member.entity';
 import { Meeting } from './meeting.entity';
-import { PendingPaymentType } from '../../common/enums/pending-payment-type.enum';
+import { PendingPaymentType } from '../../domain/enums/pending-payment-type.enum';
 
 @Entity('pending_member_payments')
 export class PendingMemberPayment {

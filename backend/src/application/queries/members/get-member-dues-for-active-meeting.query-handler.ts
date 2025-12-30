@@ -10,6 +10,7 @@ import { StockRepository } from '@domain/ports/repositories/stock-repository.por
 import { Loan } from '@domain/entities/loan.entity';
 import { MemberDueResponseDto } from '@application/dto/members/member-due-response.dto';
 import { LoanTransactionType } from '@domain/entities/loan-transaction-detail.entity';
+import { PaymentType } from '@domain/enums/payment-type.enum';
 
 export class GetMemberDuesForActiveMeetingQueryHandler {
   constructor(
@@ -68,7 +69,7 @@ export class GetMemberDuesForActiveMeetingQueryHandler {
     contributions: Array<{ id: string; assetType: string; value: number }>,
   ): MemberDueResponseDto[] {
     return contributions.map((contribution) => ({
-      type: 'mandatory_contribution' as MemberDueResponseDto['type'],
+      type: PaymentType.MANDATORY_CONTRIBUTION,
       description: contribution.assetType,
       amount: contribution.value,
       referenceId: contribution.id,
@@ -97,7 +98,7 @@ export class GetMemberDuesForActiveMeetingQueryHandler {
         const stock = await this.stockRepository.findById(stockId);
         if (stock && stock.monthlyContribution > 0) {
           stockDues.push({
-            type: 'stock_fee' as MemberDueResponseDto['type'],
+            type: PaymentType.STOCK_FEE,
             description: `Cuota de acción: ${stock.type}`,
             amount: totalQuantity * stock.monthlyContribution,
             referenceId: stock.id,
@@ -149,7 +150,7 @@ export class GetMemberDuesForActiveMeetingQueryHandler {
         const interestComponent = loan.outstandingBalance * loan.interestRate;
 
         return {
-          type: 'loan_payment' as MemberDueResponseDto['type'],
+          type: PaymentType.LOAN_PAYMENT,
           description: `Cuota préstamo: ${loan.loanType}`,
           amount: principalComponent + interestComponent,
           referenceId: loan.id,

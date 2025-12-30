@@ -9,7 +9,7 @@ import { StockSubscription } from '../stock-subscriptions/entities/stock-subscri
 import { Loan } from '../loans/entities/loan.entity';
 import { Stock } from '../stocks/entities/stock.entity';
 import { Operation } from '../operations/entities/operation.entity';
-import { OperationType } from '../common/enums/operation-type.enum';
+import { OperationType } from '../domain/enums/operation-type.enum';
 import {
   MemberDetailResponseDto,
   MemberSummaryResponseDto,
@@ -443,26 +443,13 @@ export class MembersService {
     const member = await this.findOne(memberId);
 
     try {
-      console.log('🔍 getMemberTransactions called with memberId:', memberId);
-
       // Get member operations using the operations service
       const operationsResult = await this.operationRepository.find({
         where: { member_id: memberId },
         order: { date: 'DESC' },
       });
 
-      console.log('📊 Operations found:', operationsResult.length);
-      if (operationsResult.length > 0) {
-        console.log('📋 First operation:', {
-          id: operationsResult[0].id,
-          type: operationsResult[0].type,
-          date: operationsResult[0].date,
-          description: operationsResult[0].description,
-        });
-      }
-
       if (operationsResult.length === 0) {
-        console.log('⚠️ No operations found for member');
         return {
           memberId,
           memberName: member.name,

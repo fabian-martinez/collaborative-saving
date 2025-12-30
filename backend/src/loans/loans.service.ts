@@ -19,8 +19,8 @@ import {
   LOANS_RECEIVABLE_ACCOUNT,
   MEMBER_EQUITY_ACCOUNT,
   INTEREST_INCOME_ACCOUNT,
-} from '../common/constants/account-types';
-import { PendingPaymentType } from '../common/enums/pending-payment-type.enum';
+} from '../domain/constants/account-types';
+import { PendingPaymentType } from '../domain/enums/pending-payment-type.enum';
 import { DisbursementPlanItemDto } from '../meetings/dto/disbursement-plan.dto';
 import { MemberDue } from '../dues/entities/member-due.entity';
 import { StocksService } from '../stocks/stocks.service';
@@ -29,8 +29,8 @@ import { Meeting } from '../meetings/entities/meeting.entity';
 // import { Stock } from '../stocks/entities/stock.entity';
 import { MeetingsService } from '../meetings/meetings.service';
 import { StockSubscriptionsService } from '../stock-subscriptions/stock-subscriptions.service';
-import { OperationType } from '../common/enums/operation-type.enum';
-import { TransactionType } from '../common/enums/transaction-type.enum';
+import { OperationType } from '../domain/enums/operation-type.enum';
+import { TransactionType } from '../domain/enums/transaction-type.enum';
 import { MembersService } from '../members/members.service';
 
 @Injectable()

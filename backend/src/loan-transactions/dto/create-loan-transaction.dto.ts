@@ -8,7 +8,7 @@ import {
   IsOptional,
   IsEnum,
 } from 'class-validator';
-import { TransactionType } from '../../common/enums/transaction-type.enum';
+import { TransactionType } from '../../domain/enums/transaction-type.enum';
 
 export class CreateLoanTransactionDto {
   @ApiProperty({

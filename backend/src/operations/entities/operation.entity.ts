@@ -11,7 +11,7 @@ import {
 import { Member } from '../../members/entities/member.entity';
 import { Meeting } from '../../meetings/entities/meeting.entity';
 import { LedgerEntry } from '../../ledger-entries/entities/ledger-entry.entity';
-import { OperationType } from '../../common/enums/operation-type.enum';
+import { OperationType } from '../../domain/enums/operation-type.enum';
 
 @Entity({ name: 'operations' })
 export class Operation {

@@ -5,8 +5,6 @@ import { AssetRevaluationService } from '../asset-revaluation/asset-revaluation.
 
 describe('MeetingsController', () => {
   let controller: MeetingsController;
-  let meetingsService: jest.Mocked<MeetingsService>;
-  let assetRevaluationService: jest.Mocked<AssetRevaluationService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -39,8 +37,6 @@ describe('MeetingsController', () => {
     }).compile();
 
     controller = module.get<MeetingsController>(MeetingsController);
-    meetingsService = module.get(MeetingsService);
-    assetRevaluationService = module.get(AssetRevaluationService);
   });
 
   it('should be defined', () => {

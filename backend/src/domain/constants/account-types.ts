@@ -32,7 +32,7 @@ export const INSURANCE_INCOME_ACCOUNT = 'INSURANCE_INCOME'; // Ingresos por el s
 export const DIVIDEND_EXPENSE_ACCOUNT = 'DIVIDEND_EXPENSE'; // Gastos por pago de dividendos a los socios.
 export const OTHER_EXPENSES_ACCOUNT = 'OTHER_EXPENSES'; // Otros gastos del fondo.
 
-// Cuenta temporal para transacciones no clasificadas durante el desarrollo
+// Cuenta para registrar pérdidas por novedades que afectan negativamente el recaudo
 export const NOVELTY_LOSS_ACCOUNT = 'NOVELTY_LOSS';
 
 // Tipo TypeScript para todos los tipos de cuenta
@@ -73,79 +73,3 @@ export const ALL_ACCOUNT_TYPES: AccountType[] = [
   OTHER_EXPENSES_ACCOUNT,
   NOVELTY_LOSS_ACCOUNT,
 ];
-
-// Objeto con todas las constantes organizadas por categoría
-export const ACCOUNT_TYPES = {
-  // Activos
-  ASSETS: {
-    CASH: CASH_ACCOUNT,
-    LOANS_RECEIVABLE: LOANS_RECEIVABLE_ACCOUNT,
-    INVESTMENT_IN_STOCKS: INVESTMENT_IN_STOCKS_ACCOUNT,
-    DIVIDENDS_PAYABLE: DIVIDENDS_PAYABLE_ACCOUNT,
-  },
-  // Patrimonio y Capital
-  EQUITY: {
-    STOCK_CAPITAL: STOCK_CAPITAL_ACCOUNT,
-    STOCK_TRANSFER: STOCK_TRANSFER_ACCOUNT,
-    REVALUATION_SURPLUS: REVALUATION_SURPLUS_ACCOUNT,
-    MEMBER_EQUITY: MEMBER_EQUITY_ACCOUNT,
-    ACCUMULATED_SURPLUS: ACCUMULATED_SURPLUS_ACCOUNT,
-  },
-  // Ingresos
-  INCOME: {
-    INTEREST: INTEREST_INCOME_ACCOUNT,
-    FEE: FEE_INCOME_ACCOUNT,
-    MANDATORY_CONTRIBUTION: MANDATORY_CONTRIBUTION_INCOME_ACCOUNT,
-    INSURANCE: INSURANCE_INCOME_ACCOUNT,
-  },
-  // Gastos
-  EXPENSES: {
-    DIVIDEND: DIVIDEND_EXPENSE_ACCOUNT,
-    OTHER: OTHER_EXPENSES_ACCOUNT,
-  },
-  // Otros
-  OTHER: {
-    NOVELTY_LOSS: NOVELTY_LOSS_ACCOUNT,
-  },
-} as const;
-
-// Etiquetas en español para cada tipo de cuenta
-export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
-  [CASH_ACCOUNT]: 'Efectivo',
-  [LOANS_RECEIVABLE_ACCOUNT]: 'Préstamos por Cobrar',
-  [INVESTMENT_IN_STOCKS_ACCOUNT]: 'Inversión en Acciones',
-  [DIVIDENDS_PAYABLE_ACCOUNT]: 'Dividendos por Pagar',
-  [STOCK_CAPITAL_ACCOUNT]: 'Capital en Acciones',
-  [STOCK_TRANSFER_ACCOUNT]: 'Transferencia de Acciones',
-  [REVALUATION_SURPLUS_ACCOUNT]: 'Superávit de Revalorización',
-  [MEMBER_EQUITY_ACCOUNT]: 'Patrimonio del Socio',
-  [ACCUMULATED_SURPLUS_ACCOUNT]: 'Superávit Acumulado',
-  [INTEREST_INCOME_ACCOUNT]: 'Ingresos por Intereses',
-  [FEE_INCOME_ACCOUNT]: 'Ingresos por Multas',
-  [MANDATORY_CONTRIBUTION_INCOME_ACCOUNT]:
-    'Ingresos por Contribuciones Obligatorias',
-  [INSURANCE_INCOME_ACCOUNT]: 'Ingresos por Seguro',
-  [DIVIDEND_EXPENSE_ACCOUNT]: 'Gastos por Dividendos',
-  [OTHER_EXPENSES_ACCOUNT]: 'Otros Gastos',
-  [NOVELTY_LOSS_ACCOUNT]: 'Pérdida por Novedades',
-};
-
-// Etiquetas en inglés para cada tipo de cuenta
-export const ACCOUNT_TYPE_LABELS_EN: Record<AccountType, string> = {
-  [CASH_ACCOUNT]: 'Cash',
-  [LOANS_RECEIVABLE_ACCOUNT]: 'Loans Receivable',
-  [INVESTMENT_IN_STOCKS_ACCOUNT]: 'Investment in Stocks',
-  [DIVIDENDS_PAYABLE_ACCOUNT]: 'Dividends Payable',
-  [STOCK_CAPITAL_ACCOUNT]: 'Stock Capital',
-  [STOCK_TRANSFER_ACCOUNT]: 'Stock Transfer',
-  [REVALUATION_SURPLUS_ACCOUNT]: 'Revaluation Surplus',
-  [MEMBER_EQUITY_ACCOUNT]: 'Member Equity',
-  [ACCUMULATED_SURPLUS_ACCOUNT]: 'Accumulated Surplus',
-  [INTEREST_INCOME_ACCOUNT]: 'Interest Income',
-  [FEE_INCOME_ACCOUNT]: 'Fee Income',
-  [MANDATORY_CONTRIBUTION_INCOME_ACCOUNT]: 'Mandatory Contribution Income',
-  [INSURANCE_INCOME_ACCOUNT]: 'Insurance Income',
-  [DIVIDEND_EXPENSE_ACCOUNT]: 'Dividend Expense',
-  [OTHER_EXPENSES_ACCOUNT]: 'Other Expenses',
-  [NOVELTY_LOSS_ACCOUNT]: 'Novelty Loss',
-};

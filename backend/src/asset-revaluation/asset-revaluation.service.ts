@@ -15,26 +15,26 @@ import {
   INTEREST_INCOME_ACCOUNT,
   MANDATORY_CONTRIBUTION_INCOME_ACCOUNT,
   STOCK_CAPITAL_ACCOUNT,
-} from '../common/constants/account-types';
+} from '../domain/constants/account-types';
 import { StockValueHistory } from '../stocks/entities/stock-value-history.entity';
 import { Operation } from '../operations/entities/operation.entity';
 import {
   INVESTMENT_IN_STOCKS_ACCOUNT,
   REVALUATION_SURPLUS_ACCOUNT,
-} from '../common/constants/account-types';
+} from '../domain/constants/account-types';
 import {
   RevaluationDetailDto,
   RevaluationPreviewResultDto,
 } from './dto/revaluation-preview-result.dto';
 import { PendingMemberPayment } from '../meetings/entities/pending-member-payment.entity';
-import { StockBehavior } from '../stocks/entities/stock.entity';
-import { OperationType } from '../common/enums/operation-type.enum';
+import { StockBehavior } from '@domain/enums/stock-behavior.enum';
+import { OperationType } from '../domain/enums/operation-type.enum';
 import { roundAndLimit } from '../common/utils/round-and-limit.util';
 import { GuaranteedGrowthHandler } from './strategies/guaranteed-growth.handler';
 import { ProportionalGrowthHandler } from './strategies/proportional-growth.handler';
 import { DistributionContext } from './strategies/distribution-chain';
 import { runDistributionChain } from './strategies/distribution-orchestrator';
-import { PendingPaymentType } from '../common/enums/pending-payment-type.enum';
+import { PendingPaymentType } from '../domain/enums/pending-payment-type.enum';
 
 @Injectable()
 export class AssetRevaluationService {
