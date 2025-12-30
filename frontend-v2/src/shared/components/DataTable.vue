@@ -1,12 +1,12 @@
 <template>
-  <div class="data-table-container">
-    <table class="data-table">
+  <div class="overflow-x-auto">
+    <table class="table table-zebra w-full">
       <thead>
         <tr>
           <th v-for="column in columns" :key="column.key">
             {{ column.label }}
           </th>
-          <th v-if="actions" class="actions-column">Acciones</th>
+          <th v-if="actions" class="text-center">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -16,12 +16,12 @@
               {{ formatValue(getValue(item, column.key), column.format) }}
             </slot>
           </td>
-          <td v-if="actions" class="actions-cell">
+          <td v-if="actions" class="text-center">
             <slot name="actions" :item="item" :index="index"></slot>
           </td>
         </tr>
         <tr v-if="data.length === 0">
-          <td :colspan="columns.length + (actions ? 1 : 0)" class="empty-message">
+          <td :colspan="columns.length + (actions ? 1 : 0)" class="text-center text-base-content/60 py-8">
             {{ emptyMessage }}
           </td>
         </tr>

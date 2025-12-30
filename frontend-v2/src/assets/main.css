@@ -1,68 +1,68 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@import 'tailwindcss';
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+  p,a {
+    font-size: 1.125rem;
+  }
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  line-height: 1.6;
-  color: #333;
-  background-color: #f5f5f5;
-}
+@plugin "daisyui";
+@plugin "daisyui/theme" {
+  name: "mytheme";
+  default: true; /* set as default */
+  prefersdark: false; /* set as default dark mode (prefers-color-scheme:dark) */
+  color-scheme: light; /* color of browser-provided UI */
 
-button {
-  font-family: inherit;
-  cursor: pointer;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  background-color: #3498db;
-  color: white;
-  transition: background-color 0.2s;
-}
+  /* --color-base-100: oklch(98% 0.02 240);
+  --color-base-200: oklch(95% 0.03 240);
+  --color-base-300: oklch(92% 0.04 240);
+  --color-base-content: oklch(29.78% 0.1442 303.77); */
+  --color-primary: oklch(30% 0.1442 303.77);
+  /* --color-primary-content: oklch(90% 0.1442 303.77); */
+  --color-secondary: oklch(72% 0.1574 55);
+  --color-secondary-content: oklch(98% 0.01 200);
+  --color-accent: oklch(65% 0.25 160);
+  --color-accent-content: oklch(98% 0.01 160);
+  --color-neutral: oklch(50% 0.05 240);
+  --color-neutral-content: oklch(98% 0.01 240);
+  --color-info: oklch(70% 0.2 220);
+  --color-info-content: oklch(98% 0.01 220);
+  --color-success: oklch(65% 0.25 140);
+  --color-success-content: oklch(98% 0.01 140);
+  --color-warning: oklch(80% 0.25 80);
+  --color-warning-content: oklch(20% 0.05 80);
+  --color-error: oklch(65% 0.3 30);
+  --color-error-content: oklch(98% 0.01 30);
 
-button:hover {
-  background-color: #2980b9;
-}
+  /* border radius */
+  --radius-selector: 1rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.5rem;
 
-button:disabled {
-  background-color: #95a5a6;
-  cursor: not-allowed;
-}
+  /* base sizes */
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
 
-input, select, textarea {
-  font-family: inherit;
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-}
+  /* border size */
+  --border: 1px;
 
-input:focus, select:focus, textarea:focus {
-  outline: none;
-  border-color: #3498db;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-th, td {
-  padding: 0.75rem;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
-}
-
-th {
-  background-color: #f8f9fa;
-  font-weight: 600;
-}
-
-tr:hover {
-  background-color: #f8f9fa;
+  /* effects */
+  --depth: 1;
+  --noise: 0;
 }
 

@@ -1,5 +1,8 @@
 import apiClient from './client'
 import type { PaginatedResponse } from './types'
+import { mockApi } from './mocks'
+
+const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
 
 // Tipos en snake_case según respuestas del backend
 export interface Member {
@@ -183,31 +186,49 @@ export interface GetPaymentScheduleQuery {
 export const membersApi = {
   // Basic CRUD
   async getMembers(): Promise<Member[]> {
+    if (USE_MOCKS) {
+      return mockApi.getMembers()
+    }
     const response = await apiClient.get<Member[]>('/v2/members')
     return response.data
   },
 
   async getMemberById(id: string): Promise<Member> {
+    if (USE_MOCKS) {
+      return mockApi.getMemberById(id)
+    }
     const response = await apiClient.get<Member>(`/v2/members/${id}`)
     return response.data
   },
 
   async createMember(data: CreateMemberRequest): Promise<Member> {
+    if (USE_MOCKS) {
+      return mockApi.createMember(data)
+    }
     const response = await apiClient.post<Member>('/v2/members', data)
     return response.data
   },
 
   async updateMember(id: string, data: UpdateMemberRequest): Promise<Member> {
+    if (USE_MOCKS) {
+      return mockApi.updateMember(id, data)
+    }
     const response = await apiClient.patch<Member>(`/v2/members/${id}`, data)
     return response.data
   },
 
   async deleteMember(id: string): Promise<void> {
+    if (USE_MOCKS) {
+      return mockApi.deleteMember(id)
+    }
     await apiClient.delete(`/v2/members/${id}`)
   },
 
   // Member Dues
   async getMemberDues(memberId: string): Promise<MemberDue[]> {
+    if (USE_MOCKS) {
+      return mockApi.getMemberDues(memberId)
+    }
     const response = await apiClient.get<MemberDue[]>(`/v2/members/${memberId}/dues`)
     return response.data
   },
@@ -217,6 +238,9 @@ export const membersApi = {
     memberId: string,
     capitalPayment?: number
   ): Promise<{ insurance_amount: number }> {
+    if (USE_MOCKS) {
+      return mockApi.getMemberInsurance(memberId)
+    }
     const params = capitalPayment !== undefined ? `?capitalPayment=${capitalPayment}` : ''
     const response = await apiClient.get<{ insurance_amount: number }>(
       `/v2/members/${memberId}/insurance${params}`
@@ -229,6 +253,9 @@ export const membersApi = {
     memberId: string,
     data: RecordMonthlyPaymentsRequest
   ): Promise<RecordMonthlyPaymentsResponse> {
+    if (USE_MOCKS) {
+      return mockApi.recordMonthlyPayment(memberId, data)
+    }
     const response = await apiClient.post<RecordMonthlyPaymentsResponse>(
       `/v2/members/${memberId}/payments`,
       data
@@ -240,6 +267,9 @@ export const membersApi = {
     memberId: string,
     query?: GetMemberPaymentsQuery
   ): Promise<MemberPayment[]> {
+    if (USE_MOCKS) {
+      return mockApi.getMemberPayments(memberId)
+    }
     const params = new URLSearchParams()
     if (query?.meeting_id) params.append('meetingId', query.meeting_id)
     if (query?.type) params.append('type', query.type)
@@ -254,6 +284,9 @@ export const membersApi = {
     memberId: string,
     query?: GetMemberPurchasesQuery
   ): Promise<MemberPurchase[]> {
+    if (USE_MOCKS) {
+      return mockApi.getMemberPurchases(memberId)
+    }
     const params = new URLSearchParams()
     if (query?.meeting_id) params.append('meetingId', query.meeting_id)
     const queryString = params.toString()
@@ -266,6 +299,9 @@ export const membersApi = {
     memberId: string,
     data: PurchaseStockRequest
   ): Promise<PurchaseStockResponse> {
+    if (USE_MOCKS) {
+      return mockApi.createStockPurchase(memberId, data)
+    }
     const response = await apiClient.post<PurchaseStockResponse>(
       `/v2/members/${memberId}/purchase`,
       data
@@ -278,6 +314,9 @@ export const membersApi = {
     memberId: string,
     query?: GetMemberStockModificationsQuery
   ): Promise<StockOperationResponse[]> {
+    if (USE_MOCKS) {
+      return mockApi.getMemberExchanges(memberId)
+    }
     const params = new URLSearchParams()
     if (query?.meeting_id) params.append('meetingId', query.meeting_id)
     if (query?.type) params.append('type', query.type)
@@ -291,6 +330,9 @@ export const membersApi = {
     memberId: string,
     query?: GetMemberStockModificationsQuery
   ): Promise<StockOperationResponse[]> {
+    if (USE_MOCKS) {
+      return mockApi.getMemberTransfers(memberId)
+    }
     const params = new URLSearchParams()
     if (query?.meeting_id) params.append('meetingId', query.meeting_id)
     if (query?.type) params.append('type', query.type)
@@ -304,6 +346,9 @@ export const membersApi = {
     memberId: string,
     query?: GetMemberStockModificationsQuery
   ): Promise<StockOperationResponse[]> {
+    if (USE_MOCKS) {
+      return mockApi.getMemberStockLoanPayments(memberId)
+    }
     const params = new URLSearchParams()
     if (query?.meeting_id) params.append('meetingId', query.meeting_id)
     if (query?.type) params.append('type', query.type)
@@ -317,6 +362,9 @@ export const membersApi = {
     memberId: string,
     data: StockExchangeRequest
   ): Promise<StockOperationResponse> {
+    if (USE_MOCKS) {
+      return mockApi.processStockExchange(memberId, data)
+    }
     const response = await apiClient.post<StockOperationResponse>(
       `/v2/members/${memberId}/exchange`,
       data
@@ -328,6 +376,9 @@ export const membersApi = {
     memberId: string,
     data: StockTransferRequest
   ): Promise<StockOperationResponse> {
+    if (USE_MOCKS) {
+      return mockApi.processStockTransfer(memberId, data)
+    }
     const response = await apiClient.post<StockOperationResponse>(
       `/v2/members/${memberId}/transfer`,
       data
@@ -339,6 +390,9 @@ export const membersApi = {
     memberId: string,
     data: StockLoanPaymentRequest
   ): Promise<StockOperationResponse> {
+    if (USE_MOCKS) {
+      return mockApi.processStockLoanPayment(memberId, data)
+    }
     const response = await apiClient.post<StockOperationResponse>(
       `/v2/members/${memberId}/stock-loan-payment`,
       data
@@ -351,6 +405,9 @@ export const membersApi = {
     memberId: string,
     query?: GetPaymentScheduleQuery
   ): Promise<PaymentSchedule> {
+    if (USE_MOCKS) {
+      return mockApi.getMemberPaymentSchedule(memberId)
+    }
     const params = new URLSearchParams()
     if (query?.start_date) params.append('startDate', query.start_date)
     if (query?.end_date) params.append('endDate', query.end_date)

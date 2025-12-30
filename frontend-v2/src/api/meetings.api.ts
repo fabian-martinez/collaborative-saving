@@ -1,4 +1,7 @@
 import apiClient from './client'
+import { mockApi } from './mocks'
+
+const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
 import type { MemberPayment, MemberPurchase } from './members.api'
 
 // Tipos en snake_case según respuestas del backend
@@ -105,11 +108,17 @@ export interface GetMeetingQuery {
 export const meetingsApi = {
   // Basic CRUD
   async getMeetings(): Promise<Meeting[]> {
+    if (USE_MOCKS) {
+      return mockApi.getMeetings()
+    }
     const response = await apiClient.get<Meeting[]>('/v2/meetings')
     return response.data
   },
 
   async getMeetingById(id: string, query?: GetMeetingQuery): Promise<Meeting> {
+    if (USE_MOCKS) {
+      return mockApi.getMeetingById(id)
+    }
     const params = new URLSearchParams()
     if (query?.include_summary) params.append('includeSummary', 'true')
     const queryString = params.toString()
@@ -119,55 +128,85 @@ export const meetingsApi = {
   },
 
   async getActiveMeeting(): Promise<Meeting> {
+    if (USE_MOCKS) {
+      return mockApi.getActiveMeeting()
+    }
     const response = await apiClient.get<Meeting>('/v2/meetings/active')
     return response.data
   },
 
   async createMeeting(data: CreateMeetingRequest): Promise<Meeting> {
+    if (USE_MOCKS) {
+      return mockApi.createMeeting(data)
+    }
     const response = await apiClient.post<Meeting>('/v2/meetings', data)
     return response.data
   },
 
   async closeMeeting(id: string, data?: CloseMeetingRequest): Promise<Meeting> {
+    if (USE_MOCKS) {
+      return mockApi.closeMeeting(id)
+    }
     const response = await apiClient.patch<Meeting>(`/v2/meetings/${id}/close`, data || {})
     return response.data
   },
 
   // Meeting Payments
   async getMeetingPayments(meetingId: string): Promise<MemberPayment[]> {
+    if (USE_MOCKS) {
+      return mockApi.getMeetingPayments(meetingId)
+    }
     const response = await apiClient.get<MemberPayment[]>(`/v2/meetings/${meetingId}/payments`)
     return response.data
   },
 
   // Meeting Purchases
   async getMeetingPurchases(meetingId: string): Promise<MemberPurchase[]> {
+    if (USE_MOCKS) {
+      return mockApi.getMeetingPurchases(meetingId)
+    }
     const response = await apiClient.get<MemberPurchase[]>(`/v2/meetings/${meetingId}/purchases`)
     return response.data
   },
 
   // Meeting Stock Operations
   async getMeetingTransfers(meetingId: string): Promise<Operation[]> {
+    if (USE_MOCKS) {
+      return mockApi.getMeetingTransfers(meetingId)
+    }
     const response = await apiClient.get<Operation[]>(`/v2/meetings/${meetingId}/transfers`)
     return response.data
   },
 
   async getMeetingExchanges(meetingId: string): Promise<Operation[]> {
+    if (USE_MOCKS) {
+      return mockApi.getMeetingExchanges(meetingId)
+    }
     const response = await apiClient.get<Operation[]>(`/v2/meetings/${meetingId}/exchanges`)
     return response.data
   },
 
   async getMeetingStockLoanPayments(meetingId: string): Promise<Operation[]> {
+    if (USE_MOCKS) {
+      return mockApi.getMeetingStockLoanPayments(meetingId)
+    }
     const response = await apiClient.get<Operation[]>(`/v2/meetings/${meetingId}/stock-loan-payments`)
     return response.data
   },
 
   // Revaluation
   async getRevaluationPreview(meetingId: string): Promise<RevaluationResponse> {
+    if (USE_MOCKS) {
+      return mockApi.getRevaluationPreview(meetingId)
+    }
     const response = await apiClient.get<RevaluationResponse>(`/v2/meetings/${meetingId}/revaluation`)
     return response.data
   },
 
   async confirmRevaluation(meetingId: string): Promise<RevaluationResponse> {
+    if (USE_MOCKS) {
+      return mockApi.confirmRevaluation(meetingId)
+    }
     const response = await apiClient.patch<RevaluationResponse>(
       `/v2/meetings/${meetingId}/revaluation/confirm`,
       {}
@@ -177,6 +216,9 @@ export const meetingsApi = {
 
   // Disbursement Plan
   async getDisbursementPlan(meetingId: string): Promise<DisbursementPlanPreview> {
+    if (USE_MOCKS) {
+      return mockApi.getDisbursementPlan(meetingId)
+    }
     const response = await apiClient.get<DisbursementPlanPreview>(
       `/v2/meetings/${meetingId}/disbursement-plan`
     )
@@ -187,6 +229,9 @@ export const meetingsApi = {
     meetingId: string,
     data: ExecuteDisbursementPlanRequest
   ): Promise<ExecuteDisbursementPlanResponse> {
+    if (USE_MOCKS) {
+      return mockApi.executeDisbursementPlan(meetingId, data)
+    }
     const response = await apiClient.post<ExecuteDisbursementPlanResponse>(
       `/v2/meetings/${meetingId}/disbursement-plan`,
       data
