@@ -5,6 +5,9 @@ import { RecordOperationUseCase } from '@application/use-cases/accounting/record
 import { Meeting, MeetingStatus } from '@domain/entities/meeting.entity';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
+import { BusinessRuleError } from '@domain/errors/business-rule.error';
+import { CASH_ACCOUNT, ACCUMULATED_SURPLUS_ACCOUNT } from '@domain/constants/account-types';
+import { OperationType } from '@domain/enums/operation-type.enum';
 
 describe('CloseMeetingUseCase', () => {
   let useCase: CloseMeetingUseCase;
@@ -113,5 +116,150 @@ describe('CloseMeetingUseCase', () => {
     );
 
     expect(saveSpy).not.toHaveBeenCalled();
+  });
+
+  it('should transfer cash balance to accumulated surplus when cash balance > 0', async () => {
+    // ARRANGE
+    const activeMeeting = Meeting.create({
+      date: new Date('2024-01-15'),
+      notes: 'Test meeting',
+    });
+    const meetingId = activeMeeting.id;
+
+    const ledgerEntries = [
+      {
+        id: 'entry-1',
+        operationId: 'op-1',
+        accountType: CASH_ACCOUNT,
+        amount: 500,
+      },
+      {
+        id: 'entry-2',
+        operationId: 'op-2',
+        accountType: CASH_ACCOUNT,
+        amount: 300,
+      },
+    ];
+
+    meetingRepository.findById.mockResolvedValue(activeMeeting);
+    ledgerEntryRepository.findByMeeting.mockResolvedValue(ledgerEntries as any);
+    recordOperationUseCase.execute.mockResolvedValue({
+      operationId: 'op-surplus',
+      ledgerEntryIds: [],
+    });
+    meetingRepository.save.mockImplementation(async (meeting) => {
+      return await Promise.resolve(meeting);
+    });
+
+    // ACT
+    const result = await useCase.execute({ meetingId });
+
+    // ASSERT
+    expect(recordOperationUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: OperationType.SURPLUS_ACCUMULATION,
+        entries: expect.arrayContaining([
+          expect.objectContaining({
+            accountType: ACCUMULATED_SURPLUS_ACCOUNT,
+            amount: 800,
+          }),
+          expect.objectContaining({
+            accountType: CASH_ACCOUNT,
+            amount: -800,
+          }),
+        ]),
+      }),
+    );
+    expect(result.status).toBe(MeetingStatus.CLOSED);
+  });
+
+  it('should include authorizedBy in description when provided', async () => {
+    // ARRANGE
+    const activeMeeting = Meeting.create({
+      date: new Date('2024-01-15'),
+      notes: 'Test meeting',
+    });
+    const meetingId = activeMeeting.id;
+
+    const ledgerEntries = [
+      {
+        id: 'entry-1',
+        operationId: 'op-1',
+        accountType: CASH_ACCOUNT,
+        amount: 500,
+      },
+    ];
+
+    meetingRepository.findById.mockResolvedValue(activeMeeting);
+    ledgerEntryRepository.findByMeeting.mockResolvedValue(ledgerEntries as any);
+    recordOperationUseCase.execute.mockResolvedValue({
+      operationId: 'op-surplus',
+      ledgerEntryIds: [],
+    });
+    meetingRepository.save.mockImplementation(async (meeting) => {
+      return await Promise.resolve(meeting);
+    });
+
+    // ACT
+    await useCase.execute({ meetingId, authorizedBy: 'John Doe' });
+
+    // ASSERT
+    expect(recordOperationUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: expect.stringContaining('Autorizado por: John Doe'),
+      }),
+    );
+  });
+
+  it('should throw BusinessRuleError when cash balance is negative', async () => {
+    // ARRANGE
+    const activeMeeting = Meeting.create({
+      date: new Date('2024-01-15'),
+      notes: 'Test meeting',
+    });
+    const meetingId = activeMeeting.id;
+
+    const ledgerEntries = [
+      {
+        id: 'entry-1',
+        operationId: 'op-1',
+        accountType: CASH_ACCOUNT,
+        amount: -100, // Negative balance
+      },
+    ];
+
+    meetingRepository.findById.mockResolvedValue(activeMeeting);
+    ledgerEntryRepository.findByMeeting.mockResolvedValue(ledgerEntries as any);
+
+    // ACT & ASSERT
+    await expect(useCase.execute({ meetingId })).rejects.toThrow(BusinessRuleError);
+    await expect(useCase.execute({ meetingId })).rejects.toThrow(
+      'El balance de efectivo no puede quedar negativo',
+    );
+    expect(saveSpy).not.toHaveBeenCalled();
+  });
+
+  it('should not transfer when cash balance is 0', async () => {
+    // ARRANGE
+    const activeMeeting = Meeting.create({
+      date: new Date('2024-01-15'),
+      notes: 'Test meeting',
+    });
+    const meetingId = activeMeeting.id;
+
+    const ledgerEntries: any[] = []; // No cash entries
+
+    meetingRepository.findById.mockResolvedValue(activeMeeting);
+    ledgerEntryRepository.findByMeeting.mockResolvedValue(ledgerEntries);
+    meetingRepository.save.mockImplementation(async (meeting) => {
+      return await Promise.resolve(meeting);
+    });
+
+    // ACT
+    const result = await useCase.execute({ meetingId });
+
+    // ASSERT
+    expect(recordOperationUseCase.execute).not.toHaveBeenCalled();
+    expect(result.status).toBe(MeetingStatus.CLOSED);
   });
 });

@@ -15,6 +15,7 @@ import { BusinessRuleError } from '@domain/errors/business-rule.error';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { LedgerEntry } from '@domain/entities/ledger-entry.entity';
 import { CASH_ACCOUNT } from '@domain/constants/account-types';
+import { PendingMemberPayment, PendingMemberPaymentType } from '@domain/entities/pending-member-payment.entity';
 
 describe('ExecuteDisbursementPlanUseCase', () => {
   let useCase: ExecuteDisbursementPlanUseCase;
@@ -281,5 +282,227 @@ describe('ExecuteDisbursementPlanUseCase', () => {
     expect(processDividendExecuteMock).toHaveBeenCalledTimes(1);
     expect(processLoanExecuteMock).toHaveBeenCalledTimes(1);
     expect(processStockExecuteMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('should process OTHER disbursement type', async () => {
+    const meeting = Meeting.create({
+      date: new Date(),
+      notes: 'Test meeting',
+    });
+
+    const dto: ExecuteDisbursementPlanDto = {
+      meetingId: meeting.id,
+      plan: [
+        {
+          memberId: 'member-1',
+          type: DisbursementType.OTHER,
+          amount: 200,
+        },
+      ],
+    };
+
+    const ledgerEntries = [
+      LedgerEntry.create({
+        operationId: 'op-1',
+        accountType: CASH_ACCOUNT,
+        amount: 1000,
+      }),
+    ];
+
+    meetingRepository.findById.mockResolvedValue(meeting);
+    ledgerEntryRepository.findByMeeting.mockResolvedValue(ledgerEntries);
+    recordOperationUseCase.execute.mockResolvedValue({
+      operationId: 'op-2',
+      ledgerEntryIds: [],
+    });
+    pendingMemberPaymentRepository.findById.mockResolvedValue(null);
+    pendingMemberPaymentRepository.save.mockResolvedValue(
+      {} as any,
+    );
+
+    const result = await useCase.execute(dto);
+
+    expect(result.success).toBe(true);
+    expect(result.processedItems).toBe(1);
+    expect(recordOperationUseCase.execute).toHaveBeenCalled();
+  });
+
+  it('should throw error when disbursed total exceeds initial available cash during processing', async () => {
+    const meeting = Meeting.create({
+      date: new Date(),
+      notes: 'Test meeting',
+    });
+
+    const dto: ExecuteDisbursementPlanDto = {
+      meetingId: meeting.id,
+      plan: [
+        {
+          memberId: 'member-1',
+          type: DisbursementType.DIVIDEND,
+          amount: 500,
+        },
+        {
+          memberId: 'member-2',
+          type: DisbursementType.DIVIDEND,
+          amount: 600,
+        },
+      ],
+    };
+
+    const ledgerEntries = [
+      LedgerEntry.create({
+        operationId: 'op-1',
+        accountType: CASH_ACCOUNT,
+        amount: 1000,
+      }),
+    ];
+
+    meetingRepository.findById.mockResolvedValue(meeting);
+    ledgerEntryRepository.findByMeeting
+      .mockResolvedValueOnce(ledgerEntries) // Initial calculation
+      .mockResolvedValueOnce(ledgerEntries) // First item processing
+      .mockResolvedValueOnce([ // Second item processing - cash reduced
+        LedgerEntry.create({
+          operationId: 'op-1',
+          accountType: CASH_ACCOUNT,
+          amount: 500, // Reduced after first disbursement
+        }),
+      ]);
+    processDividendDisbursementUseCase.execute.mockResolvedValue(undefined);
+
+    await expect(useCase.execute(dto)).rejects.toThrow(BusinessRuleError);
+  });
+
+  it('should throw error for invalid disbursement type', async () => {
+    const meeting = Meeting.create({
+      date: new Date(),
+      notes: 'Test meeting',
+    });
+
+    const dto: ExecuteDisbursementPlanDto = {
+      meetingId: meeting.id,
+      plan: [
+        {
+          memberId: 'member-1',
+          type: 'invalid' as any,
+          amount: 200,
+        },
+      ],
+    };
+
+    const ledgerEntries = [
+      LedgerEntry.create({
+        operationId: 'op-1',
+        accountType: CASH_ACCOUNT,
+        amount: 1000,
+      }),
+    ];
+
+    meetingRepository.findById.mockResolvedValue(meeting);
+    ledgerEntryRepository.findByMeeting.mockResolvedValue(ledgerEntries);
+
+    await expect(useCase.execute(dto)).rejects.toThrow(InvalidRequestError);
+  });
+
+  it('should handle OTHER disbursement with existing pending payment', async () => {
+    const meeting = Meeting.create({
+      date: new Date(),
+      notes: 'Test meeting',
+    });
+
+    const pendingPayment = {
+      id: 'pending-1',
+      memberId: 'member-1',
+      meetingId: meeting.id,
+      type: 'other' as const,
+      amount: 200,
+      status: 'pending' as const,
+      approve: jest.fn(),
+      markAsPaid: jest.fn(),
+    };
+
+    const dto: ExecuteDisbursementPlanDto = {
+      meetingId: meeting.id,
+      plan: [
+        {
+          memberId: 'member-1',
+          type: DisbursementType.OTHER,
+          amount: 200,
+          pendingMemberPaymentId: 'pending-1',
+        },
+      ],
+    };
+
+    const ledgerEntries = [
+      LedgerEntry.create({
+        operationId: 'op-1',
+        accountType: CASH_ACCOUNT,
+        amount: 1000,
+      }),
+    ];
+
+    meetingRepository.findById.mockResolvedValue(meeting);
+    ledgerEntryRepository.findByMeeting.mockResolvedValue(ledgerEntries);
+    pendingMemberPaymentRepository.findById.mockResolvedValue(pendingPayment as any);
+    pendingMemberPaymentRepository.save.mockResolvedValue(pendingPayment as any);
+    recordOperationUseCase.execute.mockResolvedValue({
+      operationId: 'op-2',
+      ledgerEntryIds: [],
+    });
+
+    const result = await useCase.execute(dto);
+
+    expect(result.success).toBe(true);
+    expect(pendingPayment.approve).toHaveBeenCalled();
+  });
+
+  it('should handle OTHER disbursement with partial payment', async () => {
+    const meeting = Meeting.create({
+      date: new Date(),
+      notes: 'Test meeting',
+    });
+
+    const dto: ExecuteDisbursementPlanDto = {
+      meetingId: meeting.id,
+      plan: [
+        {
+          memberId: 'member-1',
+          type: DisbursementType.OTHER,
+          amount: 200,
+        },
+      ],
+    };
+
+    // Initial cash balance is 200 (enough for validation)
+    // But during processing, available cash becomes 100 (partial)
+    const initialLedgerEntries = [
+      LedgerEntry.create({
+        operationId: 'op-1',
+        accountType: CASH_ACCOUNT,
+        amount: 200,
+      }),
+    ];
+
+    // Mock calculateAvailableCash to return 100 during processing (simulating cash reduction)
+    meetingRepository.findById.mockResolvedValue(meeting);
+    ledgerEntryRepository.findByMeeting
+      .mockResolvedValueOnce(initialLedgerEntries) // Initial check
+      .mockResolvedValueOnce([
+        LedgerEntry.create({
+          operationId: 'op-1',
+          accountType: CASH_ACCOUNT,
+          amount: 100, // Reduced cash during processing
+        }),
+      ]); // During processing
+    recordOperationUseCase.execute.mockResolvedValue({
+      operationId: 'op-2',
+      ledgerEntryIds: [],
+    });
+    pendingMemberPaymentRepository.save.mockResolvedValue({} as any);
+
+    const result = await useCase.execute(dto);
+
+    expect(result.success).toBe(true);
+    expect(result.totalDisbursed).toBe(100); // Partial disbursement
   });
 });

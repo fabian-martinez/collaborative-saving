@@ -21,6 +21,9 @@ import { MeetingResponseDto } from '@application/dto/meetings/meeting-response.d
 import { OperationResponseDto } from '@application/dto/meetings/operation-response.dto';
 import { OperationType } from '@domain/enums/operation-type.enum';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
+import { BusinessRuleError } from '@domain/errors/business-rule.error';
+import { InvalidRequestError } from '@domain/errors/invalid-request.error';
+import { DisbursementTypeHttp } from '../dto/meetings/disbursement-plan-item-http.dto';
 
 describe('MeetingsV2Controller', () => {
   let controller: MeetingsV2Controller;
@@ -38,6 +41,14 @@ describe('MeetingsV2Controller', () => {
   let getMeetingsQuery: jest.Mocked<GetMeetingsQueryHandler>;
   let getMeetingQuery: jest.Mocked<GetMeetingQueryHandler>;
   let getActiveMeetingQuery: jest.Mocked<GetActiveMeetingQueryHandler>;
+  let getMeetingPurchasesQuery: jest.Mocked<GetMeetingPurchasesQueryHandler>;
+  let getMeetingStockTransfersQuery: jest.Mocked<GetMeetingStockTransfersQueryHandler>;
+  let getMeetingStockExchangesQuery: jest.Mocked<GetMeetingStockExchangesQueryHandler>;
+  let getMeetingStockLoanPaymentsQuery: jest.Mocked<GetMeetingStockLoanPaymentsQueryHandler>;
+  let getRevaluationQuery: jest.Mocked<GetRevaluationQueryHandler>;
+  let recordRevaluationUseCase: jest.Mocked<RecordRevaluationUseCase>;
+  let getDisbursementPlanPreviewQuery: jest.Mocked<GetDisbursementPlanPreviewQueryHandler>;
+  let executeDisbursementPlanUseCase: jest.Mocked<ExecuteDisbursementPlanUseCase>;
 
   let openMeetingUseCaseExecuteSpy: jest.SpyInstance;
   let closeMeetingUseCaseExecuteSpy: jest.SpyInstance;
@@ -45,6 +56,14 @@ describe('MeetingsV2Controller', () => {
   let getMeetingsQueryExecuteSpy: jest.SpyInstance;
   let getMeetingQueryExecuteSpy: jest.SpyInstance;
   let getActiveMeetingQueryExecuteSpy: jest.SpyInstance;
+  let getMeetingPurchasesQueryExecuteSpy: jest.SpyInstance;
+  let getMeetingStockTransfersQueryExecuteSpy: jest.SpyInstance;
+  let getMeetingStockExchangesQueryExecuteSpy: jest.SpyInstance;
+  let getMeetingStockLoanPaymentsQueryExecuteSpy: jest.SpyInstance;
+  let getRevaluationQueryExecuteSpy: jest.SpyInstance;
+  let recordRevaluationUseCaseExecuteSpy: jest.SpyInstance;
+  let getDisbursementPlanPreviewQueryExecuteSpy: jest.SpyInstance;
+  let executeDisbursementPlanUseCaseExecuteSpy: jest.SpyInstance;
 
   const mockOpenMeetingResponse: MeetingResponseDto = {
     id: '550e8400-e29b-41d4-a716-446655440000',
@@ -172,6 +191,14 @@ describe('MeetingsV2Controller', () => {
     getMeetingsQuery = module.get(GetMeetingsQueryHandler);
     getMeetingQuery = module.get(GetMeetingQueryHandler);
     getActiveMeetingQuery = module.get(GetActiveMeetingQueryHandler);
+    getMeetingPurchasesQuery = module.get(GetMeetingPurchasesQueryHandler);
+    getMeetingStockTransfersQuery = module.get(GetMeetingStockTransfersQueryHandler);
+    getMeetingStockExchangesQuery = module.get(GetMeetingStockExchangesQueryHandler);
+    getMeetingStockLoanPaymentsQuery = module.get(GetMeetingStockLoanPaymentsQueryHandler);
+    getRevaluationQuery = module.get(GetRevaluationQueryHandler);
+    recordRevaluationUseCase = module.get(RecordRevaluationUseCase);
+    getDisbursementPlanPreviewQuery = module.get(GetDisbursementPlanPreviewQueryHandler);
+    executeDisbursementPlanUseCase = module.get(ExecuteDisbursementPlanUseCase);
 
     openMeetingUseCaseExecuteSpy = jest.spyOn(openMeetingUseCase, 'execute');
     closeMeetingUseCaseExecuteSpy = jest.spyOn(closeMeetingUseCase, 'execute');
@@ -185,6 +212,14 @@ describe('MeetingsV2Controller', () => {
       getActiveMeetingQuery,
       'execute',
     );
+    getMeetingPurchasesQueryExecuteSpy = jest.spyOn(getMeetingPurchasesQuery, 'execute');
+    getMeetingStockTransfersQueryExecuteSpy = jest.spyOn(getMeetingStockTransfersQuery, 'execute');
+    getMeetingStockExchangesQueryExecuteSpy = jest.spyOn(getMeetingStockExchangesQuery, 'execute');
+    getMeetingStockLoanPaymentsQueryExecuteSpy = jest.spyOn(getMeetingStockLoanPaymentsQuery, 'execute');
+    getRevaluationQueryExecuteSpy = jest.spyOn(getRevaluationQuery, 'execute');
+    recordRevaluationUseCaseExecuteSpy = jest.spyOn(recordRevaluationUseCase, 'execute');
+    getDisbursementPlanPreviewQueryExecuteSpy = jest.spyOn(getDisbursementPlanPreviewQuery, 'execute');
+    executeDisbursementPlanUseCaseExecuteSpy = jest.spyOn(executeDisbursementPlanUseCase, 'execute');
   });
 
   it('should be defined', () => {
@@ -942,6 +977,369 @@ describe('MeetingsV2Controller', () => {
       // ACT & ASSERT
       await expect(controller.getActive()).rejects.toThrow(HttpException);
       await expect(controller.getActive()).rejects.toThrow('Custom error');
+    });
+  });
+
+  describe('getPurchases', () => {
+    const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+
+    it('should return purchases for meeting', async () => {
+      // ARRANGE
+      const mockPurchases: OperationResponseDto[] = [
+        {
+          id: 'op-1',
+          memberId: 'member-1',
+          meetingId,
+          type: OperationType.STOCK_PURCHASE,
+          date: new Date('2024-01-15'),
+          description: 'Purchase 1',
+        },
+      ];
+
+      getMeetingPurchasesQueryExecuteSpy.mockResolvedValue(mockPurchases);
+
+      // ACT
+      const result = await controller.getPurchases(meetingId);
+
+      // ASSERT
+      expect(getMeetingPurchasesQueryExecuteSpy).toHaveBeenCalledWith(meetingId);
+      expect(result).toHaveLength(1);
+      expect(result[0].type).toBe(OperationType.STOCK_PURCHASE);
+    });
+
+    it('should return 404 when meeting not found', async () => {
+      // ARRANGE
+      const error = new MeetingNotFoundException(meetingId);
+      getMeetingPurchasesQueryExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.getPurchases(meetingId)).rejects.toThrow(HttpException);
+      try {
+        await controller.getPurchases(meetingId);
+      } catch (e) {
+        expect(e).toBeInstanceOf(HttpException);
+        if (e instanceof HttpException) {
+          expect(e.getStatus()).toBe(HttpStatus.NOT_FOUND);
+        }
+      }
+    });
+
+    it('should handle generic errors', async () => {
+      // ARRANGE
+      const error = new Error('Internal error');
+      getMeetingPurchasesQueryExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.getPurchases(meetingId)).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('getTransfers', () => {
+    const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+
+    it('should return transfers for meeting', async () => {
+      // ARRANGE
+      const mockTransfers: OperationResponseDto[] = [
+        {
+          id: 'op-1',
+          memberId: 'member-1',
+          meetingId,
+          type: OperationType.STOCK_TRANSFER,
+          date: new Date('2024-01-15'),
+          description: 'Transfer 1',
+        },
+      ];
+
+      getMeetingStockTransfersQueryExecuteSpy.mockResolvedValue(mockTransfers);
+
+      // ACT
+      const result = await controller.getTransfers(meetingId);
+
+      // ASSERT
+      expect(getMeetingStockTransfersQueryExecuteSpy).toHaveBeenCalledWith(meetingId);
+      expect(result).toHaveLength(1);
+      expect(result[0].type).toBe(OperationType.STOCK_TRANSFER);
+    });
+
+    it('should return 404 when meeting not found', async () => {
+      // ARRANGE
+      const error = new MeetingNotFoundException(meetingId);
+      getMeetingStockTransfersQueryExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.getTransfers(meetingId)).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('getExchanges', () => {
+    const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+
+    it('should return exchanges for meeting', async () => {
+      // ARRANGE
+      const mockExchanges: OperationResponseDto[] = [
+        {
+          id: 'op-1',
+          memberId: 'member-1',
+          meetingId,
+          type: OperationType.STOCK_MODIFICATION,
+          date: new Date('2024-01-15'),
+          description: 'Exchange 1',
+        },
+      ];
+
+      getMeetingStockExchangesQueryExecuteSpy.mockResolvedValue(mockExchanges);
+
+      // ACT
+      const result = await controller.getExchanges(meetingId);
+
+      // ASSERT
+      expect(getMeetingStockExchangesQueryExecuteSpy).toHaveBeenCalledWith(meetingId);
+      expect(result).toHaveLength(1);
+      expect(result[0].type).toBe(OperationType.STOCK_MODIFICATION);
+    });
+
+    it('should return 404 when meeting not found', async () => {
+      // ARRANGE
+      const error = new MeetingNotFoundException(meetingId);
+      getMeetingStockExchangesQueryExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.getExchanges(meetingId)).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('getStockLoanPayments', () => {
+    const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+
+    it('should return stock loan payments for meeting', async () => {
+      // ARRANGE
+      const mockPayments: OperationResponseDto[] = [
+        {
+          id: 'op-1',
+          memberId: 'member-1',
+          meetingId,
+          type: OperationType.STOCK_LOAN_PAYMENT,
+          date: new Date('2024-01-15'),
+          description: 'Stock loan payment 1',
+        },
+      ];
+
+      getMeetingStockLoanPaymentsQueryExecuteSpy.mockResolvedValue(mockPayments);
+
+      // ACT
+      const result = await controller.getStockLoanPayments(meetingId);
+
+      // ASSERT
+      expect(getMeetingStockLoanPaymentsQueryExecuteSpy).toHaveBeenCalledWith(meetingId);
+      expect(result).toHaveLength(1);
+      expect(result[0].type).toBe(OperationType.STOCK_LOAN_PAYMENT);
+    });
+
+    it('should return 404 when meeting not found', async () => {
+      // ARRANGE
+      const error = new MeetingNotFoundException(meetingId);
+      getMeetingStockLoanPaymentsQueryExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.getStockLoanPayments(meetingId)).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('getRevaluation', () => {
+    const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+
+    it('should return revaluation preview successfully', async () => {
+      // ARRANGE
+      const mockRevaluation = {
+        totalContributions: 10000,
+        totalInterest: 5000,
+        totalToDistribute: 15000,
+        details: [],
+        totalMandatoryContributions: 2000,
+        status: 'preview' as const,
+      };
+
+      getRevaluationQueryExecuteSpy.mockResolvedValue(mockRevaluation);
+
+      // ACT
+      const result = await controller.getRevaluation(meetingId);
+
+      // ASSERT
+      expect(getRevaluationQueryExecuteSpy).toHaveBeenCalledWith(meetingId);
+      expect(result.total_contributions).toBe(10000);
+      expect(result.status).toBe('preview');
+    });
+
+    it('should return 404 when meeting not found', async () => {
+      // ARRANGE
+      const error = new MeetingNotFoundException(meetingId);
+      getRevaluationQueryExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.getRevaluation(meetingId)).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('confirmRevaluation', () => {
+    const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+
+    it('should confirm and execute revaluation successfully', async () => {
+      // ARRANGE
+      const mockRevaluation = {
+        totalContributions: 10000,
+        totalInterest: 5000,
+        totalToDistribute: 15000,
+        details: [],
+        totalMandatoryContributions: 2000,
+        status: 'executed' as const,
+        executedAt: new Date('2024-01-15'),
+        operationId: 'operation-id-1',
+      };
+
+      recordRevaluationUseCaseExecuteSpy.mockResolvedValue(mockRevaluation);
+
+      // ACT
+      const result = await controller.confirmRevaluation(meetingId);
+
+      // ASSERT
+      expect(recordRevaluationUseCaseExecuteSpy).toHaveBeenCalledWith({
+        meetingId,
+      });
+      expect(result.status).toBe('executed');
+      expect(result.operation_id).toBe('operation-id-1');
+    });
+
+    it('should return 404 when meeting not found', async () => {
+      // ARRANGE
+      const error = new MeetingNotFoundException(meetingId);
+      recordRevaluationUseCaseExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.confirmRevaluation(meetingId)).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('getDisbursementPlanPreview', () => {
+    const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+
+    it('should return disbursement plan preview successfully', async () => {
+      // ARRANGE
+      const mockPreview = {
+        plan: [
+          {
+            memberId: 'member-1',
+            type: 'loan' as const,
+            amount: 1000,
+          },
+        ],
+        availableCash: 5000,
+        totalToDisburse: 1000,
+      };
+
+      getDisbursementPlanPreviewQueryExecuteSpy.mockResolvedValue(mockPreview);
+
+      // ACT
+      const result = await controller.getDisbursementPlanPreview(meetingId);
+
+      // ASSERT
+      expect(getDisbursementPlanPreviewQueryExecuteSpy).toHaveBeenCalledWith(meetingId);
+      expect(result.available_cash).toBe(5000);
+      expect(result.total_to_disburse).toBe(1000);
+      expect(result.plan).toHaveLength(1);
+    });
+
+    it('should return 404 when meeting not found', async () => {
+      // ARRANGE
+      const error = new MeetingNotFoundException(meetingId);
+      getDisbursementPlanPreviewQueryExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.getDisbursementPlanPreview(meetingId)).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('executeDisbursementPlan', () => {
+    const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+
+    it('should execute disbursement plan successfully', async () => {
+      // ARRANGE
+      const dto = {
+        plan: [
+          {
+            member_id: 'member-1',
+            type: DisbursementTypeHttp.LOAN,
+            amount: 1000,
+          },
+        ],
+      };
+
+      const mockResult = {
+        success: true,
+        processedItems: 1,
+        totalDisbursed: 1000,
+        totalRequested: 1000,
+      };
+
+      executeDisbursementPlanUseCaseExecuteSpy.mockResolvedValue(mockResult);
+
+      // ACT
+      const result = await controller.executeDisbursementPlan(meetingId, dto);
+
+      // ASSERT
+      expect(executeDisbursementPlanUseCaseExecuteSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          meetingId,
+          plan: expect.any(Array),
+        }),
+      );
+      expect(result.processed_items).toBe(1);
+      expect(result.total_disbursed).toBe(1000);
+    });
+
+    it('should return 404 when meeting not found', async () => {
+      // ARRANGE
+      const dto = { plan: [] };
+      const error = new MeetingNotFoundException(meetingId);
+      executeDisbursementPlanUseCaseExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.executeDisbursementPlan(meetingId, dto)).rejects.toThrow(HttpException);
+    });
+
+    it('should return 400 when business rule error', async () => {
+      // ARRANGE
+      const dto = { plan: [] };
+      const error = new BusinessRuleError('Insufficient cash');
+      executeDisbursementPlanUseCaseExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.executeDisbursementPlan(meetingId, dto)).rejects.toThrow(HttpException);
+      try {
+        await controller.executeDisbursementPlan(meetingId, dto);
+      } catch (e) {
+        expect(e).toBeInstanceOf(HttpException);
+        if (e instanceof HttpException) {
+          expect(e.getStatus()).toBe(HttpStatus.BAD_REQUEST);
+        }
+      }
+    });
+
+    it('should return 400 when invalid request error', async () => {
+      // ARRANGE
+      const dto = { plan: [] };
+      const error = new InvalidRequestError('Invalid plan');
+      executeDisbursementPlanUseCaseExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.executeDisbursementPlan(meetingId, dto)).rejects.toThrow(HttpException);
+      try {
+        await controller.executeDisbursementPlan(meetingId, dto);
+      } catch (e) {
+        expect(e).toBeInstanceOf(HttpException);
+        if (e instanceof HttpException) {
+          expect(e.getStatus()).toBe(HttpStatus.BAD_REQUEST);
+        }
+      }
     });
   });
 });

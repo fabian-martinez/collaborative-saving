@@ -7,6 +7,7 @@ import { Operation as OperationDomain } from '@domain/entities/operation.entity'
 import { Operation } from '@domain/entities/operation.entity';
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
 import { OperationType } from '@domain/enums/operation-type.enum';
+import { CASH_ACCOUNT, AccountType } from '@domain/constants/account-types';
 
 describe('TypeOrmOperationRepository', () => {
   let repository: TypeOrmOperationRepository;
@@ -197,6 +198,217 @@ describe('TypeOrmOperationRepository', () => {
 
       const result = await repository.save(domain);
       expect(result).toBeInstanceOf(OperationDomain);
+    });
+
+    it('should update existing operation when exists', async () => {
+      const domain = Operation.create({
+        meetingId: 'meeting-1',
+        type: OperationType.MONTHLY_PAYMENT,
+      });
+
+      const existingEntity: Partial<OperationEntity> = {
+        id: domain.id,
+        memberId: domain.memberId,
+        meetingId: domain.meetingId,
+        type: domain.type,
+        date: domain.date,
+        description: domain.description,
+      };
+
+      const updatedEntity: Partial<OperationEntity> = {
+        ...existingEntity,
+        description: 'Updated description',
+      };
+
+      typeOrmRepo.findOne
+        .mockResolvedValueOnce(existingEntity as OperationEntity)
+        .mockResolvedValueOnce(updatedEntity as OperationEntity);
+      typeOrmRepo.update.mockResolvedValue(undefined as any);
+
+      const result = await repository.save(domain);
+      expect(typeOrmRepo.update).toHaveBeenCalledWith(domain.id, expect.any(Object));
+      expect(result).toBeInstanceOf(OperationDomain);
+    });
+
+    it('should throw error when operation not found after update', async () => {
+      const domain = Operation.create({
+        meetingId: 'meeting-1',
+        type: OperationType.MONTHLY_PAYMENT,
+      });
+
+      const existingEntity: Partial<OperationEntity> = {
+        id: domain.id,
+        memberId: domain.memberId,
+        meetingId: domain.meetingId,
+        type: domain.type,
+        date: domain.date,
+        description: domain.description,
+      };
+
+      typeOrmRepo.findOne
+        .mockResolvedValueOnce(existingEntity as OperationEntity)
+        .mockResolvedValueOnce(null);
+      typeOrmRepo.update.mockResolvedValue(undefined as any);
+
+      await expect(repository.save(domain)).rejects.toThrow(
+        'Operation not found after update',
+      );
+    });
+  });
+
+  describe('findByMember', () => {
+    it('should return operations for member without filters', async () => {
+      const memberId = 'member-1';
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+
+      typeOrmRepo.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
+
+      const entities: Partial<OperationEntity>[] = [
+        {
+          id: 'op-1',
+          memberId,
+          meetingId: 'meeting-1',
+          type: OperationType.MONTHLY_PAYMENT,
+          date: new Date(),
+          description: null,
+        },
+      ];
+
+      mockQueryBuilder.getMany.mockResolvedValue(entities as OperationEntity[]);
+      const result = await repository.findByMember(memberId);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBeInstanceOf(OperationDomain);
+      expect(result[0].memberId).toBe(memberId);
+    });
+
+    it('should filter by meetingId when provided', async () => {
+      const memberId = 'member-1';
+      const meetingId = 'meeting-1';
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+
+      typeOrmRepo.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
+      mockQueryBuilder.getMany.mockResolvedValue([]);
+
+      await repository.findByMember(memberId, { meetingId });
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'operation.meeting_id = :meetingId',
+        { meetingId },
+      );
+    });
+
+    it('should filter by types when provided', async () => {
+      const memberId = 'member-1';
+      const types = [OperationType.MONTHLY_PAYMENT, OperationType.STOCK_PURCHASE];
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+
+      typeOrmRepo.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
+      mockQueryBuilder.getMany.mockResolvedValue([]);
+
+      await repository.findByMember(memberId, { types });
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'operation.type IN (:...types)',
+        { types },
+      );
+    });
+
+    it('should not filter by types when empty array provided', async () => {
+      const memberId = 'member-1';
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+
+      typeOrmRepo.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
+      mockQueryBuilder.getMany.mockResolvedValue([]);
+
+      await repository.findByMember(memberId, { types: [] });
+
+      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
+        expect.stringContaining('type IN'),
+        expect.any(Object),
+      );
+    });
+  });
+
+  describe('saveWithEntries', () => {
+    it('should save operation with ledger entries', async () => {
+      const domain = Operation.create({
+        meetingId: 'meeting-1',
+        type: OperationType.MONTHLY_PAYMENT,
+      });
+
+      const entries: Array<{
+        accountType: AccountType;
+        amount: number;
+        description: string;
+      }> = [
+        {
+          accountType: CASH_ACCOUNT,
+          amount: 1000,
+          description: 'Test entry',
+        },
+      ];
+
+      typeOrmRepo.findOne.mockResolvedValue(null);
+      typeOrmRepo.save.mockResolvedValue({
+        id: domain.id,
+        memberId: domain.memberId,
+        meetingId: domain.meetingId,
+        type: domain.type,
+        date: domain.date,
+        description: domain.description,
+      } as OperationEntity);
+      ledgerEntryRepo.saveMany.mockResolvedValue([]);
+
+      const result = await repository.saveWithEntries(domain, entries);
+
+      expect(result).toBeInstanceOf(OperationDomain);
+      expect(ledgerEntryRepo.saveMany).toHaveBeenCalled();
+    });
+
+    it('should throw error when LedgerEntryRepository not set', async () => {
+      const repositoryWithoutLedger = new TypeOrmOperationRepository(
+        typeOrmRepo as any,
+      );
+      const domain = Operation.create({
+        meetingId: 'meeting-1',
+        type: OperationType.MONTHLY_PAYMENT,
+      });
+
+      // Mock save to return a complete entity
+      typeOrmRepo.findOne.mockResolvedValue(null);
+      typeOrmRepo.save.mockResolvedValue({
+        id: domain.id,
+        memberId: domain.memberId,
+        meetingId: domain.meetingId,
+        type: domain.type,
+        date: domain.date,
+        description: domain.description,
+      } as unknown as OperationEntity);
+
+      await expect(
+        repositoryWithoutLedger.saveWithEntries(domain, []),
+      ).rejects.toThrow('LedgerEntryRepository not set');
     });
   });
 });
