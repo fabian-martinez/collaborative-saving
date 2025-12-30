@@ -28,6 +28,12 @@ export const useMeetingsStore = defineStore('meetings', () => {
       activeMeeting.value = await meetingsApi.getActiveMeeting()
       return activeMeeting.value
     } catch (e) {
+      // Si no hay reunión activa, es un estado válido del sistema
+      // Solo establecemos activeMeeting a null sin lanzar error
+      if (e instanceof Error && e.message.includes('404')) {
+        activeMeeting.value = null
+        return null
+      }
       error.value = e instanceof Error ? e.message : 'Error al cargar reunión activa'
       throw e
     } finally {
@@ -41,10 +47,34 @@ export const useMeetingsStore = defineStore('meetings', () => {
     try {
       const newMeeting = await meetingsApi.createMeeting(data)
       meetings.value.unshift(newMeeting)
+      // La nueva reunión creada se convierte automáticamente en la reunión activa
       activeMeeting.value = newMeeting
       return newMeeting
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Error al crear reunión'
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function closeMeeting(id: string, data?: Parameters<typeof meetingsApi.closeMeeting>[1]) {
+    loading.value = true
+    error.value = null
+    try {
+      const closedMeeting = await meetingsApi.closeMeeting(id, data)
+      // Actualizar la reunión en la lista
+      const index = meetings.value.findIndex(m => m.id === id)
+      if (index !== -1) {
+        meetings.value[index] = closedMeeting
+      }
+      // Si la reunión cerrada era la activa, limpiar el estado
+      if (activeMeeting.value?.id === id) {
+        activeMeeting.value = null
+      }
+      return closedMeeting
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Error al cerrar reunión'
       throw e
     } finally {
       loading.value = false
@@ -58,7 +88,8 @@ export const useMeetingsStore = defineStore('meetings', () => {
     error,
     fetchMeetings,
     fetchActiveMeeting,
-    createMeeting
+    createMeeting,
+    closeMeeting
   }
 })
 

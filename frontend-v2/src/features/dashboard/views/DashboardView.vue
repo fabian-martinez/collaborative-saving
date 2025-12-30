@@ -23,14 +23,11 @@ import ErrorMessage from '@/shared/components/ErrorMessage.vue'
 import {
   User,
   Eye,
-  Document,
   Wallet,
-  PiggyBank,
   Plus,
-  Bank,
-  FileText
+  Bank
 } from 'iconoir-vue/regular'
-import { formatCurrency, formatDate } from '@/shared/utils/formatters'
+import { formatCurrency } from '@/shared/utils/formatters'
 
 // Register Chart.js components
 ChartJS.register(
@@ -89,7 +86,8 @@ const lineChartOptions = {
     y: {
       beginAtZero: true,
       ticks: {
-        callback: function (value: number) {
+        callback: function (tickValue: string | number) {
+          const value = typeof tickValue === 'number' ? tickValue : Number(tickValue)
           return '$' + (value / 1000000).toFixed(1) + 'M'
         }
       }
@@ -188,7 +186,7 @@ const nextMeetingDate = computed(() => {
         title="Préstamos Activos"
         :value="store.metrics.active_loans.count"
         subtitle="En cartera"
-        :icon="Document"
+        :icon="Bank"
       />
       <MetricCard
         v-if="store.metrics"
@@ -316,7 +314,7 @@ const nextMeetingDate = computed(() => {
             <QuickActionButton
               title="Registrar Pago"
               description="Recibir pago"
-              :icon="FileText"
+              :icon="Wallet"
               @click="handleRegisterPayment"
             />
           </div>

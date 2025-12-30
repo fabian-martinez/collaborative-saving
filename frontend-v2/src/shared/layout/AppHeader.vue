@@ -1,27 +1,54 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Search, Bell, UserCircle } from 'iconoir-vue/regular'
+import { ref, computed } from 'vue'
+import { Bell, Menu, Calendar } from 'iconoir-vue/regular'
+import { useSidebar } from '@/shared/composables/useSidebar'
+import { useMeetingsStore } from '@/features/meetings/stores/meetings'
+import { formatDate } from '@/shared/utils/formatters'
 
-const searchQuery = ref('')
 const notifications = ref(0) // Mock - esto vendrá del store después
 const userInitials = ref('AD') // Mock - esto vendrá del store después
+const { isCollapsed, toggleMobile } = useSidebar()
+
+const meetingsStore = useMeetingsStore()
+const activeMeeting = computed(() => meetingsStore.activeMeeting)
+const hasActiveMeeting = computed(() => activeMeeting.value !== null)
+const formattedMeetingDate = computed(() => {
+  if (!activeMeeting.value) return ''
+  return formatDate(activeMeeting.value.date)
+})
 </script>
 
 <template>
-  <header class="bg-base-100 shadow-md p-4 fixed top-0 right-0 left-72 z-10">
-    <div class="flex items-center justify-between">
-      <!-- Search Bar -->
-      <div class="flex-1 max-w-md">
-        <div class="relative">
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Buscar..."
-            class="input input-bordered w-full pl-10"
-          />
-          <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+  <header
+    class="bg-base-100 shadow-md p-4 fixed top-0 right-0 left-0 z-10 transition-all duration-300"
+    :class="{
+      'lg:left-72': !isCollapsed,
+      'lg:left-20': isCollapsed
+    }"
+  >
+    <div class="flex items-center justify-between gap-4">
+      <!-- Botón hamburguesa (solo móvil) -->
+      <button
+        @click="toggleMobile"
+        class="btn btn-ghost btn-circle lg:hidden"
+      >
+        <Menu class="w-6 h-6" />
+      </button>
+
+      <!-- Reunión Activa -->
+      <div
+        v-if="hasActiveMeeting"
+        class="flex items-center gap-2 px-3 py-2 bg-primary/10 text-primary rounded-lg border border-primary/20"
+      >
+        <Calendar class="w-5 h-5" />
+        <div class="flex flex-col">
+          <span class="text-xs font-semibold">Reunión Activa</span>
+          <span class="text-xs">{{ formattedMeetingDate }}</span>
         </div>
       </div>
+
+      <!-- Spacer para empujar elementos a la derecha -->
+      <div class="flex-1"></div>
 
       <!-- Right Side: Notifications and User -->
       <div class="flex items-center gap-4">
@@ -40,7 +67,7 @@ const userInitials = ref('AD') // Mock - esto vendrá del store después
 
         <!-- User Avatar -->
         <div class="avatar placeholder">
-          <div class="bg-primary text-primary-content rounded-full w-10">
+          <div class="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
             <span class="text-sm font-semibold">{{ userInitials }}</span>
           </div>
         </div>
