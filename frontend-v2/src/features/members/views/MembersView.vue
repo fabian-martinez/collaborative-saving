@@ -2,7 +2,18 @@
   <div class="members-view">
     <div class="view-header">
       <h1>Miembros</h1>
-      <button @click="showCreateModal = true" class="create-button">Nuevo Miembro</button>
+      <div class="flex items-center gap-4">
+        <div class="relative">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Buscar por nombre, email o identificación..."
+            class="input input-bordered w-64 pl-10"
+          />
+          <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+        </div>
+        <button @click="showCreateModal = true" class="create-button">Nuevo Miembro</button>
+      </div>
     </div>
 
     <LoadingSpinner :loading="store.loading" message="Cargando miembros..." />
@@ -10,10 +21,10 @@
 
     <DataTable
       v-if="!store.loading && !store.error"
-      :data="store.members"
+      :data="filteredItems"
       :columns="columns"
       :actions="true"
-      empty-message="No hay miembros registrados"
+      :empty-message="searchQuery ? 'No se encontraron miembros' : 'No hay miembros registrados'"
       row-key="id"
     >
       <template #actions="{ item }">
@@ -30,9 +41,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { Search } from 'iconoir-vue/regular'
 import { useMembersStore } from '../stores/members'
+import { useSearchableList } from '@/shared/composables/useSearchableList'
 import DataTable from '@/shared/components/DataTable.vue'
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import ErrorMessage from '@/shared/components/ErrorMessage.vue'
@@ -43,6 +56,14 @@ import type { Member } from '@/api/members.api'
 const router = useRouter()
 const store = useMembersStore()
 const showCreateModal = ref(false)
+
+// Búsqueda contextual
+const membersRef = computed(() => store.members)
+const { searchQuery, filteredItems } = useSearchableList<Member>(membersRef, [
+  'name',
+  'email',
+  'identification_number'
+])
 
 const columns = [
   { key: 'name', label: 'Nombre' },

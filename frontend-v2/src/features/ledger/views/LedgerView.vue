@@ -1,13 +1,24 @@
 <template>
   <div class="ledger-view">
-    <h1>Libro Contable</h1>
+    <div class="view-header">
+      <h1>Libro Contable</h1>
+      <div class="relative">
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Buscar por descripción, tipo de cuenta o miembro..."
+          class="input input-bordered w-64 pl-10"
+        />
+        <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+      </div>
+    </div>
     <LoadingSpinner :loading="loading" />
     <ErrorMessage :error="error" />
     <DataTable
       v-if="!loading && !error"
-      :data="entries.data"
+      :data="filteredItems"
       :columns="columns"
-      empty-message="No hay asientos contables"
+      :empty-message="searchQuery ? 'No se encontraron asientos contables' : 'No hay asientos contables'"
     />
     <Pagination
       v-if="entries.total > 0"
@@ -23,7 +34,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { Search } from 'iconoir-vue/regular'
 import { ledgerApi, type LedgerEntry } from '@/api/ledger.api'
+import { useSearchableList } from '@/shared/composables/useSearchableList'
 import DataTable from '@/shared/components/DataTable.vue'
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import ErrorMessage from '@/shared/components/ErrorMessage.vue'
@@ -41,6 +54,14 @@ const page = ref(1)
 const limit = ref(20)
 
 const totalPages = computed(() => Math.ceil(entries.value.total / limit.value))
+
+// Búsqueda contextual (filtra solo los resultados de la página actual)
+const entriesDataRef = computed(() => entries.value.data)
+const { searchQuery, filteredItems } = useSearchableList<LedgerEntry>(entriesDataRef, [
+  'description',
+  'account_type',
+  'member_name'
+])
 
 const columns = [
   { key: 'created_at', label: 'Fecha', format: 'datetime' },
@@ -78,6 +99,17 @@ onMounted(() => {
 <style scoped>
 .ledger-view {
   padding: 2rem;
+}
+
+.view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.view-header h1 {
+  margin: 0;
 }
 </style>
 
