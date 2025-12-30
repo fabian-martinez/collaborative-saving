@@ -8,6 +8,7 @@ import { FeeStrategy } from './fee.strategy';
 import { InsuranceStrategy } from './insurance.strategy';
 import { DefaultPaymentStrategy } from './default-payment.strategy';
 import { NoveltyPaymentStrategy } from './novelty-payment.strategy';
+import { PaymentType } from '../../domain/enums/payment-type.enum';
 
 @Injectable()
 export class PaymentStrategyFactory {
@@ -23,14 +24,14 @@ export class PaymentStrategyFactory {
     private readonly noveltyPaymentStrategy: NoveltyPaymentStrategy,
   ) {
     this.strategies.set(
-      'mandatory_contribution',
+      PaymentType.MANDATORY_CONTRIBUTION,
       this.mandatoryContributionStrategy,
     );
-    this.strategies.set('stock_fee', this.stockFeeStrategy);
-    this.strategies.set('loan_payment', this.loanPaymentStrategy);
-    this.strategies.set('fee', this.feeStrategy);
-    this.strategies.set('insurance', this.insuranceStrategy);
-    this.strategies.set('novelty', this.noveltyPaymentStrategy);
+    this.strategies.set(PaymentType.STOCK_FEE, this.stockFeeStrategy);
+    this.strategies.set(PaymentType.LOAN_PAYMENT, this.loanPaymentStrategy);
+    this.strategies.set(PaymentType.FEE, this.feeStrategy);
+    this.strategies.set(PaymentType.INSURANCE, this.insuranceStrategy);
+    this.strategies.set(PaymentType.NOVELTY, this.noveltyPaymentStrategy);
   }
 
   getStrategy(paymentType: MemberDue['type']): PaymentStrategy {

@@ -5,6 +5,7 @@ import { MemberRepository } from '@domain/ports/repositories/member-repository.p
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { CreateLoanUseCase } from '@application/use-cases/loans/create-loan.use-case';
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
+import { LOAN_CONSTANTS } from '@domain/constants/business-rules.constants';
 import { RecordOperationDto } from '@application/dto/accounting/record-operation.dto';
 import { DisbursementPlanItemDto } from '@application/dto/meetings/disbursement-plan-item.dto';
 import {
@@ -91,8 +92,8 @@ export class ProcessLoanDisbursementUseCase {
       const monthlyPayment = item.newLoanRequest.monthlyPaymentAmount;
 
       if (monthlyPayment <= 0) {
-        // Si el pago mensual es 0, usar un término por defecto de 24 meses
-        calculatedTerm = 80;
+        // Si el pago mensual es 0, usar un término por defecto
+        calculatedTerm = LOAN_CONSTANTS.MAX_TERM_MONTHS;
       } else if (monthlyRate <= 0) {
         // Si no hay interés, calcular término simple
         calculatedTerm = Math.ceil(principal / monthlyPayment);

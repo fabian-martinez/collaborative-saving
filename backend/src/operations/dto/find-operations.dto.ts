@@ -8,7 +8,7 @@ import {
   IsInt,
   Min,
 } from 'class-validator';
-import { OperationType } from '../../common/enums/operation-type.enum';
+import { OperationType } from '../../domain/enums/operation-type.enum';
 
 export class FindOperationsDto {
   @ApiPropertyOptional({

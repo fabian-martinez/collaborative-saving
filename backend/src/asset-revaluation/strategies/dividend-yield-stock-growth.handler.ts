@@ -1,4 +1,4 @@
-import { StockBehavior } from '../../stocks/entities/stock.entity';
+import { StockBehavior } from '@domain/enums/stock-behavior.enum';
 import {
   DistributionHandler,
   DistributionContext,

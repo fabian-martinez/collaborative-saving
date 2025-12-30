@@ -4,11 +4,11 @@ import { Operation } from '../../operations/entities/operation.entity';
 import { LedgerEntry } from '../../ledger-entries/entities/ledger-entry.entity';
 import { StocksService } from '../../stocks/stocks.service';
 import { DisbursementPlanItemDto } from '../dto/disbursement-plan.dto';
-import { OperationType } from '../../common/enums/operation-type.enum';
+import { OperationType } from '../../domain/enums/operation-type.enum';
 import {
   CASH_ACCOUNT,
   STOCK_CAPITAL_ACCOUNT,
-} from '../../common/constants/account-types';
+} from '../../domain/constants/account-types';
 
 @Injectable()
 export class StockWithdrawalStrategy implements DisbursementStrategy {

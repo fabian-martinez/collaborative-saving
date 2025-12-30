@@ -53,7 +53,6 @@
     "@swc/core": "^1.12.9",
     "@testcontainers/postgresql": "^11.5.1",
     "@types/express": "^5.0.3",
-    "@types/faker": "^6.6.8",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.10",
     "@types/pg": "^8.15.4",

@@ -7,7 +7,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Loan } from './loan.entity';
-import { TransactionType } from '../../common/enums/transaction-type.enum';
+import { TransactionType } from '../../domain/enums/transaction-type.enum';
 
 @Entity({ name: 'loan_transaction_details' })
 export class LoanTransactionDetail {

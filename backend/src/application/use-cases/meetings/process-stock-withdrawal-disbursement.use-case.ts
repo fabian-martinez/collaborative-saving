@@ -19,6 +19,7 @@ import {
   CASH_ACCOUNT,
   STOCK_CAPITAL_ACCOUNT,
 } from '@domain/constants/account-types';
+import { CALCULATION_CONSTANTS } from '@domain/constants/business-rules.constants';
 import { BusinessRuleError } from '@domain/errors/business-rule.error';
 import { NotFoundError } from '@domain/errors/not-found.error';
 import { StockNotFoundException } from '@application/exceptions/stock-not-found.exception';
@@ -70,7 +71,7 @@ export class ProcessStockWithdrawalDisbursementUseCase {
     }
 
     // Redondear a 10 decimales para evitar problemas de precisión de punto flotante
-    const requestedQuantity = Math.round((requestedAmount / stockValue) * 1e10) / 1e10;
+    const requestedQuantity = Math.round((requestedAmount / stockValue) * CALCULATION_CONSTANTS.FLOATING_POINT_PRECISION) / CALCULATION_CONSTANTS.FLOATING_POINT_PRECISION;
 
     // 4. Obtener suscripciones del socio para este stock
     const allSubscriptions =

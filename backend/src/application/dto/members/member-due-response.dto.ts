@@ -1,11 +1,7 @@
-export enum MemberDueType {
-  MANDATORY_CONTRIBUTION = 'mandatory_contribution',
-  STOCK_FEE = 'stock_fee',
-  LOAN_PAYMENT = 'loan_payment',
-  FEE = 'fee',
-  INSURANCE = 'insurance',
-  NOVELTY = 'novelty',
-}
+import { PaymentType } from '../../../domain/enums/payment-type.enum';
+
+// Re-export PaymentType as MemberDueType for backward compatibility
+export type MemberDueType = PaymentType;
 
 export class MemberDueDetailsDto {
   interest: number;
@@ -14,7 +10,7 @@ export class MemberDueDetailsDto {
 }
 
 export class MemberDueResponseDto {
-  type: MemberDueType;
+  type: PaymentType;
   description: string;
   amount: number;
   referenceId?: string;

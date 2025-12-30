@@ -9,7 +9,7 @@ import { Loan } from '../loans/entities/loan.entity';
 import { Stock } from '../stocks/entities/stock.entity';
 import { Operation } from '../operations/entities/operation.entity';
 import { NotFoundException } from '@nestjs/common';
-import { OperationType } from '../common/enums/operation-type.enum';
+import { OperationType } from '../domain/enums/operation-type.enum';
 
 describe('MembersService', () => {
   let service: MembersService;
@@ -386,8 +386,7 @@ describe('MembersService', () => {
         loanAmount: 5000,
         term: 24,
         interestRate: 0.02,
-        paidInstallments: [],
-        pendingInstallments: expect.arrayContaining([
+        installments: expect.arrayContaining([
           expect.objectContaining({
             installmentNumber: 1,
             status: 'pending',
@@ -397,6 +396,7 @@ describe('MembersService', () => {
         totalPending: 6000, // 24 * 250
         outstandingBalance: 2500,
       });
+      expect(result.installments).toHaveLength(24);
     });
 
     it('should throw NotFoundException when loan not found', async () => {
@@ -412,8 +412,8 @@ describe('MembersService', () => {
     it('should return member transactions', async () => {
       jest.spyOn(memberRepository, 'findOneBy').mockResolvedValue(mockMember);
       jest
-        .spyOn(ledgerEntryRepository, 'find')
-        .mockResolvedValue([mockLedgerEntry]);
+        .spyOn(operationRepository, 'find')
+        .mockResolvedValue([mockOperation]);
 
       const result = await service.getMemberTransactions('member-1');
 
@@ -422,18 +422,16 @@ describe('MembersService', () => {
         memberName: 'Test Member',
         transactions: [
           {
-            id: 'entry-1',
+            id: 'operation-1',
             date: expect.any(Date),
-            description: 'Test entry',
-            amount: 100,
+            description: 'Test operation',
             operationType: 'STOCK_PURCHASE',
-            accountType: 'cash',
-            stockId: 'stock-1',
+            accountType: 'unknown',
+            stockId: undefined,
             loanId: undefined,
           },
         ],
         totalTransactions: 1,
-        totalAmount: 100,
       });
     });
   });

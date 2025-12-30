@@ -15,9 +15,9 @@ import {
   CASH_ACCOUNT,
   INTEREST_INCOME_ACCOUNT,
   LOANS_RECEIVABLE_ACCOUNT,
-} from '../common/constants/account-types';
-import { OperationType } from '../common/enums/operation-type.enum';
-import { TransactionType } from '../common/enums/transaction-type.enum';
+} from '../domain/constants/account-types';
+import { OperationType } from '../domain/enums/operation-type.enum';
+import { TransactionType } from '../domain/enums/transaction-type.enum';
 
 @Injectable()
 export class LoanTransactionsService {

@@ -4,7 +4,7 @@ import { Operation } from '../../operations/entities/operation.entity';
 import { LedgerEntry } from '../../ledger-entries/entities/ledger-entry.entity';
 import { MemberDue } from '../../dues/entities/member-due.entity';
 import { PaymentStrategy } from './payment-strategy.interface';
-import { STOCK_CAPITAL_ACCOUNT } from '../../common/constants/account-types';
+import { STOCK_CAPITAL_ACCOUNT } from '../../domain/constants/account-types';
 
 @Injectable()
 export class StockFeeStrategy implements PaymentStrategy {

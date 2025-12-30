@@ -1,9 +1,8 @@
 import { randomUUID } from 'crypto';
+import { StockBehavior } from '../enums/stock-behavior.enum';
 
-export enum StockBehavior {
-  CAPITAL_APPRECIATION = 'CAPITAL_APPRECIATION',
-  DIVIDEND_YIELD = 'DIVIDEND_YIELD',
-}
+// Re-export for backward compatibility
+export { StockBehavior };
 
 export class Stock {
   constructor(

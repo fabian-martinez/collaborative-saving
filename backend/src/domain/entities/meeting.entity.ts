@@ -1,9 +1,8 @@
 import { randomUUID } from 'crypto';
+import { MeetingStatus } from '../enums/meeting-status.enum';
 
-export enum MeetingStatus {
-  ACTIVE = 'active',
-  CLOSED = 'closed',
-}
+// Re-export for backward compatibility
+export { MeetingStatus };
 
 export class Meeting {
   constructor(

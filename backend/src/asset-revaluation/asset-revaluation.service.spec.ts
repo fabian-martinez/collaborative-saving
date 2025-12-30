@@ -10,7 +10,8 @@ import { StockSubscription } from '../stock-subscriptions/entities/stock-subscri
 import {
   INTEREST_INCOME_ACCOUNT,
   STOCK_CAPITAL_ACCOUNT,
-} from '../common/constants/account-types';
+} from '../domain/constants/account-types';
+import { StockBehavior } from '@domain/enums/stock-behavior.enum';
 
 describe('AssetRevaluationService', () => {
   let service: AssetRevaluationService;
@@ -60,6 +61,8 @@ describe('AssetRevaluationService', () => {
       value: 100000,
       guaranteed_yield: 0.01,
       type: 'GUARANTEED', // Añadido para evitar error en sort
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      monthly_contribution: 1000,
     };
     const mockRegularStock = {
       id: 'stock-r',
@@ -67,15 +70,21 @@ describe('AssetRevaluationService', () => {
       value: 50000,
       monthly_contribution: 1000,
       type: 'REGULAR', // Añadido para evitar error en sort
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
     };
     const mockSubscriptions = [
       { stock_id: 'stock-g', quantity: 10, status: 'active' },
       { stock_id: 'stock-r', quantity: 20, status: 'active' },
     ];
+    const mockLoan = {
+      id: 'loan-1',
+      loan_type: 'agil',
+    };
     const mockInterestLedgerEntry = {
       account_type: INTEREST_INCOME_ACCOUNT,
       amount: 20000,
       operation: { meeting_id: meetingId, type: 'MONTHLY_PAYMENT' },
+      loan: mockLoan,
     };
     const mockContributionLedgerEntry = {
       account_type: STOCK_CAPITAL_ACCOUNT,

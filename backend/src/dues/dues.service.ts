@@ -17,7 +17,8 @@ import { MembersService } from '../members/members.service';
 import { Stock } from '../stocks/entities/stock.entity';
 import { Operation } from '../operations/entities/operation.entity';
 import { LoanTransactionDetail } from '../loans/entities/loan-transaction-detail.entity';
-import { TransactionType } from '../common/enums/transaction-type.enum';
+import { TransactionType } from '../domain/enums/transaction-type.enum';
+import { PaymentType } from '../domain/enums/payment-type.enum';
 
 @Injectable()
 export class DuesService {
@@ -76,7 +77,7 @@ export class DuesService {
     const mandatoryDues: MemberDue[] = mandatoryContributions
       .filter((contribution) => contribution.value > 0)
       .map((contribution) => ({
-        type: 'mandatory_contribution',
+        type: PaymentType.MANDATORY_CONTRIBUTION,
         description: contribution.asset_type,
         amount: Number(contribution.value),
         referenceId: contribution.id,
@@ -112,7 +113,7 @@ export class DuesService {
     return contributions
       .filter((contribution) => contribution.value > 0)
       .map((contribution) => ({
-        type: 'mandatory_contribution',
+        type: PaymentType.MANDATORY_CONTRIBUTION,
         description: contribution.asset_type,
         amount: Number(contribution.value),
         referenceId: contribution.id,
@@ -148,7 +149,7 @@ export class DuesService {
     return Object.values(grouped)
       .filter((group) => group.quantity > 0)
       .map((group) => ({
-        type: 'stock_fee',
+        type: PaymentType.STOCK_FEE,
         description: `Cuota de acción: ${group.stock.type}`,
         amount: group.quantity * group.monthlyContribution,
         referenceId: group.stock.id,
@@ -166,7 +167,7 @@ export class DuesService {
           Number(loan.outstanding_balance) * Number(loan.interest_rate);
 
         return {
-          type: 'loan_payment',
+          type: PaymentType.LOAN_PAYMENT,
           description: `Cuota préstamo: ${loan.loan_type}`,
           amount: principalComponent + interestComponent,
           referenceId: loan.id,

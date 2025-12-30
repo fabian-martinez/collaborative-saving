@@ -1,4 +1,5 @@
 import { StockSubscription } from '../entities/stock-subscription.entity';
+import { CALCULATION_CONSTANTS } from '../constants/business-rules.constants';
 
 /**
  * Domain Service para calcular retiros de acciones usando FIFO
@@ -44,7 +45,7 @@ export class StockWithdrawalCalculator {
     );
 
     // Usar tolerancia (epsilon) para manejar errores de precisión de punto flotante
-    const epsilon = 0.0001;
+    const epsilon = CALCULATION_CONSTANTS.FLOATING_POINT_EPSILON;
     if (requestedQuantity > totalWithdrawable + epsilon) {
       throw new Error(
         `Requested quantity (${requestedQuantity}) exceeds available withdrawable quantity (${totalWithdrawable})`,

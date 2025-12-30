@@ -17,7 +17,7 @@ import {
   NOVELTY_LOSS_ACCOUNT,
   STOCK_CAPITAL_ACCOUNT,
   ACCUMULATED_SURPLUS_ACCOUNT,
-} from '../common/constants/account-types';
+} from '../domain/constants/account-types';
 import { Meeting } from './entities/meeting.entity';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
 import { Member } from '../members/entities/member.entity';
@@ -26,7 +26,7 @@ import { MemberDue } from '../dues/entities/member-due.entity';
 import { BuyStockForMemberDto } from '../stocks/dto/buy-stock-for-member.dto';
 import { StocksService } from '../stocks/stocks.service';
 import { PendingMemberPayment } from './entities/pending-member-payment.entity';
-import { PendingPaymentType } from '../common/enums/pending-payment-type.enum';
+import { PendingPaymentType } from '../domain/enums/pending-payment-type.enum';
 import {
   DisbursementPlanPreviewResponseDto,
   ExecuteDisbursementPlanDto,
@@ -37,7 +37,7 @@ import { WithdrawStockForMemberDto } from './dto/withdraw-stock-for-member.dto';
 import { DisbursementStrategyFactory } from './strategies/disbursement-strategy.factory';
 import { LoanTransactionDetail } from '../loans/entities/loan-transaction-detail.entity';
 import { NewLoanRequestDto } from './dto/disbursement-plan.dto';
-import { OperationType } from '../common/enums/operation-type.enum';
+import { OperationType } from '../domain/enums/operation-type.enum';
 import { MeetingSummaryField } from './dto/meeting-summary-fields.dto';
 import { validate as isUuid } from 'uuid';
 

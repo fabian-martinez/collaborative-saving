@@ -3,12 +3,12 @@ import { DisbursementStrategy } from './disbursement-strategy.interface';
 import { DisbursementPlanItemDto } from '../dto/disbursement-plan.dto';
 import { Operation } from '../../operations/entities/operation.entity';
 import { LedgerEntry } from '../../ledger-entries/entities/ledger-entry.entity';
-import { OperationType } from '../../common/enums/operation-type.enum';
+import { OperationType } from '../../domain/enums/operation-type.enum';
 import { PendingMemberPayment } from '../entities/pending-member-payment.entity';
 import {
   CASH_ACCOUNT,
   DIVIDEND_EXPENSE_ACCOUNT,
-} from '../../common/constants/account-types';
+} from '../../domain/constants/account-types';
 
 @Injectable()
 export class DividendDisbursementStrategy implements DisbursementStrategy {
