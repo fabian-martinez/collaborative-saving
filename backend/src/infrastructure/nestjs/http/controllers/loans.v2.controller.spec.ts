@@ -25,6 +25,8 @@ describe('LoansV2Controller', () => {
   let getLoanDetailQueryExecuteSpy: jest.SpyInstance;
   let getMemberLoansQueryExecuteSpy: jest.SpyInstance;
   let updateLoanTermsUseCaseExecuteSpy: jest.SpyInstance;
+  let getPaymentPlanSimulationQueryExecuteSpy: jest.SpyInstance;
+  let simulateLoanPaymentPlanUseCaseExecuteSpy: jest.SpyInstance;
 
   const mockLoanResponse: LoanResponseDto = {
     id: 'loan-id-1',
@@ -71,6 +73,14 @@ describe('LoansV2Controller', () => {
     getMemberLoansQueryExecuteSpy = jest.spyOn(getMemberLoansQuery, 'execute');
     updateLoanTermsUseCaseExecuteSpy = jest.spyOn(
       updateLoanTermsUseCase,
+      'execute',
+    );
+    getPaymentPlanSimulationQueryExecuteSpy = jest.spyOn(
+      getPaymentPlanSimulationQuery,
+      'execute',
+    );
+    simulateLoanPaymentPlanUseCaseExecuteSpy = jest.spyOn(
+      simulateLoanPaymentPlanUseCase,
       'execute',
     );
 
@@ -295,6 +305,284 @@ describe('LoansV2Controller', () => {
       expect(result.monthly_payment_amount).toBe(
         mockLoanResponse.monthlyPaymentAmount,
       );
+    });
+
+    it('should handle HttpException errors', async () => {
+      const error = new HttpException('Custom error', HttpStatus.BAD_REQUEST);
+      updateLoanTermsUseCaseExecuteSpy.mockRejectedValue(error);
+
+      await expect(
+        controller.updateTerms('loan-id-1', { interest_rate: 0.06 }),
+      ).rejects.toThrow(HttpException);
+      await expect(
+        controller.updateTerms('loan-id-1', { interest_rate: 0.06 }),
+      ).rejects.toThrow('Custom error');
+    });
+
+    it('should handle generic errors', async () => {
+      const error = new Error('Internal error');
+      updateLoanTermsUseCaseExecuteSpy.mockRejectedValue(error);
+
+      await expect(
+        controller.updateTerms('loan-id-1', { interest_rate: 0.06 }),
+      ).rejects.toThrow(HttpException);
+      await expect(
+        controller.updateTerms('loan-id-1', { interest_rate: 0.06 }),
+      ).rejects.toThrow(
+        expect.objectContaining({
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+        }),
+      );
+    });
+  });
+
+  describe('simulatePlan', () => {
+    it('should simulate payment plan successfully', () => {
+      // ARRANGE
+      const dto = {
+        principal: 1000000,
+        rate: 0.01,
+        term: 12,
+        amortizationType: 'french' as const,
+      };
+
+      const mockResult = {
+        schedule: [],
+        totalInterest: 0,
+        totalPayment: 1000000,
+      };
+
+      getPaymentPlanSimulationQueryExecuteSpy.mockReturnValue(mockResult);
+
+      // ACT
+      const result = controller.simulatePlan(dto);
+
+      // ASSERT
+      expect(getPaymentPlanSimulationQueryExecuteSpy).toHaveBeenCalledWith({
+        principal: dto.principal,
+        rate: dto.rate,
+        term: dto.term,
+        amortizationType: dto.amortizationType,
+      });
+      expect(result).toEqual(mockResult);
+    });
+
+    it('should handle HttpException errors', () => {
+      // ARRANGE
+      const dto = {
+        principal: 1000000,
+        rate: 0.01,
+        term: 12,
+        amortizationType: 'french' as const,
+      };
+
+      const error = new HttpException(
+        'Invalid parameters',
+        HttpStatus.BAD_REQUEST,
+      );
+      getPaymentPlanSimulationQueryExecuteSpy.mockImplementation(() => {
+        throw error;
+      });
+
+      // ACT & ASSERT
+      expect(() => controller.simulatePlan(dto)).toThrow(HttpException);
+      expect(() => controller.simulatePlan(dto)).toThrow('Invalid parameters');
+    });
+
+    it('should handle generic errors and return 400', () => {
+      // ARRANGE
+      const dto = {
+        principal: 1000000,
+        rate: 0.01,
+        term: 12,
+        amortizationType: 'french' as const,
+      };
+
+      const error = new Error('Validation error');
+      getPaymentPlanSimulationQueryExecuteSpy.mockImplementation(() => {
+        throw error;
+      });
+
+      // ACT & ASSERT
+      expect(() => controller.simulatePlan(dto)).toThrow(HttpException);
+      try {
+        controller.simulatePlan(dto);
+      } catch (e) {
+        expect(e).toBeInstanceOf(HttpException);
+        if (e instanceof HttpException) {
+          expect(e.getStatus()).toBe(HttpStatus.BAD_REQUEST);
+        }
+      }
+    });
+  });
+
+  describe('simulateScenarios', () => {
+    it('should simulate scenarios successfully', async () => {
+      // ARRANGE
+      const loanId = 'loan-id-1';
+      const dto = {
+        scenarios: [
+          {
+            name: 'Scenario 1',
+            extraPayment: 50000,
+            startMonth: 1,
+            amortizationType: 'french' as const,
+          },
+        ],
+      };
+
+      const mockResult = {
+        scenarios: [],
+      };
+
+      simulateLoanPaymentPlanUseCaseExecuteSpy.mockResolvedValue(mockResult);
+
+      // ACT
+      const result = await controller.simulateScenarios(loanId, dto);
+
+      // ASSERT
+      expect(simulateLoanPaymentPlanUseCaseExecuteSpy).toHaveBeenCalledWith(
+        loanId,
+        {
+          scenarios: [
+            {
+              name: 'Scenario 1',
+              extraPayment: 50000,
+              startMonth: 1,
+              amortizationType: 'french',
+            },
+          ],
+        },
+      );
+      expect(result).toEqual(mockResult);
+    });
+
+    it('should throw 404 when loan not found', async () => {
+      // ARRANGE
+      const loanId = 'loan-id-1';
+      const dto = {
+        scenarios: [
+          {
+            name: 'Scenario 1',
+            extraPayment: 50000,
+            startMonth: 1,
+            amortizationType: 'french' as const,
+          },
+        ],
+      };
+
+      const error = new LoanNotFoundException(loanId);
+      simulateLoanPaymentPlanUseCaseExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.simulateScenarios(loanId, dto)).rejects.toThrow(
+        HttpException,
+      );
+      try {
+        await controller.simulateScenarios(loanId, dto);
+      } catch (e) {
+        expect(e).toBeInstanceOf(HttpException);
+        if (e instanceof HttpException) {
+          expect(e.getStatus()).toBe(HttpStatus.NOT_FOUND);
+        }
+      }
+    });
+
+    it('should handle HttpException errors', async () => {
+      // ARRANGE
+      const loanId = 'loan-id-1';
+      const dto = {
+        scenarios: [
+          {
+            name: 'Scenario 1',
+            extraPayment: 50000,
+            startMonth: 1,
+            amortizationType: 'french' as const,
+          },
+        ],
+      };
+
+      const error = new HttpException(
+        'Invalid scenario',
+        HttpStatus.BAD_REQUEST,
+      );
+      simulateLoanPaymentPlanUseCaseExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.simulateScenarios(loanId, dto)).rejects.toThrow(
+        HttpException,
+      );
+      await expect(controller.simulateScenarios(loanId, dto)).rejects.toThrow(
+        'Invalid scenario',
+      );
+    });
+
+    it('should handle generic errors and return 400', async () => {
+      // ARRANGE
+      const loanId = 'loan-id-1';
+      const dto = {
+        scenarios: [
+          {
+            name: 'Scenario 1',
+            extraPayment: 50000,
+            startMonth: 1,
+            amortizationType: 'french' as const,
+          },
+        ],
+      };
+
+      const error = new Error('Validation error');
+      simulateLoanPaymentPlanUseCaseExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.simulateScenarios(loanId, dto)).rejects.toThrow(
+        HttpException,
+      );
+      try {
+        await controller.simulateScenarios(loanId, dto);
+      } catch (e) {
+        expect(e).toBeInstanceOf(HttpException);
+        if (e instanceof HttpException) {
+          expect(e.getStatus()).toBe(HttpStatus.BAD_REQUEST);
+        }
+      }
+    });
+
+    it('should handle scenarios with optional fields', async () => {
+      // ARRANGE
+      const loanId = 'loan-id-1';
+      const dto = {
+        scenarios: [
+          {
+            name: 'Scenario 1',
+          },
+        ],
+      };
+
+      const mockResult = {
+        scenarios: [],
+      };
+
+      simulateLoanPaymentPlanUseCaseExecuteSpy.mockResolvedValue(mockResult);
+
+      // ACT
+      const result = await controller.simulateScenarios(loanId, dto);
+
+      // ASSERT
+      expect(simulateLoanPaymentPlanUseCaseExecuteSpy).toHaveBeenCalledWith(
+        loanId,
+        {
+          scenarios: [
+            {
+              name: 'Scenario 1',
+              extraPayment: undefined,
+              startMonth: undefined,
+              amortizationType: undefined,
+            },
+          ],
+        },
+      );
+      expect(result).toEqual(mockResult);
     });
   });
 });

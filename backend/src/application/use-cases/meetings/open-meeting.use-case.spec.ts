@@ -4,6 +4,9 @@ import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-r
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
 import { Meeting, MeetingStatus } from '@domain/entities/meeting.entity';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
+import { BusinessRuleError } from '@domain/errors/business-rule.error';
+import { CASH_ACCOUNT, ACCUMULATED_SURPLUS_ACCOUNT } from '@domain/constants/account-types';
+import { OperationType } from '@domain/enums/operation-type.enum';
 
 describe('OpenMeetingUseCase', () => {
   let useCase: OpenMeetingUseCase;
@@ -107,5 +110,130 @@ describe('OpenMeetingUseCase', () => {
 
     expect(findActiveSpy).toHaveBeenCalledTimes(2);
     expect(saveSpy).not.toHaveBeenCalled();
+  });
+
+  it('should transfer accumulated surplus to cash when surplus exists', async () => {
+    // ARRANGE
+    const openDto = {
+      date: new Date('2024-01-15'),
+      notes: 'Test meeting',
+    };
+
+    meetingRepository.findActive.mockResolvedValue(null);
+    const savedMeeting = Meeting.create(openDto);
+    meetingRepository.save.mockResolvedValue(savedMeeting);
+    ledgerEntryRepository.sumByAccountType
+      .mockResolvedValueOnce(500) // Accumulated surplus balance
+      .mockResolvedValueOnce(1000); // Current cash balance
+
+      recordOperationUseCase.execute.mockResolvedValue({
+        operationId: 'op-transfer',
+        ledgerEntryIds: ['entry-id-1', 'entry-id-2'],
+      });
+
+    // ACT
+    const result = await useCase.execute(openDto);
+
+    // ASSERT
+    expect(ledgerEntryRepository.sumByAccountType).toHaveBeenCalledWith(
+      ACCUMULATED_SURPLUS_ACCOUNT,
+    );
+    expect(ledgerEntryRepository.sumByAccountType).toHaveBeenCalledWith(
+      CASH_ACCOUNT,
+    );
+    expect(recordOperationUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: OperationType.INITIAL_CASH_BALANCE,
+        entries: expect.arrayContaining([
+          expect.objectContaining({
+            accountType: CASH_ACCOUNT,
+            amount: 500,
+          }),
+          expect.objectContaining({
+            accountType: ACCUMULATED_SURPLUS_ACCOUNT,
+            amount: -500,
+          }),
+        ]),
+      }),
+    );
+    expect(result.status).toBe(MeetingStatus.ACTIVE);
+  });
+
+  it('should throw BusinessRuleError when resulting cash balance would be negative', async () => {
+    // ARRANGE
+    const openDto = {
+      date: new Date('2024-01-15'),
+      notes: 'Test meeting',
+    };
+
+    meetingRepository.findActive.mockResolvedValue(null);
+    const savedMeeting = Meeting.create(openDto);
+    meetingRepository.save.mockResolvedValue(savedMeeting);
+    ledgerEntryRepository.sumByAccountType
+      .mockResolvedValueOnce(500) // Accumulated surplus balance
+      .mockResolvedValueOnce(-600); // Current cash balance (negative)
+
+    // ACT & ASSERT
+    await expect(useCase.execute(openDto)).rejects.toThrow(BusinessRuleError);
+    
+    // Verify the error message in a separate call with reset mocks
+    meetingRepository.findActive.mockResolvedValue(null);
+    meetingRepository.save.mockResolvedValue(savedMeeting);
+    ledgerEntryRepository.sumByAccountType
+      .mockResolvedValueOnce(500)
+      .mockResolvedValueOnce(-600);
+    
+    try {
+      await useCase.execute(openDto);
+      fail('Expected BusinessRuleError to be thrown');
+    } catch (error) {
+      expect(error).toBeInstanceOf(BusinessRuleError);
+      expect((error as BusinessRuleError).message).toContain(
+        'El balance de efectivo no puede quedar negativo',
+      );
+    }
+  });
+
+  it('should not transfer when accumulated surplus is 0', async () => {
+    // ARRANGE
+    const openDto = {
+      date: new Date('2024-01-15'),
+      notes: 'Test meeting',
+    };
+
+    meetingRepository.findActive.mockResolvedValue(null);
+    const savedMeeting = Meeting.create(openDto);
+    meetingRepository.save.mockResolvedValue(savedMeeting);
+    ledgerEntryRepository.sumByAccountType.mockResolvedValue(0); // No surplus
+
+    // ACT
+    const result = await useCase.execute(openDto);
+
+    // ASSERT
+    expect(ledgerEntryRepository.sumByAccountType).toHaveBeenCalledWith(
+      ACCUMULATED_SURPLUS_ACCOUNT,
+    );
+    expect(recordOperationUseCase.execute).not.toHaveBeenCalled();
+    expect(result.status).toBe(MeetingStatus.ACTIVE);
+  });
+
+  it('should not transfer when accumulated surplus is negative', async () => {
+    // ARRANGE
+    const openDto = {
+      date: new Date('2024-01-15'),
+      notes: 'Test meeting',
+    };
+
+    meetingRepository.findActive.mockResolvedValue(null);
+    const savedMeeting = Meeting.create(openDto);
+    meetingRepository.save.mockResolvedValue(savedMeeting);
+    ledgerEntryRepository.sumByAccountType.mockResolvedValue(-100); // Negative surplus
+
+    // ACT
+    const result = await useCase.execute(openDto);
+
+    // ASSERT
+    expect(recordOperationUseCase.execute).not.toHaveBeenCalled();
+    expect(result.status).toBe(MeetingStatus.ACTIVE);
   });
 });

@@ -132,5 +132,213 @@ describe('TypeOrmStockSubscriptionRepository', () => {
       expect(typeOrmRepo.save.mock.calls.length).toBe(1);
       expect(result).toBeInstanceOf(StockSubscriptionDomain);
     });
+
+    it('should update existing subscription when exists', async () => {
+      const domain = StockSubscriptionDomain.create({
+        memberId: 'member-1',
+        stockId: 'stock-1',
+        quantity: 10,
+      });
+
+      const existingEntity: Partial<StockSubscriptionEntity> = {
+        id: domain.id,
+        memberId: domain.memberId,
+        stockId: domain.stockId,
+        quantity: 5,
+        status: domain.status,
+        purchaseDate: domain.purchaseDate,
+        financingLoanId: null,
+      };
+
+      const updatedEntity: Partial<StockSubscriptionEntity> = {
+        ...existingEntity,
+        quantity: 10,
+      };
+
+      typeOrmRepo.findOne
+        .mockResolvedValueOnce(existingEntity as StockSubscriptionEntity)
+        .mockResolvedValueOnce(updatedEntity as StockSubscriptionEntity);
+      typeOrmRepo.update.mockResolvedValue(undefined as any);
+
+      const result = await repository.save(domain);
+      expect(typeOrmRepo.update).toHaveBeenCalledWith(domain.id, expect.any(Object));
+      expect(result).toBeInstanceOf(StockSubscriptionDomain);
+    });
+
+    it('should throw error when subscription not found after update', async () => {
+      const domain = StockSubscriptionDomain.create({
+        memberId: 'member-1',
+        stockId: 'stock-1',
+        quantity: 10,
+      });
+
+      const existingEntity: Partial<StockSubscriptionEntity> = {
+        id: domain.id,
+        memberId: domain.memberId,
+        stockId: domain.stockId,
+        quantity: 5,
+        status: domain.status,
+        purchaseDate: domain.purchaseDate,
+        financingLoanId: null,
+      };
+
+      typeOrmRepo.findOne
+        .mockResolvedValueOnce(existingEntity as StockSubscriptionEntity)
+        .mockResolvedValueOnce(null);
+      typeOrmRepo.update.mockResolvedValue(undefined as any);
+
+      await expect(repository.save(domain)).rejects.toThrow(
+        'StockSubscription not found after update',
+      );
+    });
+  });
+
+  describe('findByMemberAndStock', () => {
+    it('should return subscription when found', async () => {
+      const memberId = 'member-1';
+      const stockId = 'stock-1';
+      const entity: Partial<StockSubscriptionEntity> = {
+        id: 'subscription-1',
+        memberId,
+        stockId,
+        quantity: 10,
+        status: 'active',
+        purchaseDate: new Date(),
+        financingLoanId: null,
+      };
+
+      typeOrmRepo.findOne.mockResolvedValue(entity as StockSubscriptionEntity);
+      const result = await repository.findByMemberAndStock(memberId, stockId);
+
+      expect(result).toBeInstanceOf(StockSubscriptionDomain);
+      expect(result?.memberId).toBe(memberId);
+      expect(result?.stockId).toBe(stockId);
+    });
+
+    it('should return null when not found', async () => {
+      typeOrmRepo.findOne.mockResolvedValue(null);
+      const result = await repository.findByMemberAndStock('member-1', 'stock-1');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findActiveByMember', () => {
+    it('should return array of active subscriptions', async () => {
+      const memberId = 'member-1';
+      const entities: Partial<StockSubscriptionEntity>[] = [
+        {
+          id: '1',
+          memberId,
+          stockId: 'stock-1',
+          quantity: 10,
+          status: 'active',
+          purchaseDate: new Date(),
+          financingLoanId: null,
+        },
+      ];
+
+      typeOrmRepo.find.mockResolvedValue(entities as StockSubscriptionEntity[]);
+      const result = await repository.findActiveByMember(memberId);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBeInstanceOf(StockSubscriptionDomain);
+      expect(result[0].status).toBe('active');
+    });
+  });
+
+  describe('findFreeOfFinancing', () => {
+    it('should return array of subscriptions without financing', async () => {
+      const memberId = 'member-1';
+      const entities: Partial<StockSubscriptionEntity>[] = [
+        {
+          id: '1',
+          memberId,
+          stockId: 'stock-1',
+          quantity: 10,
+          status: 'active',
+          purchaseDate: new Date(),
+          financingLoanId: null,
+        },
+      ];
+
+      typeOrmRepo.find.mockResolvedValue(entities as StockSubscriptionEntity[]);
+      const result = await repository.findFreeOfFinancing(memberId);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBeInstanceOf(StockSubscriptionDomain);
+    });
+  });
+
+  describe('findByStock', () => {
+    it('should return array of subscriptions for stock', async () => {
+      const stockId = 'stock-1';
+      const entities: Partial<StockSubscriptionEntity>[] = [
+        {
+          id: '1',
+          memberId: 'member-1',
+          stockId,
+          quantity: 10,
+          status: 'active',
+          purchaseDate: new Date(),
+          financingLoanId: null,
+        },
+      ];
+
+      typeOrmRepo.find.mockResolvedValue(entities as StockSubscriptionEntity[]);
+      const result = await repository.findByStock(stockId);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBeInstanceOf(StockSubscriptionDomain);
+      expect(result[0].stockId).toBe(stockId);
+    });
+  });
+
+  describe('saveMany', () => {
+    it('should save multiple subscriptions', async () => {
+      const domain1 = StockSubscriptionDomain.create({
+        memberId: 'member-1',
+        stockId: 'stock-1',
+        quantity: 10,
+      });
+
+      const domain2 = StockSubscriptionDomain.create({
+        memberId: 'member-2',
+        stockId: 'stock-1',
+        quantity: 5,
+      });
+
+      const entities: Partial<StockSubscriptionEntity>[] = [
+        {
+          id: domain1.id,
+          memberId: domain1.memberId,
+          stockId: domain1.stockId,
+          quantity: domain1.quantity,
+          status: domain1.status,
+          purchaseDate: domain1.purchaseDate,
+          financingLoanId: null,
+        },
+        {
+          id: domain2.id,
+          memberId: domain2.memberId,
+          stockId: domain2.stockId,
+          quantity: domain2.quantity,
+          status: domain2.status,
+          purchaseDate: domain2.purchaseDate,
+          financingLoanId: null,
+        },
+      ];
+
+      (typeOrmRepo.save as jest.Mock).mockImplementation(async (input: any) => {
+        if (Array.isArray(input)) {
+          return entities as StockSubscriptionEntity[];
+        }
+        return entities[0] as StockSubscriptionEntity;
+      });
+      const result = await repository.saveMany([domain1, domain2]);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toBeInstanceOf(StockSubscriptionDomain);
+      expect(result[1]).toBeInstanceOf(StockSubscriptionDomain);
+    });
   });
 });
