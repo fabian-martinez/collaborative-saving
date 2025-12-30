@@ -1,5 +1,8 @@
 import apiClient from './client'
 import type { PaginatedResponse } from './types'
+import { mockApi } from './mocks'
+
+const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
 
 // Tipos en snake_case según respuestas del backend
 export interface LedgerEntry {
@@ -41,6 +44,9 @@ export interface GetLedgerEntriesQuery {
 // API Functions
 export const ledgerApi = {
   async getLedgerEntries(query?: GetLedgerEntriesQuery): Promise<PaginatedResponse<LedgerEntry>> {
+    if (USE_MOCKS) {
+      return mockApi.getLedgerEntries(query)
+    }
     const params = new URLSearchParams()
     if (query?.q) params.append('q', query.q)
     if (query?.member_id) params.append('memberId', query.member_id)
@@ -57,11 +63,17 @@ export const ledgerApi = {
   },
 
   async getLedgerEntryById(id: string): Promise<LedgerEntry> {
+    if (USE_MOCKS) {
+      return mockApi.getLedgerEntryById(id)
+    }
     const response = await apiClient.get<LedgerEntry>(`/ledger-entries/${id}`)
     return response.data
   },
 
   async getLedgerEntriesByOperation(operationId: string): Promise<LedgerEntry[]> {
+    if (USE_MOCKS) {
+      return mockApi.getLedgerEntriesByOperation(operationId)
+    }
     const response = await apiClient.get<LedgerEntry[]>(
       `/ledger-entries/operation/${operationId}`
     )
@@ -69,6 +81,9 @@ export const ledgerApi = {
   },
 
   async getAccountTypes(): Promise<AccountTypeOption[]> {
+    if (USE_MOCKS) {
+      return mockApi.getAccountTypes()
+    }
     const response = await apiClient.get<AccountTypeOption[]>('/ledger-entries/account-types')
     return response.data
   }

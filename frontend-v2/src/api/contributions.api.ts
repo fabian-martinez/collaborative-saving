@@ -1,4 +1,7 @@
 import apiClient from './client'
+import { mockApi } from './mocks'
+
+const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
 
 // Tipos en snake_case según respuestas del backend
 export interface MandatoryContribution {
@@ -20,6 +23,9 @@ export interface UpdateMandatoryContributionRequest {
 // API Functions
 export const contributionsApi = {
   async getContributions(): Promise<MandatoryContribution[]> {
+    if (USE_MOCKS) {
+      return mockApi.getContributions()
+    }
     const response = await apiClient.get<MandatoryContribution[]>('/v2/mandatory-contributions')
     return response.data
   },
@@ -27,6 +33,9 @@ export const contributionsApi = {
   async createContribution(
     data: CreateMandatoryContributionRequest
   ): Promise<MandatoryContribution> {
+    if (USE_MOCKS) {
+      return mockApi.createContribution(data)
+    }
     const response = await apiClient.post<MandatoryContribution>(
       '/v2/mandatory-contributions',
       data
@@ -38,6 +47,9 @@ export const contributionsApi = {
     id: string,
     data: UpdateMandatoryContributionRequest
   ): Promise<MandatoryContribution> {
+    if (USE_MOCKS) {
+      return mockApi.updateContribution(id, data)
+    }
     const response = await apiClient.patch<MandatoryContribution>(
       `/v2/mandatory-contributions/${id}`,
       data
@@ -46,6 +58,9 @@ export const contributionsApi = {
   },
 
   async deleteContribution(id: string): Promise<void> {
+    if (USE_MOCKS) {
+      return mockApi.deleteContribution(id)
+    }
     await apiClient.delete(`/v2/mandatory-contributions/${id}`)
   }
 }
