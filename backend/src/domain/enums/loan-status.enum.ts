@@ -11,4 +11,3 @@ export enum LoanStatus {
   DEFAULTED = 'defaulted',
   CLOSED = 'closed',
 }
-

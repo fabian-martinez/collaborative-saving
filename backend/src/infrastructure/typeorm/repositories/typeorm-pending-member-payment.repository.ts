@@ -8,9 +8,7 @@ import { PendingMemberPaymentMapper } from '../mappers/pending-member-payment.ma
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
 
 @Injectable()
-export class TypeOrmPendingMemberPaymentRepository
-  implements PendingMemberPaymentRepository
-{
+export class TypeOrmPendingMemberPaymentRepository implements PendingMemberPaymentRepository {
   constructor(
     @InjectRepository(PendingMemberPaymentEntity)
     private readonly repo: Repository<PendingMemberPaymentEntity>,

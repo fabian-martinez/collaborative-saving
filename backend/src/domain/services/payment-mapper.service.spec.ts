@@ -3,7 +3,10 @@ import { LedgerEntry } from '../entities/ledger-entry.entity';
 import { PaymentFilterType } from '../enums/payment-filter-type.enum';
 import { OperationType } from '../enums/operation-type.enum';
 import { PaymentType } from '../enums/payment-type.enum';
-import { CASH_ACCOUNT, LOANS_RECEIVABLE_ACCOUNT } from '../constants/account-types';
+import {
+  CASH_ACCOUNT,
+  LOANS_RECEIVABLE_ACCOUNT,
+} from '../constants/account-types';
 
 describe('PaymentMapperService', () => {
   let service: PaymentMapperService;
@@ -284,4 +287,3 @@ describe('PaymentMapperService', () => {
     });
   });
 });
-

@@ -11,4 +11,3 @@ export interface UpdateLoanTermsDto {
   term?: number;
   changedBy?: string; // User ID who made the change (for auditing)
 }
-

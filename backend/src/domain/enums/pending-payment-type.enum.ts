@@ -10,4 +10,3 @@ export enum PendingPaymentType {
   LOAN = 'loan',
   OTHER = 'other',
 }
-

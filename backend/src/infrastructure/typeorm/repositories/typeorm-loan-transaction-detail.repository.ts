@@ -7,9 +7,7 @@ import { LoanTransactionDetail as LoanTransactionDetailEntity } from '../entitie
 import { LoanTransactionDetailMapper } from '../mappers/loan-transaction-detail.mapper';
 
 @Injectable()
-export class TypeOrmLoanTransactionDetailRepository
-  implements LoanTransactionDetailRepository
-{
+export class TypeOrmLoanTransactionDetailRepository implements LoanTransactionDetailRepository {
   constructor(
     @InjectRepository(LoanTransactionDetailEntity)
     private readonly repo: Repository<LoanTransactionDetailEntity>,

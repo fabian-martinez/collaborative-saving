@@ -6,12 +6,21 @@ import { MemberRepository } from '@domain/ports/repositories/member-repository.p
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { CreateLoanUseCase } from '@application/use-cases/loans/create-loan.use-case';
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
-import { DisbursementPlanItemDto, DisbursementType } from '@application/dto/meetings/disbursement-plan-item.dto';
+import {
+  DisbursementPlanItemDto,
+  DisbursementType,
+} from '@application/dto/meetings/disbursement-plan-item.dto';
 import { Member } from '@domain/entities/member.entity';
 import { Meeting } from '@domain/entities/meeting.entity';
 import { Loan, LoanStatus } from '@domain/entities/loan.entity';
-import { LoanTransactionDetail, LoanTransactionType } from '@domain/entities/loan-transaction-detail.entity';
-import { PendingMemberPayment, PendingMemberPaymentType } from '@domain/entities/pending-member-payment.entity';
+import {
+  LoanTransactionDetail,
+  LoanTransactionType,
+} from '@domain/entities/loan-transaction-detail.entity';
+import {
+  PendingMemberPayment,
+  PendingMemberPaymentType,
+} from '@domain/entities/pending-member-payment.entity';
 import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
@@ -624,8 +633,12 @@ describe('ProcessLoanDisbursementUseCase', () => {
         };
 
         loanRepository.findById.mockResolvedValue(mockLoan);
-        pendingMemberPaymentRepository.findById.mockResolvedValue(mockPendingPayment);
-        pendingMemberPaymentRepository.save.mockResolvedValue(mockPendingPayment);
+        pendingMemberPaymentRepository.findById.mockResolvedValue(
+          mockPendingPayment,
+        );
+        pendingMemberPaymentRepository.save.mockResolvedValue(
+          mockPendingPayment,
+        );
         memberRepository.findById.mockResolvedValue(mockMember);
         meetingRepository.findById.mockResolvedValue(mockMeeting);
         loanRepository.save.mockResolvedValue(mockLoan);
@@ -649,7 +662,9 @@ describe('ProcessLoanDisbursementUseCase', () => {
         });
 
         // Assert
-        expect(pendingMemberPaymentRepository.findById).toHaveBeenCalledWith('pending-payment-id-1');
+        expect(pendingMemberPaymentRepository.findById).toHaveBeenCalledWith(
+          'pending-payment-id-1',
+        );
         expect(pendingMemberPaymentRepository.save).toHaveBeenCalled();
       });
 
@@ -950,4 +965,3 @@ describe('ProcessLoanDisbursementUseCase', () => {
     });
   });
 });
-

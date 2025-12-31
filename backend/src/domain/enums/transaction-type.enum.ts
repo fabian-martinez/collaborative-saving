@@ -9,4 +9,3 @@ export enum TransactionType {
   PRINCIPAL_PAYMENT = 'principal_payment',
   INTEREST_PAYMENT = 'interest_payment',
 }
-

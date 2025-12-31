@@ -1,4 +1,3 @@
-
 export abstract class DomainEvent<T = any> {
   readonly occurredOn: Date;
   readonly eventId: string;

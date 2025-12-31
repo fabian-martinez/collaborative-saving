@@ -7,9 +7,7 @@ import { StockValueHistory as StockValueHistoryEntity } from '../entities/stock-
 import { StockValueHistoryMapper } from '../mappers/stock-value-history.mapper';
 
 @Injectable()
-export class TypeOrmStockValueHistoryRepository
-  implements StockValueHistoryRepository
-{
+export class TypeOrmStockValueHistoryRepository implements StockValueHistoryRepository {
   constructor(
     @InjectRepository(StockValueHistoryEntity)
     private readonly repo: Repository<StockValueHistoryEntity>,

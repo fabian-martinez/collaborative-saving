@@ -33,4 +33,3 @@ export class UpdateLoanTermsHttpDto {
   @Min(1)
   term?: number;
 }
-

@@ -21,4 +21,3 @@ export class LoanTermsChangedEvent extends DomainEvent<LoanTermsChangedPayload> 
     super('loan.terms.changed', payload);
   }
 }
-

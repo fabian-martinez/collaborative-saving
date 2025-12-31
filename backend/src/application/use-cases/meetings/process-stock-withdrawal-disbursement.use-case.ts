@@ -71,7 +71,11 @@ export class ProcessStockWithdrawalDisbursementUseCase {
     }
 
     // Redondear a 10 decimales para evitar problemas de precisión de punto flotante
-    const requestedQuantity = Math.round((requestedAmount / stockValue) * CALCULATION_CONSTANTS.FLOATING_POINT_PRECISION) / CALCULATION_CONSTANTS.FLOATING_POINT_PRECISION;
+    const requestedQuantity =
+      Math.round(
+        (requestedAmount / stockValue) *
+          CALCULATION_CONSTANTS.FLOATING_POINT_PRECISION,
+      ) / CALCULATION_CONSTANTS.FLOATING_POINT_PRECISION;
 
     // 4. Obtener suscripciones del socio para este stock
     const allSubscriptions =

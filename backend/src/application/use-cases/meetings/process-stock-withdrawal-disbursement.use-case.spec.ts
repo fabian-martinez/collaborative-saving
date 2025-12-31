@@ -5,10 +5,19 @@ import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pendi
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
 import { StockWithdrawalCalculator } from '@domain/services/stock-withdrawal-calculator.service';
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
-import { DisbursementPlanItemDto, DisbursementType } from '@application/dto/meetings/disbursement-plan-item.dto';
+import {
+  DisbursementPlanItemDto,
+  DisbursementType,
+} from '@application/dto/meetings/disbursement-plan-item.dto';
 import { Stock } from '@domain/entities/stock.entity';
-import { StockSubscription, StockSubscriptionStatus } from '@domain/entities/stock-subscription.entity';
-import { PendingMemberPayment, PendingMemberPaymentType } from '@domain/entities/pending-member-payment.entity';
+import {
+  StockSubscription,
+  StockSubscriptionStatus,
+} from '@domain/entities/stock-subscription.entity';
+import {
+  PendingMemberPayment,
+  PendingMemberPaymentType,
+} from '@domain/entities/pending-member-payment.entity';
 import { StockNotFoundException } from '@application/exceptions/stock-not-found.exception';
 import { BusinessRuleError } from '@domain/errors/business-rule.error';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
@@ -100,7 +109,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
 
       const item: DisbursementPlanItemDto = {
         memberId: mockMemberId,
-          type: DisbursementType.WITHDRAWAL,
+        type: DisbursementType.WITHDRAWAL,
         amount: 5000,
         disbursementStockRequest: {
           stockId: mockStockId,
@@ -108,8 +117,12 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(mockStock);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([mockSubscription]);
-      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(true);
+      stockSubscriptionRepository.findByStock.mockResolvedValue([
+        mockSubscription,
+      ]);
+      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
+        true,
+      );
       stockWithdrawalCalculator.calculateWithdrawalFIFO.mockReturnValue([
         {
           subscriptionId: mockSubscription.id,
@@ -142,9 +155,15 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
 
       // Assert
       expect(stockRepository.findById).toHaveBeenCalledWith(mockStockId);
-      expect(stockSubscriptionRepository.findByStock).toHaveBeenCalledWith(mockStockId);
-      expect(stockWithdrawalCalculator.hasEnoughWithdrawableQuantity).toHaveBeenCalled();
-      expect(stockWithdrawalCalculator.calculateWithdrawalFIFO).toHaveBeenCalled();
+      expect(stockSubscriptionRepository.findByStock).toHaveBeenCalledWith(
+        mockStockId,
+      );
+      expect(
+        stockWithdrawalCalculator.hasEnoughWithdrawableQuantity,
+      ).toHaveBeenCalled();
+      expect(
+        stockWithdrawalCalculator.calculateWithdrawalFIFO,
+      ).toHaveBeenCalled();
       expect(stockSubscriptionRepository.saveMany).toHaveBeenCalled();
       expect(recordOperationUseCase.execute).toHaveBeenCalled();
     });
@@ -153,7 +172,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       // Arrange
       const item: DisbursementPlanItemDto = {
         memberId: mockMemberId,
-          type: DisbursementType.WITHDRAWAL,
+        type: DisbursementType.WITHDRAWAL,
         amount: 5000,
       };
 
@@ -171,7 +190,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       // Arrange
       const item: DisbursementPlanItemDto = {
         memberId: mockMemberId,
-          type: DisbursementType.WITHDRAWAL,
+        type: DisbursementType.WITHDRAWAL,
         amount: 5000,
         disbursementStockRequest: {
           stockId: mockStockId,
@@ -200,7 +219,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
 
       const item: DisbursementPlanItemDto = {
         memberId: mockMemberId,
-          type: DisbursementType.WITHDRAWAL,
+        type: DisbursementType.WITHDRAWAL,
         amount: 5000,
         disbursementStockRequest: {
           stockId: mockStockId,
@@ -229,7 +248,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
 
       const item: DisbursementPlanItemDto = {
         memberId: mockMemberId,
-          type: DisbursementType.WITHDRAWAL,
+        type: DisbursementType.WITHDRAWAL,
         amount: 5000,
         disbursementStockRequest: {
           stockId: mockStockId,
@@ -237,9 +256,15 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(mockStock);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([mockSubscription]);
-      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(false);
-      stockWithdrawalCalculator.calculateWithdrawableQuantity.mockReturnValue(10);
+      stockSubscriptionRepository.findByStock.mockResolvedValue([
+        mockSubscription,
+      ]);
+      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
+        false,
+      );
+      stockWithdrawalCalculator.calculateWithdrawableQuantity.mockReturnValue(
+        10,
+      );
 
       // Act & Assert
       await expect(
@@ -261,7 +286,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
 
       const item: DisbursementPlanItemDto = {
         memberId: mockMemberId,
-          type: DisbursementType.WITHDRAWAL,
+        type: DisbursementType.WITHDRAWAL,
         amount: 10000,
         disbursementStockRequest: {
           stockId: mockStockId,
@@ -269,8 +294,12 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(mockStock);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([mockSubscription]);
-      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(true);
+      stockSubscriptionRepository.findByStock.mockResolvedValue([
+        mockSubscription,
+      ]);
+      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
+        true,
+      );
       stockWithdrawalCalculator.calculateWithdrawalFIFO.mockReturnValue([
         {
           subscriptionId: mockSubscription.id,
@@ -327,7 +356,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
 
       const item: DisbursementPlanItemDto = {
         memberId: mockMemberId,
-          type: DisbursementType.WITHDRAWAL,
+        type: DisbursementType.WITHDRAWAL,
         amount: 10000,
         disbursementStockRequest: {
           stockId: mockStockId,
@@ -335,8 +364,12 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(mockStock);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([mockSubscription]);
-      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(true);
+      stockSubscriptionRepository.findByStock.mockResolvedValue([
+        mockSubscription,
+      ]);
+      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
+        true,
+      );
       stockWithdrawalCalculator.calculateWithdrawalFIFO.mockReturnValue([
         {
           subscriptionId: mockSubscription.id,
@@ -393,7 +426,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
 
       const item: DisbursementPlanItemDto = {
         memberId: mockMemberId,
-          type: DisbursementType.WITHDRAWAL,
+        type: DisbursementType.WITHDRAWAL,
         amount: 10000,
         disbursementStockRequest: {
           stockId: mockStockId,
@@ -402,8 +435,12 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(mockStock);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([mockSubscription]);
-      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(true);
+      stockSubscriptionRepository.findByStock.mockResolvedValue([
+        mockSubscription,
+      ]);
+      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
+        true,
+      );
       stockWithdrawalCalculator.calculateWithdrawalFIFO.mockReturnValue([
         {
           subscriptionId: mockSubscription.id,
@@ -416,7 +453,9 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
         operationId: 'operation-id-1',
         ledgerEntryIds: [],
       });
-      pendingMemberPaymentRepository.findById.mockResolvedValue(mockPendingPayment);
+      pendingMemberPaymentRepository.findById.mockResolvedValue(
+        mockPendingPayment,
+      );
       pendingMemberPaymentRepository.save.mockResolvedValue(mockPendingPayment);
 
       // Act
@@ -427,7 +466,9 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       });
 
       // Assert
-      expect(pendingMemberPaymentRepository.findById).toHaveBeenCalledWith('pending-payment-id-1');
+      expect(pendingMemberPaymentRepository.findById).toHaveBeenCalledWith(
+        'pending-payment-id-1',
+      );
       expect(pendingMemberPaymentRepository.save).toHaveBeenCalledTimes(3); // Approve existing + mark as paid + create new
     });
 
@@ -441,7 +482,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
 
       const item: DisbursementPlanItemDto = {
         memberId: mockMemberId,
-          type: DisbursementType.WITHDRAWAL,
+        type: DisbursementType.WITHDRAWAL,
         amount: 5000,
         disbursementStockRequest: {
           stockId: mockStockId,
@@ -449,8 +490,12 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(mockStock);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([mockSubscription]);
-      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(true);
+      stockSubscriptionRepository.findByStock.mockResolvedValue([
+        mockSubscription,
+      ]);
+      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
+        true,
+      );
       stockWithdrawalCalculator.calculateWithdrawalFIFO.mockReturnValue([
         {
           subscriptionId: mockSubscription.id,
@@ -501,7 +546,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
 
       const item: DisbursementPlanItemDto = {
         memberId: mockMemberId,
-          type: DisbursementType.WITHDRAWAL,
+        type: DisbursementType.WITHDRAWAL,
         amount: 5000,
         disbursementStockRequest: {
           stockId: mockStockId,
@@ -509,8 +554,12 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(mockStock);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([mockSubscription]);
-      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(true);
+      stockSubscriptionRepository.findByStock.mockResolvedValue([
+        mockSubscription,
+      ]);
+      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
+        true,
+      );
       stockWithdrawalCalculator.calculateWithdrawalFIFO.mockReturnValue([
         {
           subscriptionId: mockSubscription.id,
@@ -555,7 +604,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
 
       const item: DisbursementPlanItemDto = {
         memberId: mockMemberId,
-          type: DisbursementType.WITHDRAWAL,
+        type: DisbursementType.WITHDRAWAL,
         amount: 5000,
         disbursementStockRequest: {
           stockId: mockStockId,
@@ -563,8 +612,12 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(mockStock);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([mockSubscription]);
-      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(true);
+      stockSubscriptionRepository.findByStock.mockResolvedValue([
+        mockSubscription,
+      ]);
+      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
+        true,
+      );
       stockWithdrawalCalculator.calculateWithdrawalFIFO.mockReturnValue([
         {
           subscriptionId: mockSubscription.id,
@@ -599,14 +652,14 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       expect(recordOperationUseCase.execute).toHaveBeenCalledWith(
         expect.objectContaining({
           entries: expect.arrayContaining([
-              expect.objectContaining({
-                accountType: 'CASH',
-                amount: -5000,
-              }),
-              expect.objectContaining({
-                accountType: 'STOCK_CAPITAL',
-                amount: 5000,
-              }),
+            expect.objectContaining({
+              accountType: 'CASH',
+              amount: -5000,
+            }),
+            expect.objectContaining({
+              accountType: 'STOCK_CAPITAL',
+              amount: 5000,
+            }),
           ]),
         }),
       );
@@ -622,7 +675,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
 
       const item: DisbursementPlanItemDto = {
         memberId: mockMemberId,
-          type: DisbursementType.WITHDRAWAL,
+        type: DisbursementType.WITHDRAWAL,
         amount: 5000,
         disbursementStockRequest: {
           stockId: mockStockId,
@@ -630,8 +683,12 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(mockStock);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([mockSubscription]);
-      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(true);
+      stockSubscriptionRepository.findByStock.mockResolvedValue([
+        mockSubscription,
+      ]);
+      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
+        true,
+      );
       stockWithdrawalCalculator.calculateWithdrawalFIFO.mockReturnValue([
         {
           subscriptionId: 'non-existent-id',
@@ -660,7 +717,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
 
       const item: DisbursementPlanItemDto = {
         memberId: mockMemberId,
-          type: DisbursementType.WITHDRAWAL,
+        type: DisbursementType.WITHDRAWAL,
         amount: 5000,
         disbursementStockRequest: {
           stockId: mockStockId,
@@ -668,8 +725,12 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(mockStock);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([mockSubscription]);
-      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(true);
+      stockSubscriptionRepository.findByStock.mockResolvedValue([
+        mockSubscription,
+      ]);
+      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
+        true,
+      );
       stockWithdrawalCalculator.calculateWithdrawalFIFO.mockReturnValue([
         {
           subscriptionId: mockSubscription.id,
@@ -711,4 +772,3 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
     });
   });
 });
-

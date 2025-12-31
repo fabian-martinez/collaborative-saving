@@ -157,7 +157,10 @@ describe('TypeOrmLoanRepository', () => {
       typeOrmRepo.update.mockResolvedValue(undefined as any);
 
       const result = await repository.save(domain);
-      expect(typeOrmRepo.update).toHaveBeenCalledWith(domain.id, expect.any(Object));
+      expect(typeOrmRepo.update).toHaveBeenCalledWith(
+        domain.id,
+        expect.any(Object),
+      );
       expect(result).toBeInstanceOf(LoanDomain);
     });
 

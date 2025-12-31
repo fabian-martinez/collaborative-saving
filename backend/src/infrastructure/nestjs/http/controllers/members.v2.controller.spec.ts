@@ -681,7 +681,7 @@ describe('MembersV2Controller', () => {
         memberId,
         capitalPayment: undefined,
       });
-      expect(result).toEqual({ insuranceAmount: 1234 });
+      expect(result).toEqual({ insurance_amount: 1234 });
     });
 
     it('should forward capital payment to the use case', async () => {
@@ -699,7 +699,7 @@ describe('MembersV2Controller', () => {
         memberId,
         capitalPayment,
       });
-      expect(result).toEqual({ insuranceAmount: 5678 });
+      expect(result).toEqual({ insurance_amount: 5678 });
     });
   });
 

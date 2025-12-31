@@ -160,7 +160,10 @@ describe('TypeOrmPendingMemberPaymentRepository', () => {
       typeOrmRepo.update.mockResolvedValue(undefined as any);
 
       const result = await repository.save(domain);
-      expect(typeOrmRepo.update).toHaveBeenCalledWith(domain.id, expect.any(Object));
+      expect(typeOrmRepo.update).toHaveBeenCalledWith(
+        domain.id,
+        expect.any(Object),
+      );
       expect(result).toBeInstanceOf(PendingMemberPaymentDomain);
     });
 
@@ -220,7 +223,9 @@ describe('TypeOrmPendingMemberPaymentRepository', () => {
         },
       ];
 
-      typeOrmRepo.find.mockResolvedValue(entities as PendingMemberPaymentEntity[]);
+      typeOrmRepo.find.mockResolvedValue(
+        entities as PendingMemberPaymentEntity[],
+      );
       const result = await repository.findByMeeting(meetingId);
       expect(result).toHaveLength(1);
       expect(result[0]).toBeInstanceOf(PendingMemberPaymentDomain);
@@ -256,7 +261,9 @@ describe('TypeOrmPendingMemberPaymentRepository', () => {
         },
       ];
 
-      typeOrmRepo.find.mockResolvedValue(entities as PendingMemberPaymentEntity[]);
+      typeOrmRepo.find.mockResolvedValue(
+        entities as PendingMemberPaymentEntity[],
+      );
       const result = await repository.findPendingByMeeting(meetingId);
       expect(result).toHaveLength(1);
       expect(result[0]).toBeInstanceOf(PendingMemberPaymentDomain);
@@ -285,7 +292,9 @@ describe('TypeOrmPendingMemberPaymentRepository', () => {
         },
       ];
 
-      typeOrmRepo.find.mockResolvedValue(entities as PendingMemberPaymentEntity[]);
+      typeOrmRepo.find.mockResolvedValue(
+        entities as PendingMemberPaymentEntity[],
+      );
       const result = await repository.findByReference(referenceMeetingId);
       expect(result).toHaveLength(1);
       expect(result[0]).toBeInstanceOf(PendingMemberPaymentDomain);
@@ -380,7 +389,9 @@ describe('TypeOrmPendingMemberPaymentRepository', () => {
         createdAt: domain.createdAt,
       };
 
-      typeOrmRepo.findOne.mockResolvedValue(entity as PendingMemberPaymentEntity);
+      typeOrmRepo.findOne.mockResolvedValue(
+        entity as PendingMemberPaymentEntity,
+      );
       const result = await repository.calculateRemainingAmount(paymentId);
       expect(result).toBe(1000);
     });
@@ -388,9 +399,9 @@ describe('TypeOrmPendingMemberPaymentRepository', () => {
     it('should throw error when payment not found', async () => {
       const paymentId = 'non-existent';
       typeOrmRepo.findOne.mockResolvedValue(null);
-      await expect(repository.calculateRemainingAmount(paymentId)).rejects.toThrow(
-        'PendingMemberPayment not found',
-      );
+      await expect(
+        repository.calculateRemainingAmount(paymentId),
+      ).rejects.toThrow('PendingMemberPayment not found');
     });
   });
 });

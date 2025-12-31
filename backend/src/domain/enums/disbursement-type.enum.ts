@@ -10,4 +10,3 @@ export enum DisbursementType {
   LOAN = 'loan',
   OTHER = 'other',
 }
-

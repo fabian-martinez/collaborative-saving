@@ -7,9 +7,7 @@ import { MandatoryContribution as MandatoryContributionEntity } from '../entitie
 import { MandatoryContributionMapper } from '../mappers/mandatory-contribution.mapper';
 
 @Injectable()
-export class TypeOrmMandatoryContributionRepository
-  implements MandatoryContributionRepository
-{
+export class TypeOrmMandatoryContributionRepository implements MandatoryContributionRepository {
   constructor(
     @InjectRepository(MandatoryContributionEntity)
     private readonly repo: Repository<MandatoryContributionEntity>,

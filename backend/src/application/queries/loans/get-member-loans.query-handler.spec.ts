@@ -119,4 +119,3 @@ describe('GetMemberLoansQueryHandler', () => {
     expect(result[1].status).toBe(LoanStatus.PAID);
   });
 });
-

@@ -21,4 +21,3 @@ export class GetPaymentScheduleQueryHttpDto {
   @Min(1)
   months?: number;
 }
-

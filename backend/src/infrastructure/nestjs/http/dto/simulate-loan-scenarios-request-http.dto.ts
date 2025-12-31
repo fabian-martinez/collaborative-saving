@@ -1,5 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, ValidateNested, IsString, IsOptional, IsNumber, IsEnum, Min } from 'class-validator';
+import {
+  IsArray,
+  ValidateNested,
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsEnum,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 /**
@@ -59,4 +67,3 @@ export class SimulateLoanScenariosRequestHttpDto {
   @Type(() => ScenarioRequestHttpDto)
   scenarios: ScenarioRequestHttpDto[];
 }
-

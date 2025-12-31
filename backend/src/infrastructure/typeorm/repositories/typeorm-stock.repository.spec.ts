@@ -290,7 +290,10 @@ describe('TypeOrmStockRepository', () => {
 
       // Assert
       expect(typeOrmRepo.findOne).toHaveBeenCalledTimes(2);
-      expect(typeOrmRepo.update).toHaveBeenCalledWith(stock.id, expect.any(Object));
+      expect(typeOrmRepo.update).toHaveBeenCalledWith(
+        stock.id,
+        expect.any(Object),
+      );
       expect(result).toBeInstanceOf(StockDomain);
       expect(result.id).toBe(stock.id);
       expect(result.value).toBe(150);
@@ -321,7 +324,9 @@ describe('TypeOrmStockRepository', () => {
       typeOrmRepo.update.mockResolvedValue(undefined as any);
 
       // Act & Assert
-      await expect(repository.save(stock)).rejects.toThrow('Stock not found after update');
+      await expect(repository.save(stock)).rejects.toThrow(
+        'Stock not found after update',
+      );
     });
   });
 
@@ -371,4 +376,3 @@ describe('TypeOrmStockRepository', () => {
     });
   });
 });
-

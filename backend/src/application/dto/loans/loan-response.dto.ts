@@ -18,4 +18,3 @@ export class LoanResponseDto {
   creationDate: Date;
   guaranteedStockId: string | null | undefined;
 }
-

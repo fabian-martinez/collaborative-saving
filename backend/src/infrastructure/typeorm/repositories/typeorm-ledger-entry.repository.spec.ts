@@ -11,6 +11,8 @@ import { CASH_ACCOUNT } from '@domain/constants/account-types';
 describe('TypeOrmLedgerEntryRepository', () => {
   let repository: TypeOrmLedgerEntryRepository;
   let typeOrmRepo: jest.Mocked<Repository<LedgerEntryEntity>>;
+  let updateSpy: jest.SpyInstance;
+  let createQueryBuilderSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -44,6 +46,10 @@ describe('TypeOrmLedgerEntryRepository', () => {
       TypeOrmLedgerEntryRepository,
     );
     typeOrmRepo = module.get(getRepositoryToken(LedgerEntryEntity));
+
+    // Create spies to avoid 'this' scoping issues
+    updateSpy = jest.spyOn(typeOrmRepo, 'update');
+    createQueryBuilderSpy = jest.spyOn(typeOrmRepo, 'createQueryBuilder');
   });
 
   describe('findById', () => {
@@ -148,10 +154,10 @@ describe('TypeOrmLedgerEntryRepository', () => {
       typeOrmRepo.findOne
         .mockResolvedValueOnce(existingEntity as LedgerEntryEntity)
         .mockResolvedValueOnce(updatedEntity as LedgerEntryEntity);
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
+      updateSpy.mockResolvedValue(undefined as any);
 
       const result = await repository.save(domain);
-      expect(typeOrmRepo.update).toHaveBeenCalledWith(domain.id, expect.any(Object));
+      expect(updateSpy).toHaveBeenCalledWith(domain.id, expect.any(Object));
       expect(result).toBeInstanceOf(LedgerEntryDomain);
     });
 
@@ -178,7 +184,7 @@ describe('TypeOrmLedgerEntryRepository', () => {
       typeOrmRepo.findOne
         .mockResolvedValueOnce(existingEntity as LedgerEntryEntity)
         .mockResolvedValueOnce(null);
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
+      updateSpy.mockResolvedValue(undefined as any);
 
       await expect(repository.save(domain)).rejects.toThrow(
         'LedgerEntry not found after update',
@@ -194,7 +200,9 @@ describe('TypeOrmLedgerEntryRepository', () => {
         getMany: jest.fn(),
       };
 
-      typeOrmRepo.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
+      typeOrmRepo.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder);
 
       const entities: Partial<LedgerEntryEntity>[] = [
         {
@@ -211,7 +219,9 @@ describe('TypeOrmLedgerEntryRepository', () => {
         },
       ];
 
-      mockQueryBuilder.getMany.mockResolvedValue(entities as LedgerEntryEntity[]);
+      mockQueryBuilder.getMany.mockResolvedValue(
+        entities as LedgerEntryEntity[],
+      );
       const result = await repository.findByOperations(operationIds);
       expect(result).toHaveLength(1);
       expect(result[0]).toBeInstanceOf(LedgerEntryDomain);
@@ -220,7 +230,7 @@ describe('TypeOrmLedgerEntryRepository', () => {
     it('should return empty array when operationIds is empty', async () => {
       const result = await repository.findByOperations([]);
       expect(result).toEqual([]);
-      expect(typeOrmRepo.createQueryBuilder).not.toHaveBeenCalled();
+      expect(createQueryBuilderSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -233,7 +243,9 @@ describe('TypeOrmLedgerEntryRepository', () => {
         getMany: jest.fn(),
       };
 
-      typeOrmRepo.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
+      typeOrmRepo.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder);
 
       const entities: Partial<LedgerEntryEntity>[] = [
         {
@@ -250,7 +262,9 @@ describe('TypeOrmLedgerEntryRepository', () => {
         },
       ];
 
-      mockQueryBuilder.getMany.mockResolvedValue(entities as LedgerEntryEntity[]);
+      mockQueryBuilder.getMany.mockResolvedValue(
+        entities as LedgerEntryEntity[],
+      );
       const result = await repository.findByMeeting(meetingId);
       expect(result).toHaveLength(1);
       expect(result[0]).toBeInstanceOf(LedgerEntryDomain);
@@ -324,11 +338,11 @@ describe('TypeOrmLedgerEntryRepository', () => {
         },
       ];
 
-      (typeOrmRepo.save as jest.Mock).mockImplementation(async (input: any) => {
+      (typeOrmRepo.save as jest.Mock).mockImplementation((input: any) => {
         if (Array.isArray(input)) {
-          return entities as LedgerEntryEntity[];
+          return Promise.resolve(entities as LedgerEntryEntity[]);
         }
-        return entities[0] as LedgerEntryEntity;
+        return Promise.resolve(entities[0] as LedgerEntryEntity);
       });
       const result = await repository.saveMany([domain1, domain2]);
       expect(result).toHaveLength(2);
@@ -346,7 +360,9 @@ describe('TypeOrmLedgerEntryRepository', () => {
         getRawOne: jest.fn(),
       };
 
-      typeOrmRepo.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
+      typeOrmRepo.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder);
       mockQueryBuilder.getRawOne.mockResolvedValue({ sum: '1500' });
 
       const result = await repository.sumByAccountType(accountType);
@@ -361,7 +377,9 @@ describe('TypeOrmLedgerEntryRepository', () => {
         getRawOne: jest.fn(),
       };
 
-      typeOrmRepo.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
+      typeOrmRepo.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder);
       mockQueryBuilder.getRawOne.mockResolvedValue({ sum: null });
 
       const result = await repository.sumByAccountType(accountType);
@@ -376,7 +394,9 @@ describe('TypeOrmLedgerEntryRepository', () => {
         getRawOne: jest.fn(),
       };
 
-      typeOrmRepo.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
+      typeOrmRepo.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder);
       mockQueryBuilder.getRawOne.mockResolvedValue(null);
 
       const result = await repository.sumByAccountType(accountType);
