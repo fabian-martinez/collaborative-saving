@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { meetingsApi, type Meeting } from '@/api/meetings.api'
+import { ApiException } from '@/api/types'
 
 export const useMeetingsStore = defineStore('meetings', () => {
   const meetings = ref<Meeting[]>([])
@@ -14,7 +15,12 @@ export const useMeetingsStore = defineStore('meetings', () => {
     try {
       meetings.value = await meetingsApi.getMeetings()
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Error al cargar reuniones'
+      const errorMessage = e instanceof ApiException 
+        ? e.message 
+        : e instanceof Error 
+        ? e.message 
+        : 'Error al cargar reuniones'
+      error.value = errorMessage
       throw e
     } finally {
       loading.value = false
@@ -28,13 +34,18 @@ export const useMeetingsStore = defineStore('meetings', () => {
       activeMeeting.value = await meetingsApi.getActiveMeeting()
       return activeMeeting.value
     } catch (e) {
-      // Si no hay reunión activa, es un estado válido del sistema
+      // Si no hay reunión activa (404), es un estado válido del sistema
       // Solo establecemos activeMeeting a null sin lanzar error
-      if (e instanceof Error && e.message.includes('404')) {
+      if (e instanceof ApiException && e.status === 404) {
         activeMeeting.value = null
         return null
       }
-      error.value = e instanceof Error ? e.message : 'Error al cargar reunión activa'
+      const errorMessage = e instanceof ApiException 
+        ? e.message 
+        : e instanceof Error 
+        ? e.message 
+        : 'Error al cargar reunión activa'
+      error.value = errorMessage
       throw e
     } finally {
       loading.value = false
@@ -51,7 +62,12 @@ export const useMeetingsStore = defineStore('meetings', () => {
       activeMeeting.value = newMeeting
       return newMeeting
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Error al crear reunión'
+      const errorMessage = e instanceof ApiException 
+        ? e.message 
+        : e instanceof Error 
+        ? e.message 
+        : 'Error al crear reunión'
+      error.value = errorMessage
       throw e
     } finally {
       loading.value = false
@@ -74,7 +90,12 @@ export const useMeetingsStore = defineStore('meetings', () => {
       }
       return closedMeeting
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Error al cerrar reunión'
+      const errorMessage = e instanceof ApiException 
+        ? e.message 
+        : e instanceof Error 
+        ? e.message 
+        : 'Error al cerrar reunión'
+      error.value = errorMessage
       throw e
     } finally {
       loading.value = false
