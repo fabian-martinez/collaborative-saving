@@ -1,0 +1,358 @@
+@media print {
+  /* Configuración de página - tamaño personalizado para que quepa todo */
+  @page {
+    margin: 15mm 10mm;
+    size: A4 portrait;
+  }
+  
+  /* Resetear márgenes del body y html */
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+  
+  /* Ocultar todo excepto el contenedor de impresión */
+  body > *:not(#payment-receipt-print-container),
+  .modal:not(#payment-receipt-print-container),
+  .modal-box:not(#payment-receipt-print-container) {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  
+  /* Contenedor wrapper para centrar el recibo */
+  #payment-receipt-print-container {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    min-height: 100vh !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 9999 !important;
+  }
+  
+  /* Ocultar elementos que no deben imprimirse */
+  .no-print {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  
+  /* Ajustar el contenedor de impresión - centrado y completo */
+  #payment-receipt-print-container #payment-receipt-print,
+  #payment-receipt-print,
+  #payment-receipt-print-modal {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: 800px !important;
+    box-shadow: none !important;
+    margin: 0 auto !important;
+    padding: 20px 30px !important;
+    background: white !important;
+    page-break-inside: avoid;
+    overflow: visible !important;
+    height: auto !important;
+    display: block !important;
+    visibility: visible !important;
+    color: #000 !important;
+  }
+  
+  /* Asegurar que todos los elementos dentro del recibo sean visibles */
+  #payment-receipt-print-container *,
+  #payment-receipt-print *,
+  #payment-receipt-print-modal * {
+    visibility: visible !important;
+    color: inherit !important;
+  }
+  
+  /* Asegurar que los textos tengan color negro */
+  #payment-receipt-print-container p,
+  #payment-receipt-print-container span,
+  #payment-receipt-print-container div,
+  #payment-receipt-print-container h1,
+  #payment-receipt-print-container h2,
+  #payment-receipt-print-container h3,
+  #payment-receipt-print-container h4,
+  #payment-receipt-print-modal p,
+  #payment-receipt-print-modal span,
+  #payment-receipt-print-modal div,
+  #payment-receipt-print-modal h1,
+  #payment-receipt-print-modal h2,
+  #payment-receipt-print-modal h3,
+  #payment-receipt-print-modal h4 {
+    color: #000 !important;
+  }
+  
+  /* Mantener estructura de flex */
+  #payment-receipt-print .flex,
+  #payment-receipt-print-modal .flex {
+    display: flex !important;
+  }
+  
+  #payment-receipt-print .flex.flex-col,
+  #payment-receipt-print .space-y-3,
+  #payment-receipt-print .space-y-4,
+  #payment-receipt-print-modal .flex.flex-col,
+  #payment-receipt-print-modal .space-y-3,
+  #payment-receipt-print-modal .space-y-4 {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  #payment-receipt-print .flex.items-baseline,
+  #payment-receipt-print .flex.justify-between,
+  #payment-receipt-print .flex.justify-start,
+  #payment-receipt-print-modal .flex.items-baseline,
+  #payment-receipt-print-modal .flex.justify-between,
+  #payment-receipt-print-modal .flex.justify-start {
+    display: flex !important;
+    flex-direction: row !important;
+  }
+  
+  /* Mostrar solo el header de impresión */
+  .print-only {
+    display: block !important;
+  }
+  
+  #payment-receipt-print .print-only,
+  #payment-receipt-print-modal .print-only {
+    display: block !important;
+  }
+  
+  /* Mostrar elementos que deben verse en impresión */
+  .print-show {
+    display: block !important;
+    flex-grow: 1 !important;
+  }
+  
+  /* Asegurar que el total se muestre correctamente */
+  #payment-receipt-print .print-total,
+  #payment-receipt-print-modal .print-total {
+    display: block !important;
+    page-break-inside: avoid;
+    margin-top: 15px !important;
+    padding-top: 10px !important;
+  }
+  
+  #payment-receipt-print .print-total .flex,
+  #payment-receipt-print-modal .print-total .flex {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: baseline !important;
+    justify-content: space-between !important;
+  }
+  
+  #payment-receipt-print .print-total .border-t-2,
+  #payment-receipt-print-modal .print-total .border-t-2 {
+    border-top: 2px dashed #ccc !important;
+  }
+  
+  /* Ocultar CopyOnDblClickNumber en impresión */
+  #payment-receipt-print .print-total .no-print,
+  #payment-receipt-print-modal .print-total .no-print {
+    display: none !important;
+  }
+  
+  /* Mostrar el span alternativo con el total en impresión */
+  #payment-receipt-print .print-total .print-only,
+  #payment-receipt-print-modal .print-total .print-only {
+    display: inline-block !important;
+  }
+  
+  /* Asegurar que el separador sea visible */
+  #payment-receipt-print .print-total .print-show,
+  #payment-receipt-print-modal .print-total .print-show {
+    display: block !important;
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+  }
+  
+  /* Ajustar tamaños de fuente para que quepa en una página */
+  #payment-receipt-print {
+    font-size: 11px !important;
+  }
+  
+  #payment-receipt-print .text-2xl,
+  #payment-receipt-print h2.text-2xl {
+    font-size: 16px !important;
+    line-height: 1.2 !important;
+    margin-bottom: 8px !important;
+  }
+  
+  #payment-receipt-print .text-xl,
+  #payment-receipt-print h2.text-xl {
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+  }
+  
+  #payment-receipt-print .text-lg {
+    font-size: 13px !important;
+    line-height: 1.2 !important;
+  }
+  
+  #payment-receipt-print .text-base {
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+  }
+  
+  #payment-receipt-print .text-sm {
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+  }
+  
+  #payment-receipt-print .text-xs {
+    font-size: 9px !important;
+    line-height: 1.1 !important;
+  }
+  
+  /* Reducir espaciado para que quepa en una página */
+  #payment-receipt-print .space-y-3 > * + * {
+    margin-top: 6px !important;
+  }
+  
+  #payment-receipt-print .space-y-4 > * + * {
+    margin-top: 8px !important;
+  }
+  
+  #payment-receipt-print .mb-2 {
+    margin-bottom: 4px !important;
+  }
+  
+  #payment-receipt-print .mb-4,
+  #payment-receipt-print .mb-6 {
+    margin-bottom: 8px !important;
+  }
+  
+  #payment-receipt-print .mt-1 {
+    margin-top: 2px !important;
+  }
+  
+  #payment-receipt-print .mt-4,
+  #payment-receipt-print .mt-6,
+  #payment-receipt-print .mt-8 {
+    margin-top: 8px !important;
+  }
+  
+  #payment-receipt-print .py-2,
+  #payment-receipt-print .py-3 {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+  
+  #payment-receipt-print .p-3 {
+    padding: 6px !important;
+  }
+  
+  #payment-receipt-print .p-4 {
+    padding: 8px !important;
+  }
+  
+  #payment-receipt-print .pt-4 {
+    padding-top: 8px !important;
+  }
+  
+  /* Mejorar legibilidad en impresión */
+  #payment-receipt-print .text-base-content\/80,
+  #payment-receipt-print .text-base-content\/70,
+  #payment-receipt-print .text-base-content\/60,
+  #payment-receipt-print .text-base-content\/50 {
+    color: #000 !important;
+  }
+  
+  /* Asegurar que los bordes se vean bien */
+  #payment-receipt-print .border-base-300\/70,
+  #payment-receipt-print .border-base-300\/50,
+  #payment-receipt-print .border-base-300\/80 {
+    border-color: #ccc !important;
+  }
+  
+  #payment-receipt-print .border-error\/40 {
+    border-color: #f87171 !important;
+  }
+  
+  /* Evitar saltos de página dentro del contenido */
+  #payment-receipt-print .space-y-3,
+  #payment-receipt-print .space-y-4 {
+    page-break-inside: avoid;
+  }
+  
+  /* Asegurar que OperationDetails se imprima completo */
+  #payment-receipt-print .bg-base-100\/50 {
+    page-break-inside: avoid;
+    margin-bottom: 6px !important;
+    padding: 6px !important;
+    background: #f5f5f5 !important;
+    border: 1px solid #ddd !important;
+  }
+  
+  /* Ajustar font-mono para números */
+  #payment-receipt-print .font-mono {
+    font-family: 'Courier New', monospace !important;
+  }
+  
+  /* Asegurar que los bordes se vean */
+  #payment-receipt-print .border,
+  #payment-receipt-print .border-t-2,
+  #payment-receipt-print .border-b-2 {
+    border-color: #ccc !important;
+    border-style: solid !important;
+  }
+  
+  /* Asegurar que los elementos con clases de Tailwind se muestren */
+  #payment-receipt-print [class*="bg-"],
+  #payment-receipt-print [class*="text-"],
+  #payment-receipt-print [class*="border-"] {
+    visibility: visible !important;
+    display: block !important;
+  }
+  
+  /* Asegurar que los elementos inline se mantengan inline */
+  #payment-receipt-print span,
+  #payment-receipt-print .inline,
+  #payment-receipt-print .inline-block {
+    display: inline !important;
+  }
+  
+  /* Asegurar que los elementos flex se mantengan flex */
+  #payment-receipt-print [class*="flex"] {
+    display: flex !important;
+  }
+}
+
+/* Ocultar header de impresión en pantalla */
+.print-only {
+  display: none;
+}
+
+/* Estilos para el modal de impresión */
+.modal-box {
+  scrollbar-width: thin;
+}
+
+.modal-box::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-box::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.modal-box::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.modal-box::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+

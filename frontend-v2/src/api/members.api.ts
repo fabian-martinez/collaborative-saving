@@ -113,7 +113,9 @@ export interface RecordMonthlyPaymentsRequest {
     type: string
     amount: number
     description?: string
+    referenceId?: string
   }>
+  meetingId?: string
 }
 
 export interface RecordMonthlyPaymentsResponse {
