@@ -11,6 +11,11 @@
     <div v-if="!isLoadingMembers && !memberError" class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <!-- Members List -->
       <div class="md:col-span-1">
+        <!-- Resumen sticky - se mantiene visible al hacer scroll -->
+        <PaymentSummary
+          :total-collected="totalCollected"
+          :completed-payments="paymentCollection.completedPayments.value"
+        />
         <MemberList
           :members="membersList"
           :selected-member="selectedMemberValue"
@@ -18,10 +23,6 @@
           :get-initials="memberSelection.getInitials"
           :get-member-color="memberSelection.getMemberColor"
           @select-member="handleSelectMember"
-        />
-        <PaymentSummary
-          :total-collected="totalCollected"
-          :completed-payments="paymentCollection.completedPayments.value"
         />
       </div>
 
