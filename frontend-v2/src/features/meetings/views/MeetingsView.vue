@@ -406,12 +406,8 @@ function handleClickOutside(event: MouseEvent): void {
 onMounted(async () => {
   await store.fetchMeetings()
   // También cargar la reunión activa para tener el estado actualizado
-  try {
-    await store.fetchActiveMeeting()
-  } catch (e) {
-    // Si no hay reunión activa, es un estado válido
-    console.debug('No hay reunión activa')
-  }
+  // fetchActiveMeeting maneja el 404 silenciosamente cuando no hay reunión activa
+  await store.fetchActiveMeeting()
   
   // Agregar listener para cerrar dropdown al hacer click fuera
   document.addEventListener('click', handleClickOutside)

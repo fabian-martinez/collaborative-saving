@@ -28,27 +28,23 @@ export const useMeetingsStore = defineStore('meetings', () => {
   }
 
   async function fetchActiveMeeting() {
-    loading.value = true
-    error.value = null
+    // No afectar el estado de loading para no interferir con otras operaciones
+    // Solo actualizamos activeMeeting silenciosamente
     try {
       activeMeeting.value = await meetingsApi.getActiveMeeting()
       return activeMeeting.value
     } catch (e) {
       // Si no hay reunión activa (404), es un estado válido del sistema
-      // Solo establecemos activeMeeting a null sin lanzar error
+      // Solo establecemos activeMeeting a null sin lanzar error ni afectar el estado de error
       if (e instanceof ApiException && e.status === 404) {
         activeMeeting.value = null
         return null
       }
-      const errorMessage = e instanceof ApiException 
-        ? e.message 
-        : e instanceof Error 
-        ? e.message 
-        : 'Error al cargar reunión activa'
-      error.value = errorMessage
-      throw e
-    } finally {
-      loading.value = false
+      // Para otros errores, no los propagamos para no interrumpir la carga de la lista
+      // Solo los registramos en consola
+      console.error('Error al cargar reunión activa:', e)
+      activeMeeting.value = null
+      return null
     }
   }
 
