@@ -95,7 +95,10 @@ describe('GetMeetingStockExchangesQueryHandler', () => {
     });
 
     meetingRepository.findById.mockResolvedValue(meeting);
-    operationRepository.findByMeetingAndType.mockResolvedValue([operation1, operation2]);
+    operationRepository.findByMeetingAndType.mockResolvedValue([
+      operation1,
+      operation2,
+    ]);
 
     // ACT
     const result = await queryHandler.execute(meetingId);
@@ -184,4 +187,3 @@ describe('GetMeetingStockExchangesQueryHandler', () => {
     expect(result[0].memberId).toBeNull();
   });
 });
-

@@ -161,7 +161,10 @@ describe('TypeOrmStockSubscriptionRepository', () => {
       typeOrmRepo.update.mockResolvedValue(undefined as any);
 
       const result = await repository.save(domain);
-      expect(typeOrmRepo.update).toHaveBeenCalledWith(domain.id, expect.any(Object));
+      expect(typeOrmRepo.update).toHaveBeenCalledWith(
+        domain.id,
+        expect.any(Object),
+      );
       expect(result).toBeInstanceOf(StockSubscriptionDomain);
     });
 
@@ -217,7 +220,10 @@ describe('TypeOrmStockSubscriptionRepository', () => {
 
     it('should return null when not found', async () => {
       typeOrmRepo.findOne.mockResolvedValue(null);
-      const result = await repository.findByMemberAndStock('member-1', 'stock-1');
+      const result = await repository.findByMemberAndStock(
+        'member-1',
+        'stock-1',
+      );
       expect(result).toBeNull();
     });
   });

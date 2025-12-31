@@ -64,4 +64,3 @@ export class PaymentScheduleResponseHttpDto {
   })
   summary: PaymentScheduleSummaryHttpDto;
 }
-

@@ -8,9 +8,7 @@ import { StockSubscriptionMapper } from '../mappers/stock-subscription.mapper';
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 
 @Injectable()
-export class TypeOrmStockSubscriptionRepository
-  implements StockSubscriptionRepository
-{
+export class TypeOrmStockSubscriptionRepository implements StockSubscriptionRepository {
   constructor(
     @InjectRepository(StockSubscriptionEntity)
     private readonly repo: Repository<StockSubscriptionEntity>,

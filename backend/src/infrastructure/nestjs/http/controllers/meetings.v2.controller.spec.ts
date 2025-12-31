@@ -192,12 +192,20 @@ describe('MeetingsV2Controller', () => {
     getMeetingQuery = module.get(GetMeetingQueryHandler);
     getActiveMeetingQuery = module.get(GetActiveMeetingQueryHandler);
     getMeetingPurchasesQuery = module.get(GetMeetingPurchasesQueryHandler);
-    getMeetingStockTransfersQuery = module.get(GetMeetingStockTransfersQueryHandler);
-    getMeetingStockExchangesQuery = module.get(GetMeetingStockExchangesQueryHandler);
-    getMeetingStockLoanPaymentsQuery = module.get(GetMeetingStockLoanPaymentsQueryHandler);
+    getMeetingStockTransfersQuery = module.get(
+      GetMeetingStockTransfersQueryHandler,
+    );
+    getMeetingStockExchangesQuery = module.get(
+      GetMeetingStockExchangesQueryHandler,
+    );
+    getMeetingStockLoanPaymentsQuery = module.get(
+      GetMeetingStockLoanPaymentsQueryHandler,
+    );
     getRevaluationQuery = module.get(GetRevaluationQueryHandler);
     recordRevaluationUseCase = module.get(RecordRevaluationUseCase);
-    getDisbursementPlanPreviewQuery = module.get(GetDisbursementPlanPreviewQueryHandler);
+    getDisbursementPlanPreviewQuery = module.get(
+      GetDisbursementPlanPreviewQueryHandler,
+    );
     executeDisbursementPlanUseCase = module.get(ExecuteDisbursementPlanUseCase);
 
     openMeetingUseCaseExecuteSpy = jest.spyOn(openMeetingUseCase, 'execute');
@@ -212,14 +220,35 @@ describe('MeetingsV2Controller', () => {
       getActiveMeetingQuery,
       'execute',
     );
-    getMeetingPurchasesQueryExecuteSpy = jest.spyOn(getMeetingPurchasesQuery, 'execute');
-    getMeetingStockTransfersQueryExecuteSpy = jest.spyOn(getMeetingStockTransfersQuery, 'execute');
-    getMeetingStockExchangesQueryExecuteSpy = jest.spyOn(getMeetingStockExchangesQuery, 'execute');
-    getMeetingStockLoanPaymentsQueryExecuteSpy = jest.spyOn(getMeetingStockLoanPaymentsQuery, 'execute');
+    getMeetingPurchasesQueryExecuteSpy = jest.spyOn(
+      getMeetingPurchasesQuery,
+      'execute',
+    );
+    getMeetingStockTransfersQueryExecuteSpy = jest.spyOn(
+      getMeetingStockTransfersQuery,
+      'execute',
+    );
+    getMeetingStockExchangesQueryExecuteSpy = jest.spyOn(
+      getMeetingStockExchangesQuery,
+      'execute',
+    );
+    getMeetingStockLoanPaymentsQueryExecuteSpy = jest.spyOn(
+      getMeetingStockLoanPaymentsQuery,
+      'execute',
+    );
     getRevaluationQueryExecuteSpy = jest.spyOn(getRevaluationQuery, 'execute');
-    recordRevaluationUseCaseExecuteSpy = jest.spyOn(recordRevaluationUseCase, 'execute');
-    getDisbursementPlanPreviewQueryExecuteSpy = jest.spyOn(getDisbursementPlanPreviewQuery, 'execute');
-    executeDisbursementPlanUseCaseExecuteSpy = jest.spyOn(executeDisbursementPlanUseCase, 'execute');
+    recordRevaluationUseCaseExecuteSpy = jest.spyOn(
+      recordRevaluationUseCase,
+      'execute',
+    );
+    getDisbursementPlanPreviewQueryExecuteSpy = jest.spyOn(
+      getDisbursementPlanPreviewQuery,
+      'execute',
+    );
+    executeDisbursementPlanUseCaseExecuteSpy = jest.spyOn(
+      executeDisbursementPlanUseCase,
+      'execute',
+    );
   });
 
   it('should be defined', () => {
@@ -1002,7 +1031,9 @@ describe('MeetingsV2Controller', () => {
       const result = await controller.getPurchases(meetingId);
 
       // ASSERT
-      expect(getMeetingPurchasesQueryExecuteSpy).toHaveBeenCalledWith(meetingId);
+      expect(getMeetingPurchasesQueryExecuteSpy).toHaveBeenCalledWith(
+        meetingId,
+      );
       expect(result).toHaveLength(1);
       expect(result[0].type).toBe(OperationType.STOCK_PURCHASE);
     });
@@ -1013,7 +1044,9 @@ describe('MeetingsV2Controller', () => {
       getMeetingPurchasesQueryExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.getPurchases(meetingId)).rejects.toThrow(HttpException);
+      await expect(controller.getPurchases(meetingId)).rejects.toThrow(
+        HttpException,
+      );
       try {
         await controller.getPurchases(meetingId);
       } catch (e) {
@@ -1030,7 +1063,9 @@ describe('MeetingsV2Controller', () => {
       getMeetingPurchasesQueryExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.getPurchases(meetingId)).rejects.toThrow(HttpException);
+      await expect(controller.getPurchases(meetingId)).rejects.toThrow(
+        HttpException,
+      );
     });
   });
 
@@ -1056,7 +1091,9 @@ describe('MeetingsV2Controller', () => {
       const result = await controller.getTransfers(meetingId);
 
       // ASSERT
-      expect(getMeetingStockTransfersQueryExecuteSpy).toHaveBeenCalledWith(meetingId);
+      expect(getMeetingStockTransfersQueryExecuteSpy).toHaveBeenCalledWith(
+        meetingId,
+      );
       expect(result).toHaveLength(1);
       expect(result[0].type).toBe(OperationType.STOCK_TRANSFER);
     });
@@ -1067,7 +1104,9 @@ describe('MeetingsV2Controller', () => {
       getMeetingStockTransfersQueryExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.getTransfers(meetingId)).rejects.toThrow(HttpException);
+      await expect(controller.getTransfers(meetingId)).rejects.toThrow(
+        HttpException,
+      );
     });
   });
 
@@ -1093,7 +1132,9 @@ describe('MeetingsV2Controller', () => {
       const result = await controller.getExchanges(meetingId);
 
       // ASSERT
-      expect(getMeetingStockExchangesQueryExecuteSpy).toHaveBeenCalledWith(meetingId);
+      expect(getMeetingStockExchangesQueryExecuteSpy).toHaveBeenCalledWith(
+        meetingId,
+      );
       expect(result).toHaveLength(1);
       expect(result[0].type).toBe(OperationType.STOCK_MODIFICATION);
     });
@@ -1104,7 +1145,9 @@ describe('MeetingsV2Controller', () => {
       getMeetingStockExchangesQueryExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.getExchanges(meetingId)).rejects.toThrow(HttpException);
+      await expect(controller.getExchanges(meetingId)).rejects.toThrow(
+        HttpException,
+      );
     });
   });
 
@@ -1124,13 +1167,17 @@ describe('MeetingsV2Controller', () => {
         },
       ];
 
-      getMeetingStockLoanPaymentsQueryExecuteSpy.mockResolvedValue(mockPayments);
+      getMeetingStockLoanPaymentsQueryExecuteSpy.mockResolvedValue(
+        mockPayments,
+      );
 
       // ACT
       const result = await controller.getStockLoanPayments(meetingId);
 
       // ASSERT
-      expect(getMeetingStockLoanPaymentsQueryExecuteSpy).toHaveBeenCalledWith(meetingId);
+      expect(getMeetingStockLoanPaymentsQueryExecuteSpy).toHaveBeenCalledWith(
+        meetingId,
+      );
       expect(result).toHaveLength(1);
       expect(result[0].type).toBe(OperationType.STOCK_LOAN_PAYMENT);
     });
@@ -1141,7 +1188,9 @@ describe('MeetingsV2Controller', () => {
       getMeetingStockLoanPaymentsQueryExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.getStockLoanPayments(meetingId)).rejects.toThrow(HttpException);
+      await expect(controller.getStockLoanPayments(meetingId)).rejects.toThrow(
+        HttpException,
+      );
     });
   });
 
@@ -1176,7 +1225,9 @@ describe('MeetingsV2Controller', () => {
       getRevaluationQueryExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.getRevaluation(meetingId)).rejects.toThrow(HttpException);
+      await expect(controller.getRevaluation(meetingId)).rejects.toThrow(
+        HttpException,
+      );
     });
   });
 
@@ -1215,7 +1266,9 @@ describe('MeetingsV2Controller', () => {
       recordRevaluationUseCaseExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.confirmRevaluation(meetingId)).rejects.toThrow(HttpException);
+      await expect(controller.confirmRevaluation(meetingId)).rejects.toThrow(
+        HttpException,
+      );
     });
   });
 
@@ -1242,7 +1295,9 @@ describe('MeetingsV2Controller', () => {
       const result = await controller.getDisbursementPlanPreview(meetingId);
 
       // ASSERT
-      expect(getDisbursementPlanPreviewQueryExecuteSpy).toHaveBeenCalledWith(meetingId);
+      expect(getDisbursementPlanPreviewQueryExecuteSpy).toHaveBeenCalledWith(
+        meetingId,
+      );
       expect(result.available_cash).toBe(5000);
       expect(result.total_to_disburse).toBe(1000);
       expect(result.plan).toHaveLength(1);
@@ -1254,7 +1309,9 @@ describe('MeetingsV2Controller', () => {
       getDisbursementPlanPreviewQueryExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.getDisbursementPlanPreview(meetingId)).rejects.toThrow(HttpException);
+      await expect(
+        controller.getDisbursementPlanPreview(meetingId),
+      ).rejects.toThrow(HttpException);
     });
   });
 
@@ -1303,7 +1360,9 @@ describe('MeetingsV2Controller', () => {
       executeDisbursementPlanUseCaseExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.executeDisbursementPlan(meetingId, dto)).rejects.toThrow(HttpException);
+      await expect(
+        controller.executeDisbursementPlan(meetingId, dto),
+      ).rejects.toThrow(HttpException);
     });
 
     it('should return 400 when business rule error', async () => {
@@ -1313,7 +1372,9 @@ describe('MeetingsV2Controller', () => {
       executeDisbursementPlanUseCaseExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.executeDisbursementPlan(meetingId, dto)).rejects.toThrow(HttpException);
+      await expect(
+        controller.executeDisbursementPlan(meetingId, dto),
+      ).rejects.toThrow(HttpException);
       try {
         await controller.executeDisbursementPlan(meetingId, dto);
       } catch (e) {
@@ -1331,7 +1392,9 @@ describe('MeetingsV2Controller', () => {
       executeDisbursementPlanUseCaseExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.executeDisbursementPlan(meetingId, dto)).rejects.toThrow(HttpException);
+      await expect(
+        controller.executeDisbursementPlan(meetingId, dto),
+      ).rejects.toThrow(HttpException);
       try {
         await controller.executeDisbursementPlan(meetingId, dto);
       } catch (e) {

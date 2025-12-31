@@ -579,7 +579,7 @@ export class MembersV2Controller {
     schema: {
       type: 'object',
       properties: {
-        insuranceAmount: {
+        insurance_amount: {
           type: 'number',
           example: 5000,
         },
@@ -590,12 +590,12 @@ export class MembersV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Query('capitalPayment', new ParseFloatPipe({ optional: true }))
     capitalPayment?: number,
-  ): Promise<{ insuranceAmount: number }> {
+  ): Promise<{ insurance_amount: number }> {
     const result = await this.calculateMemberInsuranceUseCase.execute({
       memberId: id,
       capitalPayment,
     });
-    return { insuranceAmount: result.insuranceAmount };
+    return { insurance_amount: result.insuranceAmount };
   }
 
   @Post(':id/payments')

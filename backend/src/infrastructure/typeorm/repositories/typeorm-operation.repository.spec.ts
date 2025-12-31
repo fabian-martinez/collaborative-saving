@@ -14,6 +14,8 @@ describe('TypeOrmOperationRepository', () => {
   let typeOrmRepo: jest.Mocked<Repository<OperationEntity>>;
   let ledgerEntryRepo: jest.Mocked<LedgerEntryRepository>;
   let findSpy: jest.SpyInstance;
+  let updateSpy: jest.SpyInstance;
+  let saveManySpy: jest.SpyInstance;
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -51,6 +53,8 @@ describe('TypeOrmOperationRepository', () => {
 
     // Create spies to avoid 'this' scoping issues
     findSpy = jest.spyOn(typeOrmRepo, 'find');
+    updateSpy = jest.spyOn(typeOrmRepo, 'update');
+    saveManySpy = jest.spyOn(ledgerEntryRepo, 'saveMany');
   });
 
   describe('findById', () => {
@@ -223,10 +227,10 @@ describe('TypeOrmOperationRepository', () => {
       typeOrmRepo.findOne
         .mockResolvedValueOnce(existingEntity as OperationEntity)
         .mockResolvedValueOnce(updatedEntity as OperationEntity);
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
+      updateSpy.mockResolvedValue(undefined as any);
 
       const result = await repository.save(domain);
-      expect(typeOrmRepo.update).toHaveBeenCalledWith(domain.id, expect.any(Object));
+      expect(updateSpy).toHaveBeenCalledWith(domain.id, expect.any(Object));
       expect(result).toBeInstanceOf(OperationDomain);
     });
 
@@ -248,7 +252,7 @@ describe('TypeOrmOperationRepository', () => {
       typeOrmRepo.findOne
         .mockResolvedValueOnce(existingEntity as OperationEntity)
         .mockResolvedValueOnce(null);
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
+      updateSpy.mockResolvedValue(undefined as any);
 
       await expect(repository.save(domain)).rejects.toThrow(
         'Operation not found after update',
@@ -266,7 +270,9 @@ describe('TypeOrmOperationRepository', () => {
         getMany: jest.fn(),
       };
 
-      typeOrmRepo.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
+      typeOrmRepo.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder);
 
       const entities: Partial<OperationEntity>[] = [
         {
@@ -297,7 +303,9 @@ describe('TypeOrmOperationRepository', () => {
         getMany: jest.fn(),
       };
 
-      typeOrmRepo.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
+      typeOrmRepo.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder);
       mockQueryBuilder.getMany.mockResolvedValue([]);
 
       await repository.findByMember(memberId, { meetingId });
@@ -310,7 +318,10 @@ describe('TypeOrmOperationRepository', () => {
 
     it('should filter by types when provided', async () => {
       const memberId = 'member-1';
-      const types = [OperationType.MONTHLY_PAYMENT, OperationType.STOCK_PURCHASE];
+      const types = [
+        OperationType.MONTHLY_PAYMENT,
+        OperationType.STOCK_PURCHASE,
+      ];
       const mockQueryBuilder = {
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
@@ -318,7 +329,9 @@ describe('TypeOrmOperationRepository', () => {
         getMany: jest.fn(),
       };
 
-      typeOrmRepo.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
+      typeOrmRepo.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder);
       mockQueryBuilder.getMany.mockResolvedValue([]);
 
       await repository.findByMember(memberId, { types });
@@ -338,7 +351,9 @@ describe('TypeOrmOperationRepository', () => {
         getMany: jest.fn(),
       };
 
-      typeOrmRepo.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
+      typeOrmRepo.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder);
       mockQueryBuilder.getMany.mockResolvedValue([]);
 
       await repository.findByMember(memberId, { types: [] });
@@ -383,7 +398,7 @@ describe('TypeOrmOperationRepository', () => {
       const result = await repository.saveWithEntries(domain, entries);
 
       expect(result).toBeInstanceOf(OperationDomain);
-      expect(ledgerEntryRepo.saveMany).toHaveBeenCalled();
+      expect(saveManySpy).toHaveBeenCalled();
     });
 
     it('should throw error when LedgerEntryRepository not set', async () => {

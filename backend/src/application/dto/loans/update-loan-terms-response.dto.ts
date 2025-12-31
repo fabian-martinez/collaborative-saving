@@ -7,4 +7,3 @@ import { LoanResponseDto } from './loan-response.dto';
  * Contains the updated loan information.
  */
 export interface UpdateLoanTermsResponseDto extends LoanResponseDto {}
-

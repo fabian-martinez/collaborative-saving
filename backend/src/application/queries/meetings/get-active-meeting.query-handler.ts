@@ -4,8 +4,7 @@ import { MeetingNotFoundException } from '@application/exceptions/meeting-not-fo
 import { MeetingSummaryService } from '@application/services/meeting-summary.service';
 import { MeetingSummary } from '@application/services/meeting-summary.service';
 
-export interface ActiveMeetingResponseWithSummaryDto
-  extends MeetingResponseDto {
+export interface ActiveMeetingResponseWithSummaryDto extends MeetingResponseDto {
   summary: MeetingSummary;
 }
 

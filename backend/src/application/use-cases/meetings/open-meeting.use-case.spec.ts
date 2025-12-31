@@ -5,7 +5,10 @@ import { RecordOperationUseCase } from '@application/use-cases/accounting/record
 import { Meeting, MeetingStatus } from '@domain/entities/meeting.entity';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { BusinessRuleError } from '@domain/errors/business-rule.error';
-import { CASH_ACCOUNT, ACCUMULATED_SURPLUS_ACCOUNT } from '@domain/constants/account-types';
+import {
+  CASH_ACCOUNT,
+  ACCUMULATED_SURPLUS_ACCOUNT,
+} from '@domain/constants/account-types';
 import { OperationType } from '@domain/enums/operation-type.enum';
 
 describe('OpenMeetingUseCase', () => {
@@ -126,10 +129,10 @@ describe('OpenMeetingUseCase', () => {
       .mockResolvedValueOnce(500) // Accumulated surplus balance
       .mockResolvedValueOnce(1000); // Current cash balance
 
-      recordOperationUseCase.execute.mockResolvedValue({
-        operationId: 'op-transfer',
-        ledgerEntryIds: ['entry-id-1', 'entry-id-2'],
-      });
+    recordOperationUseCase.execute.mockResolvedValue({
+      operationId: 'op-transfer',
+      ledgerEntryIds: ['entry-id-1', 'entry-id-2'],
+    });
 
     // ACT
     const result = await useCase.execute(openDto);
@@ -175,14 +178,14 @@ describe('OpenMeetingUseCase', () => {
 
     // ACT & ASSERT
     await expect(useCase.execute(openDto)).rejects.toThrow(BusinessRuleError);
-    
+
     // Verify the error message in a separate call with reset mocks
     meetingRepository.findActive.mockResolvedValue(null);
     meetingRepository.save.mockResolvedValue(savedMeeting);
     ledgerEntryRepository.sumByAccountType
       .mockResolvedValueOnce(500)
       .mockResolvedValueOnce(-600);
-    
+
     try {
       await useCase.execute(openDto);
       fail('Expected BusinessRuleError to be thrown');

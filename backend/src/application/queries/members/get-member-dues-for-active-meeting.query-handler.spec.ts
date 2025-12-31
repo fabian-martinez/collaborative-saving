@@ -215,8 +215,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
 
       // Verificar mandatory contributions
       const mandatoryDues = result.filter(
-        (due) =>
-          (due.type as PaymentType) === PaymentType.MANDATORY_CONTRIBUTION,
+        (due) => due.type === PaymentType.MANDATORY_CONTRIBUTION,
       );
       expect(mandatoryDues).toHaveLength(2);
       expect(mandatoryDues).toContainEqual({
@@ -234,7 +233,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
 
       // Verificar stock fees (debe agrupar stock-1: 5 + 3 = 8)
       const stockDues = result.filter(
-        (due) => (due.type as PaymentType) === PaymentType.STOCK_FEE,
+        (due) => due.type === PaymentType.STOCK_FEE,
       );
       expect(stockDues).toHaveLength(2);
       expect(stockDues).toContainEqual({
@@ -256,7 +255,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
 
       // Verificar loan payment
       const loanDues = result.filter(
-        (due) => (due.type as PaymentType) === PaymentType.LOAN_PAYMENT,
+        (due) => due.type === PaymentType.LOAN_PAYMENT,
       );
       expect(loanDues).toHaveLength(1);
       expect(loanDues[0]).toMatchObject({
@@ -369,8 +368,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       // ASSERT
       expect(result).toHaveLength(2);
       const mandatoryDues = result.filter(
-        (due) =>
-          (due.type as PaymentType) === PaymentType.MANDATORY_CONTRIBUTION,
+        (due) => due.type === PaymentType.MANDATORY_CONTRIBUTION,
       );
       expect(mandatoryDues).toHaveLength(2);
       expect(mandatoryDues[0].amount).toBeGreaterThan(0);
@@ -406,7 +404,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
 
       // ASSERT
       const stockDues = result.filter(
-        (due) => (due.type as PaymentType) === PaymentType.STOCK_FEE,
+        (due) => due.type === PaymentType.STOCK_FEE,
       );
       expect(stockDues).toHaveLength(0);
     });
@@ -455,7 +453,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
 
       // ASSERT
       const stockDues = result.filter(
-        (due) => (due.type as PaymentType) === PaymentType.STOCK_FEE,
+        (due) => due.type === PaymentType.STOCK_FEE,
       );
       expect(stockDues).toHaveLength(0);
     });
@@ -507,7 +505,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
 
       // ASSERT
       const loanDues = result.filter(
-        (due) => (due.type as PaymentType) === PaymentType.LOAN_PAYMENT,
+        (due) => due.type === PaymentType.LOAN_PAYMENT,
       );
       expect(loanDues).toHaveLength(0);
       expect(findByLoanAndMeetingSpy).toHaveBeenCalledWith(
@@ -564,7 +562,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
 
       // ASSERT
       const loanDues = result.filter(
-        (due) => (due.type as PaymentType) === PaymentType.LOAN_PAYMENT,
+        (due) => due.type === PaymentType.LOAN_PAYMENT,
       );
       expect(loanDues).toHaveLength(1);
       expect(loanDues[0].referenceId).toBe(activeLoans[0].id);
@@ -614,7 +612,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
 
       // ASSERT
       const loanDues = result.filter(
-        (due) => (due.type as PaymentType) === PaymentType.LOAN_PAYMENT,
+        (due) => due.type === PaymentType.LOAN_PAYMENT,
       );
       expect(loanDues).toHaveLength(0);
     });
@@ -670,7 +668,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
 
       // ASSERT
       const loanDues = result.filter(
-        (due) => (due.type as PaymentType) === PaymentType.LOAN_PAYMENT,
+        (due) => due.type === PaymentType.LOAN_PAYMENT,
       );
       expect(loanDues).toHaveLength(2);
       expect(loanDues[0].description).toBe('Cuota préstamo: personal');
@@ -722,7 +720,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
 
       // ASSERT
       const loanDues = result.filter(
-        (due) => (due.type as PaymentType) === PaymentType.LOAN_PAYMENT,
+        (due) => due.type === PaymentType.LOAN_PAYMENT,
       );
       expect(loanDues).toHaveLength(1);
       expect(loanDues[0].creationDate).toBe('2024-01-15');
@@ -766,7 +764,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
 
       // ASSERT
       const stockDues = result.filter(
-        (due) => (due.type as PaymentType) === PaymentType.STOCK_FEE,
+        (due) => due.type === PaymentType.STOCK_FEE,
       );
       expect(stockDues).toHaveLength(0);
     });

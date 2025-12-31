@@ -6,7 +6,10 @@ import { Meeting, MeetingStatus } from '@domain/entities/meeting.entity';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { BusinessRuleError } from '@domain/errors/business-rule.error';
-import { CASH_ACCOUNT, ACCUMULATED_SURPLUS_ACCOUNT } from '@domain/constants/account-types';
+import {
+  CASH_ACCOUNT,
+  ACCUMULATED_SURPLUS_ACCOUNT,
+} from '@domain/constants/account-types';
 import { OperationType } from '@domain/enums/operation-type.enum';
 
 describe('CloseMeetingUseCase', () => {
@@ -232,7 +235,9 @@ describe('CloseMeetingUseCase', () => {
     ledgerEntryRepository.findByMeeting.mockResolvedValue(ledgerEntries as any);
 
     // ACT & ASSERT
-    await expect(useCase.execute({ meetingId })).rejects.toThrow(BusinessRuleError);
+    await expect(useCase.execute({ meetingId })).rejects.toThrow(
+      BusinessRuleError,
+    );
     await expect(useCase.execute({ meetingId })).rejects.toThrow(
       'El balance de efectivo no puede quedar negativo',
     );

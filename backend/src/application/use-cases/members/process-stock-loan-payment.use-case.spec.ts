@@ -106,7 +106,10 @@ describe('ProcessStockLoanPaymentUseCase', () => {
       recordLoanPaymentUseCase,
     );
 
-    recordLoanPaymentExecuteSpy = jest.spyOn(recordLoanPaymentUseCase, 'execute');
+    recordLoanPaymentExecuteSpy = jest.spyOn(
+      recordLoanPaymentUseCase,
+      'execute',
+    );
   });
 
   const createBaseDto = (): StockLoanPaymentDto => ({
@@ -168,7 +171,7 @@ describe('ProcessStockLoanPaymentUseCase', () => {
     // Subscription should be saved with reduced quantity
     expect(subscriptionSaveSpy).toHaveBeenCalled();
     // Original quantity was 5, used 2, so should be 3
-    const savedSubscription = subscriptionSaveSpy.mock.calls[0][0] as StockSubscription;
+    const savedSubscription = subscriptionSaveSpy.mock.calls[0][0];
     expect(savedSubscription.quantity).toBe(3);
   });
 

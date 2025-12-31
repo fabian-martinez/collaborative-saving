@@ -9,6 +9,10 @@ import { MeetingStatus } from '@domain/entities/meeting.entity';
 describe('TypeOrmMeetingRepository', () => {
   let repository: TypeOrmMeetingRepository;
   let typeOrmRepo: jest.Mocked<Repository<MeetingEntity>>;
+  let findOneSpy: jest.SpyInstance;
+  let findSpy: jest.SpyInstance;
+  let saveSpy: jest.SpyInstance;
+  let updateSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -30,6 +34,12 @@ describe('TypeOrmMeetingRepository', () => {
 
     repository = module.get<TypeOrmMeetingRepository>(TypeOrmMeetingRepository);
     typeOrmRepo = module.get(getRepositoryToken(MeetingEntity));
+
+    // Create spies to avoid 'this' scoping issues
+    findOneSpy = jest.spyOn(typeOrmRepo, 'findOne');
+    findSpy = jest.spyOn(typeOrmRepo, 'find');
+    saveSpy = jest.spyOn(typeOrmRepo, 'save');
+    updateSpy = jest.spyOn(typeOrmRepo, 'update');
   });
 
   describe('findById', () => {
@@ -49,7 +59,7 @@ describe('TypeOrmMeetingRepository', () => {
       const result = await repository.findById(meetingId);
 
       // Assert
-      expect(typeOrmRepo.findOne).toHaveBeenCalledWith({
+      expect(findOneSpy).toHaveBeenCalledWith({
         where: { id: meetingId },
       });
       expect(result).toBeInstanceOf(MeetingDomain);
@@ -85,7 +95,7 @@ describe('TypeOrmMeetingRepository', () => {
       const result = await repository.findActive();
 
       // Assert
-      expect(typeOrmRepo.findOne).toHaveBeenCalledWith({
+      expect(findOneSpy).toHaveBeenCalledWith({
         where: { status: 'active' },
       });
       expect(result).toBeInstanceOf(MeetingDomain);
@@ -128,7 +138,7 @@ describe('TypeOrmMeetingRepository', () => {
       const result = await repository.findAll();
 
       // Assert
-      expect(typeOrmRepo.find).toHaveBeenCalledWith({
+      expect(findSpy).toHaveBeenCalledWith({
         order: { date: 'DESC' },
       });
       expect(result).toHaveLength(2);
@@ -171,10 +181,10 @@ describe('TypeOrmMeetingRepository', () => {
       const result = await repository.save(meeting);
 
       // Assert
-      expect(typeOrmRepo.findOne).toHaveBeenCalledWith({
+      expect(findOneSpy).toHaveBeenCalledWith({
         where: { id: meeting.id },
       });
-      expect(typeOrmRepo.save).toHaveBeenCalled();
+      expect(saveSpy).toHaveBeenCalled();
       expect(result).toBeInstanceOf(MeetingDomain);
       expect(result.id).toBe(meeting.id);
     });
@@ -203,14 +213,14 @@ describe('TypeOrmMeetingRepository', () => {
       typeOrmRepo.findOne
         .mockResolvedValueOnce(existingEntity) // Found existing
         .mockResolvedValueOnce(updatedEntity); // After update
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
+      updateSpy.mockResolvedValue(undefined as any);
 
       // Act
       const result = await repository.save(meeting);
 
       // Assert
-      expect(typeOrmRepo.findOne).toHaveBeenCalledTimes(2);
-      expect(typeOrmRepo.update).toHaveBeenCalledWith(meeting.id, expect.any(Object));
+      expect(findOneSpy).toHaveBeenCalledTimes(2);
+      expect(updateSpy).toHaveBeenCalledWith(meeting.id, expect.any(Object));
       expect(result).toBeInstanceOf(MeetingDomain);
       expect(result.id).toBe(meeting.id);
     });
@@ -232,10 +242,12 @@ describe('TypeOrmMeetingRepository', () => {
       typeOrmRepo.findOne
         .mockResolvedValueOnce(existingEntity) // Found existing
         .mockResolvedValueOnce(null); // Not found after update
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
+      updateSpy.mockResolvedValue(undefined as any);
 
       // Act & Assert
-      await expect(repository.save(meeting)).rejects.toThrow('Meeting not found after update');
+      await expect(repository.save(meeting)).rejects.toThrow(
+        'Meeting not found after update',
+      );
     });
   });
 
@@ -255,7 +267,7 @@ describe('TypeOrmMeetingRepository', () => {
       const result = await repository.findLatestClosed();
 
       // Assert
-      expect(typeOrmRepo.findOne).toHaveBeenCalledWith({
+      expect(findOneSpy).toHaveBeenCalledWith({
         where: { status: 'closed' },
         order: { date: 'DESC' },
       });
@@ -275,4 +287,3 @@ describe('TypeOrmMeetingRepository', () => {
     });
   });
 });
-

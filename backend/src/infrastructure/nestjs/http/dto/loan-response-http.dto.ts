@@ -77,4 +77,3 @@ export class LoanResponseHttpDto {
   })
   guaranteed_stock_id?: string | null;
 }
-

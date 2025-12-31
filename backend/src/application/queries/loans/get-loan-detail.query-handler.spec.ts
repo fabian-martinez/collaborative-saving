@@ -98,4 +98,3 @@ describe('GetLoanDetailQueryHandler', () => {
     expect(result.creationDate).toBeInstanceOf(Date);
   });
 });
-

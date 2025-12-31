@@ -15,7 +15,10 @@ import { BusinessRuleError } from '@domain/errors/business-rule.error';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { LedgerEntry } from '@domain/entities/ledger-entry.entity';
 import { CASH_ACCOUNT } from '@domain/constants/account-types';
-import { PendingMemberPayment, PendingMemberPaymentType } from '@domain/entities/pending-member-payment.entity';
+import {
+  PendingMemberPayment,
+  PendingMemberPaymentType,
+} from '@domain/entities/pending-member-payment.entity';
 
 describe('ExecuteDisbursementPlanUseCase', () => {
   let useCase: ExecuteDisbursementPlanUseCase;
@@ -316,9 +319,7 @@ describe('ExecuteDisbursementPlanUseCase', () => {
       ledgerEntryIds: [],
     });
     pendingMemberPaymentRepository.findById.mockResolvedValue(null);
-    pendingMemberPaymentRepository.save.mockResolvedValue(
-      {} as any,
-    );
+    pendingMemberPaymentRepository.save.mockResolvedValue({} as any);
 
     const result = await useCase.execute(dto);
 
@@ -361,7 +362,8 @@ describe('ExecuteDisbursementPlanUseCase', () => {
     ledgerEntryRepository.findByMeeting
       .mockResolvedValueOnce(ledgerEntries) // Initial calculation
       .mockResolvedValueOnce(ledgerEntries) // First item processing
-      .mockResolvedValueOnce([ // Second item processing - cash reduced
+      .mockResolvedValueOnce([
+        // Second item processing - cash reduced
         LedgerEntry.create({
           operationId: 'op-1',
           accountType: CASH_ACCOUNT,
@@ -443,8 +445,12 @@ describe('ExecuteDisbursementPlanUseCase', () => {
 
     meetingRepository.findById.mockResolvedValue(meeting);
     ledgerEntryRepository.findByMeeting.mockResolvedValue(ledgerEntries);
-    pendingMemberPaymentRepository.findById.mockResolvedValue(pendingPayment as any);
-    pendingMemberPaymentRepository.save.mockResolvedValue(pendingPayment as any);
+    pendingMemberPaymentRepository.findById.mockResolvedValue(
+      pendingPayment as any,
+    );
+    pendingMemberPaymentRepository.save.mockResolvedValue(
+      pendingPayment as any,
+    );
     recordOperationUseCase.execute.mockResolvedValue({
       operationId: 'op-2',
       ledgerEntryIds: [],
