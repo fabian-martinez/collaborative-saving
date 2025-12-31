@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance, type AxiosError, type InternalAxiosRequestConfig } from 'axios'
-import type { ApiError, ApiException } from './types'
+import { ApiException } from './types'
+import type { ApiError } from './types'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
@@ -52,13 +53,23 @@ apiClient.interceptors.response.use(
         error.response.data?.errors
       )
       
-      console.error('[API Error]', {
-        url: error.config?.url,
-        method: error.config?.method,
-        status: error.response.status,
-        message: apiError.message,
-        errors: apiError.errors
-      })
+      // Los 404 son estados válidos en algunos casos (ej: no hay reunión activa)
+      // Los registramos con debug en lugar de error
+      if (error.response.status === 404) {
+        console.debug('[API 404]', {
+          url: error.config?.url,
+          method: error.config?.method,
+          message: apiError.message
+        })
+      } else {
+        console.error('[API Error]', {
+          url: error.config?.url,
+          method: error.config?.method,
+          status: error.response.status,
+          message: apiError.message,
+          errors: apiError.errors
+        })
+      }
       
       return Promise.reject(apiError)
     } else if (error.request) {

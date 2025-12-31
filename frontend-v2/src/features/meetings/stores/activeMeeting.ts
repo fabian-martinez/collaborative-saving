@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { meetingsApi, type Meeting, type MeetingSummary } from '@/api/meetings.api'
+import { ApiException } from '@/api/types'
 
 export const useActiveMeetingStore = defineStore('activeMeeting', () => {
   // State - Datos mock iniciales
@@ -31,9 +32,18 @@ export const useActiveMeetingStore = defineStore('activeMeeting', () => {
         summary.value = meeting.value.summary
       }
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Error al cargar reunión'
-      meeting.value = null
-      summary.value = null
+      // Si no hay reunión activa (404), es un estado válido del sistema
+      // No establecemos error para este caso, solo limpiamos el estado
+      if (e instanceof ApiException && e.status === 404) {
+        meeting.value = null
+        summary.value = null
+        error.value = null
+      } else {
+        // Para otros errores, sí establecemos el error
+        error.value = e instanceof Error ? e.message : 'Error al cargar reunión'
+        meeting.value = null
+        summary.value = null
+      }
     } finally {
       loading.value = false
     }
