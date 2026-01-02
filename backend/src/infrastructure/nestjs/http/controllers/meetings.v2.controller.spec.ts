@@ -1346,9 +1346,11 @@ describe('MeetingsV2Controller', () => {
       const result = await controller.executeDisbursementPlan(meetingId, dto);
 
       // ASSERT
+      expect(executeDisbursementPlanUseCaseExecuteSpy).toHaveBeenCalledTimes(1);
       expect(executeDisbursementPlanUseCaseExecuteSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           meetingId,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           plan: expect.arrayContaining([
             expect.objectContaining({
               memberId: 'member-1',
