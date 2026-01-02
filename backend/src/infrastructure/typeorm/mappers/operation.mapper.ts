@@ -6,8 +6,8 @@ export class OperationMapper {
     try {
       return OperationDomain.fromPersistence({
         id: persistence.id,
-        member_id: persistence.memberId ?? null,
-        meeting_id: persistence.meetingId,
+        memberId: persistence.memberId ?? null,
+        meetingId: persistence.meetingId,
         type: persistence.type,
         date: persistence.date,
         description: persistence.description ?? null,

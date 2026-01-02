@@ -1,115 +1,69 @@
 <template>
-  <div class="ledger-view">
-    <div class="view-header">
-      <h1>Libro Contable</h1>
-      <div class="relative">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Buscar por descripción, tipo de cuenta o miembro..."
-          class="input input-bordered w-64 pl-10"
-        />
-        <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+  <div class="ledger-view space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div class="flex gap-2">
+        <button @click="handleExport" class="btn btn-outline">
+          <Download class="w-5 h-5" />
+          Exportar
+        </button>
       </div>
     </div>
-    <LoadingSpinner :loading="loading" />
-    <ErrorMessage :error="error" />
-    <DataTable
-      v-if="!loading && !error"
-      :data="filteredItems"
-      :columns="columns"
-      :empty-message="searchQuery ? 'No se encontraron asientos contables' : 'No hay asientos contables'"
-    />
-    <Pagination
-      v-if="entries.total > 0"
-      :page="page"
-      :total-pages="totalPages"
-      :total="entries.total"
-      :start-index="(page - 1) * limit + 1"
-      :end-index="Math.min(page * limit, entries.total)"
-      @page-change="handlePageChange"
-    />
+
+    <!-- Tabs -->
+    <div class="tabs tabs-boxed">
+      <button
+        v-for="tab in tabs"
+        :key="tab.id"
+        @click="activeTab = tab.id"
+        :class="['tab', { 'tab-active': activeTab === tab.id }]"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+
+    <!-- Tab Content -->
+    <div>
+      <BalanceTab ref="balanceTabRef" v-if="activeTab === 'balance'" />
+      <OperationsTab ref="operationsTabRef" v-if="activeTab === 'operations'" />
+      <JournalTab ref="journalTabRef" v-if="activeTab === 'journal'" />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { Search } from 'iconoir-vue/regular'
-import { ledgerApi, type LedgerEntry } from '@/api/ledger.api'
-import { useSearchableList } from '@/shared/composables/useSearchableList'
-import DataTable from '@/shared/components/DataTable.vue'
-import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
-import ErrorMessage from '@/shared/components/ErrorMessage.vue'
-import Pagination from '@/shared/components/Pagination.vue'
+import { ref } from 'vue'
+import { Download } from 'iconoir-vue/regular'
+import BalanceTab from '../components/BalanceTab.vue'
+import OperationsTab from '../components/OperationsTab.vue'
+import JournalTab from '../components/JournalTab.vue'
+import type { ComponentPublicInstance } from 'vue'
 
-const entries = ref<{ data: LedgerEntry[]; page: number; limit: number; total: number }>({
-  data: [],
-  page: 1,
-  limit: 20,
-  total: 0
-})
-const loading = ref(false)
-const error = ref<string | null>(null)
-const page = ref(1)
-const limit = ref(20)
+const activeTab = ref<'balance' | 'operations' | 'journal'>('balance')
 
-const totalPages = computed(() => Math.ceil(entries.value.total / limit.value))
+const balanceTabRef = ref<ComponentPublicInstance & { exportData?: () => Promise<void> }>()
+const operationsTabRef = ref<ComponentPublicInstance & { exportData?: () => Promise<void> }>()
+const journalTabRef = ref<ComponentPublicInstance & { exportData?: () => Promise<void> }>()
 
-// Búsqueda contextual (filtra solo los resultados de la página actual)
-const entriesDataRef = computed(() => entries.value.data)
-const { searchQuery, filteredItems } = useSearchableList<LedgerEntry>(entriesDataRef, [
-  'description',
-  'account_type',
-  'member_name'
-])
-
-const columns = [
-  { key: 'created_at', label: 'Fecha', format: 'datetime' },
-  { key: 'account_type', label: 'Tipo de Cuenta' },
-  { key: 'amount', label: 'Monto', format: 'currency' },
-  { key: 'description', label: 'Descripción' },
-  { key: 'member_name', label: 'Miembro' }
+const tabs = [
+  { id: 'balance' as const, label: 'Balance' },
+  { id: 'operations' as const, label: 'Operaciones' },
+  { id: 'journal' as const, label: 'Libro Diario' }
 ]
 
-async function fetchEntries() {
-  loading.value = true
-  error.value = null
-  try {
-    entries.value = await ledgerApi.getLedgerEntries({
-      page: page.value,
-      limit: limit.value
-    })
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Error al cargar asientos contables'
-  } finally {
-    loading.value = false
+async function handleExport() {
+  if (activeTab.value === 'balance' && balanceTabRef.value?.exportData) {
+    await balanceTabRef.value.exportData()
+  } else if (activeTab.value === 'operations' && operationsTabRef.value?.exportData) {
+    await operationsTabRef.value.exportData()
+  } else if (activeTab.value === 'journal' && journalTabRef.value?.exportData) {
+    await journalTabRef.value.exportData()
   }
 }
-
-function handlePageChange(newPage: number) {
-  page.value = newPage
-  fetchEntries()
-}
-
-onMounted(() => {
-  fetchEntries()
-})
 </script>
 
 <style scoped>
 .ledger-view {
   padding: 2rem;
 }
-
-.view-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-.view-header h1 {
-  margin: 0;
-}
 </style>
-

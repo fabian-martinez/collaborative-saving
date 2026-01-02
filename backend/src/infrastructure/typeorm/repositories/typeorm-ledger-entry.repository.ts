@@ -51,11 +51,7 @@ export class TypeOrmLedgerEntryRepository implements LedgerEntryRepository {
     // Join with operations to filter by meeting
     const entities = await this.repo
       .createQueryBuilder('ledger_entry')
-      .innerJoin(
-        'operations',
-        'operation',
-        'operation.id = ledger_entry.operation_id',
-      )
+      .innerJoin('ledger_entry.operation', 'operation')
       .where('operation.meeting_id = :meetingId', { meetingId })
       .getMany();
     return entities.map((e) => LedgerEntryMapper.toDomain(e));
@@ -104,11 +100,15 @@ export class TypeOrmLedgerEntryRepository implements LedgerEntryRepository {
     pagination: PaginationOptions,
     orderBy: 'ASC' | 'DESC',
   ): Promise<PaginatedResult<LedgerEntryDomain>> {
-    const qb = this.repo
-      .createQueryBuilder('ledger_entry')
-      .leftJoin('operations', 'operation', 'operation.id = ledger_entry.operation_id');
+    const qb = this.repo.createQueryBuilder('ledger_entry');
 
+    // Only join with operations if we need to filter by memberId
     if (filters.memberId) {
+      qb.leftJoin(
+        OperationEntity,
+        'operation',
+        'operation.id = ledger_entry.operation_id',
+      );
       qb.andWhere('operation.member_id = :memberId', {
         memberId: filters.memberId,
       });
@@ -198,12 +198,12 @@ export class TypeOrmLedgerEntryRepository implements LedgerEntryRepository {
     const accountsData: AccountSummaryData[] = [];
 
     for (const summary of summaryResults) {
-      const accountType = summary.accountType as string;
+      const accountType = summary.accountType;
 
       // Get limited entries for this account type
       const entriesQb = this.repo
         .createQueryBuilder('ledger_entry')
-        .leftJoin('operations', 'operation', 'operation.id = ledger_entry.operation_id')
+        .leftJoin('ledger_entry.operation', 'operation')
         .select('ledger_entry.id', 'id')
         .addSelect('ledger_entry.operation_id', 'operationId')
         .addSelect('ledger_entry.account_type', 'accountType')
@@ -212,7 +212,10 @@ export class TypeOrmLedgerEntryRepository implements LedgerEntryRepository {
         .addSelect('ledger_entry.description', 'description')
         .addSelect('ledger_entry.loan_id', 'loanId')
         .addSelect('ledger_entry.stock_id', 'stockId')
-        .addSelect('ledger_entry.mandatory_contribution_id', 'mandatoryContributionId')
+        .addSelect(
+          'ledger_entry.mandatory_contribution_id',
+          'mandatoryContributionId',
+        )
         .addSelect('ledger_entry.stock_subscription_id', 'stockSubscriptionId')
         .addSelect('operation.type', 'operationType')
         .addSelect('operation.date', 'operationDate')

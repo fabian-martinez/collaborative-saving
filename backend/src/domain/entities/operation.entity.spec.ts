@@ -85,7 +85,7 @@ describe('Operation Entity', () => {
     it('should create Operation from persistence data', () => {
       const operation = Operation.fromPersistence({
         id: mockId,
-        meeting_id: 'meeting-1',
+        meetingId: 'meeting-1',
         type: OperationType.MONTHLY_PAYMENT,
         date: mockDate,
       });
@@ -98,7 +98,7 @@ describe('Operation Entity', () => {
     it('should handle string dates', () => {
       const operation = Operation.fromPersistence({
         id: mockId,
-        meeting_id: 'meeting-1',
+        meetingId: 'meeting-1',
         type: OperationType.MONTHLY_PAYMENT,
         date: '2024-01-15T10:00:00Z',
       });
@@ -109,8 +109,8 @@ describe('Operation Entity', () => {
     it('should handle nullable memberId', () => {
       const operation = Operation.fromPersistence({
         id: mockId,
-        member_id: null,
-        meeting_id: 'meeting-1',
+        memberId: null,
+        meetingId: 'meeting-1',
         type: OperationType.MONTHLY_PAYMENT,
         date: mockDate,
       });
@@ -121,7 +121,7 @@ describe('Operation Entity', () => {
     it('should handle nullable description', () => {
       const operation = Operation.fromPersistence({
         id: mockId,
-        meeting_id: 'meeting-1',
+        meetingId: 'meeting-1',
         type: OperationType.MONTHLY_PAYMENT,
         date: mockDate,
         description: null,
@@ -217,7 +217,7 @@ describe('Operation Entity', () => {
       expect(() =>
         Operation.fromPersistence({
           id: '550e8400-e29b-41d4-a716-446655440000',
-          meeting_id: 'meeting-1',
+          meetingId: 'meeting-1',
           type: OperationType.MONTHLY_PAYMENT,
           date: futureDate,
         }),

@@ -3,35 +3,35 @@ import { AccountSummaryHttpDto } from './account-summary-http.dto';
 
 export class DateRangeHttpDto {
   @ApiProperty()
-  startDate: string;
+  start_date: string;
 
   @ApiProperty()
-  endDate: string;
+  end_date: string;
 }
 
 export class AccountsSummaryMetadataHttpDto {
   @ApiProperty()
-  queryDate: Date;
+  query_date: Date;
 
   @ApiProperty({ required: false, type: DateRangeHttpDto })
-  dateRange?: DateRangeHttpDto;
+  date_range?: DateRangeHttpDto;
 
   @ApiProperty()
-  entriesLimit: number;
+  entries_limit: number;
 }
 
 export class AccountsSummarySummaryHttpDto {
   @ApiProperty()
-  totalAccounts: number;
+  total_accounts: number;
 
   @ApiProperty()
-  totalDebits: number;
+  total_debits: number;
 
   @ApiProperty()
-  totalCredits: number;
+  total_credits: number;
 
   @ApiProperty()
-  netBalance: number;
+  net_balance: number;
 }
 
 export class GetAccountsSummaryResponseHttpDto {

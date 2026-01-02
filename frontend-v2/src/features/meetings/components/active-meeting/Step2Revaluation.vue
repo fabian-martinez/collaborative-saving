@@ -264,14 +264,45 @@ function calculateInterestRate(interestGained: number, previousValue: number): s
 
 // Get mandatory contribution name by ID
 function getMandatoryContributionName(mandatoryContributionId: string): string {
+  if (!mandatoryContributionId) {
+    return 'Aporte desconocido'
+  }
+
+  // Buscar el aporte por ID exacto
   const contribution = mandatoryContributions.value.find(
     (c: MandatoryContribution) => c.id === mandatoryContributionId
   )
+  
   if (contribution && contribution.asset_type) {
     return contribution.asset_type
   }
-  // Fallback: return a formatted version of the ID if not found
-  return `Aporte ${mandatoryContributionId.substring(0, 8)}...`
+
+  // Si no se encontró, intentar buscar sin importar mayúsculas/minúsculas
+  const contributionCaseInsensitive = mandatoryContributions.value.find(
+    (c: MandatoryContribution) => c.id.toLowerCase() === mandatoryContributionId.toLowerCase()
+  )
+  
+  if (contributionCaseInsensitive && contributionCaseInsensitive.asset_type) {
+    return contributionCaseInsensitive.asset_type
+  }
+
+  // Si los aportes están cargados pero no se encontró, es probable que el aporte fue eliminado
+  // Mostrar un mensaje más descriptivo
+  if (mandatoryContributions.value.length > 0) {
+    // Debug: log para identificar el problema (solo en desarrollo)
+    if (import.meta.env.DEV) {
+      console.warn('Aporte obligatorio no encontrado en la lista activa:', {
+        buscado: mandatoryContributionId,
+        total_aportes_disponibles: mandatoryContributions.value.length,
+        disponibles: mandatoryContributions.value.map(c => ({ id: c.id, asset_type: c.asset_type }))
+      })
+    }
+    // El aporte probablemente fue eliminado pero aún hay registros históricos
+    return `Aporte eliminado (${mandatoryContributionId.substring(0, 8)}...)`
+  }
+
+  // Si aún no se han cargado los aportes, mostrar mensaje temporal
+  return 'Cargando...'
 }
 
 async function fetchPreview() {
