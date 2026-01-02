@@ -9,6 +9,7 @@ import {
   IsEnum,
   IsBoolean,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { AccountType, ALL_ACCOUNT_TYPES } from '@domain/constants/account-types';
 
 export class GetAccountsSummaryQueryHttpDto {
@@ -20,6 +21,7 @@ export class GetAccountsSummaryQueryHttpDto {
     maximum: 100,
   })
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(100)

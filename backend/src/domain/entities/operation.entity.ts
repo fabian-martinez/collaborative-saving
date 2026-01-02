@@ -33,8 +33,8 @@ export class Operation {
 
   static fromPersistence(data: {
     id: string;
-    member_id?: string | null;
-    meeting_id: string;
+    memberId?: string | null;
+    meetingId: string;
     type: string;
     date: Date | string;
     description?: string | null;
@@ -46,8 +46,8 @@ export class Operation {
 
     return new Operation(
       data.id,
-      data.member_id ?? null,
-      data.meeting_id,
+      data.memberId ?? null,
+      data.meetingId,
       data.type as OperationType,
       typeof data.date === 'string' ? new Date(data.date) : data.date,
       data.description ?? undefined,

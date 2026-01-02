@@ -5,6 +5,7 @@ import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan
 import { LoanTransactionDetail as LoanTransactionDetailDomain } from '@domain/entities/loan-transaction-detail.entity';
 import { LoanTransactionDetail as LoanTransactionDetailEntity } from '../entities/loan-transaction-detail.entity';
 import { LoanTransactionDetailMapper } from '../mappers/loan-transaction-detail.mapper';
+import { Operation as OperationEntity } from '../entities/operation.entity';
 
 @Injectable()
 export class TypeOrmLoanTransactionDetailRepository implements LoanTransactionDetailRepository {

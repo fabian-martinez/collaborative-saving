@@ -155,8 +155,8 @@ describe('GetMemberPaymentScheduleQueryHandler', () => {
 
       const operation = Operation.fromPersistence({
         id: 'op-1',
-        member_id: memberId,
-        meeting_id: meetingId,
+        memberId: memberId,
+        meetingId: meetingId,
         type: OperationType.LOAN_PAYMENT,
         date: new Date('2024-01-15'),
         description: 'Loan payment',

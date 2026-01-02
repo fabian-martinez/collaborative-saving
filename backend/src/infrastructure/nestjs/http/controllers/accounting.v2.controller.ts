@@ -24,6 +24,7 @@ import { PaginatedResponseHttpDto } from '../dto/paginated-response-http.dto';
 import { GetOperationsQueryDto } from '@application/dto/accounting/get-operations-query.dto';
 import { GetLedgerEntriesQueryDto } from '@application/dto/accounting/get-ledger-entries-query.dto';
 import { GetAccountsSummaryQueryDto } from '@application/dto/accounting/get-accounts-summary-query.dto';
+import { ALL_ACCOUNT_TYPES, AccountType } from '@domain/constants/account-types';
 
 @ApiTags('Accounting V2')
 @Controller('v2/accounting')
@@ -61,7 +62,33 @@ export class AccountingV2Controller {
     };
 
     const result = await this.getOperationsQuery.execute(dto);
-    return result as PaginatedResponseHttpDto<OperationResponseHttpDto>;
+
+    // Map application DTOs (camelCase) to HTTP DTOs (snake_case)
+    const httpData: OperationResponseHttpDto[] = result.data.map((operation) => ({
+      id: operation.id,
+      member_id: operation.memberId,
+      meeting_id: operation.meetingId,
+      type: operation.type,
+      date: operation.date,
+      description: operation.description,
+      entries: operation.entries.map((entry) => ({
+        id: entry.id,
+        operation_id: entry.operationId,
+        account_type: entry.accountType,
+        amount: entry.amount,
+        created_at: entry.createdAt,
+        description: entry.description,
+        loan_id: entry.loanId,
+        stock_id: entry.stockId,
+        mandatory_contribution_id: entry.mandatoryContributionId,
+        stock_subscription_id: entry.stockSubscriptionId,
+      })),
+    }));
+
+    return {
+      data: httpData,
+      pagination: result.pagination,
+    };
   }
 
   @Get('ledger-entries')
@@ -90,7 +117,25 @@ export class AccountingV2Controller {
     };
 
     const result = await this.getLedgerEntriesQuery.execute(dto);
-    return result as PaginatedResponseHttpDto<LedgerEntryResponseHttpDto>;
+
+    // Map application DTOs (camelCase) to HTTP DTOs (snake_case)
+    const httpData: LedgerEntryResponseHttpDto[] = result.data.map((entry) => ({
+      id: entry.id,
+      operation_id: entry.operationId,
+      account_type: entry.accountType,
+      amount: entry.amount,
+      created_at: entry.createdAt,
+      description: entry.description,
+      loan_id: entry.loanId,
+      stock_id: entry.stockId,
+      mandatory_contribution_id: entry.mandatoryContributionId,
+      stock_subscription_id: entry.stockSubscriptionId,
+    }));
+
+    return {
+      data: httpData,
+      pagination: result.pagination,
+    };
   }
 
   @Get('accounts-summary')
@@ -117,7 +162,86 @@ export class AccountingV2Controller {
     };
 
     const result = await this.getAccountsSummaryQuery.execute(dto);
-    return result as GetAccountsSummaryResponseHttpDto;
+
+    // Map application DTOs (camelCase) to HTTP DTOs (snake_case)
+    const httpAccounts = result.accounts.map((account) => ({
+      account_type: account.accountType,
+      account_name: account.accountName,
+      total_balance: account.totalBalance,
+      total_debits: account.totalDebits,
+      total_credits: account.totalCredits,
+      entries_count: account.entriesCount,
+      has_more_entries: account.hasMoreEntries,
+      entries: account.entries.map((entry) => ({
+        id: entry.id,
+        operation_id: entry.operationId,
+        account_type: entry.accountType,
+        amount: entry.amount,
+        created_at: entry.createdAt,
+        description: entry.description,
+        loan_id: entry.loanId,
+        stock_id: entry.stockId,
+        mandatory_contribution_id: entry.mandatoryContributionId,
+        stock_subscription_id: entry.stockSubscriptionId,
+        operation_type: entry.operationType,
+        operation_date: entry.operationDate,
+      })),
+    }));
+
+    return {
+      accounts: httpAccounts,
+      summary: {
+        total_accounts: result.summary.totalAccounts,
+        total_debits: result.summary.totalDebits,
+        total_credits: result.summary.totalCredits,
+        net_balance: result.summary.netBalance,
+      },
+      metadata: {
+        query_date: result.metadata.queryDate,
+        date_range: result.metadata.dateRange
+          ? {
+              start_date: result.metadata.dateRange.startDate,
+              end_date: result.metadata.dateRange.endDate,
+            }
+          : undefined,
+        entries_limit: result.metadata.entriesLimit,
+      },
+    };
+  }
+
+  @Get('ledger-entries/account-types')
+  @ApiOperation({
+    summary: 'Get available account types',
+    description: 'Retrieves all available account types with their labels for filtering ledger entries.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Account types retrieved successfully',
+  })
+  getAccountTypes(): Array<{ value: string; label: string }> {
+    const accountNames: Record<AccountType, string> = {
+      CASH: 'Caja General',
+      LOANS_RECEIVABLE: 'Cartera de Préstamos',
+      INVESTMENT_IN_STOCKS: 'Inversión en Acciones',
+      DIVIDENDS_PAYABLE: 'Dividendos por Pagar',
+      STOCK_CAPITAL: 'Capital Social',
+      STOCK_TRANSFER: 'Transferencia de Acciones',
+      REVALUATION_SURPLUS: 'Superávit por Revalorización',
+      MEMBER_EQUITY: 'Patrimonio del Socio',
+      ACCUMULATED_SURPLUS: 'Utilidades Acumuladas',
+      INTEREST_INCOME: 'Ingresos por Intereses',
+      FEE_INCOME: 'Ingresos por Otros',
+      MANDATORY_CONTRIBUTION_INCOME: 'Aportes Obligatorios',
+      INSURANCE_INCOME: 'Ingresos por Seguro',
+      DIVIDEND_EXPENSE: 'Gastos por Dividendos',
+      OTHER_EXPENSES: 'Gastos Administrativos',
+      NOVELTY_LOSS: 'Provisión Cartera Incobrable',
+    };
+
+    return ALL_ACCOUNT_TYPES.map((accountType) => ({
+      value: accountType,
+      label: accountNames[accountType] || accountType,
+    }));
   }
 }
 

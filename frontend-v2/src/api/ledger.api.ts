@@ -31,14 +31,65 @@ export interface AccountTypeOption {
 }
 
 export interface GetLedgerEntriesQuery {
-  q?: string
-  member_id?: string
-  account_type?: string
-  meeting_id?: string
-  date_from?: string
-  date_to?: string
+  memberId?: string
+  accountType?: string
+  startDate?: string
+  endDate?: string
   page?: number
   limit?: number
+  orderBy?: 'ASC' | 'DESC'
+}
+
+export interface AccountLedgerEntry {
+  id: string
+  operation_id: string
+  account_type: string
+  amount: number
+  created_at: string | Date
+  description?: string | null
+  loan_id?: string | null
+  stock_id?: string | null
+  mandatory_contribution_id?: string | null
+  stock_subscription_id?: string | null
+  operation_type?: string
+  operation_date?: string | Date
+}
+
+export interface AccountSummary {
+  account_type: string
+  account_name?: string
+  total_balance: number
+  total_debits: number
+  total_credits: number
+  entries_count: number
+  entries: AccountLedgerEntry[]
+  has_more_entries: boolean
+}
+
+export interface AccountsSummary {
+  accounts: AccountSummary[]
+  summary: {
+    total_accounts: number
+    total_debits: number
+    total_credits: number
+    net_balance: number
+  }
+  metadata: {
+    query_date: Date | string
+    date_range?: {
+      start_date: string
+      end_date: string
+    }
+    entries_limit: number
+  }
+}
+
+export interface GetAccountsSummaryQuery {
+  entries_limit?: number
+  start_date?: string
+  end_date?: string
+  account_types?: string[]
+  include_zero_balance?: boolean
 }
 
 // API Functions
@@ -48,18 +99,24 @@ export const ledgerApi = {
       return mockApi.getLedgerEntries(query)
     }
     const params = new URLSearchParams()
-    if (query?.q) params.append('q', query.q)
-    if (query?.member_id) params.append('memberId', query.member_id)
-    if (query?.account_type) params.append('accountType', query.account_type)
-    if (query?.meeting_id) params.append('meetingId', query.meeting_id)
-    if (query?.date_from) params.append('dateFrom', query.date_from)
-    if (query?.date_to) params.append('dateTo', query.date_to)
+    if (query?.memberId) params.append('memberId', query.memberId)
+    if (query?.accountType) params.append('accountType', query.accountType)
+    if (query?.startDate) params.append('startDate', query.startDate)
+    if (query?.endDate) params.append('endDate', query.endDate)
     if (query?.page) params.append('page', query.page.toString())
     if (query?.limit) params.append('limit', query.limit.toString())
+    if (query?.orderBy) params.append('orderBy', query.orderBy)
     const queryString = params.toString()
-    const url = `/ledger-entries${queryString ? `?${queryString}` : ''}`
-    const response = await apiClient.get<PaginatedResponse<LedgerEntry>>(url)
-    return response.data
+    const url = `/v2/accounting/ledger-entries${queryString ? `?${queryString}` : ''}`
+    const response = await apiClient.get<{ data: LedgerEntry[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>(url)
+    
+    // Map backend response structure to frontend expected structure
+    return {
+      data: response.data.data,
+      page: response.data.pagination.page,
+      limit: response.data.pagination.limit,
+      total: response.data.pagination.total
+    }
   },
 
   async getLedgerEntryById(id: string): Promise<LedgerEntry> {
@@ -84,7 +141,27 @@ export const ledgerApi = {
     if (USE_MOCKS) {
       return mockApi.getAccountTypes()
     }
-    const response = await apiClient.get<AccountTypeOption[]>('/ledger-entries/account-types')
+    const response = await apiClient.get<AccountTypeOption[]>('/v2/accounting/ledger-entries/account-types')
+    return response.data
+  },
+
+  async getAccountsSummary(query?: GetAccountsSummaryQuery): Promise<AccountsSummary> {
+    if (USE_MOCKS) {
+      return mockApi.getAccountsSummary(query)
+    }
+    const params = new URLSearchParams()
+    if (query?.entries_limit) params.append('entriesLimit', query.entries_limit.toString())
+    if (query?.start_date) params.append('startDate', query.start_date)
+    if (query?.end_date) params.append('endDate', query.end_date)
+    if (query?.account_types && query.account_types.length > 0) {
+      query.account_types.forEach(type => params.append('accountTypes', type))
+    }
+    if (query?.include_zero_balance !== undefined) {
+      params.append('includeZeroBalance', query.include_zero_balance.toString())
+    }
+    const queryString = params.toString()
+    const url = `/v2/accounting/accounts-summary${queryString ? `?${queryString}` : ''}`
+    const response = await apiClient.get<AccountsSummary>(url)
     return response.data
   }
 }

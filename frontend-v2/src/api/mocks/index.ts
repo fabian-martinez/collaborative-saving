@@ -3,8 +3,9 @@ import type { Meeting } from '../meetings.api'
 import type { Loan } from '../loans.api'
 import type { Stock } from '../stocks.api'
 import type { MandatoryContribution } from '../contributions.api'
-import type { LedgerEntry, AccountTypeOption } from '../ledger.api'
+import type { LedgerEntry, AccountTypeOption, AccountsSummary } from '../ledger.api'
 import type { PaginatedResponse } from '../types'
+import type { Operation, GetOperationsQuery } from '../operations.api'
 
 // Datos mock
 const mockMembers: Member[] = [
@@ -608,21 +609,26 @@ export const mockApi = {
     let filtered = [...mockLedgerEntries]
     
     // Aplicar filtros
-    if (query?.member_id) {
-      filtered = filtered.filter(e => e.member_id === query.member_id)
+    if (query?.memberId) {
+      filtered = filtered.filter(e => e.member_id === query.memberId)
     }
-    if (query?.account_type) {
-      filtered = filtered.filter(e => e.account_type === query.account_type)
+    if (query?.accountType) {
+      filtered = filtered.filter(e => e.account_type === query.accountType)
     }
-    if (query?.meeting_id) {
-      filtered = filtered.filter(e => e.meeting_id === query.meeting_id)
+    if (query?.startDate) {
+      const startDate = new Date(query.startDate)
+      filtered = filtered.filter(e => new Date(e.created_at) >= startDate)
     }
-    if (query?.q) {
-      const search = query.q.toLowerCase()
-      filtered = filtered.filter(e => 
-        e.description?.toLowerCase().includes(search) ||
-        e.operation_id.toLowerCase().includes(search)
-      )
+    if (query?.endDate) {
+      const endDate = new Date(query.endDate)
+      filtered = filtered.filter(e => new Date(e.created_at) <= endDate)
+    }
+    
+    // Ordenar
+    if (query?.orderBy === 'ASC') {
+      filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+    } else {
+      filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     }
     
     const end = start + limit
@@ -759,6 +765,160 @@ export const mockApi = {
       up_to_date: 85,
       overdue: 10,
       written_off: 5
+    }
+  },
+
+  // Operations
+  async getOperations(query?: GetOperationsQuery): Promise<PaginatedResponse<Operation>> {
+    await delay()
+    const page = query?.page || 1
+    const limit = query?.limit || 10
+    const start = (page - 1) * limit
+    
+    const mockOperations: Operation[] = [
+      {
+        id: 'op1',
+        member_id: '1',
+        meeting_id: '1',
+        type: 'MONTHLY_PAYMENT',
+        date: '2024-12-15T10:30:00Z',
+        description: 'Aporte mensual socios'
+      },
+      {
+        id: 'op2',
+        member_id: '2',
+        meeting_id: '1',
+        type: 'LOAN_DISBURSEMENT',
+        date: '2024-12-15T11:00:00Z',
+        description: 'Desembolso préstamo María García'
+      },
+      {
+        id: 'op3',
+        member_id: '1',
+        meeting_id: '1',
+        type: 'LOAN_PAYMENT',
+        date: '2024-12-15T11:30:00Z',
+        description: 'Pago cuota préstamo #38 - Carlos López'
+      },
+      {
+        id: 'op4',
+        member_id: null,
+        meeting_id: '1',
+        type: 'ASSET_REVALUATION',
+        date: '2024-12-15T12:00:00Z',
+        description: 'Revalorización acciones mes enero'
+      }
+    ]
+    
+    let filtered = [...mockOperations]
+    
+    if (query?.meeting_id) {
+      filtered = filtered.filter(op => op.meeting_id === query.meeting_id)
+    }
+    if (query?.member_id) {
+      filtered = filtered.filter(op => op.member_id === query.member_id)
+    }
+    if (query?.type) {
+      filtered = filtered.filter(op => op.type === query.type)
+    }
+    
+    const end = start + limit
+    const paginated = filtered.slice(start, end)
+    
+    return {
+      data: paginated,
+      page,
+      limit,
+      total: filtered.length
+    }
+  },
+
+  // Accounts Summary
+  async getAccountsSummary(query?: any): Promise<AccountsSummary> {
+    await delay()
+    return {
+      accounts: [
+        {
+          accountType: 'CASH',
+          accountName: 'Caja General',
+          totalBalance: 2500000,
+          totalDebits: 5000000,
+          totalCredits: 2500000,
+          entriesCount: 15,
+          entries: [],
+          hasMoreEntries: false
+        },
+        {
+          accountType: 'LOANS_RECEIVABLE',
+          accountName: 'Cartera de Préstamos',
+          totalBalance: 24500000,
+          totalDebits: 30000000,
+          totalCredits: 5500000,
+          entriesCount: 42,
+          entries: [],
+          hasMoreEntries: false
+        },
+        {
+          accountType: 'STOCK_CAPITAL',
+          accountName: 'Capital Social',
+          totalBalance: 16400000,
+          totalDebits: 0,
+          totalCredits: 16400000,
+          entriesCount: 28,
+          entries: [],
+          hasMoreEntries: false
+        },
+        {
+          accountType: 'ACCUMULATED_SURPLUS',
+          accountName: 'Utilidades Acumuladas',
+          totalBalance: 18850000,
+          totalDebits: 0,
+          totalCredits: 18850000,
+          entriesCount: 12,
+          entries: [],
+          hasMoreEntries: false
+        },
+        {
+          accountType: 'INTEREST_INCOME',
+          accountName: 'Ingresos por Intereses',
+          totalBalance: 4200000,
+          totalDebits: 0,
+          totalCredits: 4200000,
+          entriesCount: 35,
+          entries: [],
+          hasMoreEntries: false
+        },
+        {
+          accountType: 'OTHER_EXPENSES',
+          accountName: 'Gastos Administrativos',
+          totalBalance: 350000,
+          totalDebits: 350000,
+          totalCredits: 0,
+          entriesCount: 8,
+          entries: [],
+          hasMoreEntries: false
+        },
+        {
+          accountType: 'NOVELTY_LOSS',
+          accountName: 'Provisión Cartera Incobrable',
+          totalBalance: 200000,
+          totalDebits: 200000,
+          totalCredits: 0,
+          entriesCount: 3,
+          entries: [],
+          hasMoreEntries: false
+        }
+      ],
+      summary: {
+        totalAccounts: 7,
+        totalDebits: 5350000,
+        totalCredits: 65050000,
+        netBalance: 59700000
+      },
+      metadata: {
+        queryDate: new Date(),
+        entriesLimit: query?.entriesLimit || 10
+      }
     }
   }
 }

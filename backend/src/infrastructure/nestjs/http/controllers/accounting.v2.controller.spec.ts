@@ -7,6 +7,7 @@ import { OperationType } from '@domain/enums/operation-type.enum';
 import { CASH_ACCOUNT, AccountType } from '@domain/constants/account-types';
 import { PaginatedResponse } from '@application/dto/accounting/paginated-response.dto';
 import { LedgerEntryResponseDto } from '@application/dto/accounting/ledger-entry-response.dto';
+import { OperationResponseDto } from '@application/dto/accounting/operation-response.dto';
 
 describe('AccountingV2Controller', () => {
   let controller: AccountingV2Controller;
@@ -46,8 +47,8 @@ describe('AccountingV2Controller', () => {
   });
 
   describe('getOperations', () => {
-    it('should return paginated operations', async () => {
-      const mockResponse = {
+    it('should return paginated operations with entries in snake_case', async () => {
+      const mockResponse: PaginatedResponse<OperationResponseDto> = {
         data: [
           {
             id: 'op-1',
@@ -56,6 +57,20 @@ describe('AccountingV2Controller', () => {
             type: OperationType.MONTHLY_PAYMENT,
             date: new Date('2024-01-15'),
             description: 'Test operation',
+            entries: [
+              {
+                id: 'entry-1',
+                operationId: 'op-1',
+                accountType: CASH_ACCOUNT as AccountType,
+                amount: 100,
+                createdAt: new Date('2024-01-15'),
+                description: 'Cash entry',
+                loanId: null,
+                stockId: null,
+                mandatoryContributionId: null,
+                stockSubscriptionId: null,
+              },
+            ],
           },
         ],
         pagination: {
@@ -74,7 +89,29 @@ describe('AccountingV2Controller', () => {
         orderBy: 'DESC',
       });
 
-      expect(result).toEqual(mockResponse);
+      expect(result.data[0]).toEqual({
+        id: 'op-1',
+        member_id: 'member-1',
+        meeting_id: 'meeting-1',
+        type: OperationType.MONTHLY_PAYMENT,
+        date: new Date('2024-01-15'),
+        description: 'Test operation',
+        entries: [
+          {
+            id: 'entry-1',
+            operation_id: 'op-1',
+            account_type: CASH_ACCOUNT,
+            amount: 100,
+            created_at: new Date('2024-01-15'),
+            description: 'Cash entry',
+            loan_id: null,
+            stock_id: null,
+            mandatory_contribution_id: null,
+            stock_subscription_id: null,
+          },
+        ],
+      });
+      expect(result.pagination).toEqual(mockResponse.pagination);
       expect(getOperationsQuery.execute).toHaveBeenCalledWith({
         page: 1,
         limit: 10,
@@ -83,7 +120,7 @@ describe('AccountingV2Controller', () => {
     });
 
     it('should pass filters to query handler', async () => {
-      const mockResponse = {
+      const mockResponse: PaginatedResponse<OperationResponseDto> = {
         data: [],
         pagination: {
           page: 1,
@@ -119,7 +156,7 @@ describe('AccountingV2Controller', () => {
     });
 
     it('should handle optional query parameters', async () => {
-      const mockResponse = {
+      const mockResponse: PaginatedResponse<OperationResponseDto> = {
         data: [],
         pagination: {
           page: 1,
@@ -147,13 +184,13 @@ describe('AccountingV2Controller', () => {
   });
 
   describe('getLedgerEntries', () => {
-    it('should return paginated ledger entries', async () => {
+    it('should return paginated ledger entries in snake_case', async () => {
       const mockResponse: PaginatedResponse<LedgerEntryResponseDto> = {
         data: [
           {
             id: 'entry-1',
             operationId: 'operation-1',
-            accountType: CASH_ACCOUNT,
+            accountType: CASH_ACCOUNT as AccountType,
             amount: 1000,
             createdAt: new Date('2024-01-15'),
             description: 'Test entry',
@@ -179,7 +216,19 @@ describe('AccountingV2Controller', () => {
         orderBy: 'DESC',
       });
 
-      expect(result).toEqual(mockResponse);
+      expect(result.data[0]).toEqual({
+        id: 'entry-1',
+        operation_id: 'operation-1',
+        account_type: CASH_ACCOUNT,
+        amount: 1000,
+        created_at: new Date('2024-01-15'),
+        description: 'Test entry',
+        loan_id: null,
+        stock_id: null,
+        mandatory_contribution_id: null,
+        stock_subscription_id: null,
+      });
+      expect(result.pagination).toEqual(mockResponse.pagination);
       expect(getLedgerEntriesQuery.execute).toHaveBeenCalledWith({
         page: 1,
         limit: 10,
@@ -188,7 +237,7 @@ describe('AccountingV2Controller', () => {
     });
 
     it('should pass filters to query handler', async () => {
-      const mockResponse = {
+      const mockResponse: PaginatedResponse<LedgerEntryResponseDto> = {
         data: [],
         pagination: {
           page: 1,
@@ -222,7 +271,7 @@ describe('AccountingV2Controller', () => {
     });
 
     it('should handle optional query parameters', async () => {
-      const mockResponse = {
+      const mockResponse: PaginatedResponse<LedgerEntryResponseDto> = {
         data: [],
         pagination: {
           page: 1,

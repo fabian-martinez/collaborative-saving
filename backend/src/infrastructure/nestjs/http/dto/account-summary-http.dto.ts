@@ -2,32 +2,37 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AccountType, ALL_ACCOUNT_TYPES } from '@domain/constants/account-types';
 import { AccountLedgerEntryHttpDto } from './account-ledger-entry-http.dto';
 
+/**
+ * HTTP Response DTO for Account Summary
+ *
+ * Maps application layer DTO (camelCase) to HTTP response (snake_case).
+ */
 export class AccountSummaryHttpDto {
   @ApiProperty({ enum: ALL_ACCOUNT_TYPES })
-  accountType: AccountType;
+  account_type: AccountType;
 
   @ApiPropertyOptional()
-  accountName?: string;
+  account_name?: string;
 
   @ApiProperty({
     description: 'Total balance calculated with ALL entries (not just the limited ones)',
   })
-  totalBalance: number;
+  total_balance: number;
 
   @ApiProperty({
     description: 'Total debits (positive amounts) calculated with ALL entries',
   })
-  totalDebits: number;
+  total_debits: number;
 
   @ApiProperty({
     description: 'Total credits (negative amounts in absolute value) calculated with ALL entries',
   })
-  totalCredits: number;
+  total_credits: number;
 
   @ApiProperty({
     description: 'Total number of entries that affect this account',
   })
-  entriesCount: number;
+  entries_count: number;
 
   @ApiProperty({
     description: 'Limited list of entries for display purposes only (ordered by date DESC)',
@@ -38,6 +43,6 @@ export class AccountSummaryHttpDto {
   @ApiProperty({
     description: 'Indicates if there are more entries beyond the limited list',
   })
-  hasMoreEntries: boolean;
+  has_more_entries: boolean;
 }
 

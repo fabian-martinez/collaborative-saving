@@ -32,9 +32,11 @@ const LEDGER_ENTRY_REPOSITORY = Symbol('LedgerEntryRepository');
     // Query handlers
     {
       provide: GetOperationsQueryHandler,
-      useFactory: (operationRepo: OperationRepository) =>
-        new GetOperationsQueryHandler(operationRepo),
-      inject: [OPERATION_REPOSITORY],
+      useFactory: (
+        operationRepo: OperationRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+      ) => new GetOperationsQueryHandler(operationRepo, ledgerEntryRepo),
+      inject: [OPERATION_REPOSITORY, LEDGER_ENTRY_REPOSITORY],
     },
     {
       provide: GetLedgerEntriesQueryHandler,

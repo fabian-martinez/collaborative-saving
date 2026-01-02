@@ -595,7 +595,8 @@ export class MeetingsV2Controller {
       meeting_id: operation.meetingId,
       type: operation.type,
       date: operation.date,
-      description: operation.description,
+      description: operation.description ?? null,
+      entries: [], // Meetings operations don't include ledger entries
     };
   }
 

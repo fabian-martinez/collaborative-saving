@@ -403,4 +403,204 @@ describe('TypeOrmLedgerEntryRepository', () => {
       expect(result).toBe(0);
     });
   });
+
+  describe('findWithPagination', () => {
+    it('should return paginated ledger entries without filters', async () => {
+      const mockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+
+      typeOrmRepo.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder);
+
+      const entities: Partial<LedgerEntryEntity>[] = [
+        {
+          id: 'entry-1',
+          operationId: 'operation-1',
+          accountType: CASH_ACCOUNT,
+          amount: 1000,
+          createdAt: new Date('2024-01-15'),
+          description: null,
+          loanId: null,
+          stockId: null,
+          mandatoryContributionId: null,
+          stockSubscriptionId: null,
+        },
+        {
+          id: 'entry-2',
+          operationId: 'operation-2',
+          accountType: CASH_ACCOUNT,
+          amount: 2000,
+          createdAt: new Date('2024-01-16'),
+          description: null,
+          loanId: null,
+          stockId: null,
+          mandatoryContributionId: null,
+          stockSubscriptionId: null,
+        },
+      ];
+
+      mockQueryBuilder.getCount.mockResolvedValue(2);
+      mockQueryBuilder.getMany.mockResolvedValue(
+        entities as LedgerEntryEntity[],
+      );
+
+      const result = await repository.findWithPagination(
+        {},
+        { page: 1, limit: 10 },
+        'DESC',
+      );
+
+      expect(result.data).toHaveLength(2);
+      expect(result.total).toBe(2);
+      expect(result.data[0]).toBeInstanceOf(LedgerEntryDomain);
+      // leftJoin should NOT be called when there's no memberId filter
+      expect(mockQueryBuilder.leftJoin).not.toHaveBeenCalled();
+      expect(mockQueryBuilder.skip).toHaveBeenCalledWith(0);
+      expect(mockQueryBuilder.take).toHaveBeenCalledWith(10);
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
+        'ledger_entry.created_at',
+        'DESC',
+      );
+    });
+
+    it('should filter by memberId via join', async () => {
+      const memberId = 'member-1';
+      const mockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+
+      typeOrmRepo.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder);
+
+      mockQueryBuilder.getCount.mockResolvedValue(1);
+      mockQueryBuilder.getMany.mockResolvedValue([]);
+
+      await repository.findWithPagination(
+        { memberId },
+        { page: 1, limit: 10 },
+        'DESC',
+      );
+
+      expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith(
+        OperationEntity,
+        'operation',
+        'operation.id = ledger_entry.operation_id',
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'operation.member_id = :memberId',
+        { memberId },
+      );
+    });
+
+    it('should filter by accountType', async () => {
+      const accountType = CASH_ACCOUNT;
+      const mockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+
+      typeOrmRepo.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder);
+
+      mockQueryBuilder.getCount.mockResolvedValue(0);
+      mockQueryBuilder.getMany.mockResolvedValue([]);
+
+      await repository.findWithPagination(
+        { accountType },
+        { page: 1, limit: 10 },
+        'DESC',
+      );
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'ledger_entry.account_type = :accountType',
+        { accountType },
+      );
+    });
+
+    it('should filter by date range', async () => {
+      const startDate = new Date('2024-01-01');
+      const endDate = new Date('2024-12-31');
+      const mockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+
+      typeOrmRepo.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder);
+
+      mockQueryBuilder.getCount.mockResolvedValue(0);
+      mockQueryBuilder.getMany.mockResolvedValue([]);
+
+      await repository.findWithPagination(
+        { startDate, endDate },
+        { page: 1, limit: 10 },
+        'DESC',
+      );
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'ledger_entry.created_at >= :startDate',
+        { startDate },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'ledger_entry.created_at <= :endDate',
+        { endDate },
+      );
+    });
+
+    it('should apply pagination correctly', async () => {
+      const mockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+
+      typeOrmRepo.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder);
+
+      mockQueryBuilder.getCount.mockResolvedValue(25);
+      mockQueryBuilder.getMany.mockResolvedValue([]);
+
+      await repository.findWithPagination({}, { page: 3, limit: 5 }, 'ASC');
+
+      expect(mockQueryBuilder.getCount).toHaveBeenCalled();
+      expect(mockQueryBuilder.skip).toHaveBeenCalledWith(10); // (3-1) * 5
+      expect(mockQueryBuilder.take).toHaveBeenCalledWith(5);
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
+        'ledger_entry.created_at',
+        'ASC',
+      );
+    });
+  });
 });

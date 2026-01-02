@@ -2,6 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
+import {
+  OperationFilters,
+  PaginationOptions,
+  PaginatedResult,
+} from '@domain/ports/repositories/operation-repository.port';
 import { Operation as OperationDomain } from '@domain/entities/operation.entity';
 import { Operation as OperationEntity } from '../entities/operation.entity';
 import { OperationMapper } from '../mappers/operation.mapper';
@@ -70,6 +75,55 @@ export class TypeOrmOperationRepository implements OperationRepository {
 
     const entities = await qb.getMany();
     return entities.map((e) => OperationMapper.toDomain(e));
+  }
+
+  async findWithPagination(
+    filters: OperationFilters,
+    pagination: PaginationOptions,
+    orderBy: 'ASC' | 'DESC',
+  ): Promise<PaginatedResult<OperationDomain>> {
+    const qb = this.repo.createQueryBuilder('operation');
+
+    if (filters.memberId) {
+      qb.andWhere('operation.member_id = :memberId', {
+        memberId: filters.memberId,
+      });
+    }
+
+    if (filters.meetingId) {
+      qb.andWhere('operation.meeting_id = :meetingId', {
+        meetingId: filters.meetingId,
+      });
+    }
+
+    if (filters.startDate) {
+      qb.andWhere('operation.date >= :startDate', {
+        startDate: filters.startDate,
+      });
+    }
+
+    if (filters.endDate) {
+      qb.andWhere('operation.date <= :endDate', {
+        endDate: filters.endDate,
+      });
+    }
+
+    if (filters.type) {
+      qb.andWhere('operation.type = :type', { type: filters.type });
+    }
+
+    // Get total count before pagination
+    const total = await qb.getCount();
+
+    // Apply pagination and ordering
+    const skip = (pagination.page - 1) * pagination.limit;
+    qb.skip(skip).take(pagination.limit);
+    qb.orderBy('operation.date', orderBy);
+
+    const entities = await qb.getMany();
+    const data = entities.map((e) => OperationMapper.toDomain(e));
+
+    return { data, total };
   }
 
   async save(operation: OperationDomain): Promise<OperationDomain> {

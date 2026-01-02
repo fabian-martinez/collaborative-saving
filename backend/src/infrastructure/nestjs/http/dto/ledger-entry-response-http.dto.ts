@@ -1,13 +1,12 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { AccountType, ALL_ACCOUNT_TYPES } from '@domain/constants/account-types';
-import { OperationType } from '@domain/enums/operation-type.enum';
 
 /**
- * HTTP Response DTO for Account Ledger Entry
+ * HTTP Response DTO for Ledger Entry
  *
  * Maps application layer DTO (camelCase) to HTTP response (snake_case).
  */
-export class AccountLedgerEntryHttpDto {
+export class LedgerEntryResponseHttpDto {
   @ApiProperty()
   id: string;
 
@@ -37,11 +36,5 @@ export class AccountLedgerEntryHttpDto {
 
   @ApiProperty({ nullable: true })
   stock_subscription_id: string | null;
-
-  @ApiPropertyOptional({ enum: OperationType })
-  operation_type?: OperationType;
-
-  @ApiPropertyOptional()
-  operation_date?: Date;
 }
 

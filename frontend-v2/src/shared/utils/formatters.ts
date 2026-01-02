@@ -56,3 +56,24 @@ export function formatAccountType(accountType: string): string {
   return types[accountType] || accountType
 }
 
+export function formatCurrencyCompact(amount: number): string {
+  const absAmount = Math.abs(amount)
+  
+  if (absAmount >= 1000000000000) {
+    // Trillones
+    return `$${(absAmount / 1000000000000).toFixed(2)}T`
+  } else if (absAmount >= 1000000000) {
+    // Billones
+    return `$${(absAmount / 1000000000).toFixed(2)}B`
+  } else if (absAmount >= 1000000) {
+    // Millones
+    return `$${(absAmount / 1000000).toFixed(2)}M`
+  } else if (absAmount >= 1000) {
+    // Miles
+    return `$${(absAmount / 1000).toFixed(2)}K`
+  } else {
+    // Menos de mil
+    return formatCurrency(amount)
+  }
+}
+

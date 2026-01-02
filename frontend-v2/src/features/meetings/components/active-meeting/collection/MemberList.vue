@@ -37,6 +37,12 @@
           <div v-if="isMemberPaid(member.id)" class="shrink-0">
             <span class="badge badge-success badge-sm">Pagado</span>
           </div>
+          <div v-else-if="hasPendingPurchase && hasPendingPurchase(member.id)" class="shrink-0">
+            <span class="badge badge-warning badge-sm">Pendiente</span>
+          </div>
+          <div v-else-if="hasCompletedPurchase && hasCompletedPurchase(member.id)" class="shrink-0">
+            <span class="badge badge-success badge-sm">Con compras</span>
+          </div>
         </div>
       </div>
     </div>
@@ -53,6 +59,8 @@ const props = defineProps<{
   isMemberPaid: (memberId: string) => boolean
   getInitials: (name: string) => string
   getMemberColor: (memberId: string) => string
+  hasPendingPurchase?: (memberId: string) => boolean
+  hasCompletedPurchase?: (memberId: string) => boolean
 }>()
 
 // Emits
