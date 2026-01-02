@@ -1,47 +1,35 @@
 <template>
   <div class="space-y-4">
     <!-- Filtros -->
-    <div class="space-y-4">
-      <div class="flex flex-col md:flex-row gap-4">
-        <div class="flex-1">
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Buscar operación..."
-            class="input input-bordered w-full"
-          />
-        </div>
-        <select v-model="filterType" class="select select-bordered">
-          <option value="">Todas</option>
-          <option value="MONTHLY_PAYMENT">Aportes Mensuales</option>
-          <option value="LOAN_DISBURSEMENT">Desembolsos</option>
-          <option value="LOAN_PAYMENT">Pagos de Préstamos</option>
-          <option value="STOCK_PURCHASE">Compras de Acciones</option>
-          <option value="ASSET_REVALUATION">Revalorizaciones</option>
-        </select>
-      </div>
-      <div class="flex flex-col md:flex-row gap-4">
-        <select v-model="filterMeetingId" class="select select-bordered flex-1">
-          <option value="">Todas las reuniones</option>
-          <option
-            v-for="meeting in meetingsList"
-            :key="meeting.id"
-            :value="meeting.id"
-          >
-            Reunión #{{ getMeetingNumber(meeting.id) }} - {{ formatDate(meeting.date) }}
-          </option>
-        </select>
-        <select v-model="filterMemberId" class="select select-bordered flex-1">
-          <option value="">Todos los miembros</option>
-          <option
-            v-for="member in membersList"
-            :key="member.id"
-            :value="member.id"
-          >
-            {{ member.name }}
-          </option>
-        </select>
-      </div>
+    <div class="flex flex-col md:flex-row gap-4">
+      <select v-model="filterType" class="select select-bordered">
+        <option value="">Todas</option>
+        <option value="MONTHLY_PAYMENT">Aportes Mensuales</option>
+        <option value="LOAN_DISBURSEMENT">Desembolsos</option>
+        <option value="LOAN_PAYMENT">Pagos de Préstamos</option>
+        <option value="STOCK_PURCHASE">Compras de Acciones</option>
+        <option value="ASSET_REVALUATION">Revalorizaciones</option>
+      </select>
+      <select v-model="filterMeetingId" class="select select-bordered flex-1">
+        <option value="">Todas las reuniones</option>
+        <option
+          v-for="meeting in meetingsList"
+          :key="meeting.id"
+          :value="meeting.id"
+        >
+          Reunión #{{ getMeetingNumber(meeting.id) }} - {{ formatDate(meeting.date) }}
+        </option>
+      </select>
+      <select v-model="filterMemberId" class="select select-bordered flex-1">
+        <option value="">Todos los miembros</option>
+        <option
+          v-for="member in membersList"
+          :key="member.id"
+          :value="member.id"
+        >
+          {{ member.name }}
+        </option>
+      </select>
     </div>
 
     <LoadingSpinner :loading="loading" />
@@ -164,7 +152,6 @@ import { operationsApi, type Operation } from '@/api/operations.api'
 import { meetingsApi, type Meeting } from '@/api/meetings.api'
 import { membersApi, type Member } from '@/api/members.api'
 import { formatCurrency, formatDate } from '@/shared/utils/formatters'
-import { useSearchableList } from '@/shared/composables/useSearchableList'
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import ErrorMessage from '@/shared/components/ErrorMessage.vue'
 import Pagination from '@/shared/components/Pagination.vue'
@@ -180,7 +167,6 @@ const operations = ref<{ data: Operation[]; page: number; limit: number; total: 
 })
 const page = ref(1)
 const limit = ref(10)
-const searchQuery = ref('')
 const filterType = ref('')
 const filterMeetingId = ref('')
 const filterMemberId = ref('')
@@ -190,22 +176,6 @@ const membersList = ref<Member[]>([])
 const expandedOperations = ref<Set<string>>(new Set())
 
 const totalPages = computed(() => Math.ceil(operations.value.total / limit.value))
-
-// Filtrar operaciones por búsqueda
-const operationsDataRef = computed(() => operations.value.data)
-const { filteredItems: filteredOperations } = useSearchableList<Operation>(operationsDataRef, [
-  'description',
-  'type'
-])
-
-// Filtrar por tipo
-const operationsFiltered = computed(() => {
-  let filtered = filteredOperations.value
-  if (filterType.value) {
-    filtered = filtered.filter(op => op.type === filterType.value)
-  }
-  return filtered
-})
 
 // Agrupar operaciones por reunión
 const groupedOperations = computed(() => {

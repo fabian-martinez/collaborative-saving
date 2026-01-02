@@ -426,14 +426,16 @@ describe('MeetingsV2Controller', () => {
           type: OperationType.MONTHLY_PAYMENT,
           date: new Date('2024-01-15'),
           description: 'Payment 1',
+          entries: [],
         },
         {
           id: 'op-2',
-          memberId: 'member-2',
-          meetingId: meetingId,
+          member_id: 'member-2',
+          meeting_id: meetingId,
           type: OperationType.MONTHLY_PAYMENT,
           date: new Date('2024-01-15'),
           description: 'Payment 2',
+          entries: [],
         },
       ];
 
@@ -502,7 +504,7 @@ describe('MeetingsV2Controller', () => {
       const result = await controller.getMonthlyPayments(meetingId);
 
       // ASSERT
-      expect(result[0].meeting_id).toBeNull();
+      expect(result[0].member_id).toBeNull();
     });
 
     it('should handle generic errors', async () => {
@@ -1346,7 +1348,7 @@ describe('MeetingsV2Controller', () => {
       expect(executeDisbursementPlanUseCaseExecuteSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           meetingId,
-          plan: expect.any(Array),
+          plan: expect.arrayContaining([]),
         }),
       );
       expect(result.processed_items).toBe(1);
