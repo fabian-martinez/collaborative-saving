@@ -24,6 +24,7 @@ import { MeetingNotFoundException } from '@application/exceptions/meeting-not-fo
 import { BusinessRuleError } from '@domain/errors/business-rule.error';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { DisbursementTypeHttp } from '../dto/meetings/disbursement-plan-item-http.dto';
+import { DisbursementType } from '@domain/enums/disbursement-type.enum';
 
 describe('MeetingsV2Controller', () => {
   let controller: MeetingsV2Controller;
@@ -1348,7 +1349,13 @@ describe('MeetingsV2Controller', () => {
       expect(executeDisbursementPlanUseCaseExecuteSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           meetingId,
-          plan: expect.arrayContaining([]),
+          plan: expect.arrayContaining([
+            expect.objectContaining({
+              memberId: 'member-1',
+              type: DisbursementType.LOAN,
+              amount: 1000,
+            }),
+          ]),
         }),
       );
       expect(result.processed_items).toBe(1);
