@@ -186,7 +186,7 @@ const groupedOperations = computed(() => {
     operations: Operation[]
   }>()
 
-  operationsFiltered.value.forEach(op => {
+  operations.value.data.forEach(op => {
     const meeting = meetings.value.get(op.meeting_id)
     if (!meeting) return
 
