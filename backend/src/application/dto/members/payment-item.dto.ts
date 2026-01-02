@@ -18,4 +18,5 @@ export interface PaymentItemDto {
   description?: string;
   referenceId?: string;
   noveltyComment?: string;
+  affectedPaymentType?: PaymentType;
 }

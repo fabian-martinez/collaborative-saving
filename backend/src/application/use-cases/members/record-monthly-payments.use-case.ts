@@ -100,6 +100,25 @@ export class RecordMonthlyPaymentsUseCase {
       }
     }
 
+    // 5.1. Validate novelty payments consistency
+    for (const payment of dto.payments) {
+      if (payment.type === PaymentType.NOVELTY) {
+        if (payment.referenceId && !payment.affectedPaymentType) {
+          throw new InvalidPaymentException(
+            'Novelty payment with referenceId must include affectedPaymentType',
+          );
+        }
+        if (
+          payment.affectedPaymentType &&
+          payment.affectedPaymentType === PaymentType.NOVELTY
+        ) {
+          throw new InvalidPaymentException(
+            'affectedPaymentType cannot be NOVELTY',
+          );
+        }
+      }
+    }
+
     // 6. Separate loan payments from other payments
     const loanPayments: PaymentItemDto[] = [];
     const otherPayments: PaymentItemDto[] = [];
@@ -297,9 +316,58 @@ export class RecordMonthlyPaymentsUseCase {
       }
 
       case PaymentType.NOVELTY: {
-        const noveltyDescription =
+        // Build description with affected payment type information
+        let baseDescription =
           payment.description ||
           `Novedad/descuento: ${payment.amount.toFixed(2)}`;
+
+        // Enhance description with affected payment type if available
+        if (payment.affectedPaymentType) {
+          const affectedTypeLabels: Partial<Record<PaymentType, string>> = {
+            [PaymentType.MANDATORY_CONTRIBUTION]: 'Aporte obligatorio',
+            [PaymentType.STOCK_FEE]: 'Cuota de acciones',
+            [PaymentType.LOAN_PAYMENT]: 'Pago de préstamo',
+            [PaymentType.FEE]: 'Multa/otro pago',
+            [PaymentType.INSURANCE]: 'Seguro de deuda',
+          };
+
+          const affectedLabel = affectedTypeLabels[payment.affectedPaymentType];
+          if (affectedLabel && !payment.description) {
+            baseDescription = `Novedad en ${affectedLabel}: ${payment.amount.toFixed(
+              2,
+            )}`;
+          }
+
+          // Add structured prefix [AFFECTED:tipo] for parseable metadata
+          // This allows querying by affected type without modifying the database schema
+          const affectedTypePrefix = `[AFFECTED:${payment.affectedPaymentType}]`;
+          baseDescription = `${affectedTypePrefix}${baseDescription}`;
+        }
+
+        const noveltyDescription = baseDescription;
+
+        // Determine which reference to use based on affectedPaymentType
+        let mandatoryContributionId: string | null = null;
+        let stockId: string | null = null;
+        let loanId: string | null = null;
+
+        if (payment.affectedPaymentType && payment.referenceId) {
+          switch (payment.affectedPaymentType) {
+            case PaymentType.MANDATORY_CONTRIBUTION:
+              mandatoryContributionId = payment.referenceId;
+              break;
+            case PaymentType.STOCK_FEE:
+              stockId = payment.referenceId;
+              break;
+            case PaymentType.LOAN_PAYMENT:
+              loanId = payment.referenceId;
+              break;
+            // FEE and INSURANCE don't have references, but we still track the affectedPaymentType
+            // in the description for traceability
+            default:
+              break;
+          }
+        }
 
         // Cash entry (credit - money goes out or negative entry)
         entries.push({
@@ -307,11 +375,16 @@ export class RecordMonthlyPaymentsUseCase {
           amount: -payment.amount,
           description: noveltyDescription,
         });
-        // Novelty loss entry (debit - loss)
+        // Novelty loss entry (debit - loss) with reference to affected entity
+        // For FEE and INSURANCE, no reference is assigned but affectedPaymentType
+        // is documented in the description
         entries.push({
           accountType: NOVELTY_LOSS_ACCOUNT,
           amount: payment.amount,
           description: noveltyDescription,
+          mandatoryContributionId,
+          stockId,
+          loanId,
         });
         break;
       }

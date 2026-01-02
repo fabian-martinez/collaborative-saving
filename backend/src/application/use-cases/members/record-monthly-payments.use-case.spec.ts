@@ -357,5 +357,270 @@ describe('RecordMonthlyPaymentsUseCase', () => {
       });
       expect(recordOperationExecuteSpy).not.toHaveBeenCalled();
     });
+
+    describe('novelty payments', () => {
+      it('should record novelty payment successfully without affectedPaymentType', async () => {
+        // ARRANGE
+        const noveltyDto: RecordMonthlyPaymentsDto = {
+          memberId: 'member-id',
+          payments: [
+            {
+              type: PaymentType.NOVELTY,
+              amount: 50,
+              description: 'Novedad general',
+            },
+          ],
+        };
+
+        findByIdSpy.mockResolvedValue(mockMember);
+        findActiveSpy.mockResolvedValue(mockMeeting);
+        recordOperationExecuteSpy.mockResolvedValue({
+          operationId: 'operation-id',
+          ledgerEntryIds: ['entry-1', 'entry-2'],
+        });
+
+        // ACT
+        const result = await useCase.execute(noveltyDto);
+
+        // ASSERT
+        expect(recordOperationExecuteSpy).toHaveBeenCalledTimes(1);
+        const callArgs = recordOperationExecuteSpy.mock.calls[0][0];
+        expect(callArgs.entries).toHaveLength(2);
+        expect(callArgs.entries[0].accountType).toBe('CASH');
+        expect(callArgs.entries[0].amount).toBe(-50);
+        expect(callArgs.entries[1].accountType).toBe('NOVELTY_LOSS');
+        expect(callArgs.entries[1].amount).toBe(50);
+        expect(result.totalAmount).toBe(50);
+      });
+
+      it('should record novelty payment with affectedPaymentType and referenceId for mandatory contribution', async () => {
+        // ARRANGE
+        const contributionId = 'contribution-id';
+        const noveltyDto: RecordMonthlyPaymentsDto = {
+          memberId: 'member-id',
+          payments: [
+            {
+              type: PaymentType.NOVELTY,
+              amount: 100,
+              affectedPaymentType: PaymentType.MANDATORY_CONTRIBUTION,
+              referenceId: contributionId,
+            },
+          ],
+        };
+
+        findByIdSpy.mockResolvedValue(mockMember);
+        findActiveSpy.mockResolvedValue(mockMeeting);
+        recordOperationExecuteSpy.mockResolvedValue({
+          operationId: 'operation-id',
+          ledgerEntryIds: ['entry-1', 'entry-2'],
+        });
+
+        // ACT
+        await useCase.execute(noveltyDto);
+
+        // ASSERT
+        const callArgs = recordOperationExecuteSpy.mock.calls[0][0];
+        const noveltyEntry = callArgs.entries.find(
+          (e: any) => e.accountType === 'NOVELTY_LOSS',
+        );
+        expect(noveltyEntry).toBeDefined();
+        expect(noveltyEntry.mandatoryContributionId).toBe(contributionId);
+        expect(noveltyEntry.description).toContain('[AFFECTED:mandatory_contribution]');
+        expect(noveltyEntry.description).toContain('Aporte obligatorio');
+      });
+
+      it('should record novelty payment with affectedPaymentType and referenceId for stock fee', async () => {
+        // ARRANGE
+        const stockId = 'stock-id';
+        const noveltyDto: RecordMonthlyPaymentsDto = {
+          memberId: 'member-id',
+          payments: [
+            {
+              type: PaymentType.NOVELTY,
+              amount: 75,
+              affectedPaymentType: PaymentType.STOCK_FEE,
+              referenceId: stockId,
+            },
+          ],
+        };
+
+        findByIdSpy.mockResolvedValue(mockMember);
+        findActiveSpy.mockResolvedValue(mockMeeting);
+        recordOperationExecuteSpy.mockResolvedValue({
+          operationId: 'operation-id',
+          ledgerEntryIds: ['entry-1', 'entry-2'],
+        });
+
+        // ACT
+        await useCase.execute(noveltyDto);
+
+        // ASSERT
+        const callArgs = recordOperationExecuteSpy.mock.calls[0][0];
+        const noveltyEntry = callArgs.entries.find(
+          (e: any) => e.accountType === 'NOVELTY_LOSS',
+        );
+        expect(noveltyEntry).toBeDefined();
+        expect(noveltyEntry.stockId).toBe(stockId);
+        expect(noveltyEntry.description).toContain('[AFFECTED:stock_fee]');
+        expect(noveltyEntry.description).toContain('Cuota de acciones');
+      });
+
+      it('should record novelty payment with affectedPaymentType for FEE (no reference)', async () => {
+        // ARRANGE
+        const noveltyDto: RecordMonthlyPaymentsDto = {
+          memberId: 'member-id',
+          payments: [
+            {
+              type: PaymentType.NOVELTY,
+              amount: 30,
+              affectedPaymentType: PaymentType.FEE,
+            },
+          ],
+        };
+
+        findByIdSpy.mockResolvedValue(mockMember);
+        findActiveSpy.mockResolvedValue(mockMeeting);
+        recordOperationExecuteSpy.mockResolvedValue({
+          operationId: 'operation-id',
+          ledgerEntryIds: ['entry-1', 'entry-2'],
+        });
+
+        // ACT
+        await useCase.execute(noveltyDto);
+
+        // ASSERT
+        const callArgs = recordOperationExecuteSpy.mock.calls[0][0];
+        const noveltyEntry = callArgs.entries.find(
+          (e: any) => e.accountType === 'NOVELTY_LOSS',
+        );
+        expect(noveltyEntry).toBeDefined();
+        expect(noveltyEntry.description).toContain('[AFFECTED:fee]');
+        expect(noveltyEntry.description).toContain('Multa/otro pago');
+        // No reference should be assigned for FEE
+        expect(noveltyEntry.mandatoryContributionId).toBeNull();
+        expect(noveltyEntry.stockId).toBeNull();
+        expect(noveltyEntry.loanId).toBeNull();
+      });
+
+      it('should record novelty payment with affectedPaymentType for INSURANCE (no reference)', async () => {
+        // ARRANGE
+        const noveltyDto: RecordMonthlyPaymentsDto = {
+          memberId: 'member-id',
+          payments: [
+            {
+              type: PaymentType.NOVELTY,
+              amount: 25,
+              affectedPaymentType: PaymentType.INSURANCE,
+            },
+          ],
+        };
+
+        findByIdSpy.mockResolvedValue(mockMember);
+        findActiveSpy.mockResolvedValue(mockMeeting);
+        recordOperationExecuteSpy.mockResolvedValue({
+          operationId: 'operation-id',
+          ledgerEntryIds: ['entry-1', 'entry-2'],
+        });
+
+        // ACT
+        await useCase.execute(noveltyDto);
+
+        // ASSERT
+        const callArgs = recordOperationExecuteSpy.mock.calls[0][0];
+        const noveltyEntry = callArgs.entries.find(
+          (e: any) => e.accountType === 'NOVELTY_LOSS',
+        );
+        expect(noveltyEntry).toBeDefined();
+        expect(noveltyEntry.description).toContain('[AFFECTED:insurance]');
+        expect(noveltyEntry.description).toContain('Seguro de deuda');
+      });
+
+      it('should throw InvalidPaymentException when novelty has referenceId but no affectedPaymentType', async () => {
+        // ARRANGE
+        const invalidDto: RecordMonthlyPaymentsDto = {
+          memberId: 'member-id',
+          payments: [
+            {
+              type: PaymentType.NOVELTY,
+              amount: 50,
+              referenceId: 'some-id',
+              // Missing affectedPaymentType
+            },
+          ],
+        };
+
+        findByIdSpy.mockResolvedValue(mockMember);
+        findActiveSpy.mockResolvedValue(mockMeeting);
+
+        // ACT & ASSERT
+        await expect(useCase.execute(invalidDto)).rejects.toThrow(
+          InvalidPaymentException,
+        );
+        await expect(useCase.execute(invalidDto)).rejects.toThrow(
+          'Novelty payment with referenceId must include affectedPaymentType',
+        );
+        expect(recordOperationExecuteSpy).not.toHaveBeenCalled();
+      });
+
+      it('should throw InvalidPaymentException when affectedPaymentType is NOVELTY', async () => {
+        // ARRANGE
+        const invalidDto: RecordMonthlyPaymentsDto = {
+          memberId: 'member-id',
+          payments: [
+            {
+              type: PaymentType.NOVELTY,
+              amount: 50,
+              affectedPaymentType: PaymentType.NOVELTY, // Invalid
+            },
+          ],
+        };
+
+        findByIdSpy.mockResolvedValue(mockMember);
+        findActiveSpy.mockResolvedValue(mockMeeting);
+
+        // ACT & ASSERT
+        await expect(useCase.execute(invalidDto)).rejects.toThrow(
+          InvalidPaymentException,
+        );
+        await expect(useCase.execute(invalidDto)).rejects.toThrow(
+          'affectedPaymentType cannot be NOVELTY',
+        );
+        expect(recordOperationExecuteSpy).not.toHaveBeenCalled();
+      });
+
+      it('should use custom description when provided with affectedPaymentType', async () => {
+        // ARRANGE
+        const noveltyDto: RecordMonthlyPaymentsDto = {
+          memberId: 'member-id',
+          payments: [
+            {
+              type: PaymentType.NOVELTY,
+              amount: 50,
+              affectedPaymentType: PaymentType.FEE,
+              description: 'Novedad personalizada',
+            },
+          ],
+        };
+
+        findByIdSpy.mockResolvedValue(mockMember);
+        findActiveSpy.mockResolvedValue(mockMeeting);
+        recordOperationExecuteSpy.mockResolvedValue({
+          operationId: 'operation-id',
+          ledgerEntryIds: ['entry-1', 'entry-2'],
+        });
+
+        // ACT
+        await useCase.execute(noveltyDto);
+
+        // ASSERT
+        const callArgs = recordOperationExecuteSpy.mock.calls[0][0];
+        const noveltyEntry = callArgs.entries.find(
+          (e: any) => e.accountType === 'NOVELTY_LOSS',
+        );
+        expect(noveltyEntry.description).toBe(
+          '[AFFECTED:fee]Novedad personalizada',
+        );
+      });
+    });
   });
 });

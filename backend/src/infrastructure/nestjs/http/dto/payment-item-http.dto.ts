@@ -51,4 +51,14 @@ export class PaymentItemHttpDto {
   @IsOptional()
   @IsUUID()
   referenceId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'The type of payment that is affected by this novelty (only for novelty payments). Required when type is NOVELTY and referenceId is provided.',
+    enum: PaymentType,
+    example: PaymentType.MANDATORY_CONTRIBUTION,
+  })
+  @IsOptional()
+  @IsEnum(PaymentType)
+  affectedPaymentType?: PaymentType;
 }
