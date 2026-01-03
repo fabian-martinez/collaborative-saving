@@ -658,32 +658,22 @@ export class MembersV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: RecordMonthlyPaymentsHttpDto,
   ): Promise<RecordMonthlyPaymentsResponseHttpDto> {
-    try {
-      // Map HTTP DTO (snake_case) to application DTO (camelCase)
-      const payments = dto.payments.map((payment) => ({
-        type: payment.type,
-        amount: payment.amount,
-        description: payment.description,
-        referenceId: payment.reference_id,
-        noveltyComment: payment.novelty_comment,
-        affectedPaymentType: payment.affected_payment_type,
-      }));
+    // Map HTTP DTO (snake_case) to application DTO (camelCase)
+    const payments = dto.payments.map((payment) => ({
+      type: payment.type,
+      amount: payment.amount,
+      description: payment.description,
+      referenceId: payment.reference_id,
+      noveltyComment: payment.novelty_comment,
+      affectedPaymentType: payment.affected_payment_type,
+    }));
 
-      const result = await this.recordMonthlyPaymentsUseCase.execute({
-        memberId: id,
-        payments,
-        meetingId: dto.meetingId,
-      });
-      return this.mapRecordMonthlyPaymentsToHttp(result);
-    } catch (error: unknown) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const result = await this.recordMonthlyPaymentsUseCase.execute({
+      memberId: id,
+      payments,
+      meetingId: dto.meetingId,
+    });
+    return this.mapRecordMonthlyPaymentsToHttp(result);
   }
 
   @Post(':id/purchase')
