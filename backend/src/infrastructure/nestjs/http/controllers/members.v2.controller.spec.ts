@@ -633,37 +633,32 @@ describe('MembersV2Controller', () => {
       });
     });
 
-    it('should throw HttpException when member not found', async () => {
+    it('should throw MemberNotFoundException when member not found', async () => {
       recordMonthlyPaymentsUseCaseExecuteSpy.mockRejectedValue(
         new MemberNotFoundException(memberId),
       );
 
       await expect(
         controller.recordMonthlyPayments(memberId, validDto),
-      ).rejects.toThrow(HttpException);
+      ).rejects.toThrow(MemberNotFoundException);
     });
 
-    it('should throw HttpException when meeting not found', async () => {
+    it('should throw MeetingNotFoundException when meeting not found', async () => {
       recordMonthlyPaymentsUseCaseExecuteSpy.mockRejectedValue(
         new MeetingNotFoundException('meeting-id'),
       );
 
       await expect(
         controller.recordMonthlyPayments(memberId, validDto),
-      ).rejects.toThrow(HttpException);
+      ).rejects.toThrow(MeetingNotFoundException);
     });
 
-    it('should throw HttpException with INTERNAL_SERVER_ERROR for unknown errors', async () => {
+    it('should propagate unknown errors (handled by GlobalExceptionFilter)', async () => {
       recordMonthlyPaymentsUseCaseExecuteSpy.mockRejectedValue('String error');
 
       await expect(
         controller.recordMonthlyPayments(memberId, validDto),
-      ).rejects.toThrow(HttpException);
-
-      const error = (await controller
-        .recordMonthlyPayments(memberId, validDto)
-        .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+      ).rejects.toBe('String error');
     });
   });
 
