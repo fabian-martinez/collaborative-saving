@@ -332,7 +332,7 @@ export class MeetingsV2Controller {
     @Query() query: IncludeSummaryQueryDto,
   ): Promise<OpenMeetingResponseHttpDto> {
     try {
-      const includeSummary = query.includeSummary === true;
+      const includeSummary = query.include_summary === true;
       const meeting = await this.getMeetingQuery.execute(id, includeSummary);
       return this.mapMeetingToHttp(meeting);
     } catch (error: unknown) {

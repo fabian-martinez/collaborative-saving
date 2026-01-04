@@ -21,31 +21,31 @@ export class PaymentScheduleItemHttpDto {
     description: 'Loan ID',
     example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
   })
-  loanId?: string;
+  loan_id?: string;
 
   @ApiPropertyOptional({
     description: 'Loan type',
     example: 'personal',
   })
-  loanType?: string;
+  loan_type?: string;
 
   @ApiProperty({
     description: 'Total payment amount',
     example: 150000,
   })
-  totalAmount: number;
+  total_amount: number;
 
   @ApiProperty({
     description: 'Interest amount',
     example: 10000,
   })
-  interestAmount: number;
+  interest_amount: number;
 
   @ApiProperty({
     description: 'Principal amount',
     example: 140000,
   })
-  principalAmount: number;
+  principal_amount: number;
 
   @ApiProperty({
     description: 'Payment status',
@@ -58,17 +58,17 @@ export class PaymentScheduleItemHttpDto {
     description: 'Operation ID (only for historical payments)',
     example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
   })
-  operationId?: string;
+  operation_id?: string;
 
   @ApiPropertyOptional({
     description: 'Remaining balance (only for projected payments)',
     example: 850000,
   })
-  remainingBalance?: number;
+  remaining_balance?: number;
 
   @ApiPropertyOptional({
     description: 'Payment number in sequence',
     example: 3,
   })
-  paymentNumber?: number;
+  payment_number?: number;
 }

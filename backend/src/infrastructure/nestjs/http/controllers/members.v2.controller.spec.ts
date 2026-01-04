@@ -609,7 +609,7 @@ describe('MembersV2Controller', () => {
     it('should record monthly payments with meetingId', async () => {
       const dtoWithMeeting = {
         ...validDto,
-        meetingId: '750e8400-e29b-41d4-a716-446655440000',
+        meeting_id: '750e8400-e29b-41d4-a716-446655440000',
       };
       recordMonthlyPaymentsUseCaseExecuteSpy.mockResolvedValue(mockResponse);
 
@@ -621,7 +621,7 @@ describe('MembersV2Controller', () => {
       expect(recordMonthlyPaymentsUseCaseExecuteSpy).toHaveBeenCalledWith({
         memberId,
         payments: validDto.payments,
-        meetingId: dtoWithMeeting.meetingId,
+        meetingId: dtoWithMeeting.meeting_id,
       });
       // Controller returns snake_case HTTP DTO
       expect(result).toMatchObject({
@@ -1112,7 +1112,7 @@ describe('MembersV2Controller', () => {
       getMemberPurchasesQueryExecuteSpy.mockResolvedValue([mockPurchases[0]]);
 
       const result = await controller.getPurchases(memberId, {
-        meetingId,
+        meeting_id: meetingId,
       });
 
       expect(getMemberPurchasesQueryExecuteSpy).toHaveBeenCalledWith(memberId, {
@@ -1202,7 +1202,7 @@ describe('MembersV2Controller', () => {
       ]);
 
       const result = await controller.getStockExchanges(memberId, {
-        meetingId,
+        meeting_id: meetingId,
       });
 
       expect(getMemberStockExchangesQueryExecuteSpy).toHaveBeenCalledWith(
@@ -1275,7 +1275,7 @@ describe('MembersV2Controller', () => {
       ]);
 
       const result = await controller.getStockTransfers(memberId, {
-        meetingId,
+        meeting_id: meetingId,
       });
 
       expect(getMemberStockTransfersQueryExecuteSpy).toHaveBeenCalledWith(
@@ -1350,7 +1350,7 @@ describe('MembersV2Controller', () => {
       ]);
 
       const result = await controller.getStockLoanPayments(memberId, {
-        meetingId,
+        meeting_id: meetingId,
       });
 
       expect(getMemberStockLoanPaymentsQueryExecuteSpy).toHaveBeenCalledWith(

@@ -115,7 +115,7 @@ export interface RecordMonthlyPaymentsRequest {
     description?: string
     reference_id?: string
   }>
-  meetingId?: string
+  meeting_id?: string
 }
 
 export interface RecordMonthlyPaymentsResponse {
@@ -273,7 +273,7 @@ export const membersApi = {
       return mockApi.getMemberPayments(memberId)
     }
     const params = new URLSearchParams()
-    if (query?.meeting_id) params.append('meetingId', query.meeting_id)
+    if (query?.meeting_id) params.append('meeting_id', query.meeting_id)
     if (query?.type) params.append('type', query.type)
     const queryString = params.toString()
     const url = `/v2/members/${memberId}/payments${queryString ? `?${queryString}` : ''}`
@@ -320,7 +320,7 @@ export const membersApi = {
       return mockApi.getMemberExchanges(memberId)
     }
     const params = new URLSearchParams()
-    if (query?.meeting_id) params.append('meetingId', query.meeting_id)
+    if (query?.meeting_id) params.append('meeting_id', query.meeting_id)
     if (query?.type) params.append('type', query.type)
     const queryString = params.toString()
     const url = `/v2/members/${memberId}/exchanges${queryString ? `?${queryString}` : ''}`
@@ -336,7 +336,7 @@ export const membersApi = {
       return mockApi.getMemberTransfers(memberId)
     }
     const params = new URLSearchParams()
-    if (query?.meeting_id) params.append('meetingId', query.meeting_id)
+    if (query?.meeting_id) params.append('meeting_id', query.meeting_id)
     if (query?.type) params.append('type', query.type)
     const queryString = params.toString()
     const url = `/v2/members/${memberId}/transfers${queryString ? `?${queryString}` : ''}`
@@ -352,7 +352,7 @@ export const membersApi = {
       return mockApi.getMemberStockLoanPayments(memberId)
     }
     const params = new URLSearchParams()
-    if (query?.meeting_id) params.append('meetingId', query.meeting_id)
+    if (query?.meeting_id) params.append('meeting_id', query.meeting_id)
     if (query?.type) params.append('type', query.type)
     const queryString = params.toString()
     const url = `/v2/members/${memberId}/stock-loan-payments${queryString ? `?${queryString}` : ''}`

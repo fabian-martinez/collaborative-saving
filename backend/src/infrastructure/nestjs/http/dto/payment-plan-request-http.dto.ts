@@ -40,5 +40,5 @@ export class PaymentPlanRequestHttpDto {
     example: 'french',
   })
   @IsEnum(['french', 'german'])
-  amortizationType: 'french' | 'german';
+  amortization_type: 'french' | 'german';
 }

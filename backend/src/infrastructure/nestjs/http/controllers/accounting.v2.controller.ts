@@ -51,14 +51,14 @@ export class AccountingV2Controller {
     @Query() query: GetOperationsQueryHttpDto,
   ): Promise<PaginatedResponseHttpDto<OperationResponseHttpDto>> {
     const dto: GetOperationsQueryDto = {
-      memberId: query.memberId,
-      meetingId: query.meetingId,
-      startDate: query.startDate,
-      endDate: query.endDate,
+      memberId: query.member_id,
+      meetingId: query.meeting_id,
+      startDate: query.start_date,
+      endDate: query.end_date,
       type: query.type,
       page: query.page,
       limit: query.limit,
-      orderBy: query.orderBy,
+      orderBy: query.order_by,
     };
 
     const result = await this.getOperationsQuery.execute(dto);
@@ -107,13 +107,13 @@ export class AccountingV2Controller {
     @Query() query: GetLedgerEntriesQueryHttpDto,
   ): Promise<PaginatedResponseHttpDto<LedgerEntryResponseHttpDto>> {
     const dto: GetLedgerEntriesQueryDto = {
-      memberId: query.memberId,
-      accountType: query.accountType,
-      startDate: query.startDate,
-      endDate: query.endDate,
+      memberId: query.member_id,
+      accountType: query.account_type,
+      startDate: query.start_date,
+      endDate: query.end_date,
       page: query.page,
       limit: query.limit,
-      orderBy: query.orderBy,
+      orderBy: query.order_by,
     };
 
     const result = await this.getLedgerEntriesQuery.execute(dto);
@@ -154,11 +154,11 @@ export class AccountingV2Controller {
     @Query() query: GetAccountsSummaryQueryHttpDto,
   ): Promise<GetAccountsSummaryResponseHttpDto> {
     const dto: GetAccountsSummaryQueryDto = {
-      entriesLimit: query.entriesLimit,
-      startDate: query.startDate,
-      endDate: query.endDate,
-      accountTypes: query.accountTypes,
-      includeZeroBalance: query.includeZeroBalance,
+      entriesLimit: query.entries_limit,
+      startDate: query.start_date,
+      endDate: query.end_date,
+      accountTypes: query.account_types,
+      includeZeroBalance: query.include_zero_balance,
     };
 
     const result = await this.getAccountsSummaryQuery.execute(dto);

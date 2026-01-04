@@ -86,7 +86,7 @@ describe('AccountingV2Controller', () => {
       const result = await controller.getOperations({
         page: 1,
         limit: 10,
-        orderBy: 'DESC',
+        order_by: 'DESC',
       });
 
       expect(result.data[0]).toEqual({
@@ -133,14 +133,14 @@ describe('AccountingV2Controller', () => {
       getOperationsQuery.execute.mockResolvedValue(mockResponse);
 
       await controller.getOperations({
-        memberId: 'member-1',
-        meetingId: 'meeting-1',
-        startDate: '2024-01-01T00:00:00Z',
-        endDate: '2024-12-31T23:59:59Z',
+        member_id: 'member-1',
+        meeting_id: 'meeting-1',
+        start_date: '2024-01-01T00:00:00Z',
+        end_date: '2024-12-31T23:59:59Z',
         type: OperationType.MONTHLY_PAYMENT,
         page: 1,
         limit: 10,
-        orderBy: 'ASC',
+        order_by: 'ASC',
       });
 
       expect(getOperationsQuery.execute).toHaveBeenCalledWith({
@@ -213,7 +213,7 @@ describe('AccountingV2Controller', () => {
       const result = await controller.getLedgerEntries({
         page: 1,
         limit: 10,
-        orderBy: 'DESC',
+        order_by: 'DESC',
       });
 
       expect(result.data[0]).toEqual({
@@ -250,13 +250,13 @@ describe('AccountingV2Controller', () => {
       getLedgerEntriesQuery.execute.mockResolvedValue(mockResponse);
 
       await controller.getLedgerEntries({
-        memberId: 'member-1',
-        accountType: CASH_ACCOUNT,
-        startDate: '2024-01-01T00:00:00Z',
-        endDate: '2024-12-31T23:59:59Z',
+        member_id: 'member-1',
+        account_type: CASH_ACCOUNT,
+        start_date: '2024-01-01T00:00:00Z',
+        end_date: '2024-12-31T23:59:59Z',
         page: 1,
         limit: 10,
-        orderBy: 'ASC',
+        order_by: 'ASC',
       });
 
       expect(getLedgerEntriesQuery.execute).toHaveBeenCalledWith({
