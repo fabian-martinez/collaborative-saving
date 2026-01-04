@@ -367,11 +367,11 @@ export function usePaymentCollection() {
             type: payment.type,
             amount: Number(payment.amount),
             description,
-            referenceId: payment.referenceId,
+            reference_id: payment.referenceId,
           }
 
           if (payment.type === 'novelty') {
-            processedPayment.noveltyComment = noveltyComment
+            processedPayment.novelty_comment = noveltyComment
           }
 
           return processedPayment
