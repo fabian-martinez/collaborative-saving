@@ -23,5 +23,5 @@ export class GetMemberPaymentsQueryHttpDto {
   })
   @IsOptional()
   @IsUUID()
-  meetingId?: string;
+  meeting_id?: string;
 }

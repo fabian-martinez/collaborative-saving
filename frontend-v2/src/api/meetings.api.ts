@@ -120,7 +120,7 @@ export const meetingsApi = {
       return mockApi.getMeetingById(id)
     }
     const params = new URLSearchParams()
-    if (query?.include_summary) params.append('includeSummary', 'true')
+    if (query?.include_summary) params.append('include_summary', 'true')
     const queryString = params.toString()
     const url = `/v2/meetings/${id}${queryString ? `?${queryString}` : ''}`
     const response = await apiClient.get<Meeting>(url)

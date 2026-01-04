@@ -10,7 +10,7 @@ export class GetLedgerEntriesQueryHttpDto {
   })
   @IsOptional()
   @IsUUID()
-  memberId?: string;
+  member_id?: string;
 
   @ApiPropertyOptional({
     description: 'Filter by account type',
@@ -19,7 +19,7 @@ export class GetLedgerEntriesQueryHttpDto {
   })
   @IsOptional()
   @IsEnum(ALL_ACCOUNT_TYPES)
-  accountType?: AccountType;
+  account_type?: AccountType;
 
   @ApiPropertyOptional({
     description: 'Filter by start date (ISO 8601)',
@@ -27,7 +27,7 @@ export class GetLedgerEntriesQueryHttpDto {
   })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  start_date?: string;
 
   @ApiPropertyOptional({
     description: 'Filter by end date (ISO 8601)',
@@ -35,7 +35,7 @@ export class GetLedgerEntriesQueryHttpDto {
   })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  end_date?: string;
 
   @ApiPropertyOptional({
     description: 'Page number (starts at 1)',
@@ -67,6 +67,6 @@ export class GetLedgerEntriesQueryHttpDto {
   })
   @IsOptional()
   @IsEnum(['ASC', 'DESC'])
-  orderBy?: 'ASC' | 'DESC';
+  order_by?: 'ASC' | 'DESC';
 }
 

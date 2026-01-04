@@ -17,7 +17,7 @@ export class GetOperationsQueryHttpDto {
   })
   @IsOptional()
   @IsUUID()
-  memberId?: string;
+  member_id?: string;
 
   @ApiPropertyOptional({
     description: 'Filter by meeting ID',
@@ -25,7 +25,7 @@ export class GetOperationsQueryHttpDto {
   })
   @IsOptional()
   @IsUUID()
-  meetingId?: string;
+  meeting_id?: string;
 
   @ApiPropertyOptional({
     description: 'Filter by start date (ISO 8601)',
@@ -33,7 +33,7 @@ export class GetOperationsQueryHttpDto {
   })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  start_date?: string;
 
   @ApiPropertyOptional({
     description: 'Filter by end date (ISO 8601)',
@@ -41,7 +41,7 @@ export class GetOperationsQueryHttpDto {
   })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  end_date?: string;
 
   @ApiPropertyOptional({
     description: 'Filter by operation type',
@@ -82,5 +82,5 @@ export class GetOperationsQueryHttpDto {
   })
   @IsOptional()
   @IsEnum(['ASC', 'DESC'])
-  orderBy?: 'ASC' | 'DESC';
+  order_by?: 'ASC' | 'DESC';
 }

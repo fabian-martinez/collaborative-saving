@@ -31,13 +31,13 @@ export interface AccountTypeOption {
 }
 
 export interface GetLedgerEntriesQuery {
-  memberId?: string
-  accountType?: string
-  startDate?: string
-  endDate?: string
+  member_id?: string
+  account_type?: string
+  start_date?: string
+  end_date?: string
   page?: number
   limit?: number
-  orderBy?: 'ASC' | 'DESC'
+  order_by?: 'ASC' | 'DESC'
 }
 
 export interface AccountLedgerEntry {
@@ -99,13 +99,13 @@ export const ledgerApi = {
       return mockApi.getLedgerEntries(query)
     }
     const params = new URLSearchParams()
-    if (query?.memberId) params.append('memberId', query.memberId)
-    if (query?.accountType) params.append('accountType', query.accountType)
-    if (query?.startDate) params.append('startDate', query.startDate)
-    if (query?.endDate) params.append('endDate', query.endDate)
+    if (query?.member_id) params.append('member_id', query.member_id)
+    if (query?.account_type) params.append('account_type', query.account_type)
+    if (query?.start_date) params.append('start_date', query.start_date)
+    if (query?.end_date) params.append('end_date', query.end_date)
     if (query?.page) params.append('page', query.page.toString())
     if (query?.limit) params.append('limit', query.limit.toString())
-    if (query?.orderBy) params.append('orderBy', query.orderBy)
+    if (query?.order_by) params.append('order_by', query.order_by)
     const queryString = params.toString()
     const url = `/v2/accounting/ledger-entries${queryString ? `?${queryString}` : ''}`
     const response = await apiClient.get<{ data: LedgerEntry[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>(url)
@@ -150,14 +150,14 @@ export const ledgerApi = {
       return mockApi.getAccountsSummary(query)
     }
     const params = new URLSearchParams()
-    if (query?.entries_limit) params.append('entriesLimit', query.entries_limit.toString())
-    if (query?.start_date) params.append('startDate', query.start_date)
-    if (query?.end_date) params.append('endDate', query.end_date)
+    if (query?.entries_limit) params.append('entries_limit', query.entries_limit.toString())
+    if (query?.start_date) params.append('start_date', query.start_date)
+    if (query?.end_date) params.append('end_date', query.end_date)
     if (query?.account_types && query.account_types.length > 0) {
-      query.account_types.forEach(type => params.append('accountTypes', type))
+      query.account_types.forEach(type => params.append('account_types', type))
     }
     if (query?.include_zero_balance !== undefined) {
-      params.append('includeZeroBalance', query.include_zero_balance.toString())
+      params.append('include_zero_balance', query.include_zero_balance.toString())
     }
     const queryString = params.toString()
     const url = `/v2/accounting/accounts-summary${queryString ? `?${queryString}` : ''}`

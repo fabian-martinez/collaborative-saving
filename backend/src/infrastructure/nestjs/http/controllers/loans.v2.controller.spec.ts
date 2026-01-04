@@ -343,7 +343,7 @@ describe('LoansV2Controller', () => {
         principal: 1000000,
         rate: 0.01,
         term: 12,
-        amortizationType: 'french' as const,
+        amortization_type: 'french' as const,
       };
 
       const mockResult = {
@@ -362,7 +362,7 @@ describe('LoansV2Controller', () => {
         principal: dto.principal,
         rate: dto.rate,
         term: dto.term,
-        amortizationType: dto.amortizationType,
+        amortizationType: dto.amortization_type,
       });
       expect(result).toEqual(mockResult);
     });
@@ -373,7 +373,7 @@ describe('LoansV2Controller', () => {
         principal: 1000000,
         rate: 0.01,
         term: 12,
-        amortizationType: 'french' as const,
+        amortization_type: 'french' as const,
       };
 
       const error = new HttpException(
@@ -395,7 +395,7 @@ describe('LoansV2Controller', () => {
         principal: 1000000,
         rate: 0.01,
         term: 12,
-        amortizationType: 'french' as const,
+        amortization_type: 'french' as const,
       };
 
       const error = new Error('Validation error');
@@ -424,9 +424,9 @@ describe('LoansV2Controller', () => {
         scenarios: [
           {
             name: 'Scenario 1',
-            extraPayment: 50000,
-            startMonth: 1,
-            amortizationType: 'french' as const,
+            extra_payment: 50000,
+            start_month: 1,
+            amortization_type: 'french' as const,
           },
         ],
       };
@@ -464,9 +464,9 @@ describe('LoansV2Controller', () => {
         scenarios: [
           {
             name: 'Scenario 1',
-            extraPayment: 50000,
-            startMonth: 1,
-            amortizationType: 'french' as const,
+            extra_payment: 50000,
+            start_month: 1,
+            amortization_type: 'french' as const,
           },
         ],
       };
@@ -495,9 +495,9 @@ describe('LoansV2Controller', () => {
         scenarios: [
           {
             name: 'Scenario 1',
-            extraPayment: 50000,
-            startMonth: 1,
-            amortizationType: 'french' as const,
+            extra_payment: 50000,
+            start_month: 1,
+            amortization_type: 'french' as const,
           },
         ],
       };
@@ -524,9 +524,9 @@ describe('LoansV2Controller', () => {
         scenarios: [
           {
             name: 'Scenario 1',
-            extraPayment: 50000,
-            startMonth: 1,
-            amortizationType: 'french' as const,
+            extra_payment: 50000,
+            start_month: 1,
+            amortization_type: 'french' as const,
           },
         ],
       };

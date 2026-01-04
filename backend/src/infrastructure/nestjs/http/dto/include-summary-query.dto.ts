@@ -16,5 +16,5 @@ export class IncludeSummaryQueryDto {
     if (value === 'false' || value === false) return false;
     return false;
   })
-  includeSummary?: boolean;
+  include_summary?: boolean;
 }

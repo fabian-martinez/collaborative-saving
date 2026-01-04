@@ -218,7 +218,7 @@ export class LoansV2Controller {
         principal: dto.principal,
         rate: dto.rate,
         term: dto.term,
-        amortizationType: dto.amortizationType,
+        amortizationType: dto.amortization_type,
       };
       return this.getPaymentPlanSimulationQuery.execute(request);
     } catch (error: unknown) {
@@ -266,9 +266,9 @@ export class LoansV2Controller {
       const request: SimulateLoanScenariosRequestDto = {
         scenarios: dto.scenarios.map((s) => ({
           name: s.name,
-          extraPayment: s.extraPayment,
-          startMonth: s.startMonth,
-          amortizationType: s.amortizationType,
+          extraPayment: s.extra_payment,
+          startMonth: s.start_month,
+          amortizationType: s.amortization_type,
         })),
       };
       return await this.simulateLoanPaymentPlanUseCase.execute(id, request);

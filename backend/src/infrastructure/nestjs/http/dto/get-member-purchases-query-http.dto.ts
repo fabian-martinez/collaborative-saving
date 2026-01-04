@@ -13,5 +13,5 @@ export class GetMemberPurchasesQueryHttpDto {
   })
   @IsOptional()
   @IsUUID()
-  meetingId?: string;
+  meeting_id?: string;
 }

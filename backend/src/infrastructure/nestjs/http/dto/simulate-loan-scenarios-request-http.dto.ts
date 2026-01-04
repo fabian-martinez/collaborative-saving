@@ -30,7 +30,7 @@ class ScenarioRequestHttpDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
-  extraPayment?: number;
+  extra_payment?: number;
 
   @ApiProperty({
     description: 'Month to start extra payments (1-based)',
@@ -41,7 +41,7 @@ class ScenarioRequestHttpDto {
   @IsOptional()
   @IsNumber()
   @Min(1)
-  startMonth?: number;
+  start_month?: number;
 
   @ApiProperty({
     description: 'Type of amortization',
@@ -51,7 +51,7 @@ class ScenarioRequestHttpDto {
   })
   @IsOptional()
   @IsEnum(['french', 'german'])
-  amortizationType?: 'french' | 'german';
+  amortization_type?: 'french' | 'german';
 }
 
 /**

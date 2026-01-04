@@ -25,7 +25,7 @@ export class GetAccountsSummaryQueryHttpDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  entriesLimit?: number;
+  entries_limit?: number;
 
   @ApiPropertyOptional({
     description: 'Filter entries by start date (ISO 8601)',
@@ -33,7 +33,7 @@ export class GetAccountsSummaryQueryHttpDto {
   })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  start_date?: string;
 
   @ApiPropertyOptional({
     description: 'Filter entries by end date (ISO 8601)',
@@ -41,7 +41,7 @@ export class GetAccountsSummaryQueryHttpDto {
   })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  end_date?: string;
 
   @ApiPropertyOptional({
     description: 'Filter by specific account types',
@@ -52,7 +52,7 @@ export class GetAccountsSummaryQueryHttpDto {
   @IsOptional()
   @IsArray()
   @IsEnum(ALL_ACCOUNT_TYPES, { each: true })
-  accountTypes?: AccountType[];
+  account_types?: AccountType[];
 
   @ApiPropertyOptional({
     description: 'Include accounts with zero balance',
@@ -61,6 +61,6 @@ export class GetAccountsSummaryQueryHttpDto {
   })
   @IsOptional()
   @IsBoolean()
-  includeZeroBalance?: boolean;
+  include_zero_balance?: boolean;
 }
 

@@ -785,7 +785,7 @@ describe('MeetingsV2Controller', () => {
 
       // ACT
       const result = await controller.findOne(meetingId, {
-        includeSummary: true,
+        include_summary: true,
       });
 
       // ASSERT
@@ -817,7 +817,7 @@ describe('MeetingsV2Controller', () => {
 
       // ACT
       const result = await controller.findOne(meetingId, {
-        includeSummary: false,
+        include_summary: false,
       });
 
       // ASSERT

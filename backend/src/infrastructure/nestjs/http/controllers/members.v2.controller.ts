@@ -497,7 +497,7 @@ export class MembersV2Controller {
     // Exception handling is done by GlobalExceptionFilter
     const payments = await this.getMemberPaymentsQuery.execute(id, {
       paymentType: query.type,
-      meetingId: query.meetingId,
+      meetingId: query.meeting_id,
     });
     return payments.map((payment) => this.mapPaymentToHttp(payment));
   }
@@ -539,7 +539,7 @@ export class MembersV2Controller {
   ): Promise<MemberPurchaseResponseHttpDto[]> {
     try {
       const purchases = await this.getMemberPurchasesQuery.execute(id, {
-        meetingId: query.meetingId,
+        meetingId: query.meeting_id,
       });
       return purchases.map((purchase) => this.mapPurchaseToHttp(purchase));
     } catch (e: unknown) {
@@ -671,7 +671,7 @@ export class MembersV2Controller {
     const result = await this.recordMonthlyPaymentsUseCase.execute({
       memberId: id,
       payments,
-      meetingId: dto.meetingId,
+      meetingId: dto.meeting_id,
     });
     return this.mapRecordMonthlyPaymentsToHttp(result);
   }
@@ -917,7 +917,7 @@ export class MembersV2Controller {
   ): Promise<StockExchangeResponseHttpDto[]> {
     try {
       const exchanges = await this.getMemberStockExchangesQuery.execute(id, {
-        meetingId: query.meetingId,
+        meetingId: query.meeting_id,
       });
       return exchanges.map((exchange) => this.mapStockExchangeToHttp(exchange));
     } catch (error) {
@@ -965,7 +965,7 @@ export class MembersV2Controller {
   ): Promise<StockTransferResponseHttpDto[]> {
     try {
       const transfers = await this.getMemberStockTransfersQuery.execute(id, {
-        meetingId: query.meetingId,
+        meetingId: query.meeting_id,
       });
       return transfers.map((transfer) => this.mapStockTransferToHttp(transfer));
     } catch (error) {
@@ -1013,7 +1013,7 @@ export class MembersV2Controller {
   ): Promise<StockLoanPaymentResponseHttpDto[]> {
     try {
       const payments = await this.getMemberStockLoanPaymentsQuery.execute(id, {
-        meetingId: query.meetingId,
+        meetingId: query.meeting_id,
       });
       return payments.map((payment) => this.mapStockLoanPaymentToHttp(payment));
     } catch (error) {
@@ -1262,39 +1262,39 @@ export class MembersV2Controller {
     schedule: PaymentScheduleResponseDto,
   ): PaymentScheduleResponseHttpDto {
     return {
-      memberId: schedule.memberId,
-      historicalPayments: schedule.historicalPayments.map((item) => ({
+      member_id: schedule.memberId,
+      historical_payments: schedule.historicalPayments.map((item) => ({
         date: item.date,
         type: item.type,
-        loanId: item.loanId,
-        loanType: item.loanType,
-        totalAmount: item.totalAmount,
-        interestAmount: item.interestAmount,
-        principalAmount: item.principalAmount,
+        loan_id: item.loanId,
+        loan_type: item.loanType,
+        total_amount: item.totalAmount,
+        interest_amount: item.interestAmount,
+        principal_amount: item.principalAmount,
         status: item.status,
-        operationId: item.operationId,
-        remainingBalance: item.remainingBalance,
-        paymentNumber: item.paymentNumber,
+        operation_id: item.operationId,
+        remaining_balance: item.remainingBalance,
+        payment_number: item.paymentNumber,
       })),
-      projectedPayments: schedule.projectedPayments.map((item) => ({
+      projected_payments: schedule.projectedPayments.map((item) => ({
         date: item.date,
         type: item.type,
-        loanId: item.loanId,
-        loanType: item.loanType,
-        totalAmount: item.totalAmount,
-        interestAmount: item.interestAmount,
-        principalAmount: item.principalAmount,
+        loan_id: item.loanId,
+        loan_type: item.loanType,
+        total_amount: item.totalAmount,
+        interest_amount: item.interestAmount,
+        principal_amount: item.principalAmount,
         status: item.status,
-        operationId: item.operationId,
-        remainingBalance: item.remainingBalance,
-        paymentNumber: item.paymentNumber,
+        operation_id: item.operationId,
+        remaining_balance: item.remainingBalance,
+        payment_number: item.paymentNumber,
       })),
       summary: {
-        totalPaid: schedule.summary.totalPaid,
-        totalPending: schedule.summary.totalPending,
-        nextPaymentDate: schedule.summary.nextPaymentDate,
-        nextPaymentAmount: schedule.summary.nextPaymentAmount,
-        totalOutstandingBalance: schedule.summary.totalOutstandingBalance,
+        total_paid: schedule.summary.totalPaid,
+        total_pending: schedule.summary.totalPending,
+        next_payment_date: schedule.summary.nextPaymentDate,
+        next_payment_amount: schedule.summary.nextPaymentAmount,
+        total_outstanding_balance: schedule.summary.totalOutstandingBalance,
       },
     };
   }

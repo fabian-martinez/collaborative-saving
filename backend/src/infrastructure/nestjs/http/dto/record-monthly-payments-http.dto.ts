@@ -34,5 +34,5 @@ export class RecordMonthlyPaymentsHttpDto {
   })
   @IsOptional()
   @IsUUID()
-  meetingId?: string;
+  meeting_id?: string;
 }

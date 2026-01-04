@@ -44,14 +44,14 @@ export const operationsApi = {
       return mockApi.getOperations(query)
     }
     const params = new URLSearchParams()
-    if (query?.member_id) params.append('memberId', query.member_id)
-    if (query?.meeting_id) params.append('meetingId', query.meeting_id)
-    if (query?.start_date) params.append('startDate', query.start_date)
-    if (query?.end_date) params.append('endDate', query.end_date)
+    if (query?.member_id) params.append('member_id', query.member_id)
+    if (query?.meeting_id) params.append('meeting_id', query.meeting_id)
+    if (query?.start_date) params.append('start_date', query.start_date)
+    if (query?.end_date) params.append('end_date', query.end_date)
     if (query?.type) params.append('type', query.type)
     if (query?.page) params.append('page', query.page.toString())
     if (query?.limit) params.append('limit', query.limit.toString())
-    if (query?.order_by) params.append('orderBy', query.order_by)
+    if (query?.order_by) params.append('order_by', query.order_by)
     
     const queryString = params.toString()
     const url = `/v2/accounting/operations${queryString ? `?${queryString}` : ''}`

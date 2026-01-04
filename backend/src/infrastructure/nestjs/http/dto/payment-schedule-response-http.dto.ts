@@ -9,31 +9,31 @@ class PaymentScheduleSummaryHttpDto {
     description: 'Total amount paid',
     example: 500000,
   })
-  totalPaid: number;
+  total_paid: number;
 
   @ApiProperty({
     description: 'Total amount pending',
     example: 1200000,
   })
-  totalPending: number;
+  total_pending: number;
 
   @ApiPropertyOptional({
     description: 'Next payment date',
     example: '2024-02-15T10:30:00Z',
   })
-  nextPaymentDate?: Date | string;
+  next_payment_date?: Date | string;
 
   @ApiProperty({
     description: 'Next payment amount',
     example: 150000,
   })
-  nextPaymentAmount: number;
+  next_payment_amount: number;
 
   @ApiProperty({
     description: 'Total outstanding balance across all loans',
     example: 2000000,
   })
-  totalOutstandingBalance: number;
+  total_outstanding_balance: number;
 }
 
 /**
@@ -44,19 +44,19 @@ export class PaymentScheduleResponseHttpDto {
     description: 'Member ID',
     example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
   })
-  memberId: string;
+  member_id: string;
 
   @ApiProperty({
     description: 'Historical payments',
     type: [PaymentScheduleItemHttpDto],
   })
-  historicalPayments: PaymentScheduleItemHttpDto[];
+  historical_payments: PaymentScheduleItemHttpDto[];
 
   @ApiProperty({
     description: 'Projected payments',
     type: [PaymentScheduleItemHttpDto],
   })
-  projectedPayments: PaymentScheduleItemHttpDto[];
+  projected_payments: PaymentScheduleItemHttpDto[];
 
   @ApiProperty({
     description: 'Payment schedule summary',
