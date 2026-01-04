@@ -676,6 +676,59 @@ export class CreateMemberDto {
 3. **Response DTOs**: Separados, nombrados con `*ResponseDto`
 4. **No duplicar**: Application DTOs son minimales
 
+### Convención de Nombres: snake_case para HTTP
+
+**REGLAS OBLIGATORIAS**:
+- ✅ **Todos los DTOs HTTP** (request y response) DEBEN usar `snake_case` para propiedades
+- ✅ **Application DTOs** usan `camelCase` (mantienen consistencia con TypeScript)
+- ✅ **Mappers HTTP** deben convertir entre `camelCase` (application) ↔ `snake_case` (HTTP)
+
+**Ejemplos**:
+
+```typescript
+// ✅ CORRECTO - HTTP DTO (snake_case)
+export class CreateMemberHttpDto {
+  @ApiProperty()
+  identification_number: string;  // snake_case
+  
+  @ApiProperty()
+  registration_date: Date;
+}
+
+export class MemberResponseHttpDto {
+  @ApiProperty()
+  member_id: string;  // snake_case
+  
+  @ApiProperty()
+  created_at: Date;
+}
+
+// ✅ CORRECTO - Application DTO (camelCase)
+export class CreateMemberDto {
+  identificationNumber: string;  // camelCase
+  registrationDate: Date;
+}
+
+// ✅ CORRECTO - Mapper HTTP
+export class MemberHttpMapper {
+  static toApplication(httpDto: CreateMemberHttpDto): CreateMemberDto {
+    return {
+      identificationNumber: httpDto.identification_number,  // snake_case → camelCase
+      registrationDate: httpDto.registration_date,
+    };
+  }
+  
+  static toHttp(appDto: MemberResponseDto): MemberResponseHttpDto {
+    return {
+      member_id: appDto.memberId,  // camelCase → snake_case
+      created_at: appDto.createdAt,
+    };
+  }
+}
+```
+
+**Razón**: Consistencia con APIs REST estándar y separación clara entre capas (HTTP vs Application).
+
 ---
 
 ## Sistema Transversal de Registro de Operaciones

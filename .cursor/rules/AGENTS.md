@@ -67,6 +67,8 @@
 ## 3) Naming & estilo
 - Clases/Interfaces: PascalCase. Variables/funciones: camelCase. Enums PascalCase.
 - DTOs: `*Dto`/`*ResponseDto`. Use-case: `verb-noun.use-case.ts`.
+- **HTTP DTOs (Request/Response): snake_case OBLIGATORIO** (ej: `member_id`, `created_at`)
+- **Application DTOs: camelCase** (ej: `memberId`, `createdAt`)
 - Repos (ports): `XRepository`. Implementaciones: `TypeOrmXRepository`. Mappers: `toDomain/toPersistence/toHttp`.
 
 ## 4) Reglas de dominio
