@@ -191,8 +191,9 @@ onMounted(async () => {
 // Watcher para cuando el meetingId cambie
 watch(
   () => store.meetingId,
-  async (newMeetingId) => {
-    if (newMeetingId && memberSelection.members.value.length > 0) {
+  async (newMeetingId, oldMeetingId) => {
+    // Solo ejecutar si el meetingId realmente cambió y hay miembros cargados
+    if (newMeetingId && newMeetingId !== oldMeetingId && memberSelection.members.value.length > 0) {
       await paymentCollection.fetchMeetingPayments(
         newMeetingId,
         memberSelection.members.value

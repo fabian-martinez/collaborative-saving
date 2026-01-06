@@ -9,15 +9,16 @@
           @click="$emit('select-member', member)"
           :class="[
             'flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all',
-            selectedMember && selectedMember.id === member.id
+            isSelected(member.id)
               ? 'bg-primary/10 border-2 border-primary'
-              : isMemberPaid(member.id)
-              ? 'bg-base-200/50 cursor-not-allowed opacity-60'
+            : isMemberPaid(member.id)
+              ? 'bg-base-200/50 cursor-not-allowed'
               : 'hover:bg-base-200 border-2 border-transparent'
           ]"
         >
           <div
             class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+            :class="{ 'opacity-50': isMemberPaid(member.id) }"
             :style="{ backgroundColor: getMemberColor(member.id) }"
           >
             {{ getInitials(member.name) }}
@@ -26,8 +27,10 @@
             <p
               class="font-medium text-xs md:text-sm wrap-break-word line-clamp-2 leading-tight"
               :class="
-                selectedMember && selectedMember.id === member.id
+                isSelected(member.id)
                   ? 'text-primary'
+                  : isMemberPaid(member.id)
+                  ? 'text-base-content/50'
                   : 'text-base-content'
               "
             >
@@ -50,6 +53,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref, watch } from 'vue'
 import type { Member } from '@/api/members.api'
 
 // Props
@@ -62,6 +66,25 @@ const props = defineProps<{
   hasPendingPurchase?: (memberId: string) => boolean
   hasCompletedPurchase?: (memberId: string) => boolean
 }>()
+
+// Usar ref para el ID seleccionado para mejor compatibilidad con Safari
+// Safari puede tener problemas con computed que dependen de props de objetos
+const selectedMemberId = ref<string | null>(props.selectedMember?.id || null)
+
+// Watch el prop selectedMember para actualizar el ID (necesario para Safari)
+watch(
+  () => props.selectedMember?.id,
+  (newId) => {
+    selectedMemberId.value = newId || null
+  },
+  { immediate: true }
+)
+
+// Función helper para verificar si un miembro está seleccionado
+// Comparación directa de strings primitivos (más confiable en Safari)
+const isSelected = (memberId: string): boolean => {
+  return selectedMemberId.value === memberId
+}
 
 // Emits
 const emit = defineEmits<{
