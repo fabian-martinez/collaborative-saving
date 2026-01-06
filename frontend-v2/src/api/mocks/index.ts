@@ -599,6 +599,13 @@ export const mockApi = {
     mockContributions.splice(index, 1)
   },
 
+  async getContributionById(id: string): Promise<MandatoryContribution> {
+    await delay()
+    const contribution = mockContributions.find(c => c.id === id)
+    if (!contribution) throw new Error('Contribution not found')
+    return { ...contribution }
+  },
+
   // Ledger
   async getLedgerEntries(query?: any): Promise<PaginatedResponse<LedgerEntry>> {
     await delay()

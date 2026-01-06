@@ -30,6 +30,7 @@ import { GetMandatoryContributionsQueryHandler } from '@application/queries/mand
 import { GetMandatoryContributionDetailQueryHandler } from '@application/queries/mandatory-contributions/get-mandatory-contribution-detail.query-handler';
 import { CreateMandatoryContributionHttpDto } from '../dto/create-mandatory-contribution-http.dto';
 import { UpdateMandatoryContributionHttpDto } from '../dto/update-mandatory-contribution-http.dto';
+import { MandatoryContributionResponseHttpDto } from '../dto/mandatory-contribution-response-http.dto';
 
 @ApiTags('Mandatory Contributions V2')
 @Controller('v2/mandatory-contributions')
@@ -50,27 +51,32 @@ export class MandatoryContributionsV2Controller {
   @ApiResponse({
     status: 200,
     description: 'List of mandatory contributions',
-    type: [MandatoryContributionResponseDto],
+    type: [MandatoryContributionResponseHttpDto],
     examples: {
       example: {
         summary: 'List of mandatory contributions',
         value: [
           {
             id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-            assetType: 'cash',
+            asset_type: 'cash',
             value: 50000,
           },
           {
             id: 'b1ffcd0a-0d1c-5fg9-cc7e-7cc0ce491e22',
-            assetType: 'investment',
+            asset_type: 'investment',
             value: 100000,
           },
         ],
       },
     },
   })
-  async list(): Promise<MandatoryContributionResponseDto[]> {
-    return await this.getContributionsQuery.execute();
+  async list(): Promise<MandatoryContributionResponseHttpDto[]> {
+    const contributions = await this.getContributionsQuery.execute();
+    return contributions.map((c) => ({
+      id: c.id,
+      asset_type: c.assetType,
+      value: c.value,
+    }));
   }
 
   @Post()
@@ -87,13 +93,13 @@ export class MandatoryContributionsV2Controller {
   @ApiResponse({
     status: 201,
     description: 'Mandatory contribution created successfully',
-    type: MandatoryContributionResponseDto,
+    type: MandatoryContributionResponseHttpDto,
     examples: {
       example: {
         summary: 'Created mandatory contribution',
         value: {
           id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-          assetType: 'cash',
+          asset_type: 'cash',
           value: 50000,
         },
       },
@@ -105,13 +111,17 @@ export class MandatoryContributionsV2Controller {
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async create(
     @Body() body: CreateMandatoryContributionHttpDto,
-  ): Promise<MandatoryContributionResponseDto> {
+  ): Promise<MandatoryContributionResponseHttpDto> {
     try {
       const result = await this.createUseCase.execute({
         assetType: body.asset_type,
         value: body.value,
       });
-      return result;
+      return {
+        id: result.id,
+        asset_type: result.assetType,
+        value: result.value,
+      };
     } catch (e: unknown) {
       if (e instanceof Error) {
         console.error(e.message);
@@ -140,13 +150,13 @@ export class MandatoryContributionsV2Controller {
   @ApiResponse({
     status: 200,
     description: 'Mandatory contribution details',
-    type: MandatoryContributionResponseDto,
+    type: MandatoryContributionResponseHttpDto,
     examples: {
       example: {
         summary: 'Mandatory contribution details',
         value: {
           id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-          assetType: 'cash',
+          asset_type: 'cash',
           value: 50000,
         },
       },
@@ -160,10 +170,14 @@ export class MandatoryContributionsV2Controller {
   })
   async detail(
     @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<MandatoryContributionResponseDto> {
+  ): Promise<MandatoryContributionResponseHttpDto> {
     try {
       const result = await this.getContributionDetailQuery.execute(id);
-      return result;
+      return {
+        id: result.id,
+        asset_type: result.assetType,
+        value: result.value,
+      };
     } catch (e: unknown) {
       if (e instanceof Error) {
         console.error(e.message);
@@ -192,13 +206,13 @@ export class MandatoryContributionsV2Controller {
   @ApiResponse({
     status: 200,
     description: 'Mandatory contribution updated successfully',
-    type: MandatoryContributionResponseDto,
+    type: MandatoryContributionResponseHttpDto,
     examples: {
       example: {
         summary: 'Updated mandatory contribution',
         value: {
           id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-          assetType: 'cash',
+          asset_type: 'cash',
           value: 75000,
         },
       },
@@ -214,14 +228,18 @@ export class MandatoryContributionsV2Controller {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: UpdateMandatoryContributionHttpDto,
-  ): Promise<MandatoryContributionResponseDto> {
+  ): Promise<MandatoryContributionResponseHttpDto> {
     try {
       const result = await this.updateUseCase.execute({
         id,
         assetType: body.asset_type,
         value: body.value,
       });
-      return result;
+      return {
+        id: result.id,
+        asset_type: result.assetType,
+        value: result.value,
+      };
     } catch (e: unknown) {
       if (e instanceof Error) {
         console.error(e.message);

@@ -62,6 +62,16 @@ export const contributionsApi = {
       return mockApi.deleteContribution(id)
     }
     await apiClient.delete(`/v2/mandatory-contributions/${id}`)
+  },
+
+  async getContributionById(id: string): Promise<MandatoryContribution> {
+    if (USE_MOCKS) {
+      return mockApi.getContributionById(id)
+    }
+    const response = await apiClient.get<MandatoryContribution>(
+      `/v2/mandatory-contributions/${id}`
+    )
+    return response.data
   }
 }
 
