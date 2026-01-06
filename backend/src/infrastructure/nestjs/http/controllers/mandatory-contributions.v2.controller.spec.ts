@@ -7,6 +7,7 @@ import { CreateMandatoryContributionUseCase } from '@application/use-cases/manda
 import { UpdateMandatoryContributionUseCase } from '@application/use-cases/mandatory-contributions/update-mandatory-contribution.use-case';
 import { DeleteMandatoryContributionUseCase } from '@application/use-cases/mandatory-contributions/delete-mandatory-contribution.use-case';
 import { MandatoryContributionResponseDto } from '@application/dto/mandatory-contributions/mandatory-contribution-response.dto';
+import { MandatoryContributionResponseHttpDto } from '../dto/mandatory-contribution-response-http.dto';
 
 describe('MandatoryContributionsV2Controller', () => {
   let controller: MandatoryContributionsV2Controller;
@@ -26,6 +27,12 @@ describe('MandatoryContributionsV2Controller', () => {
   const mockContributionResponse: MandatoryContributionResponseDto = {
     id: '550e8400-e29b-41d4-a716-446655440000',
     assetType: 'stock',
+    value: 100,
+  };
+
+  const mockContributionHttpResponse: MandatoryContributionResponseHttpDto = {
+    id: '550e8400-e29b-41d4-a716-446655440000',
+    asset_type: 'stock',
     value: 100,
   };
 
@@ -86,7 +93,7 @@ describe('MandatoryContributionsV2Controller', () => {
   });
 
   describe('list', () => {
-    it('should return list of contributions', async () => {
+    it('should return list of contributions in snake_case', async () => {
       const contributions: MandatoryContributionResponseDto[] = [
         mockContributionResponse,
       ];
@@ -95,12 +102,12 @@ describe('MandatoryContributionsV2Controller', () => {
       const result = await controller.list();
 
       expect(getContributionsQueryExecuteSpy).toHaveBeenCalled();
-      expect(result).toEqual(contributions);
+      expect(result).toEqual([mockContributionHttpResponse]);
     });
   });
 
   describe('detail', () => {
-    it('should return contribution details', async () => {
+    it('should return contribution details in snake_case', async () => {
       getContributionDetailQuery.execute.mockResolvedValue(
         mockContributionResponse,
       );
@@ -110,7 +117,7 @@ describe('MandatoryContributionsV2Controller', () => {
       expect(getContributionDetailQueryExecuteSpy).toHaveBeenCalledWith(
         mockContributionResponse.id,
       );
-      expect(result).toEqual(mockContributionResponse);
+      expect(result).toEqual(mockContributionHttpResponse);
     });
 
     it('should throw NotFoundException when contribution not found', async () => {
@@ -125,7 +132,7 @@ describe('MandatoryContributionsV2Controller', () => {
   });
 
   describe('create', () => {
-    it('should create contribution successfully', async () => {
+    it('should create contribution successfully and return in snake_case', async () => {
       const createDto = {
         asset_type: 'stock',
         value: 100,
@@ -138,7 +145,7 @@ describe('MandatoryContributionsV2Controller', () => {
         assetType: createDto.asset_type,
         value: createDto.value,
       });
-      expect(result).toEqual(mockContributionResponse);
+      expect(result).toEqual(mockContributionHttpResponse);
     });
 
     it('should throw HttpException for invalid input', async () => {
@@ -155,12 +162,22 @@ describe('MandatoryContributionsV2Controller', () => {
   });
 
   describe('update', () => {
-    it('should update contribution successfully', async () => {
+    it('should update contribution successfully and return in snake_case', async () => {
       const updateDto = {
         asset_type: 'savings',
         value: 200,
       };
-      updateUseCase.execute.mockResolvedValue(mockContributionResponse);
+      const updatedResponse: MandatoryContributionResponseDto = {
+        ...mockContributionResponse,
+        assetType: 'savings',
+        value: 200,
+      };
+      const expectedHttpResponse: MandatoryContributionResponseHttpDto = {
+        id: mockContributionResponse.id,
+        asset_type: 'savings',
+        value: 200,
+      };
+      updateUseCase.execute.mockResolvedValue(updatedResponse);
 
       const result = await controller.update(
         mockContributionResponse.id,
@@ -172,7 +189,7 @@ describe('MandatoryContributionsV2Controller', () => {
         assetType: updateDto.asset_type,
         value: updateDto.value,
       });
-      expect(result).toEqual(mockContributionResponse);
+      expect(result).toEqual(expectedHttpResponse);
     });
 
     it('should throw HttpException when contribution not found', async () => {
