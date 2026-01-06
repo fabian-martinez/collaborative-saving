@@ -1,5 +1,5 @@
-import { ref, computed, type Ref } from 'vue'
-import { membersApi, type Member, type MemberPayment } from '@/api/members.api'
+import { ref, computed } from 'vue'
+import { membersApi, type Member } from '@/api/members.api'
 import { useActiveMeetingStore } from '../stores/activeMeeting'
 import { formatDate } from '@/shared/utils/formatters'
 import { sumCashEntries } from '@/shared/utils'
@@ -11,10 +11,19 @@ export function useMemberSelection(
 
   // State
   const members = ref<Member[]>([])
-  const selectedMember = ref<Member | null>(null)
+  const selectedMemberId = ref<string | null>(null)
   const viewedOperations = ref<any[] | null>(null)
   const loadingMembers = ref(false)
   const error = ref<string | null>(null)
+
+  // Computed: obtener el objeto Member completo desde el ID
+  // Usar shallowRef para mejor compatibilidad con Safari
+  const selectedMember = computed(() => {
+    if (!selectedMemberId.value) return null
+    const found = members.value.find(m => m.id === selectedMemberId.value)
+    // Retornar null explícitamente si no se encuentra para evitar problemas de reactividad en Safari
+    return found || null
+  })
 
   // Computed
   const printDate = computed(() => {
@@ -57,14 +66,29 @@ export function useMemberSelection(
   }
 
   async function selectMember(member: Member): Promise<void> {
-    selectedMember.value = member
-    paymentCollection.selectedMember.value = member
-    viewedOperations.value = null
-    paymentCollection.reset()
+    // Limpiar selección anterior antes de seleccionar el nuevo miembro
+    if (selectedMemberId.value && selectedMemberId.value !== member.id) {
+      viewedOperations.value = null
+      paymentCollection.reset()
+    }
+    
+    // Establecer el nuevo miembro seleccionado usando solo el ID
+    selectedMemberId.value = member.id
+    // Sincronizar con paymentCollection usando el objeto completo del array
+    const memberFromArray = members.value.find(m => m.id === member.id) || member
+    paymentCollection.selectedMember.value = memberFromArray
     error.value = null
 
-    // Si el miembro tiene pagos, consultar detalles del endpoint de pagos del miembro
+    // Si el miembro tiene pagos, usar primero los datos ya cargados en cache
     if (store.meetingId && paymentCollection.isMemberPaid(member.id)) {
+      // Primero intentar usar los datos ya cargados en paidMemberOperations
+      const cachedOperations = paymentCollection.paidMemberOperations.value.get(member.id)
+      if (cachedOperations && cachedOperations.length > 0) {
+        viewedOperations.value = cachedOperations
+        return // Mostrar pagos desde cache
+      }
+
+      // Solo hacer la llamada si no hay datos en cache
       try {
         const memberPayments = await membersApi.getMemberPayments(member.id, {
           meeting_id: store.meetingId,
@@ -76,6 +100,8 @@ export function useMemberSelection(
             paymentCollection.mapPaymentToOperation(p, member.id)
           )
           viewedOperations.value = operations
+          // Actualizar el cache para futuras consultas
+          paymentCollection.paidMemberOperations.value.set(member.id, operations)
           return // Mostrar pagos
         }
       } catch (error) {
@@ -94,6 +120,10 @@ export function useMemberSelection(
   async function loadMembers(): Promise<void> {
     loadingMembers.value = true
     error.value = null
+    // Limpiar selección anterior al cargar nuevos miembros
+    selectedMemberId.value = null
+    paymentCollection.selectedMember.value = null
+    viewedOperations.value = null
     try {
       members.value = await membersApi.getMembers()
 
@@ -116,7 +146,7 @@ export function useMemberSelection(
   }
 
   function clearSelection() {
-    selectedMember.value = null
+    selectedMemberId.value = null
     paymentCollection.selectedMember.value = null
     viewedOperations.value = null
     paymentCollection.reset()

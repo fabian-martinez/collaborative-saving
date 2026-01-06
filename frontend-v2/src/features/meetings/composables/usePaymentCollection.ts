@@ -473,6 +473,8 @@ export function usePaymentCollection() {
     memberDues.value = []
     payments.value = []
     error.value = null
+    // No limpiar selectedMember aquí porque se usa para mantener la selección
+    // mientras se resetea el formulario de pago
   }
 
   return {
