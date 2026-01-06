@@ -200,7 +200,7 @@
                     :key="item.mandatory_contribution_id"
                   >
                     <td class="px-2">
-                      {{ getMandatoryContributionName(item.mandatory_contribution_id) }}
+                      {{ contributionNames[item.mandatory_contribution_id] || 'Cargando...' }}
                     </td>
                     <td class="text-right font-bold px-2">
                       $<CopyOnDblClickNumber :value="item.total" />
@@ -236,7 +236,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useActiveMeetingStore } from '../../stores/activeMeeting'
 import { meetingsApi, type RevaluationResponse } from '@/api/meetings.api'
 import { contributionsApi, type MandatoryContribution } from '@/api/contributions.api'
@@ -249,6 +249,8 @@ const isExecuting = ref(false)
 const previewData = ref<RevaluationResponse | null>(null)
 const errorMessage = ref<string>('')
 const mandatoryContributions = ref<MandatoryContribution[]>([])
+const contributionCache = ref<Map<string, MandatoryContribution>>(new Map())
+const contributionNames = reactive<Record<string, string>>({})
 
 const store = useActiveMeetingStore()
 const emit = defineEmits<{
@@ -263,12 +265,12 @@ function calculateInterestRate(interestGained: number, previousValue: number): s
 }
 
 // Get mandatory contribution name by ID
-function getMandatoryContributionName(mandatoryContributionId: string): string {
+async function getMandatoryContributionName(mandatoryContributionId: string): Promise<string> {
   if (!mandatoryContributionId) {
     return 'Aporte desconocido'
   }
 
-  // Buscar el aporte por ID exacto
+  // Buscar el aporte por ID exacto en la lista de aportes activos
   const contribution = mandatoryContributions.value.find(
     (c: MandatoryContribution) => c.id === mandatoryContributionId
   )
@@ -286,23 +288,29 @@ function getMandatoryContributionName(mandatoryContributionId: string): string {
     return contributionCaseInsensitive.asset_type
   }
 
-  // Si los aportes están cargados pero no se encontró, es probable que el aporte fue eliminado
-  // Mostrar un mensaje más descriptivo
-  if (mandatoryContributions.value.length > 0) {
-    // Debug: log para identificar el problema (solo en desarrollo)
+  // Si no se encontró en la lista activa, buscar en el cache
+  const cached = contributionCache.value.get(mandatoryContributionId)
+  if (cached && cached.asset_type) {
+    return cached.asset_type
+  }
+
+  // Si aún no se encontró, intentar obtenerlo por ID desde el backend
+  try {
+    const fetched = await contributionsApi.getContributionById(mandatoryContributionId)
+    // Cachear el resultado para futuras referencias
+    contributionCache.value.set(mandatoryContributionId, fetched)
+    return fetched.asset_type
+  } catch (err) {
+    // Si el aporte fue eliminado, el backend devolverá 404
     if (import.meta.env.DEV) {
-      console.warn('Aporte obligatorio no encontrado en la lista activa:', {
+      console.warn('Aporte obligatorio no encontrado (probablemente eliminado):', {
         buscado: mandatoryContributionId,
-        total_aportes_disponibles: mandatoryContributions.value.length,
-        disponibles: mandatoryContributions.value.map(c => ({ id: c.id, asset_type: c.asset_type }))
+        error: err instanceof Error ? err.message : String(err)
       })
     }
     // El aporte probablemente fue eliminado pero aún hay registros históricos
     return `Aporte eliminado (${mandatoryContributionId.substring(0, 8)}...)`
   }
-
-  // Si aún no se han cargado los aportes, mostrar mensaje temporal
-  return 'Cargando...'
 }
 
 async function fetchPreview() {
@@ -321,6 +329,23 @@ async function fetchPreview() {
     // Luego cargar el preview de la revalorización
     const data = await meetingsApi.getRevaluationPreview(store.meetingId)
     previewData.value = data
+    
+    // Cargar nombres de aportes obligatorios
+    if (data.mandatory_contributions_by_type && data.mandatory_contributions_by_type.length > 0) {
+      await Promise.all(
+        data.mandatory_contributions_by_type.map(async (item) => {
+          try {
+            const name = await getMandatoryContributionName(item.mandatory_contribution_id)
+            contributionNames[item.mandatory_contribution_id] = name
+          } catch (err) {
+            // Si falla, usar mensaje de aporte eliminado
+            contributionNames[item.mandatory_contribution_id] = 
+              `Aporte eliminado (${item.mandatory_contribution_id.substring(0, 8)}...)`
+          }
+        })
+      )
+    }
+    
     status.value = 'success'
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Ocurrió un error desconocido.'
