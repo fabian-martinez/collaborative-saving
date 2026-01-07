@@ -10,12 +10,19 @@
         <span class="text-base-content/90 font-bold text-lg md:text-xl">
           {{ getAccountName(entry.account_type || '') || entry.account_type || 'Sin nombre' }}
         </span>
-        <span class="font-mono text-error font-bold text-lg md:text-xl lg:text-2xl ml-2">
+        <span 
+          class="font-mono font-bold text-lg md:text-xl lg:text-2xl ml-2"
+          :class="{
+            'text-error': Number(entry.amount) < 0,
+            'text-info': Number(entry.amount) > 0 && entry.account_type !== 'CASH',
+            'text-success': entry.account_type === 'CASH' && Number(entry.amount) > 0
+          }"
+        >
           {{ formatCurrency(Math.abs(Number(entry.amount))) }}
         </span>
       </div>
       <!-- Mostrar descripción de la entrada siempre que exista -->
-      <p v-if="entry.description && entry.description.trim()" class="text-sm text-base-content/70 mt-1 leading-relaxed break-words">
+      <p v-if="entry.description && entry.description.trim()" class="text-sm text-base-content/70 mt-1 leading-relaxed wrap-break-word">
         {{ entry.description }}
       </p>
     </div>
@@ -24,7 +31,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { formatCurrency, formatDate } from '@/shared/utils/formatters'
+import { formatCurrency } from '@/shared/utils/formatters'
 
 interface LedgerEntry {
   id?: string
@@ -54,13 +61,26 @@ const ledgerEntries = computed(() => {
 })
 
 const creditEntries = computed(() => {
-  // Mostrar solo las salidas (créditos - valores negativos), excluyendo CASH
-  // Los valores negativos se muestran como positivos (sin signo)
+  const operationType = props.operation.type
+  const isStockPurchase = operationType === 'STOCK_PURCHASE'
+  
+  // Para compras de acciones (STOCK_PURCHASE):
+  // - Mostrar CASH y LOANS_RECEIVABLE
+  // - No mostrar STOCK_CAPITAL
+  // Para otros tipos de operaciones (pagos mensuales, etc.):
+  // - No mostrar CASH
+  // - Mostrar todas las demás entradas
+  
   return ledgerEntries.value.filter((e) => {
     const accountType = e.account_type
-    const amount = Number(e.amount) || 0
-    // Excluir CASH y mostrar solo salidas (valores negativos)
-    return accountType !== 'CASH' && amount < 0
+    
+    if (isStockPurchase) {
+      // En compras: mostrar solo CASH y LOANS_RECEIVABLE
+      return accountType === 'CASH' || accountType === 'LOANS_RECEIVABLE'
+    } else {
+      // En otros tipos: excluir CASH, mostrar todo lo demás
+      return accountType !== 'CASH'
+    }
   })
 })
 

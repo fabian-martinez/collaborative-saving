@@ -13,17 +13,9 @@
       <div class="md:col-span-1">
         <!-- Resumen sticky - se mantiene visible al hacer scroll -->
         <PurchaseSummary
-          :total-purchased-shares="totalPurchasedShares"
           :total-cash-registered="totalCashRegistered"
           :registered-operations="registeredOperations"
-          :show-all-transactions="showAllTransactions"
-          :selected-member="selectedMember"
-          :member-purchases="selectedMember ? memberRegisteredPurchases(selectedMember.id) : []"
-          :is-member-purchases-loading="selectedMember ? isMemberPurchasesLoading(selectedMember.id) : false"
-          :member-purchases-error="memberPurchasesError"
-          @toggle-transactions="showAllTransactions = !showAllTransactions"
-          @show-operation="showOperationDetailFromOperation"
-          @show-member-purchase="showMemberPurchaseOperation"
+          :members="members"
         />
         <MemberList
           :members="members"
@@ -59,14 +51,45 @@
               
               <!-- Purchase Form View -->
               <div v-else>
-                <div class="text-center mb-6">
-                  <h2 class="text-2xl font-bold">Registrar compra de acciones</h2>
-                  <p class="text-lg text-base-content/80">{{ selectedMember.name }}</p>
+                <!-- Toggle para ver compras registradas -->
+                <div v-if="hasCompletedPurchases" class="mb-4 flex justify-end items-center gap-3">
+                  <span class="text-sm" :class="showPurchaseReceipt ? 'text-base-content/60' : 'text-base-content'">
+                    Agregar más compras
+                  </span>
+                  <input 
+                    type="checkbox" 
+                    class="toggle toggle-primary"
+                    :checked="showPurchaseReceipt"
+                    @change="showPurchaseReceipt = !showPurchaseReceipt"
+                  />
+                  <span class="text-sm" :class="showPurchaseReceipt ? 'text-base-content' : 'text-base-content/60'">
+                    Ver compras registradas
+                  </span>
                 </div>
-                <!-- Botón para abrir el modal de compra de acción -->
-                <div class="flex justify-end mb-4">
-                  <button class="btn btn-primary btn-sm" @click="openBuyModal()">Agregar compra</button>
-                </div>
+
+                <!-- Vista de recibo cuando hay compras y está activa -->
+                <PaymentReceiptView
+                  v-if="hasCompletedPurchases && showPurchaseReceipt && viewedPurchaseOperations"
+                  :member-name="selectedMember.name"
+                  :print-date="purchasePrintDate"
+                  :viewed-operations="viewedPurchaseOperations"
+                  :viewed-total="purchaseTotal"
+                  title="Detalle de Compras"
+                  total-label="Total:"
+                  receipt-id="purchase-receipt-print"
+                  @open-print-modal="printReceipt.openPrintModal"
+                />
+
+                <!-- Formulario para agregar compras (cuando no hay recibo activo o no hay compras) -->
+                <div v-if="!showPurchaseReceipt || !hasCompletedPurchases">
+                  <div class="text-center mb-6">
+                    <h2 class="text-2xl font-bold">Registrar compra de acciones</h2>
+                    <p class="text-lg text-base-content/80">{{ selectedMember.name }}</p>
+                  </div>
+                  <!-- Botón para abrir el modal de compra de acción -->
+                  <div class="flex justify-end mb-4">
+                    <button class="btn btn-primary btn-sm" @click="openBuyModal()">Agregar compra</button>
+                  </div>
                 <!-- Recibo local editable -->
                 <div v-if="localLines.length > 0" class="mt-6">
                   <h3 class="text-lg font-semibold mb-2">Detalle de la compra</h3>
@@ -138,6 +161,7 @@
                 </div>
               </div>
             </div>
+            </div>
           </div>
         </div>
         <!-- Modal propio para compra/edición de acción -->
@@ -151,6 +175,19 @@
         />
       </div>
     </div>
+    <!-- Modal de Vista Previa e Impresión de Compras -->
+    <PrintReceiptModal
+      :is-open="printReceipt.isPrintModalOpen.value"
+      :member-name="selectedMember?.name || null"
+      :print-date="purchasePrintDate"
+      :viewed-operations="viewedPurchaseOperations"
+      :viewed-total="purchaseTotal"
+      title="Detalle de Compras"
+      total-label="Total:"
+      modal-id="purchase-receipt-print-modal"
+      @close="printReceipt.closePrintModal"
+      @print="printReceipt.printReceipt"
+    />
     <div class="mt-8 pt-4 border-t">
       <div class="text-right mt-4">
         <button class="btn btn-success w-full md:w-auto" @click="$emit('completed')">
@@ -167,12 +204,16 @@ import { membersApi, type Member, type MemberPurchase, type PurchaseStockRequest
 import { stocksApi, type Stock } from '@/api/stocks.api'
 import { useActiveMeetingStore } from '../../stores/activeMeeting'
 import { meetingsApi, type Operation } from '@/api/meetings.api'
-import { ledgerApi } from '@/api/ledger.api'
+import { operationsApi } from '@/api/operations.api'
+import { formatDate } from '@/shared/utils/formatters'
+import { usePrintReceipt } from '../../composables/usePrintReceipt'
 import EditBuyStockModal from './EditBuyStockModal.vue'
 import OperationDetails from '@/shared/components/OperationDetails.vue'
 import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
 import PurchaseSummary from './collection/PurchaseSummary.vue'
 import MemberList from './collection/MemberList.vue'
+import PaymentReceiptView from './collection/PaymentReceiptView.vue'
+import PrintReceiptModal from './collection/PrintReceiptModal.vue'
 
 const emit = defineEmits<{
   completed: []
@@ -229,27 +270,50 @@ const buyModalForm = ref<LocalLine>({
 })
 
 // Estado para vista de operaciones
-const showAllTransactions = ref(false)
 const selectedOperation = ref<Operation | null>(null)
 const operationDetailLoadingId = ref<string | null>(null)
 
 // Estado para registro
 const isRegistering = ref(false)
 
+// Estado para vista de recibo de compras
+const showPurchaseReceipt = ref(false)
+const viewedPurchaseOperations = ref<any[] | null>(null)
+const isLoadingPurchaseOperations = ref(false)
+
 // Cálculos de totales
 const totalCashRegistered = computed(() => {
   return registeredOperations.value
-    .flatMap(op => (op as any).ledger_entries || [])
-    .filter((entry: any) => entry && entry.account_type === 'CASH')
-    .reduce((sum: number, entry: any) => sum + Number(entry.amount || 0), 0)
+    .reduce((sum: number, op) => sum + (op.total_amount || 0), 0)
 })
 
-const totalPurchasedShares = computed(() => {
-  return registeredOperations.value
-    .flatMap(op => (op as any).ledger_entries || [])
-    .filter((entry: any) => entry && entry.account_type === 'STOCK_CAPITAL')
-    .reduce((sum: number, entry: any) => sum + Number(entry.amount || 0), 0)
+// Computed para compras
+const hasCompletedPurchases = computed(() => {
+  if (!selectedMember.value) return false
+  const purchases = memberRegisteredPurchases(selectedMember.value.id)
+  return purchases.length > 0
 })
+
+const purchasePrintDate = computed(() => {
+  if (!viewedPurchaseOperations.value || viewedPurchaseOperations.value.length === 0) {
+    return formatDate(new Date())
+  }
+  const firstOp = viewedPurchaseOperations.value[0]
+  return formatDate(firstOp.date || new Date())
+})
+
+const purchaseTotal = computed(() => {
+  if (!viewedPurchaseOperations.value) return 0
+  return viewedPurchaseOperations.value.reduce((sum, op) => sum + (op.total_amount || 0), 0)
+})
+
+// Composable para impresión
+const printReceipt = usePrintReceipt(
+  selectedMember,
+  'purchase-receipt-print-modal',
+  'purchase-receipt-print-container',
+  'purchase-receipt-print'
+)
 
 // Funciones helper
 function getInitials(name: string): string {
@@ -291,8 +355,7 @@ function hasCompletedPurchase(memberId: string) {
     return true
   }
   return registeredOperations.value.some(op => {
-    const opMemberId = (op as any).member_id
-    return opMemberId === memberId
+    return op.member_id === memberId
   })
 }
 
@@ -300,16 +363,65 @@ function memberRegisteredPurchases(memberId: string) {
   return memberPurchasesByMember.value[memberId] || []
 }
 
-function isMemberPurchasesLoading(memberId: string) {
-  return memberPurchasesLoadingMemberId.value === memberId
+// Funciones para convertir compras a operaciones
+async function convertPurchasesToOperations(purchases: MemberPurchase[]): Promise<any[]> {
+  const operations = await Promise.all(
+    purchases.map(async (purchase) => {
+      try {
+        const operation = await operationsApi.getOperationById(purchase.operation_id)
+        return {
+          id: operation.id,
+          member_id: operation.member_id || selectedMember.value?.id || '',
+          meeting_id: operation.meeting_id,
+          type: operation.type,
+          description: operation.description || `Compra de ${purchase.stock_type} - ${purchase.quantity} uds`,
+          date: operation.date,
+          total_amount: purchase.total_value,
+          ledger_entries: operation.entries || []
+        }
+      } catch {
+        // Si falla obtener la operación, crear operación básica
+        return {
+          id: purchase.operation_id,
+          member_id: selectedMember.value?.id || '',
+          meeting_id: purchase.meeting_id,
+          type: 'STOCK_PURCHASE',
+          description: `Compra de ${purchase.stock_type} - ${purchase.quantity} uds`,
+          date: purchase.purchase_date,
+          total_amount: purchase.total_value,
+          ledger_entries: []
+        }
+      }
+    })
+  )
+  return operations
 }
 
+async function loadPurchaseOperations() {
+  if (!selectedMember.value) return
+  const purchases = memberRegisteredPurchases(selectedMember.value.id)
+  if (purchases.length > 0) {
+    isLoadingPurchaseOperations.value = true
+    try {
+      viewedPurchaseOperations.value = await convertPurchasesToOperations(purchases)
+    } catch (e) {
+      console.error('Error loading purchase operations:', e)
+      viewedPurchaseOperations.value = null
+    } finally {
+      isLoadingPurchaseOperations.value = false
+    }
+  } else {
+    viewedPurchaseOperations.value = null
+  }
+}
 
 // Funciones de selección de miembro
-function selectMemberAndReset(member: Member) {
+async function selectMemberAndReset(member: Member) {
   selectedMember.value = member
   selectedOperation.value = null
-  void loadMemberPurchases(member.id)
+  // No resetear showPurchaseReceipt para mantener el estado global del toggle
+  await loadMemberPurchases(member.id)
+  await loadPurchaseOperations()
 }
 
 // Funciones de carga de datos
@@ -317,54 +429,19 @@ async function loadRegisteredOperations() {
   if (!store.meetingId) return
   
   try {
-    // Obtener todas las compras de la reunión
-    const purchases = await meetingsApi.getMeetingPurchases(store.meetingId)
+    // Obtener todas las compras de la reunión (devuelve Operation[] con member_id y total_amount)
+    const operations = await meetingsApi.getMeetingPurchases(store.meetingId)
     
-    // Para cada compra, obtener sus ledger_entries
-    const operationsWithEntries = await Promise.all(
-      purchases.map(async (purchase) => {
-        try {
-          const entries = await ledgerApi.getLedgerEntriesByOperation(purchase.operation_id)
-          return {
-            id: purchase.operation_id,
-            member_id: '', // No está disponible en MemberPurchase directamente
-            meeting_id: purchase.meeting_id,
-            type: 'STOCK_PURCHASE',
-            description: `Compra de ${purchase.stock_type} - ${purchase.quantity} uds`,
-            date: purchase.purchase_date,
-            ledger_entries: entries.map(e => ({
-              id: e.id,
-              operation_id: e.operation_id,
-              account_type: e.account_type,
-              amount: e.amount,
-              description: e.description,
-              created_at: e.created_at
-            })),
-            total_amount: entries
-              .filter(e => e.account_type === 'CASH' && e.amount > 0)
-              .reduce((sum, e) => sum + e.amount, 0),
-            total_debit: entries
-              .filter(e => e.account_type === 'CASH' && e.amount > 0)
-              .reduce((sum, e) => sum + e.amount, 0)
-          } as Operation & { ledger_entries: any[], total_debit: number }
-        } catch {
-          // Si falla obtener entries, retornar operación sin entries
-          return {
-            id: purchase.operation_id,
-            member_id: '',
-            meeting_id: purchase.meeting_id,
-            type: 'STOCK_PURCHASE',
-            description: `Compra de ${purchase.stock_type} - ${purchase.quantity} uds`,
-            date: purchase.purchase_date,
-            total_amount: purchase.total_value,
-            ledger_entries: [],
-            total_debit: purchase.total_value
-          } as Operation & { ledger_entries: any[], total_debit: number }
-        }
-      })
-    )
-    
-    registeredOperations.value = operationsWithEntries
+    // Usar directamente los datos del backend sin necesidad de obtener ledger_entries
+    registeredOperations.value = operations.map((operation) => ({
+      id: operation.id,
+      member_id: operation.member_id,
+      meeting_id: operation.meeting_id,
+      type: operation.type,
+      description: operation.description,
+      date: operation.date,
+      total_amount: operation.total_amount || 0,
+    }))
   } catch (e) {
     console.error('Error loading registered operations:', e)
   }
@@ -389,34 +466,6 @@ async function loadMemberPurchases(memberId: string) {
     memberPurchasesError.value = err.message || 'Error al cargar las compras del socio.'
   } finally {
     memberPurchasesLoadingMemberId.value = null
-  }
-}
-
-// Función para cargar compras de todos los miembros automáticamente
-async function fetchAllMemberPurchases() {
-  if (!store.meetingId || members.value.length === 0) return
-  
-  const meetingId = store.meetingId
-  
-  try {
-    const purchasePromises = members.value.map(async (member) => {
-      try {
-        const purchases = await membersApi.getMemberPurchases(member.id, { 
-          meeting_id: meetingId 
-        })
-        memberPurchasesByMember.value = {
-          ...memberPurchasesByMember.value,
-          [member.id]: purchases,
-        }
-      } catch (error) {
-        // Ignorar errores individuales
-        console.debug(`Error fetching purchases for member ${member.id}:`, error)
-      }
-    })
-    
-    await Promise.all(purchasePromises)
-  } catch (error) {
-    console.error('Error fetching all member purchases', error)
   }
 }
 
@@ -527,9 +576,11 @@ async function confirmLocalOperation() {
     // Recargar datos
     await Promise.all([
       loadMemberPurchases(memberId),
-      loadRegisteredOperations(),
-      fetchAllMemberPurchases()
+      loadRegisteredOperations()
     ])
+    
+    // Recargar operaciones de compras si hay compras
+    await loadPurchaseOperations()
     
     alert('Compra(s) registrada(s) exitosamente.')
   } catch (e) {
@@ -541,47 +592,6 @@ async function confirmLocalOperation() {
 }
 
 // Funciones de vista de operaciones
-function showOperationDetailFromOperation(op: Operation) {
-  selectedOperation.value = op
-}
-
-async function showMemberPurchaseOperation(purchase: MemberPurchase) {
-  try {
-    operationDetailLoadingId.value = purchase.operation_id
-    selectedOperation.value = null
-    
-    // Obtener ledger entries de la operación
-    const entries = await ledgerApi.getLedgerEntriesByOperation(purchase.operation_id)
-    
-    // Construir operación completa
-    const operation: Operation & { ledger_entries: any[] } = {
-      id: purchase.operation_id,
-      member_id: '',
-      meeting_id: purchase.meeting_id,
-      type: 'STOCK_PURCHASE',
-      description: `Compra de ${purchase.stock_type} - ${purchase.quantity} uds`,
-      date: purchase.purchase_date,
-      total_amount: entries
-        .filter(e => e.account_type === 'CASH' && e.amount > 0)
-        .reduce((sum, e) => sum + e.amount, 0),
-      ledger_entries: entries.map(e => ({
-        id: e.id,
-        operation_id: e.operation_id,
-        account_type: e.account_type,
-        amount: e.amount,
-        description: e.description,
-        created_at: e.created_at
-      }))
-    }
-    
-    selectedOperation.value = operation
-  } catch (e) {
-    alert('No se pudo cargar el detalle de la operación.')
-  } finally {
-    operationDetailLoadingId.value = null
-  }
-}
-
 function closeOperationDetail() {
   selectedOperation.value = null
   operationDetailLoadingId.value = null
@@ -597,10 +607,7 @@ onMounted(async () => {
     ])
     
     if (store.meetingId) {
-      await Promise.all([
-        loadRegisteredOperations(),
-        fetchAllMemberPurchases()
-      ])
+      await loadRegisteredOperations()
     }
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Error al cargar datos'
@@ -614,10 +621,7 @@ watch(
   () => store.meetingId,
   async (newMeetingId) => {
     if (newMeetingId && members.value.length > 0) {
-      await Promise.all([
-        loadRegisteredOperations(),
-        fetchAllMemberPurchases()
-      ])
+      await loadRegisteredOperations()
     }
   }
 )

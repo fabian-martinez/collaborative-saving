@@ -1,11 +1,11 @@
 <template>
   <div
-    id="payment-receipt-print"
+    :id="receiptId"
     class="bg-base-100 p-4 md:p-6 rounded-2xl shadow-lg font-sans print-container"
   >
     <div class="flex justify-between items-start mb-4 md:mb-6 no-print">
       <div class="flex-1 text-center">
-        <h2 class="text-xl md:text-2xl font-bold">Detalle del Pago</h2>
+        <h2 class="text-xl md:text-2xl font-bold">{{ title }}</h2>
         <p class="text-base md:text-lg text-base-content/80 wrap-break-word">
           {{ memberName }}
         </p>
@@ -33,7 +33,7 @@
       </button>
     </div>
     <div class="print-header print-only">
-      <h2 class="text-2xl font-bold text-center mb-2">Detalle del Pago</h2>
+      <h2 class="text-2xl font-bold text-center mb-2">{{ title }}</h2>
       <p class="text-lg text-center mb-1">{{ memberName }}</p>
       <p class="text-sm text-center text-base-content/70">{{ printDate }}</p>
     </div>
@@ -49,7 +49,7 @@
         <div
           class="flex items-baseline justify-between text-lg md:text-xl lg:text-2xl font-bold gap-2"
         >
-          <span class="shrink-0">Total Pagado:</span>
+          <span class="shrink-0">{{ totalLabel }}</span>
           <div
             class="hidden md:block print-show grow border-b-2 border-dotted border-base-300/70 mx-2 md:mx-4"
           ></div>
@@ -74,13 +74,20 @@ import { formatCurrency } from '@/shared/utils/formatters'
 import OperationDetails from '@/shared/components/OperationDetails.vue'
 import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
 
-// Props
-defineProps<{
+// Props with defaults
+const props = withDefaults(defineProps<{
   memberName: string
   printDate: string
   viewedOperations: any[]
   viewedTotal: number
-}>()
+  title?: string
+  totalLabel?: string
+  receiptId?: string
+}>(), {
+  title: 'Detalle del Pago',
+  totalLabel: 'Total Pagado:',
+  receiptId: 'payment-receipt-print'
+})
 
 // Emits
 defineEmits<{

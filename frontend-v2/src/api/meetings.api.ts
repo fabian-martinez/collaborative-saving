@@ -2,7 +2,6 @@ import apiClient from './client'
 import { mockApi } from './mocks'
 
 const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
-import type { MemberPurchase } from './members.api'
 
 // Tipos en snake_case según respuestas del backend
 export interface Meeting {
@@ -93,10 +92,10 @@ export interface ExecuteDisbursementPlanResponse {
 
 export interface Operation {
   id: string
-  member_id: string
+  member_id?: string
   meeting_id: string
   type: string
-  description: string
+  description?: string
   date: string | Date
   total_amount: number
 }
@@ -162,11 +161,11 @@ export const meetingsApi = {
   },
 
   // Meeting Purchases
-  async getMeetingPurchases(meetingId: string): Promise<MemberPurchase[]> {
+  async getMeetingPurchases(meetingId: string): Promise<Operation[]> {
     if (USE_MOCKS) {
       return mockApi.getMeetingPurchases(meetingId)
     }
-    const response = await apiClient.get<MemberPurchase[]>(`/v2/meetings/${meetingId}/purchases`)
+    const response = await apiClient.get<Operation[]>(`/v2/meetings/${meetingId}/purchases`)
     return response.data
   },
 

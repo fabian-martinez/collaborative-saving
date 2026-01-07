@@ -3,140 +3,95 @@
     <div>
       <div class="text-center">
         <div class="text-sm font-light text-base-content/70 uppercase">
-          Total En Acciones Compradas
+          Total Efectivo de Compras
         </div>
         <div class="text-3xl font-bold text-primary">
-          <span v-if="typeof totalPurchasedShares === 'number'">
-            <CopyOnDblClickNumber :value="-totalPurchasedShares" />
-          </span>
-          <span v-else>
-            N/D
-          </span>
+          <CopyOnDblClickNumber :value="totalCashRegistered" />
         </div>
       </div>
     </div>
-    <div class="text-center">
-      <div class="text-sm font-light text-base-content/70 uppercase">Total Efectivo Recaudado</div>
-      <div class="text-2xl font-bold text-success">
-        <span v-if="typeof totalCashRegistered === 'number'">
-          <CopyOnDblClickNumber :value="totalCashRegistered" />
-        </span>
-        <span v-else>
-          N/D
-        </span>
-      </div>
-    </div>
+
     <div class="border-t border-base-300/50"></div>
+
     <div>
       <div class="flex items-center justify-between mb-2">
         <h4 class="font-semibold text-base-content/80">
           Compras Registradas
         </h4>
         <button
-          v-if="registeredOperations.length > 0 || (selectedMember && memberPurchases.length > 0)"
-          @click="$emit('toggle-transactions')"
+          v-if="groupedPurchases.length > 0"
+          @click="isExpanded = !isExpanded"
           class="btn btn-ghost btn-xs"
-          :class="{ 'btn-active': showAllTransactions }"
+          :class="{ 'btn-active': isExpanded }"
         >
-          {{ showAllTransactions ? 'Solo este socio' : 'Todas' }}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 transition-transform"
+            :class="{ 'rotate-180': isExpanded }"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+          {{ isExpanded ? 'Colapsar' : 'Ver todos' }}
         </button>
       </div>
-      <div v-if="showAllTransactions">
-        <div v-if="registeredOperations.length > 0" class="space-y-2" :class="{ 'max-h-32 overflow-y-auto': registeredOperations.length > 3 }">
-          <div
-            v-for="op in registeredOperations"
-            :key="op.id"
-            class="bg-base-100/50 p-2 rounded-md text-sm cursor-pointer hover:bg-primary/10 transition"
-            @click="$emit('show-operation', op)"
-          >
-            <span class="font-semibold">{{ op.description || 'Compra de acciones' }}</span>
-            <span class="ml-2 text-xs text-base-content/60">
-              <span v-if="typeof (op as any).total_debit === 'number'">
-                <CopyOnDblClickNumber :value="(op as any).total_debit" />
-              </span>
-              <span v-else>
-                N/D
-              </span>
-            </span>
-          </div>
-        </div>
-        <p v-else class="text-base-content/60 italic text-sm text-center">Sin compras registradas aún.</p>
-      </div>
-      <div v-else>
-        <div v-if="!selectedMember" class="text-base-content/60 italic text-sm text-center">
-          Seleccione un socio para ver sus compras.
-        </div>
-        <div v-else>
-          <div v-if="isMemberPurchasesLoading" class="text-sm text-center text-base-content/60 py-4">
-            Cargando compras del socio...
-          </div>
-          <div v-else-if="memberPurchasesError" class="alert alert-error text-sm">
-            {{ memberPurchasesError }}
-          </div>
-          <div v-else-if="memberPurchases.length > 0" class="space-y-2" :class="{ 'max-h-32 overflow-y-auto': memberPurchases.length > 3 }">
-            <div
-              v-for="purchase in memberPurchases"
-              :key="purchase.stock_subscription_id"
-              class="bg-base-100/50 p-3 rounded-md text-sm cursor-pointer hover:bg-primary/10 transition"
-              @click="$emit('show-member-purchase', purchase)"
-            >
-              <div class="flex justify-between items-center">
-                <span class="font-semibold">
-                  {{ purchase.stock_type }} · {{ purchase.quantity }} uds
-                </span>
-                <span class="text-xs text-base-content/60">
-                  <CopyOnDblClickNumber :value="purchase.total_value" />
-                </span>
-              </div>
-              <div class="flex justify-between text-xs text-base-content/60 mt-1">
-                <span>{{ formatPurchaseDate(purchase.purchase_date) }}</span>
-                <span v-if="purchase.loan">Con financiamiento</span>
-              </div>
-            </div>
-          </div>
-          <p v-else class="text-base-content/60 italic text-sm text-center">
-            Este socio no ha realizado compras en la reunión.
-          </p>
+      <div v-if="groupedPurchases.length > 0" class="space-y-2" :class="{ 'max-h-32 overflow-y-auto': !isExpanded }">
+        <div
+          v-for="(purchase, index) in groupedPurchases"
+          :key="index"
+          class="flex justify-between items-center bg-base-100/50 p-2 rounded-md text-sm"
+        >
+          <span class="font-medium">{{ purchase.memberName }}</span>
+          <span class="font-mono text-success font-bold">
+            <CopyOnDblClickNumber :value="purchase.amount" />
+          </span>
         </div>
       </div>
+      <p v-else class="text-base-content/60 italic text-sm text-center">
+        Sin compras registradas aún.
+      </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue'
 import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
 import type { Operation } from '@/api/meetings.api'
-import type { MemberPurchase, Member } from '@/api/members.api'
+import type { Member } from '@/api/members.api'
 
 // Props
 const props = defineProps<{
-  totalPurchasedShares: number
   totalCashRegistered: number
   registeredOperations: Operation[]
-  showAllTransactions: boolean
-  selectedMember: Member | null
-  memberPurchases: MemberPurchase[]
-  isMemberPurchasesLoading: boolean
-  memberPurchasesError: string | null
+  members: Member[]
 }>()
 
-// Emits
-const emit = defineEmits<{
-  'toggle-transactions': []
-  'show-operation': [op: Operation]
-  'show-member-purchase': [purchase: MemberPurchase]
-}>()
+// Estado para controlar si está expandido
+const isExpanded = ref(false)
 
-// Helper function
-function formatPurchaseDate(value: string | Date) {
-  const date = typeof value === 'string' ? new Date(value) : value
-  if (Number.isNaN(date.getTime())) {
-    return ''
-  }
-  return new Intl.DateTimeFormat('es-CO', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(date)
-}
+// Agrupar compras por miembro
+const groupedPurchases = computed(() => {
+  const grouped = new Map<string, { memberName: string; amount: number }>()
+  
+  props.registeredOperations.forEach((op) => {
+    if (!op.member_id) return
+    
+    const member = props.members.find(m => m.id === op.member_id)
+    const memberName = member?.name || 'Desconocido'
+    const amount = op.total_amount || 0
+    
+    if (grouped.has(op.member_id)) {
+      const existing = grouped.get(op.member_id)!
+      existing.amount += amount
+    } else {
+      grouped.set(op.member_id, { memberName, amount })
+    }
+  })
+  
+  return Array.from(grouped.values()).sort((a, b) => b.amount - a.amount)
+})
 </script>
 
