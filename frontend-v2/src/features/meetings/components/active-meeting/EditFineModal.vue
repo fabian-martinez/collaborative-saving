@@ -19,7 +19,13 @@
           <label class="label">
             <span class="label-text text-lg">Monto</span>
           </label>
-          <input type="number" v-model.number="editableAmount" class="input input-bordered input-lg w-full font-mono text-right" min="0.01" step="any" />
+          <input 
+            type="text" 
+            :value="amountDisplay"
+            @input="onAmountInput"
+            @blur="onAmountBlur"
+            class="input input-bordered input-lg w-full font-mono text-right" 
+          />
         </div>
       </div>
       
@@ -38,6 +44,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
+import { formatMoneyInput, parseMoneyInput } from '@/shared/utils/formatters'
 
 const props = defineProps<{
   visible: boolean
@@ -51,6 +58,7 @@ const emit = defineEmits<{
 
 const editableDescription = ref('')
 const editableAmount = ref(0)
+const amountDisplay = ref('')
 
 const isFormValid = computed(() => {
   return editableDescription.value.trim() !== '' && editableAmount.value > 0
@@ -63,12 +71,41 @@ watch(() => props.initialData, (newData) => {
   if (newData) {
     editableDescription.value = newData.description
     editableAmount.value = newData.amount
+    amountDisplay.value = formatMoneyInput(newData.amount)
   } else {
     // Reset for creation
     editableDescription.value = ''
     editableAmount.value = 0
+    amountDisplay.value = formatMoneyInput(0)
   }
 }, { immediate: true, deep: true })
+
+watch(editableAmount, (newValue) => {
+  amountDisplay.value = formatMoneyInput(newValue)
+})
+
+function onAmountInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  const rawValue = target.value
+  
+  if (rawValue === '') {
+    amountDisplay.value = ''
+    editableAmount.value = 0
+    return
+  }
+
+  const cleaned = rawValue.replace(/[^\d.,]/g, '')
+  amountDisplay.value = cleaned
+  
+  const parsed = parseMoneyInput(cleaned)
+  editableAmount.value = parsed
+}
+
+function onAmountBlur() {
+  const parsed = parseMoneyInput(amountDisplay.value)
+  editableAmount.value = parsed
+  amountDisplay.value = formatMoneyInput(parsed)
+}
 
 function closeModal() {
   emit('close')

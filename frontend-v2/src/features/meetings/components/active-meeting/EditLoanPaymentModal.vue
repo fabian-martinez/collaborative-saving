@@ -13,12 +13,11 @@
               <span class="label-text text-lg">Abono a Capital</span>
             </label>
             <input
-              type="number"
-              v-model.number="editablePrincipal"
+              type="text"
+              :value="principalDisplay"
+              @input="onPrincipalInput"
+              @blur="onPrincipalBlur"
               class="input input-bordered input-lg w-full font-mono text-right"
-              :min="0"
-              :max="originalOutstandingBalance"
-              step="any"
             />
           </div>
 
@@ -54,7 +53,7 @@
 <script setup lang="ts">
 import { ref, watch, computed, toRefs } from 'vue'
 import type { MemberDue } from '@/api/members.api'
-import { formatCurrency } from '@/shared/utils/formatters'
+import { formatCurrency, formatMoneyInput, parseMoneyInput } from '@/shared/utils/formatters'
 
 const props = defineProps<{
   visible: boolean
@@ -68,6 +67,7 @@ const emit = defineEmits<{
 
 const { due } = toRefs(props)
 const editablePrincipal = ref(0)
+const principalDisplay = ref('')
 
 const originalOutstandingBalance = computed(() => {
   if (!due.value || !due.value.details) return 0
@@ -77,8 +77,36 @@ const originalOutstandingBalance = computed(() => {
 watch(due, (newDue) => {
   if (newDue && newDue.details) {
     editablePrincipal.value = newDue.details.principal || 0
+    principalDisplay.value = formatMoneyInput(newDue.details.principal || 0)
   }
 }, { immediate: true })
+
+watch(editablePrincipal, (newValue) => {
+  principalDisplay.value = formatMoneyInput(newValue);
+});
+
+function onPrincipalInput(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const rawValue = target.value;
+  
+  if (rawValue === '') {
+    principalDisplay.value = '';
+    editablePrincipal.value = 0;
+    return;
+  }
+
+  const cleaned = rawValue.replace(/[^\d.,]/g, '');
+  principalDisplay.value = cleaned;
+  
+  const parsed = parseMoneyInput(cleaned);
+  editablePrincipal.value = parsed;
+}
+
+function onPrincipalBlur() {
+  const parsed = parseMoneyInput(principalDisplay.value);
+  editablePrincipal.value = parsed;
+  principalDisplay.value = formatMoneyInput(parsed);
+}
 
 watch(editablePrincipal, (newValue) => {
   if (newValue < 0) {
