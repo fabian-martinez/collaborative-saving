@@ -41,6 +41,7 @@ import { GetMemberStockTransfersQueryHandler } from '@application/queries/member
 import { GetMemberStockLoanPaymentsQueryHandler } from '@application/queries/members/get-member-stock-loan-payments.query-handler';
 import { GetMemberPaymentScheduleQueryHandler } from '@application/queries/members/get-member-payment-schedule.query-handler';
 import { GetMemberStockSubscriptionsQueryHandler } from '@application/queries/members/get-member-stock-subscriptions.query-handler';
+import { GetMemberLoansQueryHandler } from '@application/queries/loans/get-member-loans.query-handler';
 import { UpdateMemberHttpDto } from '../dto/update-member-http.dto';
 import { CreateMemberHttpDto } from '../dto/create-member-http.dto';
 import { RecordMonthlyPaymentsUseCase } from '@application/use-cases/members/record-monthly-payments.use-case';
@@ -88,6 +89,8 @@ import { StockSubscriptionResponseHttpDto } from '../dto/stock-subscription-resp
 import { PaymentScheduleResponseDto } from '@application/dto/members/payment-schedule-response.dto';
 import { StockSubscriptionResponseDto } from '@application/dto/members/stock-subscription-response.dto';
 import { PaymentItemDto } from '@application/dto/members/payment-item.dto';
+import { LoanResponseHttpDto } from '../dto/loan-response-http.dto';
+import { LoanResponseDto } from '@application/dto/loans/loan-response.dto';
 
 @ApiTags('Members V2')
 @Controller('v2/members')
@@ -103,6 +106,7 @@ export class MembersV2Controller {
     private readonly getMemberStockLoanPaymentsQuery: GetMemberStockLoanPaymentsQueryHandler,
     private readonly getMemberPaymentScheduleQuery: GetMemberPaymentScheduleQueryHandler,
     private readonly getMemberStockSubscriptionsQuery: GetMemberStockSubscriptionsQueryHandler,
+    private readonly getMemberLoansQuery: GetMemberLoansQueryHandler,
     private readonly createMemberUseCase: CreateMemberUseCase,
     private readonly updateMemberUseCase: UpdateMemberUseCase,
     private readonly deleteMemberUseCase: DeleteMemberUseCase,
@@ -267,6 +271,41 @@ export class MembersV2Controller {
         console.error(String(e));
       }
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+    }
+  }
+
+  @Get(':id/loans')
+  @ApiOperation({
+    summary: 'Get all loans for a member',
+    description: 'Returns all loans belonging to a specific member',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The unique identifier of the member',
+    example: 'b1ffcd0a-0d1c-5fg9-cc7e-7cc0ce491e22',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Member loans retrieved successfully',
+    type: [LoanResponseHttpDto],
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid UUID format',
+  })
+  @ApiNotFoundResponse({
+    description: 'Member not found',
+  })
+  async getMemberLoans(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<LoanResponseHttpDto[]> {
+    try {
+      const loans = await this.getMemberLoansQuery.execute(id);
+      return loans.map((loan) => this.mapLoanToHttp(loan));
+    } catch (error: unknown) {
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -1398,6 +1437,23 @@ export class MembersV2Controller {
       purchase_date: subscription.purchaseDate,
       status: subscription.status,
       financing_loan_id: subscription.financingLoanId || null,
+    };
+  }
+
+  private mapLoanToHttp(loan: LoanResponseDto): LoanResponseHttpDto {
+    return {
+      id: loan.id,
+      member_id: loan.memberId,
+      loan_type: loan.loanType,
+      approved_amount: loan.approvedAmount,
+      disbursed_amount: loan.disbursedAmount,
+      outstanding_balance: loan.outstandingBalance,
+      monthly_payment_amount: loan.monthlyPaymentAmount,
+      interest_rate: loan.interestRate,
+      term: loan.term,
+      status: loan.status,
+      creation_date: loan.creationDate,
+      guaranteed_stock_id: loan.guaranteedStockId,
     };
   }
 }
