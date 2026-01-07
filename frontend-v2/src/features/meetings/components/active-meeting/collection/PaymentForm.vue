@@ -44,7 +44,7 @@
               <p
                 class="text-right font-mono text-base md:text-xl lg:text-2xl whitespace-nowrap"
               >
-                {{ formatCurrency(payments[due.originalIndex]?.amount || 0) }}
+                {{ formatCurrency(getPaymentAmountForDue(due) || 0) }}
               </p>
             </div>
           </div>
@@ -82,7 +82,7 @@
                 <p
                   class="text-right font-mono text-base md:text-xl lg:text-2xl whitespace-nowrap"
                 >
-                  {{ formatCurrency(payments[due.originalIndex]?.amount || 0) }}
+                  {{ formatCurrency(getPaymentAmountForDue(due) || 0) }}
                 </p>
               </div>
             </div>
@@ -100,7 +100,7 @@
                 <span class="shrink-0">Abono Capital:</span>
                 <span class="font-mono text-right">{{
                   formatCurrency(
-                    (payments[due.originalIndex]?.amount || 0) -
+                    (getPaymentAmountForDue(due) || 0) -
                       (due.details.interest || 0)
                   )
                 }}</span>
@@ -188,7 +188,7 @@
                 <p
                   class="text-right font-mono text-base md:text-xl lg:text-2xl whitespace-nowrap"
                 >
-                  {{ formatCurrency(payments[due.originalIndex]?.amount || 0) }}
+                  {{ formatCurrency(getPaymentAmountForDue(due) || 0) }}
                 </p>
               </div>
             </div>
@@ -322,7 +322,7 @@ import type { MemberDue } from '@/api/members.api'
 import type { Payment } from '../../../composables/usePaymentCollection'
 
 // Props
-defineProps<{
+const props = defineProps<{
   memberName: string
   loadingDues: boolean
   stockDues: Array<MemberDue & { originalIndex: number }>
@@ -344,6 +344,23 @@ defineEmits<{
   'add-novelty': []
   'delete-novelty': [idx: number]
 }>()
+
+// Función para encontrar el pago correspondiente a un due
+function getPaymentAmountForDue(due: MemberDue & { originalIndex: number }): number {
+  const payment = props.payments.find((p) => {
+    if (p.type !== due.type) return false
+    // Si ambos tienen referenceId, deben coincidir
+    if (due.reference_id && p.referenceId) {
+      return due.reference_id === p.referenceId
+    }
+    // Si ninguno tiene referenceId, coinciden
+    if (!due.reference_id && !p.referenceId) {
+      return true
+    }
+    return false
+  })
+  return payment?.amount || 0
+}
 
 function getAffectedPaymentTypeLabel(type: string): string {
   const typeLabels: Record<string, string> = {

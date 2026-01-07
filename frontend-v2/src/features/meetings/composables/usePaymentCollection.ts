@@ -137,10 +137,28 @@ export function usePaymentCollection() {
     const amount = Number(data.amount) || 0
     if (editingFineIndex.value !== null) {
       const index = editingFineIndex.value
-      memberDues.value[index].description = data.description
-      memberDues.value[index].amount = amount
-      payments.value[index].amount = amount
-      payments.value[index].description = data.description
+      const due = memberDues.value[index]
+      
+      // Actualizar due
+      due.description = data.description
+      due.amount = amount
+      
+      // Buscar el payment correspondiente usando type y referenceId
+      const paymentIndex = payments.value.findIndex((p) => {
+        if (p.type !== due.type) return false
+        if (due.reference_id && p.referenceId) {
+          return due.reference_id === p.referenceId
+        }
+        if (!due.reference_id && !p.referenceId) {
+          return true
+        }
+        return false
+      })
+      
+      if (paymentIndex > -1) {
+        payments.value[paymentIndex].amount = amount
+        payments.value[paymentIndex].description = data.description
+      }
     } else {
       const fineDue: MemberDue = {
         type: 'fee',
@@ -163,7 +181,24 @@ export function usePaymentCollection() {
   async function handleLoanPaymentUpdate(newAmount: number) {
     const amount = Number(newAmount) || 0
     if (editingLoanIndex.value !== null) {
-      payments.value[editingLoanIndex.value].amount = amount
+      const index = editingLoanIndex.value
+      const due = memberDues.value[index]
+      
+      // Buscar el payment correspondiente usando type y referenceId
+      const paymentIndex = payments.value.findIndex((p) => {
+        if (p.type !== due.type) return false
+        if (due.reference_id && p.referenceId) {
+          return due.reference_id === p.referenceId
+        }
+        if (!due.reference_id && !p.referenceId) {
+          return true
+        }
+        return false
+      })
+      
+      if (paymentIndex > -1) {
+        payments.value[paymentIndex].amount = amount
+      }
     }
     isLoanModalOpen.value = false
     await recalculateInsurance()
@@ -175,21 +210,56 @@ export function usePaymentCollection() {
       (d) => d.originalIndex === index
     )
     if (originalDueIndex > -1) {
+      const due = memberDues.value[originalDueIndex]
+      
+      // Eliminar del array de dues
       memberDues.value.splice(originalDueIndex, 1)
-      payments.value.splice(originalDueIndex, 1)
+      
+      // Buscar el payment correspondiente usando type y referenceId
+      // en lugar de usar el índice directamente (porque puede haber novedades mezcladas)
+      const paymentIndex = payments.value.findIndex((p) => {
+        if (p.type !== due.type) return false
+        // Si ambos tienen referenceId, deben coincidir
+        if (due.reference_id && p.referenceId) {
+          return due.reference_id === p.referenceId
+        }
+        // Si ninguno tiene referenceId, coinciden
+        if (!due.reference_id && !p.referenceId) {
+          return true
+        }
+        return false
+      })
+      
+      if (paymentIndex > -1) {
+        payments.value.splice(paymentIndex, 1)
+      }
     }
   }
 
   function editPayment(index: number) {
-    const dueType = memberDues.value[index].type
+    const due = memberDues.value[index]
+    const dueType = due.type
+    
+    // Buscar el payment correspondiente usando type y referenceId
+    const paymentIndex = payments.value.findIndex((p) => {
+      if (p.type !== due.type) return false
+      if (due.reference_id && p.referenceId) {
+        return due.reference_id === p.referenceId
+      }
+      if (!due.reference_id && !p.referenceId) {
+        return true
+      }
+      return false
+    })
+    
     if (dueType === 'loan_payment') {
       editingLoanIndex.value = index
       isLoanModalOpen.value = true
     } else if (dueType === 'fee') {
       editingFineIndex.value = index
       editingFineData.value = {
-        description: memberDues.value[index].description,
-        amount: payments.value[index].amount,
+        description: due.description,
+        amount: paymentIndex > -1 ? payments.value[paymentIndex].amount : due.amount,
       }
       isFineModalOpen.value = true
     }
@@ -241,12 +311,21 @@ export function usePaymentCollection() {
   async function recalculateInsurance() {
     if (!selectedMember.value) return
     let totalCapitalPayment = 0
-    payments.value.forEach((payment, index) => {
-      const due = memberDues.value[index]
-      if (due && due.type === 'loan_payment' && due.details) {
-        const capitalPortion =
-          payment.amount - (due.details.interest || 0)
-        totalCapitalPayment += capitalPortion > 0 ? capitalPortion : 0
+    payments.value.forEach((payment) => {
+      // Buscar el due correspondiente usando type y referenceId
+      if (payment.type === 'loan_payment') {
+        const due = memberDues.value.find((d) => {
+          const typeMatches = d.type === 'loan_payment'
+          const referenceMatches = 
+            (!payment.referenceId && !d.reference_id) ||
+            (payment.referenceId && d.reference_id && payment.referenceId === d.reference_id)
+          return typeMatches && referenceMatches
+        })
+        if (due && due.details) {
+          const capitalPortion =
+            payment.amount - (due.details.interest || 0)
+          totalCapitalPayment += capitalPortion > 0 ? capitalPortion : 0
+        }
       }
     })
 
@@ -261,7 +340,13 @@ export function usePaymentCollection() {
       if (insuranceDueIndex !== -1) {
         const amount = Number(insurance_amount) || 0
         memberDues.value[insuranceDueIndex].amount = amount
-        payments.value[insuranceDueIndex].amount = amount
+        // Buscar el pago de seguro en payments usando type en lugar de índice
+        const insurancePaymentIndex = payments.value.findIndex(
+          (p) => p.type === 'insurance'
+        )
+        if (insurancePaymentIndex !== -1) {
+          payments.value[insurancePaymentIndex].amount = amount
+        }
       } else if (insurance_amount > 0) {
         const amount = Number(insurance_amount) || 0
         const insuranceDue: MemberDue = {
@@ -351,8 +436,21 @@ export function usePaymentCollection() {
           const amount = Number(payment.amount)
           return !isNaN(amount) && amount > 0
         })
-        .map((payment, index) => {
-          const due = memberDues.value[index]
+        .map((payment) => {
+          // Buscar el due correspondiente usando type y referenceId
+          // Las novedades no tienen due correspondiente
+          let due: MemberDue | undefined = undefined
+          
+          if (payment.type !== 'novelty') {
+            due = memberDues.value.find((d) => {
+              const typeMatches = d.type === payment.type
+              const referenceMatches = 
+                (!payment.referenceId && !d.reference_id) ||
+                (payment.referenceId && d.reference_id && payment.referenceId === d.reference_id)
+              return typeMatches && referenceMatches
+            })
+          }
+
           let description = payment.description
           const noveltyComment = payment.noveltyComment
 
