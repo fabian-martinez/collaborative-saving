@@ -50,6 +50,7 @@ import { MemberDueResponseHttpDto } from '../dto/member-due-response-http.dto';
 import { RecordMonthlyPaymentsResponseHttpDto } from '../dto/record-monthly-payments-response-http.dto';
 import { GetMemberPaymentsQueryHttpDto } from '../dto/get-member-payments-query-http.dto';
 import { GetMemberPurchasesQueryHttpDto } from '../dto/get-member-purchases-query-http.dto';
+import { GetMemberPurchasesQueryDto } from '@application/dto/members/get-member-purchases-query.dto';
 import { GetMemberStockModificationsQueryHttpDto } from '../dto/get-member-stock-modifications-query-http.dto';
 import { MemberPaymentResponseHttpDto } from '../dto/member-payment-response-http.dto';
 import { MemberPurchaseResponseHttpDto } from '../dto/member-purchase-response-http.dto';
@@ -83,6 +84,10 @@ import { StockLoanPaymentResponseDto } from '@application/dto/members/stock-loan
 import { GetPaymentScheduleQueryHttpDto } from '../dto/get-payment-schedule-query-http.dto';
 import { PaymentScheduleResponseHttpDto } from '../dto/payment-schedule-response-http.dto';
 import { PaymentScheduleResponseDto } from '@application/dto/members/payment-schedule-response.dto';
+import {
+  PaymentItemDto,
+  PaymentType,
+} from '@application/dto/members/payment-item.dto';
 
 @ApiTags('Members V2')
 @Controller('v2/members')
@@ -495,10 +500,17 @@ export class MembersV2Controller {
   ): Promise<MemberPaymentResponseHttpDto[]> {
     // Validation is handled by class-validator in the DTO
     // Exception handling is done by GlobalExceptionFilter
-    const payments = await this.getMemberPaymentsQuery.execute(id, {
-      paymentType: query.type,
-      meetingId: query.meeting_id,
-    });
+    const queryDto: {
+      paymentType?: PaymentFilterType;
+      meetingId?: string;
+    } = {};
+    if (query.type) {
+      queryDto.paymentType = query.type;
+    }
+    if (query.meeting_id) {
+      queryDto.meetingId = query.meeting_id as string;
+    }
+    const payments = await this.getMemberPaymentsQuery.execute(id, queryDto);
     return payments.map((payment) => this.mapPaymentToHttp(payment));
   }
 
@@ -514,7 +526,7 @@ export class MembersV2Controller {
     example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
   })
   @ApiQuery({
-    name: 'meetingId',
+    name: 'meeting_id',
     required: false,
     description: 'Filter by meeting ID',
     example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
@@ -538,9 +550,13 @@ export class MembersV2Controller {
     @Query() query: GetMemberPurchasesQueryHttpDto,
   ): Promise<MemberPurchaseResponseHttpDto[]> {
     try {
-      const purchases = await this.getMemberPurchasesQuery.execute(id, {
-        meetingId: query.meeting_id,
-      });
+      const queryDto: GetMemberPurchasesQueryDto = query.meeting_id
+        ? { meetingId: query.meeting_id as string }
+        : {};
+      const purchases = await this.getMemberPurchasesQuery.execute(
+        id,
+        queryDto,
+      );
       return purchases.map((purchase) => this.mapPurchaseToHttp(purchase));
     } catch (e: unknown) {
       if (e instanceof MemberNotFoundException) {
@@ -659,19 +675,31 @@ export class MembersV2Controller {
     @Body() dto: RecordMonthlyPaymentsHttpDto,
   ): Promise<RecordMonthlyPaymentsResponseHttpDto> {
     // Map HTTP DTO (snake_case) to application DTO (camelCase)
-    const payments = dto.payments.map((payment) => ({
-      type: payment.type,
-      amount: payment.amount,
-      description: payment.description,
-      referenceId: payment.reference_id,
-      noveltyComment: payment.novelty_comment,
-      affectedPaymentType: payment.affected_payment_type,
-    }));
+    const payments: PaymentItemDto[] = dto.payments.map((payment) => {
+      const paymentDto: PaymentItemDto = {
+        type: payment.type,
+        amount: payment.amount,
+      };
+      if (payment.description) {
+        paymentDto.description = payment.description;
+      }
+      if (payment.reference_id) {
+        paymentDto.referenceId = payment.reference_id as string;
+      }
+      if (payment.novelty_comment) {
+        paymentDto.noveltyComment = payment.novelty_comment as string;
+      }
+      if (payment.affected_payment_type) {
+        paymentDto.affectedPaymentType =
+          payment.affected_payment_type as PaymentType;
+      }
+      return paymentDto;
+    });
 
     const result = await this.recordMonthlyPaymentsUseCase.execute({
       memberId: id,
       payments,
-      meetingId: dto.meeting_id,
+      ...(dto.meeting_id ? { meetingId: dto.meeting_id as string } : {}),
     });
     return this.mapRecordMonthlyPaymentsToHttp(result);
   }
@@ -916,9 +944,13 @@ export class MembersV2Controller {
     @Query() query: GetMemberStockModificationsQueryHttpDto,
   ): Promise<StockExchangeResponseHttpDto[]> {
     try {
-      const exchanges = await this.getMemberStockExchangesQuery.execute(id, {
-        meetingId: query.meeting_id,
-      });
+      const queryDto: { meetingId?: string } = query.meeting_id
+        ? { meetingId: query.meeting_id as string }
+        : {};
+      const exchanges = await this.getMemberStockExchangesQuery.execute(
+        id,
+        queryDto,
+      );
       return exchanges.map((exchange) => this.mapStockExchangeToHttp(exchange));
     } catch (error) {
       if (error instanceof MemberNotFoundException) {
@@ -964,9 +996,13 @@ export class MembersV2Controller {
     @Query() query: GetMemberStockModificationsQueryHttpDto,
   ): Promise<StockTransferResponseHttpDto[]> {
     try {
-      const transfers = await this.getMemberStockTransfersQuery.execute(id, {
-        meetingId: query.meeting_id,
-      });
+      const queryDto: { meetingId?: string } = query.meeting_id
+        ? { meetingId: query.meeting_id as string }
+        : {};
+      const transfers = await this.getMemberStockTransfersQuery.execute(
+        id,
+        queryDto,
+      );
       return transfers.map((transfer) => this.mapStockTransferToHttp(transfer));
     } catch (error) {
       if (error instanceof MemberNotFoundException) {
@@ -1012,9 +1048,13 @@ export class MembersV2Controller {
     @Query() query: GetMemberStockModificationsQueryHttpDto,
   ): Promise<StockLoanPaymentResponseHttpDto[]> {
     try {
-      const payments = await this.getMemberStockLoanPaymentsQuery.execute(id, {
-        meetingId: query.meeting_id,
-      });
+      const queryDto: { meetingId?: string } = query.meeting_id
+        ? { meetingId: query.meeting_id as string }
+        : {};
+      const payments = await this.getMemberStockLoanPaymentsQuery.execute(
+        id,
+        queryDto,
+      );
       return payments.map((payment) => this.mapStockLoanPaymentToHttp(payment));
     } catch (error) {
       if (error instanceof MemberNotFoundException) {
