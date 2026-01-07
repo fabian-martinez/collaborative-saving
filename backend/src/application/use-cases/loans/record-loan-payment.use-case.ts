@@ -4,9 +4,12 @@ import { RecordOperationUseCase } from '@application/use-cases/accounting/record
 import { RecordOperationDto } from '@application/dto/accounting/record-operation.dto';
 import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
 import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
+import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-subscription-repository.port';
+import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { OperationType } from '@domain/enums/operation-type.enum';
+import { LoanStatus } from '@domain/enums/loan-status.enum';
 import {
   LoanTransactionDetail,
   LoanTransactionType,
@@ -32,161 +35,175 @@ export class RecordLoanPaymentUseCase {
     private readonly loanRepository: LoanRepository,
     private readonly loanTransactionDetailRepository: LoanTransactionDetailRepository,
     private readonly recordOperationUseCase: RecordOperationUseCase,
+    private readonly stockSubscriptionRepository: StockSubscriptionRepository,
+    private readonly transactionManager: TransactionManager,
   ) {}
 
   async execute(
     dto: RecordLoanPaymentDto,
   ): Promise<RecordLoanPaymentResponseDto> {
-    // 1. Validate and get loan
-    const loan = await this.loanRepository.findById(dto.loanId);
-    if (!loan) {
-      throw new LoanNotFoundException(dto.loanId);
-    }
+    return this.transactionManager.execute(async () => {
+      // 1. Validate and get loan
+      const loan = await this.loanRepository.findById(dto.loanId);
+      if (!loan) {
+        throw new LoanNotFoundException(dto.loanId);
+      }
 
-    // 2. Validate payment amount
-    if (dto.totalPaymentAmount <= 0) {
-      throw new InvalidRequestError('Payment amount must be greater than zero');
-    }
-
-    // 3. Calculate interest and principal distribution
-    let interestPaid: number;
-    let principalPaid: number;
-
-    if (
-      dto.forcedInterestAmount !== undefined &&
-      dto.forcedPrincipalAmount !== undefined
-    ) {
-      // Use forced amounts (for special cases like stock-based payments)
-      interestPaid = dto.forcedInterestAmount;
-      principalPaid = dto.forcedPrincipalAmount;
-
-      // Validate forced amounts match total
-      const forcedTotal = interestPaid + principalPaid;
-      if (Math.abs(forcedTotal - dto.totalPaymentAmount) > 0.01) {
+      // 2. Validate payment amount
+      if (dto.totalPaymentAmount <= 0) {
         throw new InvalidRequestError(
-          `Forced amounts (${forcedTotal}) do not match total payment (${dto.totalPaymentAmount})`,
+          'Payment amount must be greater than zero',
         );
       }
-    } else if (dto.forcedPrincipalAmount !== undefined) {
-      // Only principal forced (e.g., stock-based payment where all goes to principal)
-      principalPaid = dto.forcedPrincipalAmount;
-      interestPaid = dto.totalPaymentAmount - principalPaid;
-    } else if (dto.forcedInterestAmount !== undefined) {
-      // Only interest forced
-      interestPaid = dto.forcedInterestAmount;
-      principalPaid = dto.totalPaymentAmount - interestPaid;
-    } else {
-      // Calculate based on loan interest due (standard behavior)
-      const interestDue = loan.calculateInterestDue();
-      interestPaid = Math.min(dto.totalPaymentAmount, interestDue);
-      principalPaid = dto.totalPaymentAmount - interestPaid;
-    }
 
-    // 4. Validate principal doesn't exceed outstanding balance
-    if (principalPaid > loan.outstandingBalance) {
-      throw new InvalidRequestError(
-        `Principal payment (${principalPaid}) exceeds outstanding balance (${loan.outstandingBalance})`,
-      );
-    }
+      // 3. Calculate interest and principal distribution
+      let interestPaid: number;
+      let principalPaid: number;
 
-    // 5. Build ledger entries
-    const ledgerEntries: RecordOperationDto['entries'] = [];
+      if (
+        dto.forcedInterestAmount !== undefined &&
+        dto.forcedPrincipalAmount !== undefined
+      ) {
+        // Use forced amounts (for special cases like stock-based payments)
+        interestPaid = dto.forcedInterestAmount;
+        principalPaid = dto.forcedPrincipalAmount;
 
-    // Cash entry (debit - money received)
-    ledgerEntries.push({
-      accountType: CASH_ACCOUNT,
-      amount: dto.totalPaymentAmount,
-      description: this.buildCashDescription(
-        principalPaid,
+        // Validate forced amounts match total
+        const forcedTotal = interestPaid + principalPaid;
+        if (Math.abs(forcedTotal - dto.totalPaymentAmount) > 0.01) {
+          throw new InvalidRequestError(
+            `Forced amounts (${forcedTotal}) do not match total payment (${dto.totalPaymentAmount})`,
+          );
+        }
+      } else if (dto.forcedPrincipalAmount !== undefined) {
+        // Only principal forced (e.g., stock-based payment where all goes to principal)
+        principalPaid = dto.forcedPrincipalAmount;
+        interestPaid = dto.totalPaymentAmount - principalPaid;
+      } else if (dto.forcedInterestAmount !== undefined) {
+        // Only interest forced
+        interestPaid = dto.forcedInterestAmount;
+        principalPaid = dto.totalPaymentAmount - interestPaid;
+      } else {
+        // Calculate based on loan interest due (standard behavior)
+        const interestDue = loan.calculateInterestDue();
+        interestPaid = Math.min(dto.totalPaymentAmount, interestDue);
+        principalPaid = dto.totalPaymentAmount - interestPaid;
+      }
+
+      // 4. Validate principal doesn't exceed outstanding balance
+      if (principalPaid > loan.outstandingBalance) {
+        throw new InvalidRequestError(
+          `Principal payment (${principalPaid}) exceeds outstanding balance (${loan.outstandingBalance})`,
+        );
+      }
+
+      // 5. Build ledger entries
+      const ledgerEntries: RecordOperationDto['entries'] = [];
+
+      // Cash entry (debit - money received)
+      ledgerEntries.push({
+        accountType: CASH_ACCOUNT,
+        amount: dto.totalPaymentAmount,
+        description: this.buildCashDescription(
+          principalPaid,
+          interestPaid,
+          dto.notes,
+        ),
+        loanId: dto.loanId,
+      });
+
+      // Interest income entry (credit - income) if interest was paid
+      if (interestPaid > 0) {
+        ledgerEntries.push({
+          accountType: INTEREST_INCOME_ACCOUNT,
+          amount: -interestPaid,
+          description:
+            dto.notes || `Intereses préstamo: ${interestPaid.toFixed(2)}`,
+          loanId: dto.loanId,
+        });
+      }
+
+      // Loans receivable entry (credit - reduce loan balance) for principal portion
+      if (principalPaid > 0) {
+        ledgerEntries.push({
+          accountType: LOANS_RECEIVABLE_ACCOUNT,
+          amount: -principalPaid,
+          description:
+            dto.notes || `Abono capital préstamo: ${principalPaid.toFixed(2)}`,
+          loanId: dto.loanId,
+        });
+      }
+
+      // 6. Record accounting operation
+      const operationDto: RecordOperationDto = {
+        memberId: loan.memberId,
+        meetingId: dto.meetingId,
+        type: OperationType.LOAN_PAYMENT,
+        description:
+          dto.notes ||
+          this.buildOperationDescription(principalPaid, interestPaid),
+        entries: ledgerEntries,
+      };
+
+      const operationResult =
+        await this.recordOperationUseCase.execute(operationDto);
+
+      // 7. Update loan state using domain method
+      loan.recordPayment(principalPaid, interestPaid);
+      await this.loanRepository.save(loan);
+
+      // 7.5. If loan is fully paid, release subscriptions
+      if (
+        loan.outstandingBalance === 0 &&
+        loan.status === (LoanStatus.PAID as string)
+      ) {
+        await this.releaseSubscriptionsForPaidLoan(loan.id);
+      }
+
+      // 8. Create loan transaction details
+      const transactionDetailIds: string[] = [];
+
+      if (interestPaid > 0) {
+        const interestTransactionDetail = LoanTransactionDetail.create({
+          loanId: loan.id,
+          transactionType: LoanTransactionType.INTEREST_PAYMENT,
+          amount: interestPaid,
+          notes: dto.notes || null,
+          operationId: operationResult.operationId,
+        });
+        const savedInterestDetail =
+          await this.loanTransactionDetailRepository.save(
+            interestTransactionDetail,
+          );
+        transactionDetailIds.push(savedInterestDetail.id);
+      }
+
+      if (principalPaid > 0) {
+        const principalTransactionDetail = LoanTransactionDetail.create({
+          loanId: loan.id,
+          transactionType: LoanTransactionType.PRINCIPAL_PAYMENT,
+          amount: principalPaid,
+          notes: dto.notes || null,
+          operationId: operationResult.operationId,
+        });
+        const savedPrincipalDetail =
+          await this.loanTransactionDetailRepository.save(
+            principalTransactionDetail,
+          );
+        transactionDetailIds.push(savedPrincipalDetail.id);
+      }
+
+      // 9. Return response
+      return {
+        loanId: loan.id,
+        operationId: operationResult.operationId,
         interestPaid,
-        dto.notes,
-      ),
-      loanId: dto.loanId,
+        principalPaid,
+        newOutstandingBalance: loan.outstandingBalance,
+        loanStatus: loan.status,
+        transactionDetailIds,
+      };
     });
-
-    // Interest income entry (credit - income) if interest was paid
-    if (interestPaid > 0) {
-      ledgerEntries.push({
-        accountType: INTEREST_INCOME_ACCOUNT,
-        amount: -interestPaid,
-        description:
-          dto.notes || `Intereses préstamo: ${interestPaid.toFixed(2)}`,
-        loanId: dto.loanId,
-      });
-    }
-
-    // Loans receivable entry (credit - reduce loan balance) for principal portion
-    if (principalPaid > 0) {
-      ledgerEntries.push({
-        accountType: LOANS_RECEIVABLE_ACCOUNT,
-        amount: -principalPaid,
-        description:
-          dto.notes || `Abono capital préstamo: ${principalPaid.toFixed(2)}`,
-        loanId: dto.loanId,
-      });
-    }
-
-    // 6. Record accounting operation
-    const operationDto: RecordOperationDto = {
-      memberId: loan.memberId,
-      meetingId: dto.meetingId,
-      type: OperationType.LOAN_PAYMENT,
-      description:
-        dto.notes ||
-        this.buildOperationDescription(principalPaid, interestPaid),
-      entries: ledgerEntries,
-    };
-
-    const operationResult =
-      await this.recordOperationUseCase.execute(operationDto);
-
-    // 7. Update loan state using domain method
-    loan.recordPayment(principalPaid, interestPaid);
-    await this.loanRepository.save(loan);
-
-    // 8. Create loan transaction details
-    const transactionDetailIds: string[] = [];
-
-    if (interestPaid > 0) {
-      const interestTransactionDetail = LoanTransactionDetail.create({
-        loanId: loan.id,
-        transactionType: LoanTransactionType.INTEREST_PAYMENT,
-        amount: interestPaid,
-        notes: dto.notes || null,
-        operationId: operationResult.operationId,
-      });
-      const savedInterestDetail =
-        await this.loanTransactionDetailRepository.save(
-          interestTransactionDetail,
-        );
-      transactionDetailIds.push(savedInterestDetail.id);
-    }
-
-    if (principalPaid > 0) {
-      const principalTransactionDetail = LoanTransactionDetail.create({
-        loanId: loan.id,
-        transactionType: LoanTransactionType.PRINCIPAL_PAYMENT,
-        amount: principalPaid,
-        notes: dto.notes || null,
-        operationId: operationResult.operationId,
-      });
-      const savedPrincipalDetail =
-        await this.loanTransactionDetailRepository.save(
-          principalTransactionDetail,
-        );
-      transactionDetailIds.push(savedPrincipalDetail.id);
-    }
-
-    // 9. Return response
-    return {
-      loanId: loan.id,
-      operationId: operationResult.operationId,
-      interestPaid,
-      principalPaid,
-      newOutstandingBalance: loan.outstandingBalance,
-      loanStatus: loan.status,
-      transactionDetailIds,
-    };
   }
 
   private buildCashDescription(
@@ -216,6 +233,42 @@ export class RecordLoanPaymentUseCase {
       return `Pago de capital de préstamo: ${principalPaid.toFixed(2)}`;
     } else {
       return `Pago de intereses de préstamo: ${interestPaid.toFixed(2)}`;
+    }
+  }
+
+  /**
+   * Releases subscriptions associated with a fully paid loan and consolidates them
+   * with existing subscriptions without loan of the same stock type.
+   */
+  private async releaseSubscriptionsForPaidLoan(loanId: string): Promise<void> {
+    // Get all subscriptions associated with the loan
+    const subscriptions =
+      await this.stockSubscriptionRepository.findByFinancingLoan(loanId);
+
+    for (const subscription of subscriptions) {
+      // Release the loan
+      subscription.update({ financingLoanId: null });
+
+      // Look for existing subscription without loan of the same type
+      const freeSubscription =
+        await this.stockSubscriptionRepository.findByMemberAndStockAndNoLoan(
+          subscription.memberId,
+          subscription.stockId,
+        );
+
+      if (freeSubscription && freeSubscription.id !== subscription.id) {
+        // Consolidate: add quantity to existing subscription
+        freeSubscription.update({
+          quantity: freeSubscription.quantity + subscription.quantity,
+        });
+        await this.stockSubscriptionRepository.save(freeSubscription);
+
+        // Mark released subscription as inactive
+        subscription.markAsInactive();
+      }
+
+      // Save the subscription (either consolidated or just released)
+      await this.stockSubscriptionRepository.save(subscription);
     }
   }
 }

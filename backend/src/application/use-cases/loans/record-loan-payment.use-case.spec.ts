@@ -2,6 +2,8 @@ import { RecordLoanPaymentUseCase } from './record-loan-payment.use-case';
 import { RecordLoanPaymentDto } from '@application/dto/loans/record-loan-payment.dto';
 import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
 import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
+import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-subscription-repository.port';
+import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
 import { Loan, LoanStatus } from '@domain/entities/loan.entity';
 import { LoanTransactionDetail } from '@domain/entities/loan-transaction-detail.entity';
@@ -19,6 +21,8 @@ describe('RecordLoanPaymentUseCase', () => {
   let useCase: RecordLoanPaymentUseCase;
   let loanRepository: jest.Mocked<LoanRepository>;
   let loanTransactionDetailRepository: jest.Mocked<LoanTransactionDetailRepository>;
+  let stockSubscriptionRepository: jest.Mocked<StockSubscriptionRepository>;
+  let transactionManager: jest.Mocked<TransactionManager>;
   let recordOperationUseCase: jest.Mocked<RecordOperationUseCase>;
 
   let loanFindByIdSpy: jest.SpyInstance;
@@ -74,10 +78,29 @@ describe('RecordLoanPaymentUseCase', () => {
       execute: jest.fn(),
     } as unknown as jest.Mocked<RecordOperationUseCase>;
 
+    stockSubscriptionRepository = {
+      findById: jest.fn(),
+      findByMember: jest.fn(),
+      findByMemberAndStock: jest.fn(),
+      findByMemberAndStockAndNoLoan: jest.fn(),
+      findByFinancingLoan: jest.fn(),
+      save: jest.fn(),
+      saveMany: jest.fn(),
+    } as unknown as jest.Mocked<StockSubscriptionRepository>;
+
+    transactionManager = {
+      execute: jest.fn(async <T>(operation: () => Promise<T>): Promise<T> => {
+        return await operation();
+      }),
+      getActiveQueryRunner: jest.fn(),
+    } as unknown as jest.Mocked<TransactionManager>;
+
     useCase = new RecordLoanPaymentUseCase(
       loanRepository,
       loanTransactionDetailRepository,
       recordOperationUseCase,
+      stockSubscriptionRepository,
+      transactionManager,
     );
 
     // Setup default mocks
@@ -88,6 +111,9 @@ describe('RecordLoanPaymentUseCase', () => {
         ledgerEntryIds: ['ledger-entry-1', 'ledger-entry-2', 'ledger-entry-3'],
       });
     loanFindByIdSpy = jest.spyOn(loanRepository, 'findById');
+    jest
+      .spyOn(stockSubscriptionRepository, 'findByFinancingLoan')
+      .mockResolvedValue([]);
     loanSaveSpy = jest.spyOn(loanRepository, 'save');
     loanTransactionDetailSaveSpy = jest.spyOn(
       loanTransactionDetailRepository,
@@ -215,6 +241,9 @@ describe('RecordLoanPaymentUseCase', () => {
       loanTransactionDetailSaveSpy.mockResolvedValue(
         {} as LoanTransactionDetail,
       );
+      jest
+        .spyOn(stockSubscriptionRepository, 'findByFinancingLoan')
+        .mockResolvedValue([]);
 
       // Interest due = 500 * 0.02 = 10
       // Principal = 500 - 10 = 490

@@ -71,6 +71,32 @@ export class TypeOrmStockSubscriptionRepository implements StockSubscriptionRepo
     return entities.map((e) => StockSubscriptionMapper.toDomain(e));
   }
 
+  async findByMemberAndStockAndNoLoan(
+    memberId: string,
+    stockId: string,
+  ): Promise<StockSubscriptionDomain | null> {
+    const repo = this.getRepository();
+    const entity = await repo.findOne({
+      where: {
+        memberId,
+        stockId,
+        financingLoanId: IsNull(),
+        status: 'active',
+      },
+    });
+    return entity ? StockSubscriptionMapper.toDomain(entity) : null;
+  }
+
+  async findByFinancingLoan(
+    financingLoanId: string,
+  ): Promise<StockSubscriptionDomain[]> {
+    const repo = this.getRepository();
+    const entities = await repo.find({
+      where: { financingLoanId, status: 'active' },
+    });
+    return entities.map((e) => StockSubscriptionMapper.toDomain(e));
+  }
+
   async save(
     stockSubscription: StockSubscriptionDomain,
   ): Promise<StockSubscriptionDomain> {

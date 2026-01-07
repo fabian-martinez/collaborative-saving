@@ -4,6 +4,7 @@ import { MemberRepository } from '@domain/ports/repositories/member-repository.p
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-subscription-repository.port';
+import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 import { CreateLoanUseCase } from '@application/use-cases/loans/create-loan.use-case';
 import { CreateLoanDto } from '@application/dto/loans/create-loan.dto';
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
@@ -35,161 +36,209 @@ export class PurchaseStockUseCase {
     private readonly stockSubscriptionRepository: StockSubscriptionRepository,
     private readonly createLoanUseCase: CreateLoanUseCase,
     private readonly recordOperationUseCase: RecordOperationUseCase,
+    private readonly transactionManager: TransactionManager,
   ) {}
 
   async execute(dto: PurchaseStockDto): Promise<PurchaseStockResponseDto> {
-    // 1. Validate member exists
-    const member = await this.memberRepository.findById(dto.memberId);
-    if (!member) {
-      throw new MemberNotFoundException(dto.memberId);
-    }
-
-    // 2. Get active meeting (or use provided meetingId)
-    let meeting: Meeting | null;
-    if (dto.meetingId) {
-      meeting = await this.meetingRepository.findById(dto.meetingId);
-      if (!meeting) {
-        throw new MeetingNotFoundException(dto.meetingId);
+    return this.transactionManager.execute(async () => {
+      // 1. Validate member exists
+      const member = await this.memberRepository.findById(dto.memberId);
+      if (!member) {
+        throw new MemberNotFoundException(dto.memberId);
       }
-    } else {
-      meeting = await this.meetingRepository.findActive();
-      if (!meeting) {
-        throw new MeetingNotFoundException();
+
+      // 2. Get active meeting (or use provided meetingId)
+      let meeting: Meeting | null;
+      if (dto.meetingId) {
+        meeting = await this.meetingRepository.findById(dto.meetingId);
+        if (!meeting) {
+          throw new MeetingNotFoundException(dto.meetingId);
+        }
+      } else {
+        meeting = await this.meetingRepository.findActive();
+        if (!meeting) {
+          throw new MeetingNotFoundException();
+        }
       }
-    }
 
-    // At this point, meeting is guaranteed to be non-null
-    const activeMeeting = meeting;
+      // At this point, meeting is guaranteed to be non-null
+      const activeMeeting = meeting;
 
-    if (activeMeeting.isClosed()) {
-      throw new InvalidRequestError(
-        'Cannot purchase stocks in a closed meeting',
+      if (activeMeeting.isClosed()) {
+        throw new InvalidRequestError(
+          'Cannot purchase stocks in a closed meeting',
+        );
+      }
+
+      // 3. Validate stock exists
+      const stock = await this.stockRepository.findById(dto.stockId);
+      if (!stock) {
+        throw new StockNotFoundException(dto.stockId);
+      }
+
+      // 4. Validate input data
+      if (dto.quantity <= 0) {
+        throw new InvalidRequestError('Quantity must be greater than zero');
+      }
+      if (dto.cashAmount < 0) {
+        throw new InvalidRequestError('Cash amount cannot be negative');
+      }
+
+      // 5. Calculate total value and financed amount
+      const totalValue = stock.value * dto.quantity;
+      const financedAmount = totalValue - dto.cashAmount;
+
+      // Validate that cashAmount doesn't exceed totalValue
+      if (dto.cashAmount > totalValue) {
+        throw new InvalidRequestError('Cash amount cannot exceed total value');
+      }
+
+      // 6. Create loan if financing is needed
+      let loanId: string | null = null;
+      if (financedAmount > 0) {
+        if (!dto.loanDetails) {
+          throw new InvalidRequestError(
+            'Loan details are required when financed amount is greater than zero',
+          );
+        }
+
+        // Validate loan details
+        if (dto.loanDetails.loan_type !== 'accion') {
+          throw new InvalidRequestError(
+            'Only "accion" loan type is allowed for stock purchases',
+          );
+        }
+        if (dto.loanDetails.interest_rate <= 0) {
+          throw new InvalidRequestError(
+            'Interest rate must be greater than zero',
+          );
+        }
+
+        // Create loan using CreateLoanUseCase
+        const createLoanDto: CreateLoanDto = {
+          memberId: dto.memberId,
+          meetingId: activeMeeting.id,
+          loanType: 'accion',
+          approvedAmount: financedAmount,
+          monthlyPaymentAmount: 0,
+          interestRate: dto.loanDetails.interest_rate,
+          term: 24, // Default term for stock purchase loans
+        };
+
+        const loanResult = await this.createLoanUseCase.execute(createLoanDto);
+        loanId = loanResult.loanId;
+      }
+
+      // 7. Find or create StockSubscription (consolidate if cash purchase)
+      const subscriptionResult = await this.findOrCreateSubscription(
+        dto.memberId,
+        dto.stockId,
+        loanId,
+        activeMeeting.date,
       );
-    }
 
-    // 3. Validate stock exists
-    const stock = await this.stockRepository.findById(dto.stockId);
-    if (!stock) {
-      throw new StockNotFoundException(dto.stockId);
-    }
-
-    // 4. Validate input data
-    if (dto.quantity <= 0) {
-      throw new InvalidRequestError('Quantity must be greater than zero');
-    }
-    if (dto.cashAmount < 0) {
-      throw new InvalidRequestError('Cash amount cannot be negative');
-    }
-
-    // 5. Calculate total value and financed amount
-    const totalValue = stock.value * dto.quantity;
-    const financedAmount = totalValue - dto.cashAmount;
-
-    // Validate that cashAmount doesn't exceed totalValue
-    if (dto.cashAmount > totalValue) {
-      throw new InvalidRequestError('Cash amount cannot exceed total value');
-    }
-
-    // 6. Create loan if financing is needed
-    let loanId: string | null = null;
-    if (financedAmount > 0) {
-      if (!dto.loanDetails) {
-        throw new InvalidRequestError(
-          'Loan details are required when financed amount is greater than zero',
-        );
+      if (subscriptionResult.isNew) {
+        subscriptionResult.subscription.update({ quantity: dto.quantity });
+      } else {
+        subscriptionResult.subscription.update({
+          quantity: subscriptionResult.subscription.quantity + dto.quantity,
+        });
       }
 
-      // Validate loan details
-      if (dto.loanDetails.loan_type !== 'accion') {
-        throw new InvalidRequestError(
-          'Only "accion" loan type is allowed for stock purchases',
+      const savedStockSubscription =
+        await this.stockSubscriptionRepository.save(
+          subscriptionResult.subscription,
         );
-      }
-      if (dto.loanDetails.interest_rate <= 0) {
-        throw new InvalidRequestError(
-          'Interest rate must be greater than zero',
-        );
+
+      // 8. Create accounting operation using RecordOperationUseCase
+      const operationDescription = `Compra de ${dto.quantity} acciones de ${stock.type}`;
+
+      const ledgerEntries: RecordOperationDto['entries'] = [];
+
+      // STOCK_CAPITAL_ACCOUNT (credit, -totalValue) - capital increases
+      ledgerEntries.push({
+        accountType: STOCK_CAPITAL_ACCOUNT,
+        amount: -totalValue,
+        description: operationDescription,
+        stockId: dto.stockId,
+        stockSubscriptionId: savedStockSubscription.id,
+      });
+
+      // CASH_ACCOUNT (debit, +cashAmount) - cash received if any
+      if (dto.cashAmount > 0) {
+        ledgerEntries.push({
+          accountType: CASH_ACCOUNT,
+          amount: dto.cashAmount,
+          description: operationDescription,
+        });
       }
 
-      // Create loan using CreateLoanUseCase
-      const createLoanDto: CreateLoanDto = {
+      // LOANS_RECEIVABLE_ACCOUNT (debit, +financedAmount) - loan receivable if financed
+      if (financedAmount > 0 && loanId) {
+        ledgerEntries.push({
+          accountType: LOANS_RECEIVABLE_ACCOUNT,
+          amount: financedAmount,
+          description: operationDescription,
+          loanId: loanId,
+        });
+      }
+
+      const operationDto: RecordOperationDto = {
         memberId: dto.memberId,
         meetingId: activeMeeting.id,
-        loanType: 'accion',
-        approvedAmount: financedAmount,
-        monthlyPaymentAmount: 0,
-        interestRate: dto.loanDetails.interest_rate,
-        term: 24, // Default term for stock purchase loans
+        type: OperationType.STOCK_PURCHASE,
+        description: operationDescription,
+        date: activeMeeting.date,
+        entries: ledgerEntries,
       };
 
-      const loanResult = await this.createLoanUseCase.execute(createLoanDto);
-      loanId = loanResult.loanId;
+      const operationResult =
+        await this.recordOperationUseCase.execute(operationDto);
+
+      // 9. Return response
+      return {
+        operationId: operationResult.operationId,
+        meetingId: activeMeeting.id,
+        memberId: dto.memberId,
+        stockSubscriptionId: savedStockSubscription.id,
+        loanId: loanId || null,
+      };
+    });
+  }
+
+  /**
+   * Finds an existing subscription or creates a new one.
+   * Consolidates cash purchases (no loan) with existing subscriptions of the same type.
+   * Credit purchases (with loan) always create new subscriptions.
+   */
+  private async findOrCreateSubscription(
+    memberId: string,
+    stockId: string,
+    financingLoanId: string | null,
+    purchaseDate: Date,
+  ): Promise<{ subscription: StockSubscription; isNew: boolean }> {
+    // If it's a cash purchase (no loan), try to find existing subscription without loan
+    if (financingLoanId === null) {
+      const existing =
+        await this.stockSubscriptionRepository.findByMemberAndStockAndNoLoan(
+          memberId,
+          stockId,
+        );
+
+      if (existing) {
+        return { subscription: existing, isNew: false };
+      }
     }
 
-    // 7. Create StockSubscription
-    const stockSubscription = StockSubscription.create({
-      memberId: dto.memberId,
-      stockId: dto.stockId,
-      quantity: dto.quantity,
-      purchaseDate: activeMeeting.date,
-      financingLoanId: loanId,
+    // If it's a credit purchase or no existing subscription found, create new
+    const created = StockSubscription.create({
+      memberId,
+      stockId,
+      quantity: 0, // Will be updated after creation
+      purchaseDate,
+      financingLoanId,
     });
 
-    const savedStockSubscription =
-      await this.stockSubscriptionRepository.save(stockSubscription);
-
-    // 8. Create accounting operation using RecordOperationUseCase
-    const operationDescription = `Compra de ${dto.quantity} acciones de ${stock.type}`;
-
-    const ledgerEntries: RecordOperationDto['entries'] = [];
-
-    // STOCK_CAPITAL_ACCOUNT (credit, -totalValue) - capital increases
-    ledgerEntries.push({
-      accountType: STOCK_CAPITAL_ACCOUNT,
-      amount: -totalValue,
-      description: operationDescription,
-      stockId: dto.stockId,
-      stockSubscriptionId: savedStockSubscription.id,
-    });
-
-    // CASH_ACCOUNT (debit, +cashAmount) - cash received if any
-    if (dto.cashAmount > 0) {
-      ledgerEntries.push({
-        accountType: CASH_ACCOUNT,
-        amount: dto.cashAmount,
-        description: operationDescription,
-      });
-    }
-
-    // LOANS_RECEIVABLE_ACCOUNT (debit, +financedAmount) - loan receivable if financed
-    if (financedAmount > 0 && loanId) {
-      ledgerEntries.push({
-        accountType: LOANS_RECEIVABLE_ACCOUNT,
-        amount: financedAmount,
-        description: operationDescription,
-        loanId: loanId,
-      });
-    }
-
-    const operationDto: RecordOperationDto = {
-      memberId: dto.memberId,
-      meetingId: activeMeeting.id,
-      type: OperationType.STOCK_PURCHASE,
-      description: operationDescription,
-      date: activeMeeting.date,
-      entries: ledgerEntries,
-    };
-
-    const operationResult =
-      await this.recordOperationUseCase.execute(operationDto);
-
-    // 9. Return response
-    return {
-      operationId: operationResult.operationId,
-      meetingId: activeMeeting.id,
-      memberId: dto.memberId,
-      stockSubscriptionId: savedStockSubscription.id,
-      loanId: loanId || null,
-    };
+    return { subscription: created, isNew: true };
   }
 }

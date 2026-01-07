@@ -4,6 +4,7 @@ import { MemberRepository } from '@domain/ports/repositories/member-repository.p
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-subscription-repository.port';
+import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 import { CreateLoanUseCase } from '@application/use-cases/loans/create-loan.use-case';
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
 import { Member } from '@domain/entities/member.entity';
@@ -32,6 +33,7 @@ describe('PurchaseStockUseCase', () => {
   let stockSubscriptionRepository: jest.Mocked<StockSubscriptionRepository>;
   let createLoanUseCase: jest.Mocked<CreateLoanUseCase>;
   let recordOperationUseCase: jest.Mocked<RecordOperationUseCase>;
+  let transactionManager: jest.Mocked<TransactionManager>;
 
   let memberFindByIdSpy: jest.SpyInstance;
   let meetingFindByIdSpy: jest.SpyInstance;
@@ -89,6 +91,8 @@ describe('PurchaseStockUseCase', () => {
       findById: jest.fn(),
       findByMember: jest.fn(),
       findByStock: jest.fn(),
+      findByMemberAndStockAndNoLoan: jest.fn(),
+      findByFinancingLoan: jest.fn(),
       save: jest.fn(),
       saveMany: jest.fn(),
     } as unknown as jest.Mocked<StockSubscriptionRepository>;
@@ -101,6 +105,13 @@ describe('PurchaseStockUseCase', () => {
       execute: jest.fn(),
     } as unknown as jest.Mocked<RecordOperationUseCase>;
 
+    transactionManager = {
+      execute: jest.fn(async <T>(operation: () => Promise<T>): Promise<T> => {
+        return await operation();
+      }),
+      getActiveQueryRunner: jest.fn(),
+    } as unknown as jest.Mocked<TransactionManager>;
+
     useCase = new PurchaseStockUseCase(
       memberRepository,
       meetingRepository,
@@ -108,6 +119,7 @@ describe('PurchaseStockUseCase', () => {
       stockSubscriptionRepository,
       createLoanUseCase,
       recordOperationUseCase,
+      transactionManager,
     );
 
     // Setup default mocks
