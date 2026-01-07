@@ -20,7 +20,7 @@ export class LoanMapper {
       });
     } catch (error) {
       throw new Error(
-        `Failed to map Loan to domain: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to map Loan (ID: ${persistence.id}) to domain: ${error instanceof Error ? error.message : String(error)}. Loan data: approvedAmount=${persistence.approvedAmount}, disbursedAmount=${persistence.disbursedAmount}, outstandingBalance=${persistence.outstandingBalance}`,
       );
     }
   }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
@@ -8,6 +8,8 @@ import { LoanMapper } from '../mappers/loan.mapper';
 
 @Injectable()
 export class TypeOrmLoanRepository implements LoanRepository {
+  private readonly logger = new Logger(TypeOrmLoanRepository.name);
+
   constructor(
     @InjectRepository(LoanEntity)
     private readonly repo: Repository<LoanEntity>,
@@ -20,26 +22,78 @@ export class TypeOrmLoanRepository implements LoanRepository {
 
   async findAll(): Promise<LoanDomain[]> {
     const entities = await this.repo.find();
-    return entities.map((e) => LoanMapper.toDomain(e));
+    const validLoans: LoanDomain[] = [];
+    
+    for (const entity of entities) {
+      try {
+        const loan = LoanMapper.toDomain(entity);
+        validLoans.push(loan);
+      } catch (error) {
+        this.logger.warn(
+          `Skipping invalid loan ${entity.id}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+    
+    return validLoans;
   }
 
   async findByMember(memberId: string): Promise<LoanDomain[]> {
     const entities = await this.repo.find({ where: { memberId } });
-    return entities.map((e) => LoanMapper.toDomain(e));
+    const validLoans: LoanDomain[] = [];
+    
+    for (const entity of entities) {
+      try {
+        const loan = LoanMapper.toDomain(entity);
+        validLoans.push(loan);
+      } catch (error) {
+        this.logger.warn(
+          `Skipping invalid loan ${entity.id} for member ${memberId}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+    
+    return validLoans;
   }
 
   async findActiveByMember(memberId: string): Promise<LoanDomain[]> {
     const entities = await this.repo.find({
       where: { memberId, status: In(['pending', 'active']) },
     });
-    return entities.map((e) => LoanMapper.toDomain(e));
+    const validLoans: LoanDomain[] = [];
+    
+    for (const entity of entities) {
+      try {
+        const loan = LoanMapper.toDomain(entity);
+        validLoans.push(loan);
+      } catch (error) {
+        this.logger.warn(
+          `Skipping invalid loan ${entity.id} for member ${memberId}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+    
+    return validLoans;
   }
 
   async findPendingByMember(memberId: string): Promise<LoanDomain[]> {
     const entities = await this.repo.find({
       where: { memberId, status: 'pending' },
     });
-    return entities.map((e) => LoanMapper.toDomain(e));
+    const validLoans: LoanDomain[] = [];
+    
+    for (const entity of entities) {
+      try {
+        const loan = LoanMapper.toDomain(entity);
+        validLoans.push(loan);
+      } catch (error) {
+        this.logger.warn(
+          `Skipping invalid loan ${entity.id} for member ${memberId}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+    
+    return validLoans;
   }
 
   async save(loan: LoanDomain): Promise<LoanDomain> {
@@ -61,6 +115,19 @@ export class TypeOrmLoanRepository implements LoanRepository {
 
   async findByIds(ids: string[]): Promise<LoanDomain[]> {
     const entities = await this.repo.find({ where: { id: In(ids) } });
-    return entities.map((e) => LoanMapper.toDomain(e));
+    const validLoans: LoanDomain[] = [];
+    
+    for (const entity of entities) {
+      try {
+        const loan = LoanMapper.toDomain(entity);
+        validLoans.push(loan);
+      } catch (error) {
+        this.logger.warn(
+          `Skipping invalid loan ${entity.id}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+    
+    return validLoans;
   }
 }
