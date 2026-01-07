@@ -1,5 +1,5 @@
 import { ref, type Ref } from 'vue'
-import type { ApiException } from '@/api/types'
+import { ApiException } from '@/api/types'
 
 export function useApi<T>() {
   const loading = ref(false)
