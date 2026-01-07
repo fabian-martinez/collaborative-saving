@@ -427,7 +427,6 @@ describe('MeetingsV2Controller', () => {
           type: OperationType.MONTHLY_PAYMENT,
           date: new Date('2024-01-15'),
           description: 'Payment 1',
-          entries: [],
         },
         {
           id: 'op-2',
@@ -436,7 +435,6 @@ describe('MeetingsV2Controller', () => {
           type: OperationType.MONTHLY_PAYMENT,
           date: new Date('2024-01-15'),
           description: 'Payment 2',
-          entries: [],
         },
       ];
 
@@ -506,6 +504,36 @@ describe('MeetingsV2Controller', () => {
 
       // ASSERT
       expect(result[0].member_id).toBeNull();
+    });
+
+    it('should not include entries field in response', async () => {
+      // ARRANGE
+      const mockPayments: OperationResponseDto[] = [
+        {
+          id: 'op-1',
+          memberId: 'member-1',
+          meetingId,
+          type: OperationType.MONTHLY_PAYMENT,
+          date: new Date('2024-01-15'),
+          description: 'Payment 1',
+        },
+      ];
+
+      getMeetingMonthlyPaymentsQueryExecuteSpy.mockResolvedValue(mockPayments);
+
+      // ACT
+      const result = await controller.getMonthlyPayments(meetingId);
+
+      // ASSERT
+      expect(result[0]).not.toHaveProperty('entries');
+      expect(result[0]).toEqual({
+        id: 'op-1',
+        member_id: 'member-1',
+        meeting_id: meetingId,
+        type: OperationType.MONTHLY_PAYMENT,
+        date: new Date('2024-01-15'),
+        description: 'Payment 1',
+      });
     });
 
     it('should handle generic errors', async () => {

@@ -29,6 +29,7 @@ export class OperationResponseHttpDto {
   @ApiProperty({
     description: 'Ledger entries associated with this operation',
     type: [LedgerEntryResponseHttpDto],
+    required: false,
   })
-  entries: LedgerEntryResponseHttpDto[];
+  entries?: LedgerEntryResponseHttpDto[];
 }

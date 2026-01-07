@@ -596,7 +596,6 @@ export class MeetingsV2Controller {
       type: operation.type,
       date: operation.date,
       description: operation.description ?? null,
-      entries: [], // Meetings operations don't include ledger entries
     };
   }
 
