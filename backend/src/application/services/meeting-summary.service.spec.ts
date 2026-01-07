@@ -189,5 +189,44 @@ describe('MeetingSummaryService', () => {
       expect(result.totalInterest).toBe(0);
       expect(result.totalCollected).toBe(0);
     });
+
+    it('should convert negative interest to positive (interests are recorded as negative credits)', async () => {
+      // ARRANGE
+      const operations = [
+        {
+          id: 'op-1',
+          memberId: 'member-1',
+          date: new Date('2024-01-15T10:00:00Z'),
+        },
+      ];
+
+      mockOperationRepo.find.mockResolvedValue(operations);
+
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        getRawOne: jest
+          .fn()
+          .mockResolvedValueOnce({ sum: '0' }) // totalCash
+          .mockResolvedValueOnce({ sum: '-13564463.00' }) // totalInterest (negative as stored in DB)
+          .mockResolvedValueOnce({ sum: '0' }) // totalLoans
+          .mockResolvedValueOnce({ sum: '0' }) // cashIn
+          .mockResolvedValueOnce({ sum: '0' }) // noveltyLoss
+          .mockResolvedValueOnce({ sum: '0' }) // totalDividends
+          .mockResolvedValueOnce({ sum: '0' }) // totalStockInvestment
+          .mockResolvedValueOnce({ sum: '0' }) // totalDebits
+          .mockResolvedValueOnce({ sum: '0' }), // credits
+      };
+
+      mockLedgerRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      // ACT
+      const result = await service.calculateSummary(meetingId);
+
+      // ASSERT
+      // Interest should be positive even though stored as negative in DB
+      expect(result.totalInterest).toBe(13564463.0);
+    });
   });
 });
