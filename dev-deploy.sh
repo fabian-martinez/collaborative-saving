@@ -33,8 +33,8 @@ print_message "🚀 Iniciando despliegue en modo desarrollo..."
 print_message "📁 Directorio del proyecto: $(pwd)"
 
 # Verificar que estamos en el directorio correcto
-if [ ! -d "app" ] || [ ! -d "backend" ]; then
-    print_error "No se encontraron los directorios 'app' y 'backend'. Asegúrate de ejecutar este script desde la raíz del proyecto."
+if [ ! -d "frontend-v2" ] || [ ! -d "backend" ]; then
+    print_error "No se encontraron los directorios 'frontend-v2' y 'backend'. Asegúrate de ejecutar este script desde la raíz del proyecto."
     exit 1
 fi
 
@@ -53,7 +53,7 @@ fi
 print_message "📦 Verificando e instalando dependencias..."
 
 # Instalar dependencias si es necesario
-if [ ! -d "node_modules" ] || [ ! -d "backend/node_modules" ] || [ ! -d "app/node_modules" ]; then
+if [ ! -d "node_modules" ] || [ ! -d "backend/node_modules" ] || [ ! -d "frontend-v2/node_modules" ]; then
     print_message "📦 Instalando dependencias..."
     npm run install:all
     print_success "✅ Todas las dependencias instaladas"

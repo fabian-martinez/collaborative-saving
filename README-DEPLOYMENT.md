@@ -9,7 +9,7 @@ Este script te permite desplegar tanto el backend como la aplicación frontend e
 - Proyecto con estructura:
   ```
   collaborative-saving/
-  ├── app/          # Frontend (Vue.js + Vite)
+  ├── frontend-v2/  # Frontend (Vue.js + Vite)
   ├── backend/      # Backend (NestJS)
   └── package.json  # Configuración raíz
   ```
@@ -69,7 +69,7 @@ Para detener ambos servicios, presiona `Ctrl+C` en la terminal donde se ejecutó
 
 ## 🐛 Solución de Problemas
 
-### Error: "No se encontraron los directorios 'app' y 'backend'"
+### Error: "No se encontraron los directorios 'frontend-v2' y 'backend'"
 - Asegúrate de ejecutar el script desde la raíz del proyecto
 
 ### Error: "Node.js no está instalado"
@@ -86,7 +86,7 @@ Para detener ambos servicios, presiona `Ctrl+C` en la terminal donde se ejecutó
 
 ```
 collaborative-saving/
-├── app/                    # Frontend Vue.js
+├── frontend-v2/           # Frontend Vue.js
 │   ├── package.json       # Dependencias del frontend
 │   └── ...
 ├── backend/               # Backend NestJS
