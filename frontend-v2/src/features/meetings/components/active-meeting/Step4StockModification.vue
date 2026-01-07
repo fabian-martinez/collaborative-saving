@@ -269,25 +269,19 @@
                   </div>
 
                   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button class="btn btn-primary btn-lg" @click="stockModification.openTransferModal()">
-                      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-                      </svg>
-                      Transferir Acciones
+                    <button class="btn btn-primary btn-lg gap-2 px-6" @click="stockModification.openTransferModal()">
+                      <ArrowRight class="w-6 h-6" />
+                      <span>Transferir Acciones</span>
                     </button>
 
-                    <button class="btn btn-secondary btn-lg" @click="stockModification.openLoanPaymentModal()">
-                      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
-                      </svg>
-                      Usar para Pago de Créditos
+                    <button class="btn btn-secondary btn-lg gap-2 px-6" @click="stockModification.openLoanPaymentModal()">
+                      <Wallet class="w-6 h-6" />
+                      <span>Pagar Crédito</span>
                     </button>
 
-                    <button class="btn btn-info btn-lg" @click="stockModification.openModificationModal()">
-                      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
-                      </svg>
-                      Modificar Acciones
+                    <button class="btn btn-info btn-lg gap-2 px-6" @click="stockModification.openModificationModal()">
+                      <CoinsSwap class="w-6 h-6" />
+                      <span>Modificar Acciones</span>
                     </button>
                   </div>
                 </div>
@@ -662,14 +656,14 @@
 <script setup lang="ts">
 // 1. Imports
 import { ref, computed, onMounted, watch } from 'vue'
+import { ArrowRight, Wallet, CoinsSwap } from 'iconoir-vue/regular'
 import { useActiveMeetingStore } from '../../stores/activeMeeting'
 import { useStockModification } from '../../composables/useStockModification'
 import { usePaymentCollection } from '../../composables/usePaymentCollection'
 import { useMemberSelection } from '../../composables/useMemberSelection'
 import { usePrintReceipt } from '../../composables/usePrintReceipt'
-import { membersApi, type Member } from '@/api/members.api'
+import type { Member } from '@/api/members.api'
 import { operationsApi } from '@/api/operations.api'
-import { sumCashEntries } from '@/shared/utils'
 import ModificationSummary from './collection/ModificationSummary.vue'
 import MemberList from './collection/MemberList.vue'
 import OperationDetails from '@/shared/components/OperationDetails.vue'

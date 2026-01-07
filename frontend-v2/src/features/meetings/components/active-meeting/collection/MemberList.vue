@@ -46,6 +46,9 @@
           <div v-else-if="hasCompletedPurchase && hasCompletedPurchase(member.id)" class="shrink-0">
             <span class="badge badge-success badge-sm">Con compras</span>
           </div>
+          <div v-else-if="hasDisbursement && hasDisbursement(member.id)" class="shrink-0">
+            <span class="badge badge-info badge-sm">Con desembolsos</span>
+          </div>
         </div>
       </div>
     </div>
@@ -65,6 +68,7 @@ const props = defineProps<{
   getMemberColor: (memberId: string) => string
   hasPendingPurchase?: (memberId: string) => boolean
   hasCompletedPurchase?: (memberId: string) => boolean
+  hasDisbursement?: (memberId: string) => boolean
 }>()
 
 // Usar ref para el ID seleccionado para mejor compatibilidad con Safari
