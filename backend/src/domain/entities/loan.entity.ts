@@ -140,6 +140,8 @@ export class Loan {
     }
 
     this._disbursedAmount += amount;
+    // Actualizar outstanding_balance: incrementar por el monto desembolsado
+    this._outstandingBalance += amount;
     if (this._status === LoanStatus.PENDING) {
       this._status = LoanStatus.ACTIVE;
     }
@@ -193,13 +195,27 @@ export class Loan {
     ) {
       throw new Error('Disbursed amount must be between 0 and approved amount');
     }
+    if (this._outstandingBalance < 0) {
+      throw new Error('Outstanding balance cannot be negative');
+    }
+    // El saldo pendiente no puede exceder el monto desembolsado
+    // (ya que outstanding_balance = desembolsos - pagos de capital)
+    // Excepción: cuando outstanding_balance <= approvedAmount, permitirlo
+    // (esto cubre el estado inicial donde outstanding_balance = approvedAmount y disbursedAmount = 0)
     if (
-      this._outstandingBalance < 0 ||
+      this._outstandingBalance > this._disbursedAmount &&
       this._outstandingBalance > this._approvedAmount
     ) {
       throw new Error(
-        'Outstanding balance must be between 0 and approved amount',
+        'Outstanding balance cannot exceed disbursed amount when it exceeds approved amount',
       );
+    }
+    // Validación más estricta: si se ha desembolsado algo, el outstanding_balance no puede exceder el disbursed_amount
+    if (
+      this._disbursedAmount > 0 &&
+      this._outstandingBalance > this._disbursedAmount
+    ) {
+      throw new Error('Outstanding balance cannot exceed disbursed amount');
     }
     if (this._interestRate < 0 || this._interestRate > 1) {
       throw new Error('Interest rate must be between 0 and 1');

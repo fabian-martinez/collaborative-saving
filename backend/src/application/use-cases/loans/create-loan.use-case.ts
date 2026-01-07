@@ -79,7 +79,9 @@ export class CreateLoanUseCase {
 
     // 4. Set defaults for disbursedAmount and outstandingBalance
     const disbursedAmount = dto.disbursedAmount ?? dto.approvedAmount;
-    const outstandingBalance = dto.outstandingBalance ?? dto.approvedAmount;
+    // Si se proporciona outstandingBalance explícitamente, usarlo; de lo contrario,
+    // si hay un desembolso, outstandingBalance debe ser igual al monto desembolsado
+    const outstandingBalance = dto.outstandingBalance ?? disbursedAmount;
 
     // Validate disbursedAmount
     if (disbursedAmount < 0) {

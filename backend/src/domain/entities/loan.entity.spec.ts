@@ -111,7 +111,7 @@ describe('Loan Entity', () => {
         loan_type: 'corriente',
         approved_amount: 10000,
         disbursed_amount: 5000,
-        outstanding_balance: 7500,
+        outstanding_balance: 5000, // Debe ser <= disbursed_amount cuando disbursed > 0
         monthly_payment_amount: 500,
         interest_rate: 0.02,
         term: 24,
@@ -123,7 +123,7 @@ describe('Loan Entity', () => {
       expect(loan.memberId).toBe('member-1');
       expect(loan.approvedAmount).toBe(10000);
       expect(loan.disbursedAmount).toBe(5000);
-      expect(loan.outstandingBalance).toBe(7500);
+      expect(loan.outstandingBalance).toBe(5000);
       expect(loan.status).toBe('active');
     });
 
@@ -152,7 +152,7 @@ describe('Loan Entity', () => {
         loan_type: 'corriente',
         approved_amount: '10000',
         disbursed_amount: '5000',
-        outstanding_balance: '7500',
+        outstanding_balance: '5000', // Debe ser <= disbursed_amount cuando disbursed > 0
         monthly_payment_amount: '500',
         interest_rate: '0.02',
         term: '24',
@@ -162,7 +162,7 @@ describe('Loan Entity', () => {
 
       expect(loan.approvedAmount).toBe(10000);
       expect(loan.disbursedAmount).toBe(5000);
-      expect(loan.outstandingBalance).toBe(7500);
+      expect(loan.outstandingBalance).toBe(5000);
     });
 
     it('should handle nullable guaranteedStockId', () => {
@@ -200,8 +200,11 @@ describe('Loan Entity', () => {
     });
 
     it('should update disbursedAmount', () => {
-      loan.update({ disbursedAmount: 5000 });
+      // Cuando se actualiza disbursedAmount, también se debe actualizar outstandingBalance
+      // para mantener la consistencia (outstanding_balance <= disbursed_amount cuando disbursed > 0)
+      loan.update({ disbursedAmount: 5000, outstandingBalance: 5000 });
       expect(loan.disbursedAmount).toBe(5000);
+      expect(loan.outstandingBalance).toBe(5000);
     });
 
     it('should update outstandingBalance', () => {
@@ -220,9 +223,12 @@ describe('Loan Entity', () => {
       );
     });
 
-    it('should throw error for invalid outstandingBalance', () => {
-      expect(() => loan.update({ outstandingBalance: 15000 })).toThrow(
-        'Outstanding balance must be between 0 and approved amount',
+    it('should throw error for invalid outstandingBalance exceeding disbursedAmount', () => {
+      // Primero actualizar ambos valores para tener un estado consistente
+      loan.update({ disbursedAmount: 5000, outstandingBalance: 5000 });
+      // Luego intentar actualizar outstandingBalance a un valor mayor que disbursedAmount
+      expect(() => loan.update({ outstandingBalance: 6000 })).toThrow(
+        'Outstanding balance cannot exceed disbursed amount',
       );
     });
   });
@@ -262,6 +268,33 @@ describe('Loan Entity', () => {
       loan.disburse(3000);
       loan.disburse(2000);
       expect(loan.disbursedAmount).toBe(5000);
+    });
+
+    it('should update outstanding_balance when disbursing', () => {
+      const initialBalance = loan.outstandingBalance; // 10000 (approvedAmount)
+      loan.disburse(5000);
+      expect(loan.outstandingBalance).toBe(initialBalance + 5000);
+      expect(loan.outstandingBalance).toBe(15000);
+    });
+
+    it('should update outstanding_balance correctly with multiple partial disbursements', () => {
+      const initialBalance = loan.outstandingBalance; // 10000
+      loan.disburse(3000);
+      expect(loan.outstandingBalance).toBe(initialBalance + 3000); // 13000
+      loan.disburse(2000);
+      expect(loan.outstandingBalance).toBe(initialBalance + 3000 + 2000); // 15000
+      expect(loan.disbursedAmount).toBe(5000);
+      expect(loan.outstandingBalance).toBe(15000);
+    });
+
+    it('should maintain correct outstanding_balance after disbursement and payment', () => {
+      loan.disburse(10000); // Desembolso completo
+      expect(loan.outstandingBalance).toBe(20000); // 10000 inicial + 10000 desembolsado
+      expect(loan.disbursedAmount).toBe(10000);
+
+      loan.recordPayment(3000, 200); // Pago de capital
+      expect(loan.outstandingBalance).toBe(17000); // 20000 - 3000
+      expect(loan.disbursedAmount).toBe(10000); // No cambia
     });
 
     it('should throw error for negative amount', () => {

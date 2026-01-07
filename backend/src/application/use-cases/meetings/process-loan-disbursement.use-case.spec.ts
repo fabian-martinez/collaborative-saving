@@ -486,7 +486,11 @@ describe('ProcessLoanDisbursementUseCase', () => {
           interestRate: 0.12,
           term: 12,
         });
-        mockLoan.update({ status: LoanStatus.PENDING, disbursedAmount: 6000 });
+        mockLoan.update({
+          status: LoanStatus.PENDING,
+          disbursedAmount: 6000,
+          outstandingBalance: 6000,
+        });
 
         const item: DisbursementPlanItemDto = {
           memberId: mockMemberId,
@@ -966,6 +970,245 @@ describe('ProcessLoanDisbursementUseCase', () => {
             availableCash: 5000,
           }),
         ).rejects.toThrow(MeetingNotFoundException);
+      });
+
+      it('should update outstanding_balance when processing partial disbursement', async () => {
+        // Arrange
+        const mockLoan = Loan.create({
+          memberId: mockMemberId,
+          loanType: 'corriente',
+          approvedAmount: 10000,
+          monthlyPaymentAmount: 1000,
+          interestRate: 0.12,
+          term: 12,
+        });
+        mockLoan.update({
+          status: LoanStatus.PENDING,
+          disbursedAmount: 0,
+          outstandingBalance: 0,
+        });
+
+        const item: DisbursementPlanItemDto = {
+          memberId: mockMemberId,
+          type: DisbursementType.LOAN,
+          amount: 5000,
+          loanId: mockLoanId,
+        };
+
+        loanRepository.findById.mockResolvedValue(mockLoan);
+        memberRepository.findById.mockResolvedValue(mockMember);
+        meetingRepository.findById.mockResolvedValue(mockMeeting);
+        recordOperationUseCase.execute.mockResolvedValue({
+          operationId: 'operation-id-1',
+          ledgerEntryIds: ['entry-id-1', 'entry-id-2'],
+        });
+        loanTransactionDetailRepository.save.mockResolvedValue(
+          LoanTransactionDetail.create({
+            loanId: mockLoanId,
+            transactionType: LoanTransactionType.DISBURSEMENT,
+            amount: 5000,
+          }),
+        );
+
+        // Act
+        await useCase.execute({
+          item,
+          meetingId: mockMeetingId,
+          availableCash: 5000,
+        });
+
+        // Assert
+        expect(mockLoan.disbursedAmount).toBe(5000);
+        expect(mockLoan.outstandingBalance).toBe(5000); // Debe incrementarse con el desembolso
+        const saveLoanSpy = jest.spyOn(loanRepository, 'save');
+        expect(saveLoanSpy).toHaveBeenCalledWith(mockLoan);
+      });
+
+      it('should update outstanding_balance correctly with multiple partial disbursements', async () => {
+        // Arrange
+        const mockLoan = Loan.create({
+          memberId: mockMemberId,
+          loanType: 'corriente',
+          approvedAmount: 10000,
+          monthlyPaymentAmount: 1000,
+          interestRate: 0.12,
+          term: 12,
+        });
+        // Primer desembolso de 3000
+        mockLoan.update({
+          status: LoanStatus.ACTIVE,
+          disbursedAmount: 3000,
+          outstandingBalance: 3000,
+        });
+
+        const item: DisbursementPlanItemDto = {
+          memberId: mockMemberId,
+          type: DisbursementType.LOAN,
+          amount: 4000,
+          loanId: mockLoanId,
+        };
+
+        loanRepository.findById.mockResolvedValue(mockLoan);
+        memberRepository.findById.mockResolvedValue(mockMember);
+        meetingRepository.findById.mockResolvedValue(mockMeeting);
+        recordOperationUseCase.execute.mockResolvedValue({
+          operationId: 'operation-id-1',
+          ledgerEntryIds: ['entry-id-1', 'entry-id-2'],
+        });
+        loanTransactionDetailRepository.save.mockResolvedValue(
+          LoanTransactionDetail.create({
+            loanId: mockLoanId,
+            transactionType: LoanTransactionType.DISBURSEMENT,
+            amount: 4000,
+          }),
+        );
+
+        // Act
+        await useCase.execute({
+          item,
+          meetingId: mockMeetingId,
+          availableCash: 4000,
+        });
+
+        // Assert
+        expect(mockLoan.disbursedAmount).toBe(7000); // 3000 + 4000
+        expect(mockLoan.outstandingBalance).toBe(7000); // 3000 + 4000 (incrementado)
+        const saveLoanSpy = jest.spyOn(loanRepository, 'save');
+        expect(saveLoanSpy).toHaveBeenCalledWith(mockLoan);
+      });
+
+      it('should create pending_member_payment with correct amount after partial disbursement', async () => {
+        // Arrange
+        const mockLoan = Loan.create({
+          memberId: mockMemberId,
+          loanType: 'corriente',
+          approvedAmount: 10000,
+          monthlyPaymentAmount: 1000,
+          interestRate: 0.12,
+          term: 12,
+        });
+        mockLoan.update({
+          status: LoanStatus.PENDING,
+          disbursedAmount: 0,
+          outstandingBalance: 0,
+        });
+
+        const item: DisbursementPlanItemDto = {
+          memberId: mockMemberId,
+          type: DisbursementType.LOAN,
+          amount: 5000,
+          loanId: mockLoan.id, // Usar el ID real del préstamo
+        };
+
+        loanRepository.findById.mockResolvedValue(mockLoan);
+        memberRepository.findById.mockResolvedValue(mockMember);
+        meetingRepository.findById.mockResolvedValue(mockMeeting);
+        recordOperationUseCase.execute.mockResolvedValue({
+          operationId: 'operation-id-1',
+          ledgerEntryIds: ['entry-id-1', 'entry-id-2'],
+        });
+        loanTransactionDetailRepository.save.mockResolvedValue(
+          LoanTransactionDetail.create({
+            loanId: mockLoan.id,
+            transactionType: LoanTransactionType.DISBURSEMENT,
+            amount: 5000,
+          }),
+        );
+
+        // Act
+        await useCase.execute({
+          item,
+          meetingId: mockMeetingId,
+          availableCash: 5000,
+        });
+
+        // Assert
+        const savePendingPaymentSpy = jest.spyOn(
+          pendingMemberPaymentRepository,
+          'save',
+        );
+        expect(savePendingPaymentSpy).toHaveBeenCalled();
+        // El último llamado debe ser el nuevo pending payment creado
+        const savedPendingPayment =
+          savePendingPaymentSpy.mock.calls[
+            savePendingPaymentSpy.mock.calls.length - 1
+          ][0];
+        expect(savedPendingPayment.amount).toBe(5000); // approvedAmount (10000) - disbursedAmount (5000)
+        expect(savedPendingPayment.loanId).toBe(mockLoan.id); // Debe usar el ID del préstamo
+        expect(savedPendingPayment.type).toBe(PendingMemberPaymentType.LOAN);
+      });
+
+      it('should update pending_member_payment amount correctly after additional partial disbursement', async () => {
+        // Arrange
+        const mockLoan = Loan.create({
+          memberId: mockMemberId,
+          loanType: 'corriente',
+          approvedAmount: 10000,
+          monthlyPaymentAmount: 1000,
+          interestRate: 0.12,
+          term: 12,
+        });
+        // Primer desembolso de 3000
+        mockLoan.update({
+          status: LoanStatus.ACTIVE,
+          disbursedAmount: 3000,
+          outstandingBalance: 3000,
+        });
+
+        const existingPendingPayment = PendingMemberPayment.create({
+          memberId: mockMemberId,
+          meetingId: mockMeetingId,
+          type: PendingMemberPaymentType.LOAN,
+          amount: 7000, // Monto anterior: 10000 - 3000
+          loanId: mockLoanId,
+        });
+        // Aprobar el pending payment para evitar el guardado adicional de aprobación
+        existingPendingPayment.approve();
+
+        const item: DisbursementPlanItemDto = {
+          memberId: mockMemberId,
+          type: DisbursementType.LOAN,
+          amount: 2000,
+          loanId: mockLoanId,
+          pendingMemberPaymentId: existingPendingPayment.id,
+        };
+
+        loanRepository.findById.mockResolvedValue(mockLoan);
+        pendingMemberPaymentRepository.findById.mockResolvedValue(
+          existingPendingPayment,
+        );
+        memberRepository.findById.mockResolvedValue(mockMember);
+        meetingRepository.findById.mockResolvedValue(mockMeeting);
+        recordOperationUseCase.execute.mockResolvedValue({
+          operationId: 'operation-id-1',
+          ledgerEntryIds: ['entry-id-1', 'entry-id-2'],
+        });
+        loanTransactionDetailRepository.save.mockResolvedValue(
+          LoanTransactionDetail.create({
+            loanId: mockLoanId,
+            transactionType: LoanTransactionType.DISBURSEMENT,
+            amount: 2000,
+          }),
+        );
+
+        // Act
+        await useCase.execute({
+          item,
+          meetingId: mockMeetingId,
+          availableCash: 2000,
+        });
+
+        // Assert
+        // Después del desembolso: disbursedAmount = 5000, remaining = 5000
+        const savePendingPaymentSpy = jest.spyOn(
+          pendingMemberPaymentRepository,
+          'save',
+        );
+        // Debe marcar el existente como paid (1) y crear uno nuevo con el monto correcto (2)
+        expect(savePendingPaymentSpy).toHaveBeenCalledTimes(2);
+        // El último llamado debe ser el nuevo pending payment
+        const newPendingPayment = savePendingPaymentSpy.mock.calls[1][0];
+        expect(newPendingPayment.amount).toBe(5000); // approvedAmount (10000) - disbursedAmount (5000)
       });
     });
 
