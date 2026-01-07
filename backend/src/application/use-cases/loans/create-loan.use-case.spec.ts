@@ -323,7 +323,7 @@ describe('CreateLoanUseCase', () => {
       });
       savedLoan.update({
         disbursedAmount: dto.disbursedAmount!,
-        outstandingBalance: dto.approvedAmount,
+        outstandingBalance: dto.disbursedAmount!, // outstanding_balance debe ser igual al monto desembolsado
         status: LoanStatus.PENDING,
       });
 

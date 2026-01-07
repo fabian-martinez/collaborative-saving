@@ -23,7 +23,7 @@ export class TypeOrmLoanRepository implements LoanRepository {
   async findAll(): Promise<LoanDomain[]> {
     const entities = await this.repo.find();
     const validLoans: LoanDomain[] = [];
-    
+
     for (const entity of entities) {
       try {
         const loan = LoanMapper.toDomain(entity);
@@ -34,14 +34,14 @@ export class TypeOrmLoanRepository implements LoanRepository {
         );
       }
     }
-    
+
     return validLoans;
   }
 
   async findByMember(memberId: string): Promise<LoanDomain[]> {
     const entities = await this.repo.find({ where: { memberId } });
     const validLoans: LoanDomain[] = [];
-    
+
     for (const entity of entities) {
       try {
         const loan = LoanMapper.toDomain(entity);
@@ -52,7 +52,7 @@ export class TypeOrmLoanRepository implements LoanRepository {
         );
       }
     }
-    
+
     return validLoans;
   }
 
@@ -61,7 +61,7 @@ export class TypeOrmLoanRepository implements LoanRepository {
       where: { memberId, status: In(['pending', 'active']) },
     });
     const validLoans: LoanDomain[] = [];
-    
+
     for (const entity of entities) {
       try {
         const loan = LoanMapper.toDomain(entity);
@@ -72,7 +72,7 @@ export class TypeOrmLoanRepository implements LoanRepository {
         );
       }
     }
-    
+
     return validLoans;
   }
 
@@ -81,7 +81,7 @@ export class TypeOrmLoanRepository implements LoanRepository {
       where: { memberId, status: 'pending' },
     });
     const validLoans: LoanDomain[] = [];
-    
+
     for (const entity of entities) {
       try {
         const loan = LoanMapper.toDomain(entity);
@@ -92,7 +92,7 @@ export class TypeOrmLoanRepository implements LoanRepository {
         );
       }
     }
-    
+
     return validLoans;
   }
 
@@ -116,7 +116,7 @@ export class TypeOrmLoanRepository implements LoanRepository {
   async findByIds(ids: string[]): Promise<LoanDomain[]> {
     const entities = await this.repo.find({ where: { id: In(ids) } });
     const validLoans: LoanDomain[] = [];
-    
+
     for (const entity of entities) {
       try {
         const loan = LoanMapper.toDomain(entity);
@@ -127,7 +127,7 @@ export class TypeOrmLoanRepository implements LoanRepository {
         );
       }
     }
-    
+
     return validLoans;
   }
 }

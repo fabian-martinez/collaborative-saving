@@ -11,7 +11,7 @@ describe('LoanMapper', () => {
         loanType: 'corriente',
         approvedAmount: 10000,
         disbursedAmount: 5000,
-        outstandingBalance: 7500,
+        outstandingBalance: 5000, // Debe ser <= disbursedAmount cuando disbursedAmount > 0
         monthlyPaymentAmount: 500,
         interestRate: 0.02,
         term: 24,
