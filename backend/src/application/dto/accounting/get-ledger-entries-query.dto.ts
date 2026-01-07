@@ -1,5 +1,15 @@
-import { IsOptional, IsUUID, IsEnum, IsInt, Min, IsDateString } from 'class-validator';
-import { AccountType, ALL_ACCOUNT_TYPES } from '@domain/constants/account-types';
+import {
+  IsOptional,
+  IsUUID,
+  IsEnum,
+  IsInt,
+  Min,
+  IsDateString,
+} from 'class-validator';
+import {
+  AccountType,
+  ALL_ACCOUNT_TYPES,
+} from '@domain/constants/account-types';
 
 export class GetLedgerEntriesQueryDto {
   @IsOptional()
@@ -32,4 +42,3 @@ export class GetLedgerEntriesQueryDto {
   @IsEnum(['ASC', 'DESC'])
   orderBy?: 'ASC' | 'DESC' = 'DESC';
 }
-

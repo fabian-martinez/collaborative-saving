@@ -11,4 +11,3 @@ export class AccountSummaryDto {
   entries: AccountLedgerEntryDto[];
   hasMoreEntries: boolean;
 }
-

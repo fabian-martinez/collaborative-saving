@@ -12,6 +12,7 @@ import { PendingMemberPayment } from '@domain/entities/pending-member-payment.en
 describe('TypeOrmPendingMemberPaymentRepository', () => {
   let repository: TypeOrmPendingMemberPaymentRepository;
   let typeOrmRepo: jest.Mocked<Repository<PendingMemberPaymentEntity>>;
+  let updateSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -35,6 +36,9 @@ describe('TypeOrmPendingMemberPaymentRepository', () => {
       TypeOrmPendingMemberPaymentRepository,
     );
     typeOrmRepo = module.get(getRepositoryToken(PendingMemberPaymentEntity));
+
+    // Create spies to avoid 'this' scoping issues
+    updateSpy = jest.spyOn(typeOrmRepo, 'update');
   });
 
   describe('findById', () => {
@@ -160,10 +164,7 @@ describe('TypeOrmPendingMemberPaymentRepository', () => {
       typeOrmRepo.update.mockResolvedValue(undefined as any);
 
       const result = await repository.save(domain);
-      expect(typeOrmRepo.update).toHaveBeenCalledWith(
-        domain.id,
-        expect.any(Object),
-      );
+      expect(updateSpy).toHaveBeenCalledWith(domain.id, expect.any(Object));
       expect(result).toBeInstanceOf(PendingMemberPaymentDomain);
     });
 
@@ -350,11 +351,11 @@ describe('TypeOrmPendingMemberPaymentRepository', () => {
         },
       ];
 
-      (typeOrmRepo.save as jest.Mock).mockImplementation(async (input: any) => {
+      (typeOrmRepo.save as jest.Mock).mockImplementation((input: unknown) => {
         if (Array.isArray(input)) {
-          return entities as PendingMemberPaymentEntity[];
+          return Promise.resolve(entities as PendingMemberPaymentEntity[]);
         }
-        return entities[0] as PendingMemberPaymentEntity;
+        return Promise.resolve(entities[0] as PendingMemberPaymentEntity);
       });
       const result = await repository.saveMany([domain1, domain2]);
       expect(result).toHaveLength(2);

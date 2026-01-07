@@ -49,6 +49,24 @@ export class TypeOrmOperationRepository implements OperationRepository {
     return entities.map((e) => OperationMapper.toDomain(e));
   }
 
+  async findByMeetingAndTypes(
+    meetingId: string,
+    types: OperationType[],
+  ): Promise<OperationDomain[]> {
+    if (types.length === 0) {
+      return [];
+    }
+
+    const qb = this.repo
+      .createQueryBuilder('operation')
+      .where('operation.meeting_id = :meetingId', { meetingId })
+      .andWhere('operation.type IN (:...types)', { types })
+      .orderBy('operation.date', 'DESC');
+
+    const entities = await qb.getMany();
+    return entities.map((e) => OperationMapper.toDomain(e));
+  }
+
   async findByMember(
     memberId: string,
     filters?: {

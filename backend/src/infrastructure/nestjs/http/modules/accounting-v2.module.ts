@@ -15,9 +15,7 @@ const OPERATION_REPOSITORY = Symbol('OperationRepository');
 const LEDGER_ENTRY_REPOSITORY = Symbol('LedgerEntryRepository');
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([OperationEntity, LedgerEntryEntity]),
-  ],
+  imports: [TypeOrmModule.forFeature([OperationEntity, LedgerEntryEntity])],
   controllers: [AccountingV2Controller],
   providers: [
     // Repository implementations
@@ -57,4 +55,3 @@ const LEDGER_ENTRY_REPOSITORY = Symbol('LedgerEntryRepository');
   exports: [OPERATION_REPOSITORY, LEDGER_ENTRY_REPOSITORY],
 })
 export class AccountingV2Module {}
-

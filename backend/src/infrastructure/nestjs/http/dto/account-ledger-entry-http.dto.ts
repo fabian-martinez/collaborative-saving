@@ -1,5 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AccountType, ALL_ACCOUNT_TYPES } from '@domain/constants/account-types';
+import {
+  AccountType,
+  ALL_ACCOUNT_TYPES,
+} from '@domain/constants/account-types';
 import { OperationType } from '@domain/enums/operation-type.enum';
 
 /**
@@ -44,4 +47,3 @@ export class AccountLedgerEntryHttpDto {
   @ApiPropertyOptional()
   operation_date?: Date;
 }
-

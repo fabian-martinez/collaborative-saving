@@ -12,4 +12,3 @@ export class LedgerEntryResponseDto {
   mandatoryContributionId: string | null;
   stockSubscriptionId: string | null;
 }
-

@@ -25,7 +25,6 @@ import {
 import { CreateMandatoryContributionUseCase } from '@application/use-cases/mandatory-contributions/create-mandatory-contribution.use-case';
 import { UpdateMandatoryContributionUseCase } from '@application/use-cases/mandatory-contributions/update-mandatory-contribution.use-case';
 import { DeleteMandatoryContributionUseCase } from '@application/use-cases/mandatory-contributions/delete-mandatory-contribution.use-case';
-import { MandatoryContributionResponseDto } from '@application/dto/mandatory-contributions/mandatory-contribution-response.dto';
 import { GetMandatoryContributionsQueryHandler } from '@application/queries/mandatory-contributions/get-mandatory-contributions.query-handler';
 import { GetMandatoryContributionDetailQueryHandler } from '@application/queries/mandatory-contributions/get-mandatory-contribution-detail.query-handler';
 import { CreateMandatoryContributionHttpDto } from '../dto/create-mandatory-contribution-http.dto';

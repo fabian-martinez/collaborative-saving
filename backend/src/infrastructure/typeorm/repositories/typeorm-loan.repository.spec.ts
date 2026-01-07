@@ -8,6 +8,7 @@ import { Loan as LoanDomain } from '@domain/entities/loan.entity';
 describe('TypeOrmLoanRepository', () => {
   let repository: TypeOrmLoanRepository;
   let typeOrmRepo: jest.Mocked<Repository<LoanEntity>>;
+  let updateSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -29,6 +30,9 @@ describe('TypeOrmLoanRepository', () => {
 
     repository = module.get<TypeOrmLoanRepository>(TypeOrmLoanRepository);
     typeOrmRepo = module.get(getRepositoryToken(LoanEntity));
+
+    // Create spies to avoid 'this' scoping issues
+    updateSpy = jest.spyOn(typeOrmRepo, 'update');
   });
 
   describe('findById', () => {
@@ -157,10 +161,7 @@ describe('TypeOrmLoanRepository', () => {
       typeOrmRepo.update.mockResolvedValue(undefined as any);
 
       const result = await repository.save(domain);
-      expect(typeOrmRepo.update).toHaveBeenCalledWith(
-        domain.id,
-        expect.any(Object),
-      );
+      expect(updateSpy).toHaveBeenCalledWith(domain.id, expect.any(Object));
       expect(result).toBeInstanceOf(LoanDomain);
     });
 

@@ -14,6 +14,7 @@ import { DuplicateMonthlyPaymentException } from '@application/exceptions/duplic
 import { PaymentType } from '@application/dto/members/payment-item.dto';
 import { OperationType } from '@domain/enums/operation-type.enum';
 import { Operation } from '@domain/entities/operation.entity';
+import { RecordOperationDto } from '@application/dto/accounting/record-operation.dto';
 
 describe('RecordMonthlyPaymentsUseCase', () => {
   let useCase: RecordMonthlyPaymentsUseCase;
@@ -384,12 +385,14 @@ describe('RecordMonthlyPaymentsUseCase', () => {
 
         // ASSERT
         expect(recordOperationExecuteSpy).toHaveBeenCalledTimes(1);
-        const callArgs = recordOperationExecuteSpy.mock.calls[0][0];
+        const recordOperationCalls = recordOperationExecuteSpy.mock
+          .calls as unknown as RecordOperationDto[][];
+        const callArgs = recordOperationCalls[0][0];
         expect(callArgs.entries).toHaveLength(2);
-        expect(callArgs.entries[0].accountType).toBe('CASH');
-        expect(callArgs.entries[0].amount).toBe(-50);
-        expect(callArgs.entries[1].accountType).toBe('NOVELTY_LOSS');
-        expect(callArgs.entries[1].amount).toBe(50);
+        expect(callArgs.entries[0]?.accountType).toBe('CASH');
+        expect(callArgs.entries[0]?.amount).toBe(-50);
+        expect(callArgs.entries[1]?.accountType).toBe('NOVELTY_LOSS');
+        expect(callArgs.entries[1]?.amount).toBe(50);
         expect(result.totalAmount).toBe(50);
       });
 
@@ -419,14 +422,18 @@ describe('RecordMonthlyPaymentsUseCase', () => {
         await useCase.execute(noveltyDto);
 
         // ASSERT
-        const callArgs = recordOperationExecuteSpy.mock.calls[0][0];
+        const recordOperationCalls = recordOperationExecuteSpy.mock
+          .calls as unknown as RecordOperationDto[][];
+        const callArgs = recordOperationCalls[0][0];
         const noveltyEntry = callArgs.entries.find(
-          (e: any) => e.accountType === 'NOVELTY_LOSS',
+          (e) => e.accountType === 'NOVELTY_LOSS',
         );
         expect(noveltyEntry).toBeDefined();
-        expect(noveltyEntry.mandatoryContributionId).toBe(contributionId);
-        expect(noveltyEntry.description).toContain('[AFFECTED:mandatory_contribution]');
-        expect(noveltyEntry.description).toContain('Aporte obligatorio');
+        expect(noveltyEntry?.mandatoryContributionId).toBe(contributionId);
+        expect(noveltyEntry?.description).toContain(
+          '[AFFECTED:mandatory_contribution]',
+        );
+        expect(noveltyEntry?.description).toContain('Aporte obligatorio');
       });
 
       it('should record novelty payment with affectedPaymentType and referenceId for stock fee', async () => {
@@ -455,14 +462,16 @@ describe('RecordMonthlyPaymentsUseCase', () => {
         await useCase.execute(noveltyDto);
 
         // ASSERT
-        const callArgs = recordOperationExecuteSpy.mock.calls[0][0];
+        const recordOperationCalls = recordOperationExecuteSpy.mock
+          .calls as unknown as RecordOperationDto[][];
+        const callArgs = recordOperationCalls[0][0];
         const noveltyEntry = callArgs.entries.find(
-          (e: any) => e.accountType === 'NOVELTY_LOSS',
+          (e) => e.accountType === 'NOVELTY_LOSS',
         );
         expect(noveltyEntry).toBeDefined();
-        expect(noveltyEntry.stockId).toBe(stockId);
-        expect(noveltyEntry.description).toContain('[AFFECTED:stock_fee]');
-        expect(noveltyEntry.description).toContain('Cuota de acciones');
+        expect(noveltyEntry?.stockId).toBe(stockId);
+        expect(noveltyEntry?.description).toContain('[AFFECTED:stock_fee]');
+        expect(noveltyEntry?.description).toContain('Cuota de acciones');
       });
 
       it('should record novelty payment with affectedPaymentType for FEE (no reference)', async () => {
@@ -489,17 +498,19 @@ describe('RecordMonthlyPaymentsUseCase', () => {
         await useCase.execute(noveltyDto);
 
         // ASSERT
-        const callArgs = recordOperationExecuteSpy.mock.calls[0][0];
+        const recordOperationCalls = recordOperationExecuteSpy.mock
+          .calls as unknown as RecordOperationDto[][];
+        const callArgs = recordOperationCalls[0][0];
         const noveltyEntry = callArgs.entries.find(
-          (e: any) => e.accountType === 'NOVELTY_LOSS',
+          (e) => e.accountType === 'NOVELTY_LOSS',
         );
         expect(noveltyEntry).toBeDefined();
-        expect(noveltyEntry.description).toContain('[AFFECTED:fee]');
-        expect(noveltyEntry.description).toContain('Multa/otro pago');
+        expect(noveltyEntry?.description).toContain('[AFFECTED:fee]');
+        expect(noveltyEntry?.description).toContain('Multa/otro pago');
         // No reference should be assigned for FEE
-        expect(noveltyEntry.mandatoryContributionId).toBeNull();
-        expect(noveltyEntry.stockId).toBeNull();
-        expect(noveltyEntry.loanId).toBeNull();
+        expect(noveltyEntry?.mandatoryContributionId).toBeNull();
+        expect(noveltyEntry?.stockId).toBeNull();
+        expect(noveltyEntry?.loanId).toBeNull();
       });
 
       it('should record novelty payment with affectedPaymentType for INSURANCE (no reference)', async () => {
@@ -526,13 +537,15 @@ describe('RecordMonthlyPaymentsUseCase', () => {
         await useCase.execute(noveltyDto);
 
         // ASSERT
-        const callArgs = recordOperationExecuteSpy.mock.calls[0][0];
+        const recordOperationCalls = recordOperationExecuteSpy.mock
+          .calls as unknown as RecordOperationDto[][];
+        const callArgs = recordOperationCalls[0][0];
         const noveltyEntry = callArgs.entries.find(
-          (e: any) => e.accountType === 'NOVELTY_LOSS',
+          (e) => e.accountType === 'NOVELTY_LOSS',
         );
         expect(noveltyEntry).toBeDefined();
-        expect(noveltyEntry.description).toContain('[AFFECTED:insurance]');
-        expect(noveltyEntry.description).toContain('Seguro de deuda');
+        expect(noveltyEntry?.description).toContain('[AFFECTED:insurance]');
+        expect(noveltyEntry?.description).toContain('Seguro de deuda');
       });
 
       it('should throw InvalidPaymentException when novelty has referenceId but no affectedPaymentType', async () => {
@@ -613,11 +626,13 @@ describe('RecordMonthlyPaymentsUseCase', () => {
         await useCase.execute(noveltyDto);
 
         // ASSERT
-        const callArgs = recordOperationExecuteSpy.mock.calls[0][0];
+        const recordOperationCalls = recordOperationExecuteSpy.mock
+          .calls as unknown as RecordOperationDto[][];
+        const callArgs = recordOperationCalls[0][0];
         const noveltyEntry = callArgs.entries.find(
-          (e: any) => e.accountType === 'NOVELTY_LOSS',
+          (e) => e.accountType === 'NOVELTY_LOSS',
         );
-        expect(noveltyEntry.description).toBe(
+        expect(noveltyEntry?.description).toBe(
           '[AFFECTED:fee]Novedad personalizada',
         );
       });

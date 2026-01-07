@@ -21,4 +21,3 @@ export class PaginatedResponseHttpDto<T> {
   @ApiProperty({ type: PaginationMetaHttpDto })
   pagination: PaginationMetaHttpDto;
 }
-

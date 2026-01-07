@@ -15,6 +15,13 @@ export class NestjsEventBus implements EventBus {
     eventName: string,
     handler: (event: DomainEvent<T>) => Promise<void> | void,
   ): void {
-    this.eventEmitter.on(eventName, handler);
+    this.eventEmitter.on(eventName, (event: DomainEvent<T>) => {
+      const result = handler(event);
+      if (result instanceof Promise) {
+        result.catch((error) => {
+          console.error(`Error handling event ${eventName}:`, error);
+        });
+      }
+    });
   }
 }

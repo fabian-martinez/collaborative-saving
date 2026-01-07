@@ -58,6 +58,7 @@ describe('TypeOrmLoanTransactionDetailRepository', () => {
 
       expect(result).toBeInstanceOf(LoanTransactionDetailDomain);
       expect(result?.id).toBe(transactionId);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(typeOrmRepo.findOne).toHaveBeenCalledWith({
         where: { id: transactionId },
       });
@@ -93,6 +94,7 @@ describe('TypeOrmLoanTransactionDetailRepository', () => {
       const result = await repository.findByLoan('loan-1');
       expect(result).toHaveLength(1);
       expect(result[0]).toBeInstanceOf(LoanTransactionDetailDomain);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(typeOrmRepo.find).toHaveBeenCalledWith({
         where: { loanId: 'loan-1' },
       });
@@ -123,19 +125,21 @@ describe('TypeOrmLoanTransactionDetailRepository', () => {
       const mockQueryBuilder = {
         innerJoin: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue(
-          entities as LoanTransactionDetailEntity[],
-        ),
+        getMany: jest
+          .fn()
+          .mockResolvedValue(entities as LoanTransactionDetailEntity[]),
       };
 
-      typeOrmRepo.createQueryBuilder.mockReturnValue(
-        mockQueryBuilder as any,
-      );
+      typeOrmRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
 
-      const result = await repository.findByLoanAndMeeting('loan-1', 'meeting-1');
+      const result = await repository.findByLoanAndMeeting(
+        'loan-1',
+        'meeting-1',
+      );
 
       expect(result).toHaveLength(1);
       expect(result[0]).toBeInstanceOf(LoanTransactionDetailDomain);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(typeOrmRepo.createQueryBuilder).toHaveBeenCalledWith(
         'loan_transaction_detail',
       );
@@ -159,11 +163,12 @@ describe('TypeOrmLoanTransactionDetailRepository', () => {
         getMany: jest.fn().mockResolvedValue([]),
       };
 
-      typeOrmRepo.createQueryBuilder.mockReturnValue(
-        mockQueryBuilder as any,
-      );
+      typeOrmRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
 
-      const result = await repository.findByLoanAndMeeting('loan-1', 'meeting-1');
+      const result = await repository.findByLoanAndMeeting(
+        'loan-1',
+        'meeting-1',
+      );
 
       expect(result).toHaveLength(0);
       expect(result).toEqual([]);
@@ -191,6 +196,7 @@ describe('TypeOrmLoanTransactionDetailRepository', () => {
 
       const result = await repository.save(domain);
       expect(result).toBeInstanceOf(LoanTransactionDetailDomain);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(typeOrmRepo.save).toHaveBeenCalled();
     });
 
@@ -224,10 +230,12 @@ describe('TypeOrmLoanTransactionDetailRepository', () => {
       const result = await repository.save(domain);
 
       expect(result).toBeInstanceOf(LoanTransactionDetailDomain);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(typeOrmRepo.update).toHaveBeenCalledWith(
         domain.id,
         expect.any(Object),
       );
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(typeOrmRepo.findOne).toHaveBeenCalledTimes(2);
     });
 
@@ -294,7 +302,7 @@ describe('TypeOrmLoanTransactionDetailRepository', () => {
         },
       ];
 
-      (typeOrmRepo.save as jest.Mock).mockImplementation(async (input: any) => {
+      (typeOrmRepo.save as jest.Mock).mockImplementation((input: any) => {
         if (Array.isArray(input)) {
           return savedEntities as LoanTransactionDetailEntity[];
         }
@@ -306,6 +314,7 @@ describe('TypeOrmLoanTransactionDetailRepository', () => {
       expect(result).toHaveLength(2);
       expect(result[0]).toBeInstanceOf(LoanTransactionDetailDomain);
       expect(result[1]).toBeInstanceOf(LoanTransactionDetailDomain);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(typeOrmRepo.save).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({ id: domain1.id }),
@@ -315,7 +324,7 @@ describe('TypeOrmLoanTransactionDetailRepository', () => {
     });
 
     it('should return empty array when saving empty array', async () => {
-      (typeOrmRepo.save as jest.Mock).mockImplementation(async (input: any) => {
+      (typeOrmRepo.save as jest.Mock).mockImplementation((input: any) => {
         if (Array.isArray(input)) {
           return [];
         }

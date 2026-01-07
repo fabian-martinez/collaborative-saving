@@ -23,4 +23,3 @@ export class GetAccountsSummaryResponseDto {
   summary: AccountsSummarySummary;
   metadata: AccountsSummaryMetadata;
 }
-

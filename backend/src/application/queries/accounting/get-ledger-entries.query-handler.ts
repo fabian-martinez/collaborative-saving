@@ -6,9 +6,7 @@ import { PaginatedResponse } from '@application/dto/accounting/paginated-respons
 
 @Injectable()
 export class GetLedgerEntriesQueryHandler {
-  constructor(
-    private readonly ledgerEntryRepository: LedgerEntryRepository,
-  ) {}
+  constructor(private readonly ledgerEntryRepository: LedgerEntryRepository) {}
 
   async execute(
     query: GetLedgerEntriesQueryDto,
@@ -57,4 +55,3 @@ export class GetLedgerEntriesQueryHandler {
     };
   }
 }
-

@@ -26,6 +26,10 @@ export interface OperationRepository {
     meetingId: string,
     type: OperationType,
   ): Promise<Operation[]>;
+  findByMeetingAndTypes(
+    meetingId: string,
+    types: OperationType[],
+  ): Promise<Operation[]>;
   findByMember(
     memberId: string,
     filters?: {

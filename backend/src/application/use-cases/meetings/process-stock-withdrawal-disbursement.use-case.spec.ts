@@ -154,18 +154,31 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       });
 
       // Assert
-      expect(stockRepository.findById).toHaveBeenCalledWith(mockStockId);
-      expect(stockSubscriptionRepository.findByStock).toHaveBeenCalledWith(
-        mockStockId,
+      const findStockByIdSpy = jest.spyOn(stockRepository, 'findById');
+      const findByStockSpy = jest.spyOn(
+        stockSubscriptionRepository,
+        'findByStock',
       );
-      expect(
-        stockWithdrawalCalculator.hasEnoughWithdrawableQuantity,
-      ).toHaveBeenCalled();
-      expect(
-        stockWithdrawalCalculator.calculateWithdrawalFIFO,
-      ).toHaveBeenCalled();
-      expect(stockSubscriptionRepository.saveMany).toHaveBeenCalled();
-      expect(recordOperationUseCase.execute).toHaveBeenCalled();
+      const hasEnoughQtySpy = jest.spyOn(
+        stockWithdrawalCalculator,
+        'hasEnoughWithdrawableQuantity',
+      );
+      const calcWithdrawalSpy = jest.spyOn(
+        stockWithdrawalCalculator,
+        'calculateWithdrawalFIFO',
+      );
+      const saveManySubsSpy = jest.spyOn(
+        stockSubscriptionRepository,
+        'saveMany',
+      );
+      const executeOpSpy = jest.spyOn(recordOperationUseCase, 'execute');
+
+      expect(findStockByIdSpy).toHaveBeenCalledWith(mockStockId);
+      expect(findByStockSpy).toHaveBeenCalledWith(mockStockId);
+      expect(hasEnoughQtySpy).toHaveBeenCalled();
+      expect(calcWithdrawalSpy).toHaveBeenCalled();
+      expect(saveManySubsSpy).toHaveBeenCalled();
+      expect(executeOpSpy).toHaveBeenCalled();
     });
 
     it('should throw InvalidRequestError when stockId is not provided', async () => {
@@ -330,16 +343,19 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       });
 
       // Assert
-      expect(recordOperationUseCase.execute).toHaveBeenCalledWith(
-        expect.objectContaining({
-          entries: expect.arrayContaining([
-            expect.objectContaining({
-              amount: -5000,
-            }),
-          ]),
-        }),
+      const executeOpSpy = jest.spyOn(recordOperationUseCase, 'execute');
+      const savePaymentSpy = jest.spyOn(pendingMemberPaymentRepository, 'save');
+
+      expect(executeOpSpy).toHaveBeenCalled();
+      const callArgs = executeOpSpy.mock.calls[0][0];
+      expect(callArgs.entries).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            amount: -5000,
+          }),
+        ]),
       );
-      expect(pendingMemberPaymentRepository.save).toHaveBeenCalledWith(
+      expect(savePaymentSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           amount: 5000,
         }),
@@ -400,7 +416,8 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       });
 
       // Assert
-      expect(pendingMemberPaymentRepository.save).toHaveBeenCalledWith(
+      const savePaymentSpy = jest.spyOn(pendingMemberPaymentRepository, 'save');
+      expect(savePaymentSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           type: PendingMemberPaymentType.STOCK_WITHDRAWAL,
           amount: 5000,
@@ -466,10 +483,13 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       });
 
       // Assert
-      expect(pendingMemberPaymentRepository.findById).toHaveBeenCalledWith(
-        'pending-payment-id-1',
+      const findPaymentByIdSpy = jest.spyOn(
+        pendingMemberPaymentRepository,
+        'findById',
       );
-      expect(pendingMemberPaymentRepository.save).toHaveBeenCalledTimes(3); // Approve existing + mark as paid + create new
+      const savePaymentSpy = jest.spyOn(pendingMemberPaymentRepository, 'save');
+      expect(findPaymentByIdSpy).toHaveBeenCalledWith('pending-payment-id-1');
+      expect(savePaymentSpy).toHaveBeenCalledTimes(3); // Approve existing + mark as paid + create new
     });
 
     it('should update subscriptions correctly after withdrawal', async () => {
@@ -527,7 +547,11 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       });
 
       // Assert
-      expect(stockSubscriptionRepository.saveMany).toHaveBeenCalledWith(
+      const saveManySubsSpy = jest.spyOn(
+        stockSubscriptionRepository,
+        'saveMany',
+      );
+      expect(saveManySubsSpy).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
             quantity: 50,
@@ -586,8 +610,10 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       });
 
       // Assert
-      expect(recordOperationUseCase.execute).not.toHaveBeenCalled();
-      expect(pendingMemberPaymentRepository.save).toHaveBeenCalledWith(
+      const executeOpSpy = jest.spyOn(recordOperationUseCase, 'execute');
+      const savePaymentSpy = jest.spyOn(pendingMemberPaymentRepository, 'save');
+      expect(executeOpSpy).not.toHaveBeenCalled();
+      expect(savePaymentSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           amount: 5000,
         }),
@@ -649,19 +675,20 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       });
 
       // Assert
-      expect(recordOperationUseCase.execute).toHaveBeenCalledWith(
-        expect.objectContaining({
-          entries: expect.arrayContaining([
-            expect.objectContaining({
-              accountType: 'CASH',
-              amount: -5000,
-            }),
-            expect.objectContaining({
-              accountType: 'STOCK_CAPITAL',
-              amount: 5000,
-            }),
-          ]),
-        }),
+      const executeOpSpy = jest.spyOn(recordOperationUseCase, 'execute');
+      expect(executeOpSpy).toHaveBeenCalled();
+      const callArgs = executeOpSpy.mock.calls[0][0];
+      expect(callArgs.entries).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            accountType: 'CASH',
+            amount: -5000,
+          }),
+          expect.objectContaining({
+            accountType: 'STOCK_CAPITAL',
+            amount: 5000,
+          }),
+        ]),
       );
     });
 
@@ -762,7 +789,11 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       });
 
       // Assert
-      expect(stockSubscriptionRepository.saveMany).toHaveBeenCalledWith(
+      const saveManySubsSpy = jest.spyOn(
+        stockSubscriptionRepository,
+        'saveMany',
+      );
+      expect(saveManySubsSpy).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
             status: StockSubscriptionStatus.INACTIVE,

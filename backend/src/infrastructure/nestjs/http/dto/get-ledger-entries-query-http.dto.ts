@@ -1,7 +1,17 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsUUID, IsEnum, IsInt, Min, IsDateString } from 'class-validator';
+import {
+  IsOptional,
+  IsUUID,
+  IsEnum,
+  IsInt,
+  Min,
+  IsDateString,
+} from 'class-validator';
 import { Type } from 'class-transformer';
-import { AccountType, ALL_ACCOUNT_TYPES } from '@domain/constants/account-types';
+import {
+  AccountType,
+  ALL_ACCOUNT_TYPES,
+} from '@domain/constants/account-types';
 
 export class GetLedgerEntriesQueryHttpDto {
   @ApiPropertyOptional({
@@ -69,4 +79,3 @@ export class GetLedgerEntriesQueryHttpDto {
   @IsEnum(['ASC', 'DESC'])
   order_by?: 'ASC' | 'DESC';
 }
-

@@ -1,4 +1,11 @@
-import { IsOptional, IsUUID, IsEnum, IsInt, Min, IsDateString } from 'class-validator';
+import {
+  IsOptional,
+  IsUUID,
+  IsEnum,
+  IsInt,
+  Min,
+  IsDateString,
+} from 'class-validator';
 import { OperationType } from '@domain/enums/operation-type.enum';
 
 export class GetOperationsQueryDto {
@@ -36,4 +43,3 @@ export class GetOperationsQueryDto {
   @IsEnum(['ASC', 'DESC'])
   orderBy?: 'ASC' | 'DESC' = 'DESC';
 }
-

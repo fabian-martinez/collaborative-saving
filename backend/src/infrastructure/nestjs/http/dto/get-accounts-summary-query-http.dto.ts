@@ -10,11 +10,15 @@ import {
   IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { AccountType, ALL_ACCOUNT_TYPES } from '@domain/constants/account-types';
+import {
+  AccountType,
+  ALL_ACCOUNT_TYPES,
+} from '@domain/constants/account-types';
 
 export class GetAccountsSummaryQueryHttpDto {
   @ApiPropertyOptional({
-    description: 'Maximum number of entries to return per account (for display purposes only, totals are calculated with all entries)',
+    description:
+      'Maximum number of entries to return per account (for display purposes only, totals are calculated with all entries)',
     example: 10,
     default: 10,
     minimum: 1,
@@ -63,4 +67,3 @@ export class GetAccountsSummaryQueryHttpDto {
   @IsBoolean()
   include_zero_balance?: boolean;
 }
-

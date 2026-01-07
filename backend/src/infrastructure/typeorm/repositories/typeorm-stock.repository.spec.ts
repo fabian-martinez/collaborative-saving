@@ -8,6 +8,9 @@ import { Stock as StockDomain } from '@domain/entities/stock.entity';
 describe('TypeOrmStockRepository', () => {
   let repository: TypeOrmStockRepository;
   let typeOrmRepo: jest.Mocked<Repository<StockEntity>>;
+  let findOneSpy: jest.SpyInstance;
+  let saveSpy: jest.SpyInstance;
+  let updateSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -29,6 +32,11 @@ describe('TypeOrmStockRepository', () => {
 
     repository = module.get<TypeOrmStockRepository>(TypeOrmStockRepository);
     typeOrmRepo = module.get(getRepositoryToken(StockEntity));
+
+    // Create spies to avoid 'this' scoping issues
+    findOneSpy = jest.spyOn(typeOrmRepo, 'findOne');
+    saveSpy = jest.spyOn(typeOrmRepo, 'save');
+    updateSpy = jest.spyOn(typeOrmRepo, 'update');
   });
 
   describe('findById', () => {
@@ -165,9 +173,12 @@ describe('TypeOrmStockRepository', () => {
       // Assert
       const findCall = typeOrmRepo.find.mock.calls[0]?.[0];
       expect(findCall).toBeDefined();
-      const where = Array.isArray(findCall?.where)
+      if (!findCall) {
+        throw new Error('findCall is undefined');
+      }
+      const where = Array.isArray(findCall.where)
         ? findCall.where[0]
-        : findCall?.where;
+        : findCall.where;
       expect(where?.deleted_at).toEqual(IsNull());
       expect(result).toHaveLength(2);
       expect(result[0]).toBeInstanceOf(StockDomain);
@@ -241,11 +252,11 @@ describe('TypeOrmStockRepository', () => {
       const result = await repository.save(stock);
 
       // Assert
-      expect(typeOrmRepo.findOne).toHaveBeenCalledWith({
+      expect(findOneSpy).toHaveBeenCalledWith({
         where: { id: stock.id },
         withDeleted: true,
       });
-      expect(typeOrmRepo.save).toHaveBeenCalled();
+      expect(saveSpy).toHaveBeenCalled();
       expect(result).toBeInstanceOf(StockDomain);
       expect(result.id).toBe(stock.id);
     });
@@ -289,11 +300,8 @@ describe('TypeOrmStockRepository', () => {
       const result = await repository.save(stock);
 
       // Assert
-      expect(typeOrmRepo.findOne).toHaveBeenCalledTimes(2);
-      expect(typeOrmRepo.update).toHaveBeenCalledWith(
-        stock.id,
-        expect.any(Object),
-      );
+      expect(findOneSpy).toHaveBeenCalledTimes(2);
+      expect(updateSpy).toHaveBeenCalledWith(stock.id, expect.any(Object));
       expect(result).toBeInstanceOf(StockDomain);
       expect(result.id).toBe(stock.id);
       expect(result.value).toBe(150);
@@ -354,9 +362,12 @@ describe('TypeOrmStockRepository', () => {
       // Assert
       const findCall = typeOrmRepo.find.mock.calls[0]?.[0];
       expect(findCall).toBeDefined();
-      const where = Array.isArray(findCall?.where)
+      if (!findCall) {
+        throw new Error('findCall is undefined');
+      }
+      const where = Array.isArray(findCall.where)
         ? findCall.where[0]
-        : findCall?.where;
+        : findCall.where;
       expect(where?.is_guaranteed).toBe(true);
       expect(where?.deleted_at).toEqual(IsNull());
       expect(result).toHaveLength(1);

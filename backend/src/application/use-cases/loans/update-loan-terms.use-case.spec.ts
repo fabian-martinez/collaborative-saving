@@ -2,7 +2,7 @@ import { UpdateLoanTermsUseCase } from './update-loan-terms.use-case';
 import { UpdateLoanTermsDto } from '@application/dto/loans/update-loan-terms.dto';
 import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
 import { EventBus } from '@domain/ports/services/event-bus.port';
-import { Loan, LoanStatus } from '@domain/entities/loan.entity';
+import { Loan } from '@domain/entities/loan.entity';
 import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
 import { LoanTermsChangedEvent } from '@domain/events/loan-terms-changed.event';
 
@@ -71,7 +71,7 @@ describe('UpdateLoanTermsUseCase', () => {
     };
 
     findByIdSpy.mockResolvedValue(loan);
-    saveSpy.mockImplementation(async (l) => l);
+    saveSpy.mockImplementation((l: Loan) => Promise.resolve(l));
 
     const result = await useCase.execute(dto);
 
@@ -83,7 +83,11 @@ describe('UpdateLoanTermsUseCase', () => {
 
     // Verify event was published
     expect(publishSpy).toHaveBeenCalledTimes(1);
-    const publishedEvent = publishSpy.mock.calls[0][0] as LoanTermsChangedEvent;
+    const publishCalls = publishSpy.mock.calls as unknown as [
+      LoanTermsChangedEvent,
+    ][];
+    const publishedEvent = publishCalls[0][0];
+    expect(publishedEvent).toBeDefined();
     expect(publishedEvent).toBeInstanceOf(LoanTermsChangedEvent);
     expect(publishedEvent.payload.loanId).toBe(loan.id);
     expect(publishedEvent.payload.previousTerms.interestRate).toBe(0.05);
@@ -106,7 +110,7 @@ describe('UpdateLoanTermsUseCase', () => {
     };
 
     findByIdSpy.mockResolvedValue(loan);
-    saveSpy.mockImplementation(async (l) => l);
+    saveSpy.mockImplementation((l: Loan) => Promise.resolve(l));
 
     const result = await useCase.execute(dto);
 
@@ -115,7 +119,10 @@ describe('UpdateLoanTermsUseCase', () => {
     expect(result.term).toBe(12); // Unchanged
 
     expect(publishSpy).toHaveBeenCalledTimes(1);
-    const publishedEvent = publishSpy.mock.calls[0][0] as LoanTermsChangedEvent;
+    const publishCalls = publishSpy.mock.calls as unknown as [
+      LoanTermsChangedEvent,
+    ][];
+    const publishedEvent = publishCalls[0][0];
     expect(publishedEvent.payload.previousTerms.monthlyPaymentAmount).toBe(
       150000,
     );
@@ -138,7 +145,7 @@ describe('UpdateLoanTermsUseCase', () => {
     };
 
     findByIdSpy.mockResolvedValue(loan);
-    saveSpy.mockImplementation(async (l) => l);
+    saveSpy.mockImplementation((l: Loan) => Promise.resolve(l));
 
     const result = await useCase.execute(dto);
 
@@ -147,7 +154,10 @@ describe('UpdateLoanTermsUseCase', () => {
     expect(result.monthlyPaymentAmount).toBe(150000); // Unchanged
 
     expect(publishSpy).toHaveBeenCalledTimes(1);
-    const publishedEvent = publishSpy.mock.calls[0][0] as LoanTermsChangedEvent;
+    const publishCalls = publishSpy.mock.calls as unknown as [
+      LoanTermsChangedEvent,
+    ][];
+    const publishedEvent = publishCalls[0][0];
     expect(publishedEvent.payload.previousTerms.term).toBe(12);
     expect(publishedEvent.payload.newTerms.term).toBe(18);
   });
@@ -170,7 +180,7 @@ describe('UpdateLoanTermsUseCase', () => {
     };
 
     findByIdSpy.mockResolvedValue(loan);
-    saveSpy.mockImplementation(async (l) => l);
+    saveSpy.mockImplementation((l: Loan) => Promise.resolve(l));
 
     const result = await useCase.execute(dto);
 
@@ -179,7 +189,10 @@ describe('UpdateLoanTermsUseCase', () => {
     expect(result.term).toBe(18);
 
     expect(publishSpy).toHaveBeenCalledTimes(1);
-    const publishedEvent = publishSpy.mock.calls[0][0] as LoanTermsChangedEvent;
+    const publishCalls = publishSpy.mock.calls as unknown as [
+      LoanTermsChangedEvent,
+    ][];
+    const publishedEvent = publishCalls[0][0];
     expect(publishedEvent.payload.previousTerms).toEqual({
       interestRate: 0.05,
       monthlyPaymentAmount: 150000,
@@ -210,7 +223,7 @@ describe('UpdateLoanTermsUseCase', () => {
     };
 
     findByIdSpy.mockResolvedValue(loan);
-    saveSpy.mockImplementation(async (l) => l);
+    saveSpy.mockImplementation((l: Loan) => Promise.resolve(l));
 
     const result = await useCase.execute(dto);
 
@@ -240,12 +253,15 @@ describe('UpdateLoanTermsUseCase', () => {
     };
 
     findByIdSpy.mockResolvedValue(loan);
-    saveSpy.mockImplementation(async (l) => l);
+    saveSpy.mockImplementation((l: Loan) => Promise.resolve(l));
 
     await useCase.execute(dto);
 
     expect(publishSpy).toHaveBeenCalledTimes(1);
-    const publishedEvent = publishSpy.mock.calls[0][0] as LoanTermsChangedEvent;
+    const publishCalls = publishSpy.mock.calls as unknown as [
+      LoanTermsChangedEvent,
+    ][];
+    const publishedEvent = publishCalls[0][0];
     expect(publishedEvent.payload.changedBy).toBe(userId);
   });
 

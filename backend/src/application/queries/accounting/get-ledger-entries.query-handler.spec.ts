@@ -54,6 +54,7 @@ describe('GetLedgerEntriesQueryHandler', () => {
       expect(result.pagination.page).toBe(1);
       expect(result.pagination.limit).toBe(10);
       expect(result.pagination.totalPages).toBe(1);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(ledgerEntryRepository.findWithPagination).toHaveBeenCalledWith(
         {},
         { page: 1, limit: 10 },
@@ -82,6 +83,7 @@ describe('GetLedgerEntriesQueryHandler', () => {
         orderBy: 'ASC',
       });
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(ledgerEntryRepository.findWithPagination).toHaveBeenCalledWith(
         {
           memberId,
@@ -102,6 +104,7 @@ describe('GetLedgerEntriesQueryHandler', () => {
 
       const result = await queryHandler.execute({});
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(ledgerEntryRepository.findWithPagination).toHaveBeenCalledWith(
         {},
         { page: 1, limit: 10 },
@@ -183,4 +186,3 @@ describe('GetLedgerEntriesQueryHandler', () => {
     });
   });
 });
-
