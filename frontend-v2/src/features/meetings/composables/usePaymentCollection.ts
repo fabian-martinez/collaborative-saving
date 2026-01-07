@@ -9,6 +9,7 @@ export interface Payment {
   amount: number
   referenceId?: string
   noveltyComment?: string
+  affectedPaymentType?: 'mandatory_contribution' | 'stock_fee' | 'loan_payment' | 'fee' | 'insurance'
 }
 
 export interface CompletedPayment {
@@ -204,14 +205,24 @@ export function usePaymentCollection() {
     isNoveltyModalOpen.value = true
   }
 
-  function handleNoveltySave(data: { amount: number; comment: string }) {
+  function handleNoveltySave(data: { amount: number; comment: string; affectedDue?: MemberDue | null }) {
     const amount = Number(data.amount) || 0
-    payments.value.push({
+    const novelty: Payment = {
       type: 'novelty',
       description: data.comment || 'Novedad',
       amount: Math.abs(amount),
       noveltyComment: data.comment,
-    })
+    }
+    
+    // Si hay un due afectado, asignar los campos necesarios
+    if (data.affectedDue) {
+      novelty.affectedPaymentType = data.affectedDue.type as 'mandatory_contribution' | 'stock_fee' | 'loan_payment' | 'fee' | 'insurance'
+      if (data.affectedDue.reference_id) {
+        novelty.referenceId = data.affectedDue.reference_id
+      }
+    }
+    
+    payments.value.push(novelty)
     isNoveltyModalOpen.value = false
   }
 
@@ -371,7 +382,13 @@ export function usePaymentCollection() {
           }
 
           if (payment.type === 'novelty') {
-            processedPayment.novelty_comment = noveltyComment
+            if (noveltyComment) {
+              processedPayment.novelty_comment = noveltyComment
+            }
+            // Convertir campos de novedad a snake_case
+            if (payment.affectedPaymentType) {
+              processedPayment.affected_payment_type = payment.affectedPaymentType
+            }
           }
 
           return processedPayment

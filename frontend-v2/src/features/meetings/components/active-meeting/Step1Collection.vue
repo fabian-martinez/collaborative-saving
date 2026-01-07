@@ -81,6 +81,7 @@
                 <NoveltyModal
               v-if="paymentCollection.isNoveltyModalOpen.value"
               :visible="paymentCollection.isNoveltyModalOpen.value"
+              :available-dues="paymentCollection.memberDues.value"
               @close="() => paymentCollection.isNoveltyModalOpen.value = false"
               @save="paymentCollection.handleNoveltySave"
             />
@@ -138,8 +139,7 @@ const store = useActiveMeetingStore()
 const paymentCollection = usePaymentCollection()
 const memberSelection = useMemberSelection(paymentCollection)
 const printReceipt = usePrintReceipt(
-  computed(() => memberSelection.selectedMember.value),
-  computed(() => memberSelection.viewedOperations.value)
+  memberSelection.selectedMember
 )
 
 // 4. Reactive state

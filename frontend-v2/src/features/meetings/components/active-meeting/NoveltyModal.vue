@@ -37,6 +37,29 @@
           ></textarea>
         </div>
 
+        <!-- Affected Payment -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text text-lg">¿Afecta algún pago específico? (Opcional)</span>
+          </label>
+          <select
+            v-model="selectedDueIndex"
+            class="select select-bordered w-full"
+          >
+            <option :value="null">Ninguno (Novedad general)</option>
+            <option
+              v-for="(due, index) in availableDuesFiltered"
+              :key="index"
+              :value="index"
+            >
+              {{ getDueLabel(due) }}
+            </option>
+          </select>
+          <label class="label">
+            <span class="label-text-alt text-base-content/70">Selecciona el pago que se ve afectado por esta novedad.</span>
+          </label>
+        </div>
+
         <div class="modal-action">
           <button type="button" class="btn btn-ghost" @click="closeModal">Cancelar</button>
           <button type="submit" class="btn btn-error" :disabled="!isFormValid">
@@ -54,20 +77,46 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { formatMoneyInput, parseMoneyInput } from '@/shared/utils/formatters'
+import type { MemberDue } from '@/api/members.api'
 
-const props = defineProps<{ visible: boolean }>()
+const props = defineProps<{ 
+  visible: boolean
+  availableDues?: MemberDue[]
+}>()
+
 const emit = defineEmits<{
   close: []
-  save: [data: { amount: number; comment: string }]
+  save: [data: { amount: number; comment: string; affectedDue?: MemberDue | null }]
 }>()
 
 const amount = ref<number | null>(null)
 const amountDisplay = ref('')
 const comment = ref('')
+const selectedDueIndex = ref<number | null>(null)
 
 const isFormValid = computed(() => {
   return amount.value !== null && amount.value > 0 && comment.value.trim() !== ''
 })
+
+// Filtrar dues disponibles (excluir novedades)
+const availableDuesFiltered = computed(() => {
+  if (!props.availableDues) return []
+  return props.availableDues.filter(due => due.type !== 'novelty')
+})
+
+// Función para obtener etiqueta descriptiva del due
+function getDueLabel(due: MemberDue): string {
+  const typeLabels: Record<string, string> = {
+    mandatory_contribution: 'Aporte obligatorio',
+    stock_fee: 'Cuota de acciones',
+    loan_payment: 'Pago de préstamo',
+    fee: 'Multa/otro pago',
+    insurance: 'Seguro de deuda',
+  }
+  
+  const typeLabel = typeLabels[due.type] || due.type
+  return `${typeLabel}: ${due.description}`
+}
 
 function closeModal() {
   emit('close')
@@ -75,10 +124,22 @@ function closeModal() {
 
 function onSave() {
   if (!isFormValid.value) return
-  emit('save', { amount: Math.abs(amount.value!), comment: comment.value })
+  
+  const affectedDue = selectedDueIndex.value !== null && availableDuesFiltered.value
+    ? availableDuesFiltered.value[selectedDueIndex.value]
+    : null
+  
+  emit('save', { 
+    amount: Math.abs(amount.value!), 
+    comment: comment.value,
+    affectedDue 
+  })
+  
+  // Reset form
   amount.value = null
   amountDisplay.value = ''
   comment.value = ''
+  selectedDueIndex.value = null
 }
 
 watch(() => props.visible, (val) => {
@@ -86,6 +147,7 @@ watch(() => props.visible, (val) => {
     amount.value = null
     amountDisplay.value = ''
     comment.value = ''
+    selectedDueIndex.value = null
   } else {
     // Inicializar cuando se abre el modal
     amountDisplay.value = ''
