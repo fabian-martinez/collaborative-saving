@@ -40,6 +40,7 @@ import { GetMemberStockExchangesQueryHandler } from '@application/queries/member
 import { GetMemberStockTransfersQueryHandler } from '@application/queries/members/get-member-stock-transfers.query-handler';
 import { GetMemberStockLoanPaymentsQueryHandler } from '@application/queries/members/get-member-stock-loan-payments.query-handler';
 import { GetMemberPaymentScheduleQueryHandler } from '@application/queries/members/get-member-payment-schedule.query-handler';
+import { GetMemberStockSubscriptionsQueryHandler } from '@application/queries/members/get-member-stock-subscriptions.query-handler';
 import { UpdateMemberHttpDto } from '../dto/update-member-http.dto';
 import { CreateMemberHttpDto } from '../dto/create-member-http.dto';
 import { RecordMonthlyPaymentsUseCase } from '@application/use-cases/members/record-monthly-payments.use-case';
@@ -83,7 +84,9 @@ import { StockTransferResponseDto } from '@application/dto/members/stock-transfe
 import { StockLoanPaymentResponseDto } from '@application/dto/members/stock-loan-payment-response.dto';
 import { GetPaymentScheduleQueryHttpDto } from '../dto/get-payment-schedule-query-http.dto';
 import { PaymentScheduleResponseHttpDto } from '../dto/payment-schedule-response-http.dto';
+import { StockSubscriptionResponseHttpDto } from '../dto/stock-subscription-response-http.dto';
 import { PaymentScheduleResponseDto } from '@application/dto/members/payment-schedule-response.dto';
+import { StockSubscriptionResponseDto } from '@application/dto/members/stock-subscription-response.dto';
 import { PaymentItemDto } from '@application/dto/members/payment-item.dto';
 
 @ApiTags('Members V2')
@@ -99,6 +102,7 @@ export class MembersV2Controller {
     private readonly getMemberStockTransfersQuery: GetMemberStockTransfersQueryHandler,
     private readonly getMemberStockLoanPaymentsQuery: GetMemberStockLoanPaymentsQueryHandler,
     private readonly getMemberPaymentScheduleQuery: GetMemberPaymentScheduleQueryHandler,
+    private readonly getMemberStockSubscriptionsQuery: GetMemberStockSubscriptionsQueryHandler,
     private readonly createMemberUseCase: CreateMemberUseCase,
     private readonly updateMemberUseCase: UpdateMemberUseCase,
     private readonly deleteMemberUseCase: DeleteMemberUseCase,
@@ -555,6 +559,54 @@ export class MembersV2Controller {
         queryDto,
       );
       return purchases.map((purchase) => this.mapPurchaseToHttp(purchase));
+    } catch (e: unknown) {
+      if (e instanceof MemberNotFoundException) {
+        throw new HttpException(e.message, HttpStatus.NOT_FOUND);
+      }
+      if (e instanceof HttpException) {
+        throw e;
+      }
+      throw new HttpException(
+        e instanceof Error ? e.message : 'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get(':id/stock-subscriptions')
+  @ApiOperation({
+    summary: 'Get member active stock subscriptions',
+    description:
+      'Retrieves all active stock subscriptions for a member. This endpoint is useful to determine what operations the member can perform based on their stock holdings.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The UUID of the member',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Member stock subscriptions retrieved successfully',
+    type: [StockSubscriptionResponseHttpDto],
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid UUID format',
+  })
+  @ApiNotFoundResponse({
+    description: 'Member not found',
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error',
+  })
+  async getStockSubscriptions(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<StockSubscriptionResponseHttpDto[]> {
+    try {
+      const subscriptions =
+        await this.getMemberStockSubscriptionsQuery.execute(id);
+      return subscriptions.map((subscription) =>
+        this.mapStockSubscriptionToHttp(subscription),
+      );
     } catch (e: unknown) {
       if (e instanceof MemberNotFoundException) {
         throw new HttpException(e.message, HttpStatus.NOT_FOUND);
@@ -1332,6 +1384,20 @@ export class MembersV2Controller {
         next_payment_amount: schedule.summary.nextPaymentAmount,
         total_outstanding_balance: schedule.summary.totalOutstandingBalance,
       },
+    };
+  }
+
+  private mapStockSubscriptionToHttp(
+    subscription: StockSubscriptionResponseDto,
+  ): StockSubscriptionResponseHttpDto {
+    return {
+      id: subscription.id,
+      stock_id: subscription.stockId,
+      stock_type: subscription.stockType,
+      quantity: subscription.quantity,
+      purchase_date: subscription.purchaseDate,
+      status: subscription.status,
+      financing_loan_id: subscription.financingLoanId || null,
     };
   }
 }

@@ -10,6 +10,7 @@ import { GetMemberStockExchangesQueryHandler } from '@application/queries/member
 import { GetMemberStockTransfersQueryHandler } from '@application/queries/members/get-member-stock-transfers.query-handler';
 import { GetMemberStockLoanPaymentsQueryHandler } from '@application/queries/members/get-member-stock-loan-payments.query-handler';
 import { GetMemberPaymentScheduleQueryHandler } from '@application/queries/members/get-member-payment-schedule.query-handler';
+import { GetMemberStockSubscriptionsQueryHandler } from '@application/queries/members/get-member-stock-subscriptions.query-handler';
 import { CreateMemberUseCase } from '@application/use-cases/members/create-member.use-case';
 import { UpdateMemberUseCase } from '@application/use-cases/members/update-member.use-case';
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
@@ -48,6 +49,7 @@ describe('MembersV2Controller', () => {
   let getMemberStockLoanPaymentsQuery: jest.Mocked<GetMemberStockLoanPaymentsQueryHandler>;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let getMemberPaymentScheduleQuery: jest.Mocked<GetMemberPaymentScheduleQueryHandler>;
+  let getMemberStockSubscriptionsQuery: jest.Mocked<GetMemberStockSubscriptionsQueryHandler>;
   let processStockExchangeUseCase: jest.Mocked<ProcessStockExchangeUseCase>;
   let processStockTransferUseCase: jest.Mocked<ProcessStockTransferUseCase>;
   let processStockLoanPaymentUseCase: jest.Mocked<ProcessStockLoanPaymentUseCase>;
@@ -65,6 +67,7 @@ describe('MembersV2Controller', () => {
   let calculateMemberInsuranceUseCaseExecuteSpy: jest.SpyInstance;
   let purchaseStockUseCaseExecuteSpy: jest.SpyInstance;
   let getMemberPurchasesQueryExecuteSpy: jest.SpyInstance;
+  let getMemberStockSubscriptionsQueryExecuteSpy: jest.SpyInstance;
   let processStockExchangeUseCaseExecuteSpy: jest.SpyInstance;
   let processStockTransferUseCaseExecuteSpy: jest.SpyInstance;
   let processStockLoanPaymentUseCaseExecuteSpy: jest.SpyInstance;
@@ -138,6 +141,12 @@ describe('MembersV2Controller', () => {
         },
         {
           provide: GetMemberPaymentScheduleQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: GetMemberStockSubscriptionsQueryHandler,
           useValue: {
             execute: jest.fn(),
           },
@@ -223,6 +232,9 @@ describe('MembersV2Controller', () => {
     getMemberPaymentScheduleQuery = module.get(
       GetMemberPaymentScheduleQueryHandler,
     );
+    getMemberStockSubscriptionsQuery = module.get(
+      GetMemberStockSubscriptionsQueryHandler,
+    );
     processStockExchangeUseCase = module.get(ProcessStockExchangeUseCase);
     processStockTransferUseCase = module.get(ProcessStockTransferUseCase);
     processStockLoanPaymentUseCase = module.get(ProcessStockLoanPaymentUseCase);
@@ -274,6 +286,10 @@ describe('MembersV2Controller', () => {
     );
     getMemberStockLoanPaymentsQueryExecuteSpy = jest.spyOn(
       getMemberStockLoanPaymentsQuery,
+      'execute',
+    );
+    getMemberStockSubscriptionsQueryExecuteSpy = jest.spyOn(
+      getMemberStockSubscriptionsQuery,
       'execute',
     );
   });
@@ -1145,6 +1161,102 @@ describe('MembersV2Controller', () => {
 
       const error = (await controller
         .getPurchases(memberId, {})
+        .catch((e: unknown) => e)) as HttpException;
+      expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+    });
+  });
+
+  describe('getStockSubscriptions', () => {
+    const memberId = '550e8400-e29b-41d4-a716-446655440000';
+    const mockSubscriptions = [
+      {
+        id: '880e8400-e29b-41d4-a716-446655440003',
+        stockId: '770e8400-e29b-41d4-a716-446655440002',
+        stockType: 'Acción A',
+        quantity: 2,
+        purchaseDate: new Date('2024-01-15'),
+        status: 'active',
+        financingLoanId: null,
+      },
+      {
+        id: 'aa0e8400-e29b-41d4-a716-446655440006',
+        stockId: 'bb0e8400-e29b-41d4-a716-446655440007',
+        stockType: 'Acción B',
+        quantity: 1,
+        purchaseDate: new Date('2024-01-20'),
+        status: 'active',
+        financingLoanId: 'dd0e8400-e29b-41d4-a716-446655440009',
+      },
+    ];
+
+    it('should return stock subscriptions successfully', async () => {
+      getMemberStockSubscriptionsQueryExecuteSpy.mockResolvedValue(
+        mockSubscriptions,
+      );
+
+      const result = await controller.getStockSubscriptions(memberId);
+
+      expect(getMemberStockSubscriptionsQueryExecuteSpy).toHaveBeenCalledWith(
+        memberId,
+      );
+      expect(result).toHaveLength(2);
+      expect(result[0]).toMatchObject({
+        id: mockSubscriptions[0].id,
+        stock_id: mockSubscriptions[0].stockId,
+        stock_type: mockSubscriptions[0].stockType,
+        quantity: mockSubscriptions[0].quantity,
+        purchase_date: mockSubscriptions[0].purchaseDate,
+        status: mockSubscriptions[0].status,
+        financing_loan_id: null,
+      });
+      expect(result[1]).toMatchObject({
+        id: mockSubscriptions[1].id,
+        stock_id: mockSubscriptions[1].stockId,
+        stock_type: mockSubscriptions[1].stockType,
+        quantity: mockSubscriptions[1].quantity,
+        purchase_date: mockSubscriptions[1].purchaseDate,
+        status: mockSubscriptions[1].status,
+        financing_loan_id: mockSubscriptions[1].financingLoanId,
+      });
+    });
+
+    it('should return empty array when no subscriptions found', async () => {
+      getMemberStockSubscriptionsQueryExecuteSpy.mockResolvedValue([]);
+
+      const result = await controller.getStockSubscriptions(memberId);
+
+      expect(getMemberStockSubscriptionsQueryExecuteSpy).toHaveBeenCalledWith(
+        memberId,
+      );
+      expect(result).toEqual([]);
+    });
+
+    it('should throw HttpException when member not found', async () => {
+      getMemberStockSubscriptionsQueryExecuteSpy.mockRejectedValue(
+        new MemberNotFoundException(memberId),
+      );
+
+      await expect(controller.getStockSubscriptions(memberId)).rejects.toThrow(
+        HttpException,
+      );
+
+      const error = (await controller
+        .getStockSubscriptions(memberId)
+        .catch((e: unknown) => e)) as HttpException;
+      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it('should throw HttpException with INTERNAL_SERVER_ERROR for unknown errors', async () => {
+      getMemberStockSubscriptionsQueryExecuteSpy.mockRejectedValue(
+        'String error',
+      );
+
+      await expect(controller.getStockSubscriptions(memberId)).rejects.toThrow(
+        HttpException,
+      );
+
+      const error = (await controller
+        .getStockSubscriptions(memberId)
         .catch((e: unknown) => e)) as HttpException;
       expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
     });
