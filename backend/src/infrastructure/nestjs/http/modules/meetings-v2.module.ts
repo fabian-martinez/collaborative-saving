@@ -220,8 +220,21 @@ const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
       useFactory: (
         meetingRepo: MeetingRepository,
         operationRepo: OperationRepository,
-      ) => new GetMeetingPurchasesQueryHandler(meetingRepo, operationRepo),
-      inject: [MEETING_REPOSITORY, OPERATION_REPOSITORY],
+        ledgerEntryRepo: LedgerEntryRepository,
+        paymentMapperService: PaymentMapperService,
+      ) =>
+        new GetMeetingPurchasesQueryHandler(
+          meetingRepo,
+          operationRepo,
+          ledgerEntryRepo,
+          paymentMapperService,
+        ),
+      inject: [
+        MEETING_REPOSITORY,
+        OPERATION_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+        PaymentMapperService,
+      ],
     },
     {
       provide: GetMeetingStockTransfersQueryHandler,
