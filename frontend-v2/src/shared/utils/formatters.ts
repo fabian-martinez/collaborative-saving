@@ -77,3 +77,30 @@ export function formatCurrencyCompact(amount: number): string {
   }
 }
 
+// Formatea un número para mostrar en un input de dinero con puntos como separadores de miles
+export function formatMoneyInput(value: number | null | undefined): string {
+  if (value == null || value === undefined || isNaN(value)) return '';
+  // Convierte a string y formatea con puntos como separadores de miles
+  // No incluye decimales por defecto para el input
+  const parts = value.toString().split('.');
+  const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const decimalPart = parts[1] ? ',' + parts[1] : '';
+  return integerPart + decimalPart;
+}
+
+// Parsea un string formateado con puntos de miles y convierte a número
+export function parseMoneyInput(value: string): number {
+  if (!value || value.trim() === '') return 0;
+  // Remueve todos los puntos (separadores de miles) 
+  // Si hay una coma, la reemplaza por punto (separador decimal)
+  // Si hay múltiples comas, solo la última se considera como separador decimal
+  let cleaned = value.replace(/\./g, '');
+  const lastCommaIndex = cleaned.lastIndexOf(',');
+  if (lastCommaIndex !== -1) {
+    // Remover todas las comas y poner un punto solo en la posición de la última coma
+    cleaned = cleaned.substring(0, lastCommaIndex).replace(/,/g, '') + '.' + cleaned.substring(lastCommaIndex + 1);
+  }
+  const parsed = parseFloat(cleaned);
+  return isNaN(parsed) ? 0 : parsed;
+}
+

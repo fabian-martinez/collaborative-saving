@@ -51,7 +51,14 @@
         
         <div class="mb-4">
           <label class="block font-semibold mb-1">Monto entregado</label>
-          <input type="number" min="0" :max="estimatedTotal" v-model.number="deliveredAmount" class="input input-bordered w-full" step="any" :disabled="autoMatchAmount" />
+          <input 
+            type="text" 
+            :value="deliveredAmountDisplay"
+            @input="onDeliveredAmountInput"
+            @blur="onDeliveredAmountBlur"
+            class="input input-bordered w-full font-mono text-right" 
+            :disabled="autoMatchAmount" 
+          />
         </div>
         
         <div class="mb-4">
@@ -79,7 +86,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { formatCurrency } from '@/shared/utils/formatters'
+import { formatCurrency, formatMoneyInput, parseMoneyInput } from '@/shared/utils/formatters'
 import type { Member } from '@/api/members.api'
 
 // Defines structure for props (Derived from Subscription + Stock Value)
@@ -103,6 +110,7 @@ const emit = defineEmits(['save', 'cancel'])
 
 const withdrawals = ref<Withdrawal[]>([])
 const deliveredAmount = ref(0)
+const deliveredAmountDisplay = ref('')
 const autoMatchAmount = ref(true)
 
 // Helper para encontrar un stock por su ID
@@ -120,14 +128,49 @@ const estimatedTotal = computed(() => {
 watch(() => props.memberStocks, (newStocks) => {
   withdrawals.value = (newStocks || []).map(stock => ({ stockId: stock.stockId, quantity: 0 }))
   deliveredAmount.value = 0
+  deliveredAmountDisplay.value = formatMoneyInput(0)
 }, { immediate: true })
 
 // Cuando autoMatchAmount está activado, igualar deliveredAmount con estimatedTotal
 watch([autoMatchAmount, estimatedTotal], ([isAuto, total]) => {
   if (isAuto) {
     deliveredAmount.value = total
+    deliveredAmountDisplay.value = formatMoneyInput(total)
   }
 }, { immediate: true })
+
+watch(deliveredAmount, (newValue) => {
+  if (!autoMatchAmount.value) {
+    deliveredAmountDisplay.value = formatMoneyInput(newValue);
+  }
+});
+
+function onDeliveredAmountInput(event: Event) {
+  if (autoMatchAmount.value) return;
+  
+  const target = event.target as HTMLInputElement;
+  const rawValue = target.value;
+  
+  if (rawValue === '') {
+    deliveredAmountDisplay.value = '';
+    deliveredAmount.value = 0;
+    return;
+  }
+
+  const cleaned = rawValue.replace(/[^\d.,]/g, '');
+  deliveredAmountDisplay.value = cleaned;
+  
+  const parsed = parseMoneyInput(cleaned);
+  deliveredAmount.value = parsed;
+}
+
+function onDeliveredAmountBlur() {
+  if (autoMatchAmount.value) return;
+  
+  const parsed = parseMoneyInput(deliveredAmountDisplay.value);
+  deliveredAmount.value = parsed;
+  deliveredAmountDisplay.value = formatMoneyInput(parsed);
+}
 
 const withdrawalSummary = computed(() => {
   return withdrawals.value

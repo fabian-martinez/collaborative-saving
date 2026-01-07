@@ -13,11 +13,32 @@
         </div>
         <div class="mb-4">
           <label class="block font-semibold mb-1">Valor Aprobado</label>
-          <input type="number" v-model.number="form.approved" class="input input-bordered w-full" min="0" step="any" />
+          <input 
+            type="text" 
+            :value="approvedDisplay"
+            @input="onApprovedInput"
+            @blur="onApprovedBlur"
+            class="input input-bordered w-full font-mono text-right" 
+          />
         </div>
+        
+        <div class="mb-4">
+          <label class="label cursor-pointer justify-start gap-3">
+            <input type="checkbox" v-model="autoMatchAmount" class="checkbox checkbox-primary" />
+            <span class="label-text">Igualar valor entregado al valor aprobado</span>
+          </label>
+        </div>
+        
         <div class="mb-4">
           <label class="block font-semibold mb-1">Valor Entregado</label>
-          <input type="number" v-model.number="form.delivered" class="input input-bordered w-full" min="0" :max="form.approved" step="any" />
+          <input 
+            type="text" 
+            :value="deliveredDisplay"
+            @input="onDeliveredInput"
+            @blur="onDeliveredBlur"
+            class="input input-bordered w-full font-mono text-right" 
+            :disabled="autoMatchAmount"
+          />
         </div>
         <div class="mb-4">
           <label class="block font-semibold mb-1">Tasa de Interés</label>
@@ -45,7 +66,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import type { Member } from '@/api/members.api'
-import { formatCurrency } from '@/shared/utils/formatters'
+import { formatCurrency, formatMoneyInput, parseMoneyInput } from '@/shared/utils/formatters'
 
 const props = defineProps<{
   show: boolean,
@@ -61,6 +82,10 @@ const form = ref({
   approved: 0,
   delivered: 0,
 })
+
+const approvedDisplay = ref('')
+const deliveredDisplay = ref('')
+const autoMatchAmount = ref(true)
 
 const formError = ref('')
 
@@ -78,14 +103,105 @@ watch(
         'delivered' in prevLoan
       ) {
         form.value = { ...prevLoan } as any;
+        approvedDisplay.value = formatMoneyInput(prevLoan.approved);
+        deliveredDisplay.value = formatMoneyInput(prevLoan.delivered);
+        // Si el valor entregado es igual al aprobado, activar autoMatchAmount
+        autoMatchAmount.value = prevLoan.approved === prevLoan.delivered;
       } else {
         form.value = { type: 'corriente', approved: 0, delivered: 0 };
+        approvedDisplay.value = formatMoneyInput(0);
+        deliveredDisplay.value = formatMoneyInput(0);
+        autoMatchAmount.value = true; // Por defecto activado
       }
       formError.value = '';
     }
   },
   { immediate: true }
 )
+
+watch(() => form.value.approved, (newValue) => {
+  approvedDisplay.value = formatMoneyInput(newValue);
+});
+
+watch(() => form.value.delivered, (newValue) => {
+  if (!autoMatchAmount.value) {
+    deliveredDisplay.value = formatMoneyInput(newValue);
+  }
+});
+
+// Cuando autoMatchAmount está activado, igualar delivered con approved
+watch([autoMatchAmount, () => form.value.approved], ([isAuto, approved]) => {
+  if (isAuto) {
+    form.value.delivered = approved;
+    deliveredDisplay.value = formatMoneyInput(approved);
+  }
+}, { immediate: true });
+
+function onApprovedInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  const rawValue = target.value
+  
+  if (rawValue === '') {
+    approvedDisplay.value = ''
+    form.value.approved = 0
+    if (autoMatchAmount.value) {
+      form.value.delivered = 0
+      deliveredDisplay.value = formatMoneyInput(0)
+    }
+    return
+  }
+
+  const cleaned = rawValue.replace(/[^\d.,]/g, '')
+  approvedDisplay.value = cleaned
+  
+  const parsed = parseMoneyInput(cleaned)
+  form.value.approved = parsed
+  
+  // Si autoMatchAmount está activo, actualizar también delivered
+  if (autoMatchAmount.value) {
+    form.value.delivered = parsed
+    deliveredDisplay.value = formatMoneyInput(parsed)
+  }
+}
+
+function onApprovedBlur() {
+  const parsed = parseMoneyInput(approvedDisplay.value)
+  form.value.approved = parsed
+  approvedDisplay.value = formatMoneyInput(parsed)
+  
+  // Si autoMatchAmount está activo, actualizar también delivered
+  if (autoMatchAmount.value) {
+    form.value.delivered = parsed
+    deliveredDisplay.value = formatMoneyInput(parsed)
+  }
+}
+
+function onDeliveredInput(event: Event) {
+  if (autoMatchAmount.value) return;
+  
+  const target = event.target as HTMLInputElement
+  const rawValue = target.value
+  
+  if (rawValue === '') {
+    deliveredDisplay.value = ''
+    form.value.delivered = 0
+    return
+  }
+
+  const cleaned = rawValue.replace(/[^\d.,]/g, '')
+  deliveredDisplay.value = cleaned
+  
+  const parsed = parseMoneyInput(cleaned)
+  form.value.delivered = parsed
+}
+
+function onDeliveredBlur() {
+  if (autoMatchAmount.value) return;
+  
+  const parsed = parseMoneyInput(deliveredDisplay.value)
+  form.value.delivered = parsed
+  deliveredDisplay.value = formatMoneyInput(parsed)
+}
 
 function onSubmit() {
   formError.value = ''

@@ -36,7 +36,14 @@
             <option value="mixed">Mixto</option>
           </select>
           <div v-if="form.paymentMethod === 'mixed'" class="flex gap-2 mt-2">
-            <input v-model.number="form.cashAmount" type="number" min="0" :max="totalAmount" step="any" class="input input-bordered input-lg w-1/2 font-mono text-right" placeholder="Efectivo" />
+            <input 
+              :value="cashAmountDisplay"
+              @input="onCashAmountInput"
+              @blur="onCashAmountBlur"
+              type="text" 
+              class="input input-bordered input-lg w-1/2 font-mono text-right" 
+              placeholder="Efectivo" 
+            />
           </div>
           <div v-if="form.paymentMethod === 'mixed'" class="mt-2 text-warning text-sm flex items-center gap-1">
             <span class="font-bold">2% interés fijo</span> sobre el monto a crédito.
@@ -80,6 +87,7 @@
 import { ref, watch, computed } from 'vue'
 import type { Stock } from '@/api/stocks.api'
 import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
+import { formatMoneyInput, parseMoneyInput } from '@/shared/utils/formatters'
 
 interface LocalLine {
   stockId: string
@@ -115,6 +123,7 @@ const form = ref<{
   paymentMethod: props.initialData.cashAmount < (props.initialData.quantity * (props.stocks.find(s => s.id === props.initialData.stockId)?.value || 0)) ? 'mixed' : 'cash'
 })
 
+const cashAmountDisplay = ref('')
 const errorMsg = ref('')
 
 watch(() => props.initialData, (val) => {
@@ -126,7 +135,35 @@ watch(() => props.initialData, (val) => {
     cashAmount: val.cashAmount || 0,
     paymentMethod: val.cashAmount < totalValue ? 'mixed' : 'cash'
   }
+  cashAmountDisplay.value = formatMoneyInput(val.cashAmount || 0)
 }, { immediate: true })
+
+watch(() => form.value.cashAmount, (newValue) => {
+  cashAmountDisplay.value = formatMoneyInput(newValue || 0);
+});
+
+function onCashAmountInput(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const rawValue = target.value;
+  
+  if (rawValue === '') {
+    cashAmountDisplay.value = '';
+    form.value.cashAmount = 0;
+    return;
+  }
+
+  const cleaned = rawValue.replace(/[^\d.,]/g, '');
+  cashAmountDisplay.value = cleaned;
+  
+  const parsed = parseMoneyInput(cleaned);
+  form.value.cashAmount = parsed;
+}
+
+function onCashAmountBlur() {
+  const parsed = parseMoneyInput(cashAmountDisplay.value);
+  form.value.cashAmount = parsed;
+  cashAmountDisplay.value = formatMoneyInput(parsed);
+}
 
 const totalAmount = computed(() => {
   const stock = props.stocks.find((s) => s.id === form.value.stockId)
