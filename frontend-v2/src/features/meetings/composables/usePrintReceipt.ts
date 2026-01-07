@@ -3,7 +3,9 @@ import type { Member } from '@/api/members.api'
 
 export function usePrintReceipt(
   selectedMember: Ref<Member | null>,
-  viewedOperations: Ref<any[] | null>
+  receiptModalId: string = 'payment-receipt-print-modal',
+  receiptContainerId: string = 'payment-receipt-print-container',
+  receiptId: string = 'payment-receipt-print'
 ) {
   const isPrintModalOpen = ref(false)
 
@@ -18,7 +20,7 @@ export function usePrintReceipt(
   function printReceipt() {
     if (!selectedMember.value) return
 
-    const receiptElement = document.getElementById('payment-receipt-print-modal')
+    const receiptElement = document.getElementById(receiptModalId)
     if (!receiptElement) return
 
     const currentDate = new Date().toLocaleDateString('es-CO', {
@@ -31,16 +33,14 @@ export function usePrintReceipt(
     document.title = `Recibo_${memberName}_${currentDate.replace(/\//g, '-')}`
 
     // Limpiar cualquier contenedor de impresión previo
-    const existingContainer = document.getElementById(
-      'payment-receipt-print-container'
-    )
+    const existingContainer = document.getElementById(receiptContainerId)
     if (existingContainer) {
       existingContainer.remove()
     }
 
     // Crear contenedor temporal para impresión
     const printContainer = document.createElement('div')
-    printContainer.id = 'payment-receipt-print-container'
+    printContainer.id = receiptContainerId
     printContainer.style.cssText = `
       position: absolute;
       left: 0;
@@ -54,7 +54,7 @@ export function usePrintReceipt(
 
     // Clonar el elemento del recibo con todo su contenido (deep clone)
     const clonedReceipt = receiptElement.cloneNode(true) as HTMLElement
-    clonedReceipt.id = 'payment-receipt-print'
+    clonedReceipt.id = receiptId
 
     // Aplicar estilos directamente al clon
     clonedReceipt.style.cssText = `

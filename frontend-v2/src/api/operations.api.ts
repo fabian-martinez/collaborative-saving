@@ -64,6 +64,19 @@ export const operationsApi = {
       limit: response.data.pagination.limit,
       total: response.data.pagination.total
     }
+  },
+
+  async getOperationById(id: string): Promise<Operation> {
+    if (USE_MOCKS) {
+      const operations = await mockApi.getOperations({})
+      const operation = operations.data.find(op => op.id === id)
+      if (!operation) {
+        throw new Error(`Operation with id ${id} not found`)
+      }
+      return operation
+    }
+    const response = await apiClient.get<Operation>(`/v2/accounting/operations/${id}`)
+    return response.data
   }
 }
 

@@ -10,11 +10,11 @@
       <h3 class="font-bold text-xl mb-4">Vista Previa del Recibo</h3>
       <div
         v-if="memberName && viewedOperations"
-        id="payment-receipt-print-modal"
+        :id="modalId"
         class="bg-base-100 p-4 md:p-6 rounded-2xl shadow-lg font-sans print-container"
       >
         <div class="print-header print-only">
-          <h2 class="text-2xl font-bold text-center mb-2">Detalle del Pago</h2>
+          <h2 class="text-2xl font-bold text-center mb-2">{{ title }}</h2>
           <p class="text-lg text-center mb-1">{{ memberName }}</p>
           <p class="text-sm text-center text-base-content/70">{{ printDate }}</p>
         </div>
@@ -30,7 +30,7 @@
             <div
               class="flex items-baseline justify-between text-lg md:text-xl lg:text-2xl font-bold gap-2"
             >
-              <span class="shrink-0">Total Pagado:</span>
+              <span class="shrink-0">{{ totalLabel }}</span>
               <div
                 class="hidden md:block print-show grow border-b-2 border-dotted border-base-300/70 mx-2 md:mx-4"
               ></div>
@@ -80,14 +80,21 @@ import { formatCurrency } from '@/shared/utils/formatters'
 import OperationDetails from '@/shared/components/OperationDetails.vue'
 import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
 
-// Props
-defineProps<{
+// Props with defaults
+const props = withDefaults(defineProps<{
   isOpen: boolean
   memberName: string | null
   printDate: string
   viewedOperations: any[] | null
   viewedTotal: number
-}>()
+  title?: string
+  totalLabel?: string
+  modalId?: string
+}>(), {
+  title: 'Detalle del Pago',
+  totalLabel: 'Total Pagado:',
+  modalId: 'payment-receipt-print-modal'
+})
 
 // Emits
 defineEmits<{

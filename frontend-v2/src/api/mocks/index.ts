@@ -432,9 +432,19 @@ export const mockApi = {
     ]
   },
 
-  async getMeetingPurchases(meetingId: string): Promise<MemberPurchase[]> {
+  async getMeetingPurchases(meetingId: string): Promise<MeetingOperation[]> {
     await delay()
-    return mockApi.getMemberPurchases('1')
+    const purchases = await mockApi.getMemberPurchases('1')
+    // Convertir MemberPurchase[] a Operation[]
+    return purchases.map(purchase => ({
+      id: purchase.operation_id,
+      member_id: '1', // Mock member ID
+      meeting_id: purchase.meeting_id,
+      type: 'STOCK_PURCHASE',
+      description: `Compra de ${purchase.stock_type} - ${purchase.quantity} uds`,
+      date: purchase.purchase_date,
+      total_amount: purchase.total_value
+    }))
   },
 
   async getMeetingTransfers(meetingId: string): Promise<any[]> {
@@ -858,6 +868,54 @@ export const mockApi = {
       limit,
       total: filtered.length
     }
+  },
+
+  async getOperationById(id: string): Promise<Operation> {
+    await delay()
+    const mockOperations: Operation[] = [
+      {
+        id: 'op1',
+        member_id: '1',
+        meeting_id: '1',
+        type: 'MONTHLY_PAYMENT',
+        date: '2024-12-15T10:30:00Z',
+        description: 'Aporte mensual socios',
+        entries: []
+      },
+      {
+        id: 'op2',
+        member_id: '2',
+        meeting_id: '1',
+        type: 'LOAN_DISBURSEMENT',
+        date: '2024-12-15T11:00:00Z',
+        description: 'Desembolso préstamo María García',
+        entries: []
+      },
+      {
+        id: 'op3',
+        member_id: '1',
+        meeting_id: '1',
+        type: 'LOAN_PAYMENT',
+        date: '2024-12-15T11:30:00Z',
+        description: 'Pago cuota préstamo #38 - Carlos López',
+        entries: []
+      },
+      {
+        id: 'op4',
+        member_id: null,
+        meeting_id: '1',
+        type: 'ASSET_REVALUATION',
+        date: '2024-12-15T12:00:00Z',
+        description: 'Revalorización acciones mes enero',
+        entries: []
+      }
+    ]
+    
+    const operation = mockOperations.find(op => op.id === id)
+    if (!operation) {
+      throw new Error(`Operation with id ${id} not found`)
+    }
+    return operation
   },
 
   // Accounts Summary
