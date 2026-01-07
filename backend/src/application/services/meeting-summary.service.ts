@@ -79,8 +79,10 @@ export class MeetingSummaryService {
     // Calculate totalCash
     const totalCash = await sumByAccountType(CASH_ACCOUNT);
 
-    // Calculate totalInterest
-    const totalInterest = await sumByAccountType(INTEREST_INCOME_ACCOUNT);
+    // Calculate totalInterest (use absolute value since interests are recorded as negative credits)
+    const totalInterest = Math.abs(
+      await sumByAccountType(INTEREST_INCOME_ACCOUNT),
+    );
 
     // Calculate totalLoans
     const totalLoans = await sumByAccountType(LOANS_RECEIVABLE_ACCOUNT);
