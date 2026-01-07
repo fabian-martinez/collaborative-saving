@@ -8,111 +8,93 @@
       <span>{{ error }}</span>
     </div>
 
-    <div v-if="!loading && !error" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- Members List -->
-      <div class="card bg-base-100 shadow-lg rounded-lg">
-        <div class="card-body p-4 md:p-6">
-          <h3 class="text-lg font-semibold mb-4">Socios</h3>
-          <div class="space-y-2">
-            <div
-              v-for="member in members"
-              :key="member.id"
-              @click="selectMember(member)"
-              :class="[
-                'flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all',
-                selectedMember && selectedMember.id === member.id
-                  ? 'bg-primary/10 border-2 border-primary'
-                  : 'hover:bg-base-200 border-2 border-transparent'
-              ]"
-            >
-              <div
-                class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                :style="{ backgroundColor: getMemberColor(member.id) }"
-              >
-                {{ getInitials(member.name) }}
-              </div>
-              <div class="flex-1 min-w-0">
-                <p
-                  class="font-medium text-sm md:text-base truncate"
-                  :class="
-                    selectedMember && selectedMember.id === member.id
-                      ? 'text-primary'
-                      : 'text-base-content'
-                  "
-                >
-                  {{ member.name }}
-                </p>
-              </div>
-              <div v-if="hasDisbursement(member.id)" class="flex-shrink-0">
-                <span class="badge badge-info badge-sm">Con desembolsos</span>
-              </div>
-            </div>
-          </div>
-          
-          <div class="mt-6 pt-4 border-t border-base-300 space-y-4">
-            <div class="text-center">
-              <div class="text-xs md:text-sm font-light text-base-content/70 uppercase mb-1">
-                Efectivo disponible
-              </div>
-              <div class="text-2xl md:text-3xl font-bold text-success">
-                {{ formatCurrency(disbursementPlan?.available_cash || 0) }}
-              </div>
-            </div>
-            <div class="text-center pt-4 border-t border-base-300">
-              <div class="text-xs md:text-sm font-light text-base-content/70 uppercase mb-1">
-                Total a desembolsar
-              </div>
-              <div class="text-2xl md:text-3xl font-bold text-primary">
-                {{ formatCurrency(disbursementPlan?.total_to_disburse || 0) }}
-              </div>
-            </div>
-          </div>
-        </div>
+    <div v-if="!loading && !error" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Columna izquierda: Resumen y lista de socios -->
+      <div class="md:col-span-1">
+        <!-- Resumen sticky -->
+        <DisbursementSummary
+          :available-cash="availableCash"
+          :total-to-disburse="totalToDisburse"
+        />
+        <MemberList
+          :members="members"
+          :selected-member="selectedMember"
+          :is-member-paid="() => false"
+          :get-initials="getInitials"
+          :get-member-color="getMemberColor"
+          :has-disbursement="hasDisbursement"
+          @select-member="selectMember"
+        />
       </div>
 
-      <!-- Disbursements Panel -->
-      <div class="card bg-base-100 shadow-lg rounded-lg">
-        <div class="card-body p-4 md:p-6">
-          <div v-if="!selectedMember" class="flex items-center justify-center h-64 text-base-content/60">
-            <p class="text-center">Seleccione un socio para gestionar desembolsos.</p>
-          </div>
-          
-          <div v-else>
-            <div class="mb-6">
-              <h3 class="text-lg md:text-xl font-bold mb-2 break-words">Desembolsos para {{ selectedMember.name }}</h3>
+      <!-- Columna derecha: Panel de desembolsos -->
+      <div class="md:col-span-2">
+        <div class="card bg-base-100 shadow-lg rounded-lg">
+          <div class="card-body p-4 md:p-6">
+            <div v-if="!selectedMember" class="flex items-center justify-center h-64 text-base-content/60">
+              <p class="text-center">Seleccione un socio para gestionar desembolsos.</p>
             </div>
             
-            <div v-if="memberDisbursements.length > 0" class="space-y-3 md:space-y-4 mb-4 md:mb-6">
-            <h4 class="font-semibold text-base md:text-lg">Desembolsos Planificados</h4>
-            <div
-              v-for="(disbursement, idx) in memberDisbursements"
-              :key="idx"
-              class="bg-base-200 p-3 md:p-4 rounded-md"
-            >
-              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                <div class="flex-1 min-w-0">
-                  <p class="font-semibold break-words">{{ getDisbursementTypeLabel(disbursement.type) }}</p>
-                  <p v-if="disbursement.description" class="text-xs md:text-sm text-base-content/70 break-words">
-                    {{ disbursement.description }}
-                  </p>
+            <div v-else>
+              <!-- Recibo de Desembolsos -->
+              <div class="mb-6">
+                <div class="flex justify-between items-center mb-4">
+                  <h3 class="text-xl font-bold">Desembolsos para {{ selectedMember.name }}</h3>
                 </div>
-                <p class="font-mono text-lg md:text-xl font-bold flex-shrink-0">
-                  {{ formatCurrency(disbursement.amount) }}
-                </p>
-              </div>
-            </div>
-          </div>
+                
+                <PaymentReceiptView
+                  v-if="hasDisbursementsForMember(selectedMember.id)"
+                  :member-name="selectedMember.name"
+                  :print-date="formatDate(new Date())"
+                  :viewed-operations="memberOperations"
+                  :viewed-total="memberTotalDisburse"
+                  title="Detalle de Desembolsos"
+                  total-label="Total a Entregar:"
+                  receipt-id="disbursement-receipt"
+                  @open-print-modal="openPrintModal"
+                />
 
-            <div class="flex flex-col sm:flex-row gap-2 sm:gap-4">
-              <button class="btn btn-primary w-full sm:w-auto" @click="showLoanModal = true">
-                Solicitar Préstamo
-              </button>
-              <button class="btn btn-secondary w-full sm:w-auto" @click="showWithdrawalModal = true">
-                Solicitar Retiro
-              </button>
-              <button class="btn btn-accent w-full sm:w-auto" @click="showOtherModal = true">
-                Otro Desembolso
-              </button>
+                <div v-else class="text-center py-8 text-base-content/60 italic bg-base-200/50 rounded-lg">
+                  No hay desembolsos registrados para este socio.
+                </div>
+              </div>
+
+              <!-- Botones de Acción -->
+              <div class="flex flex-col sm:flex-row gap-3 justify-end mt-6 pt-4 border-t border-base-200">
+                 <button class="btn btn-primary" @click="openLoanModal">
+                  Solicitar Préstamo
+                </button>
+                <button class="btn btn-secondary" @click="openWithdrawalModal">
+                  Retiro de Acciones
+                </button>
+                <button class="btn btn-accent" @click="openOtherModal">
+                  Otro Desembolso
+                </button>
+              </div>
+              
+              <!-- Lista de ediciones (para poder borrar/editar lo que se agrega localmente) -->
+              <div v-if="localDisbursementsForMember.length > 0" class="mt-8">
+                <h4 class="font-semibold mb-3 text-sm uppercase text-base-content/70">Desembolsos Agregados (Pendientes de Aplicar)</h4>
+                <div class="space-y-3">
+                   <div 
+                    v-for="(item, idx) in localDisbursementsForMember" 
+                    :key="idx" 
+                    class="flex items-center justify-between p-3 bg-base-200 rounded-lg"
+                   >
+                     <div>
+                       <div class="font-medium">{{ getDisbursementLabel(item) }}</div>
+                       <div class="text-sm text-base-content/70">{{ item.description }}</div>
+                     </div>
+                     <div class="flex items-center gap-3">
+                       <span class="font-mono font-bold">{{ formatCurrency(item.amount) }}</span>
+                       <button class="btn btn-ghost btn-xs text-error" @click="removeLocalDisbursement(item)">
+                         <TrashIcon class="w-4 h-4" />
+                       </button>
+                     </div>
+                   </div>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
@@ -120,49 +102,55 @@
     </div>
 
     <!-- Modals -->
-    <Modal :show="showLoanModal" title="Solicitar Préstamo" @close="showLoanModal = false">
-      <div class="space-y-4">
-        <p class="text-sm md:text-base text-base-content/70">Funcionalidad de préstamo (simulada)</p>
-        <div class="modal-action flex-col sm:flex-row gap-2">
-          <button class="btn btn-outline w-full sm:w-auto" @click="showLoanModal = false">Cancelar</button>
-          <button class="btn btn-primary w-full sm:w-auto" @click="handleLoan">Confirmar</button>
-        </div>
-      </div>
-    </Modal>
+    <LoanModal
+      :show="showLoanModal"
+      :member="selectedMember"
+      :max-capacity="maxCapacity"
+      @save="handleLoanSave"
+      @cancel="showLoanModal = false"
+    />
 
-    <Modal :show="showWithdrawalModal" title="Solicitar Retiro" @close="showWithdrawalModal = false">
-      <div class="space-y-4">
-        <p class="text-sm md:text-base text-base-content/70">Funcionalidad de retiro (simulada)</p>
-        <div class="modal-action flex-col sm:flex-row gap-2">
-          <button class="btn btn-outline w-full sm:w-auto" @click="showWithdrawalModal = false">Cancelar</button>
-          <button class="btn btn-primary w-full sm:w-auto" @click="handleWithdrawal">Confirmar</button>
-        </div>
-      </div>
-    </Modal>
+    <StockWithdrawalModal
+      :show="showWithdrawalModal"
+      :member="selectedMember"
+      :member-stocks="memberStocksForWithdrawal"
+      @save="handleWithdrawalSave"
+      @cancel="showWithdrawalModal = false"
+    />
 
-    <Modal :show="showOtherModal" title="Otro Desembolso" @close="showOtherModal = false">
-      <div class="space-y-4">
-        <p class="text-sm md:text-base text-base-content/70">Funcionalidad de otro desembolso (simulada)</p>
-        <div class="modal-action flex-col sm:flex-row gap-2">
-          <button class="btn btn-outline w-full sm:w-auto" @click="showOtherModal = false">Cancelar</button>
-          <button class="btn btn-primary w-full sm:w-auto" @click="handleOther">Confirmar</button>
-        </div>
-      </div>
-    </Modal>
+    <OtherDisbursementModal
+      :show="showOtherModal"
+      :initial-data="null"
+      @save="handleOtherSave"
+      @cancel="showOtherModal = false"
+    />
+    
+    <!-- Print Modal -->
+    <PrintReceiptModal
+      :is-open="printModalOpen"
+      :member-name="selectedMember?.name || ''"
+      :print-date="formatDate(new Date())"
+      :viewed-operations="memberOperations"
+      :viewed-total="memberTotalDisburse"
+      title="Recibo de Desembolso"
+      total-label="Total Entregado:"
+      modal-id="disbursement-print-modal"
+      @close="printModalOpen = false"
+      @print="handlePrint"
+    />
 
-    <div v-if="hasDisbursements" class="mt-6 md:mt-8 flex flex-col items-center">
+    <div v-if="hasAnyDisbursement" class="mt-8 pt-4 border-t flex flex-col items-center">
       <button 
-        class="btn btn-primary w-full sm:w-auto md:btn-lg" 
+        class="btn btn-primary btn-lg w-full md:w-auto px-12" 
         :disabled="isApplying" 
         @click="applyDisbursements"
       >
         <span v-if="isApplying" class="loading loading-spinner"></span>
-        <span class="hidden sm:inline">{{ isApplying ? 'Aplicando Desembolsos...' : 'Aplicar Desembolsos y Cerrar Reunión' }}</span>
-        <span class="sm:hidden">{{ isApplying ? 'Aplicando...' : 'Aplicar y Cerrar' }}</span>
+        {{ isApplying ? 'Aplicando...' : 'Finalizar y Aplicar Desembolsos' }}
       </button>
-      <div v-if="applyError" class="alert alert-error mt-4 w-full">{{ applyError }}</div>
-      <div v-if="applySuccess" class="alert alert-success mt-4 w-full">
-        ¡Desembolsos aplicados correctamente! (simulado)
+      <div v-if="applyError" class="alert alert-error mt-4 max-w-2xl">{{ applyError }}</div>
+      <div v-if="applySuccess" class="alert alert-success mt-4 max-w-2xl">
+        ¡Desembolsos aplicados y reunión cerrada correctamente!
       </div>
     </div>
   </div>
@@ -170,45 +158,133 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { membersApi, type Member } from '@/api/members.api'
+import { Trash as TrashIcon } from 'iconoir-vue/regular'
+import { membersApi, type Member, type StockSubscription } from '@/api/members.api'
+import { stocksApi, type Stock } from '@/api/stocks.api'
+import { loansApi, type Loan } from '@/api/loans.api'
 import { meetingsApi, type DisbursementPlanItem, type DisbursementPlanPreview } from '@/api/meetings.api'
 import { useActiveMeetingStore } from '../../stores/activeMeeting'
-import { formatCurrency } from '@/shared/utils/formatters'
-import Modal from '@/shared/components/Modal.vue'
+import { formatCurrency, formatDate } from '@/shared/utils/formatters'
+
+// Components
+import MemberList from './collection/MemberList.vue'
+import DisbursementSummary from './collection/DisbursementSummary.vue'
+import PaymentReceiptView from './collection/PaymentReceiptView.vue'
+import PrintReceiptModal from './collection/PrintReceiptModal.vue'
+import LoanModal from './LoanModal.vue'
+import StockWithdrawalModal from './StockWithdrawalModal.vue'
+import OtherDisbursementModal from './OtherDisbursementModal.vue'
+import type { MemberStockForWithdrawal } from './StockWithdrawalModal.vue'
 
 const store = useActiveMeetingStore()
 const members = ref<Member[]>([])
 const selectedMember = ref<Member | null>(null)
 const disbursementPlan = ref<DisbursementPlanPreview | null>(null)
 const localDisbursements = ref<DisbursementPlanItem[]>([])
+
 const loading = ref(false)
 const error = ref<string | null>(null)
-const showLoanModal = ref(false)
-const showWithdrawalModal = ref(false)
-const showOtherModal = ref(false)
 const isApplying = ref(false)
 const applyError = ref<string | null>(null)
 const applySuccess = ref(false)
 
-const memberDisbursements = computed(() => {
+// Modals state
+const showLoanModal = ref(false)
+const showWithdrawalModal = ref(false)
+const showOtherModal = ref(false)
+const printModalOpen = ref(false)
+
+// Data for modals
+const memberSubscriptions = ref<StockSubscription[]>([])
+const memberLoans = ref<Loan[]>([])
+const stocks = ref<Stock[]>([])
+
+// Computed
+const availableCash = computed(() => disbursementPlan.value?.available_cash || 0)
+
+const totalToDisburse = computed(() => {
+  const planTotal = disbursementPlan.value?.total_to_disburse || 0
+  const localTotal = localDisbursements.value.reduce((sum, item) => sum + item.amount, 0)
+  return planTotal + localTotal
+})
+
+const hasAnyDisbursement = computed(() => {
+  return (disbursementPlan.value?.plan.length || 0) > 0 || localDisbursements.value.length > 0
+})
+
+// Member specific computations
+const memberOperations = computed(() => {
   if (!selectedMember.value) return []
-  return [
-    ...(disbursementPlan.value?.plan.filter(item => item.member_id === selectedMember.value!.id) || []),
-    ...localDisbursements.value.filter(item => item.member_id === selectedMember.value!.id)
-  ]
+  
+  // Backend plan items converted to operation-like structure for receipt view
+  const planItems = (disbursementPlan.value?.plan || [])
+    .filter(item => item.member_id === selectedMember.value!.id)
+    .map(item => ({
+      id: item.member_id + item.type + item.amount, // Temporary ID
+      type: item.type.toUpperCase(),
+      description: item.description || getDisbursementLabel(item),
+      total_amount: item.amount,
+      entries: [] // Details not needed for simple view
+    }))
+
+  // Local items
+  const localItems = localDisbursements.value
+    .filter(item => item.member_id === selectedMember.value!.id)
+    .map(item => ({
+      id: 'local-' + Math.random(),
+      type: item.type.toUpperCase(),
+      description: item.description || getDisbursementLabel(item),
+      total_amount: item.amount,
+      entries: []
+    }))
+
+  return [...planItems, ...localItems]
 })
 
-const hasDisbursements = computed(() => {
-  const planItems = disbursementPlan.value?.plan.length || 0
-  return planItems > 0 || localDisbursements.value.length > 0
+const memberTotalDisburse = computed(() => {
+  return memberOperations.value.reduce((sum, op) => sum + op.total_amount, 0)
 })
 
-function hasDisbursement(memberId: string) {
-  const planHas = disbursementPlan.value?.plan.some(item => item.member_id === memberId)
-  const localHas = localDisbursements.value.some(item => item.member_id === memberId)
-  return planHas || localHas
-}
+const localDisbursementsForMember = computed(() => {
+  if (!selectedMember.value) return []
+  return localDisbursements.value.filter(item => item.member_id === selectedMember.value!.id)
+})
 
+// Calculations for Loan Capacities
+const maxCapacity = computed(() => {
+  const totalStockValue = memberSubscriptions.value
+    .filter(sub => sub.status === 'active')
+    .reduce((sum, sub) => {
+      // Find stock value from stocks list
+      const stock = stocks.value.find(s => s.id === sub.stock_id)
+      return sum + (Number(sub.quantity) * (stock?.value || 0))
+    }, 0)
+    
+  const totalNonStockLoans = memberLoans.value
+    .filter(loan => loan.loan_type !== 'accion')
+    .reduce((sum, loan) => sum + Number(loan.approved_amount), 0)
+    
+  // 200% of stock value minus existing loans
+  const max = (totalStockValue * 2.0) - totalNonStockLoans
+  return max > 0 ? max : 0
+})
+
+const memberStocksForWithdrawal = computed<MemberStockForWithdrawal[]>(() => {
+  return memberSubscriptions.value
+    .filter(sub => sub.status === 'active' && sub.quantity > 0)
+    .map(sub => {
+      const stock = stocks.value.find(s => s.id === sub.stock_id)
+      return {
+        stockId: sub.stock_id,
+        stockType: sub.stock_type || stock?.type || 'Acción',
+        quantity: Number(sub.quantity),
+        currentValue: stock?.value || 0
+      }
+    })
+})
+
+
+// Methods
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/)
   if (parts.length === 0) return ''
@@ -217,90 +293,142 @@ function getInitials(name: string): string {
 }
 
 function getMemberColor(memberId: string): string {
-  const colors = [
-    '#3b82f6', // blue
-    '#8b5cf6', // purple
-    '#ec4899', // pink
-    '#f59e0b', // amber
-    '#10b981', // green
-    '#06b6d4', // cyan
-    '#ef4444', // red
-    '#6366f1', // indigo
-  ]
-  let hash = 0
-  for (let i = 0; i < memberId.length; i++) {
-    hash = memberId.charCodeAt(i) + ((hash << 5) - hash)
-  }
-  return colors[Math.abs(hash) % colors.length]
+   const colors = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#ef4444', '#6366f1']
+   let hash = 0
+   for (let i = 0; i < memberId.length; i++) {
+     hash = memberId.charCodeAt(i) + ((hash << 5) - hash)
+   }
+   return colors[Math.abs(hash) % colors.length]
 }
 
-function getDisbursementTypeLabel(type: string) {
+function hasDisbursement(memberId: string) {
+  const planHas = disbursementPlan.value?.plan.some(item => item.member_id === memberId)
+  const localHas = localDisbursements.value.some(item => item.member_id === memberId)
+  return planHas || localHas
+}
+
+function hasDisbursementsForMember(memberId: string) {
+  return hasDisbursement(memberId)
+}
+
+function getDisbursementLabel(item: any) {
   const labels: Record<string, string> = {
     loan: 'Préstamo',
-    withdrawal: 'Retiro',
+    withdrawal: 'Retiro de Acciones',
     dividend: 'Dividendo',
     other: 'Otro'
   }
-  return labels[type] || type
+  return labels[item.type] || item.type
 }
 
+async function selectMember(member: Member) {
+  selectedMember.value = member
+  // Load extra data when selecting
+  if (member) {
+    try {
+      const [subs, loans] = await Promise.all([
+        membersApi.getMemberStockSubscriptions(member.id),
+        loansApi.getMemberLoans(member.id)
+      ])
+      memberSubscriptions.value = subs
+      memberLoans.value = loans
+    } catch (e) {
+      console.error('Error loading member details', e)
+    }
+  }
+}
+
+// Modal Openers
+function openLoanModal() {
+  if (!selectedMember.value) return
+  showLoanModal.value = true
+}
+
+function openWithdrawalModal() {
+  if (!selectedMember.value) return
+  showWithdrawalModal.value = true
+}
+
+function openOtherModal() {
+  if (!selectedMember.value) return
+  showOtherModal.value = true
+}
+
+function openPrintModal() {
+  printModalOpen.value = true
+}
+
+// Handlers
+function handleLoanSave(loanData: any) {
+  if (!selectedMember.value) return
+  
+  // Add to local disbursements
+  localDisbursements.value.push({
+    member_id: selectedMember.value.id,
+    type: 'loan',
+    amount: loanData.delivered,
+    description: `Préstamo ${loanData.type} - Aprobado: ${loanData.approved}`,
+  })
+  
+  showLoanModal.value = false
+}
+
+function handleWithdrawalSave(withdrawalData: any) {
+  if (!selectedMember.value) return
+  
+  // withdrawalData contains { withdrawals: [...], deliveredAmount: ... }
+  
+  localDisbursements.value.push({
+    member_id: selectedMember.value.id,
+    type: 'withdrawal',
+    amount: withdrawalData.deliveredAmount,
+    description: `Retiro de acciones. Pendiente: ${withdrawalData.pending}`,
+    // TODO: Pass structured withdrawal data to backend
+  })
+  showWithdrawalModal.value = false
+}
+
+function handleOtherSave(data: any) {
+  if (!selectedMember.value) return
+  localDisbursements.value.push({
+    member_id: selectedMember.value.id,
+    type: 'other',
+    amount: data.amount,
+    description: data.description
+  })
+  showOtherModal.value = false
+}
+
+function removeLocalDisbursement(item: DisbursementPlanItem) {
+  const idx = localDisbursements.value.indexOf(item)
+  if (idx !== -1) {
+    localDisbursements.value.splice(idx, 1)
+  }
+}
+
+function handlePrint() {
+  window.print()
+}
+
+// Initialization
 onMounted(async () => {
+  if (!store.meetingId) return
   loading.value = true
   try {
-    members.value = await membersApi.getMembers()
-    
-    if (store.meetingId) {
-      disbursementPlan.value = await meetingsApi.getDisbursementPlan(store.meetingId)
-    }
+    const [fetchedMembers, fetchedStocks, plan] = await Promise.all([
+      membersApi.getMembers(),
+      stocksApi.getStocks(),
+      meetingsApi.getDisbursementPlan(store.meetingId)
+    ])
+    members.value = fetchedMembers
+    stocks.value = fetchedStocks
+    disbursementPlan.value = plan
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Error al cargar datos'
   } finally {
     loading.value = false
   }
 })
-
-function selectMember(member: Member) {
-  selectedMember.value = member
-}
-
-function handleLoan() {
-  if (!selectedMember.value || !store.meetingId) return
-  
-  localDisbursements.value.push({
-    member_id: selectedMember.value.id,
-    type: 'loan',
-    amount: 1000000,
-    description: 'Préstamo simulado'
-  })
-  
-  showLoanModal.value = false
-}
-
-function handleWithdrawal() {
-  if (!selectedMember.value || !store.meetingId) return
-  
-  localDisbursements.value.push({
-    member_id: selectedMember.value.id,
-    type: 'withdrawal',
-    amount: 500000,
-    description: 'Retiro simulado'
-  })
-  
-  showWithdrawalModal.value = false
-}
-
-function handleOther() {
-  if (!selectedMember.value || !store.meetingId) return
-  
-  localDisbursements.value.push({
-    member_id: selectedMember.value.id,
-    type: 'other',
-    amount: 200000,
-    description: 'Otro desembolso simulado'
-  })
-  
-  showOtherModal.value = false
-}
 
 async function applyDisbursements() {
   if (!store.meetingId) return
@@ -310,22 +438,27 @@ async function applyDisbursements() {
   applySuccess.value = false
   
   try {
-    // Simular ejecución de desembolsos
     const allItems = [
       ...(disbursementPlan.value?.plan || []),
       ...localDisbursements.value
     ]
     
+    // Here we should probably map local items to the correct backend structure if needed
+    // But assuming the API accepts flexible notes/description for now or generic items
+    
     await meetingsApi.executeDisbursementPlan(store.meetingId, { plan: allItems })
     
-    // Simular cierre de reunión
+    // Close meeting
     await meetingsApi.closeMeeting(store.meetingId)
     
     applySuccess.value = true
-    alert('Desembolsos aplicados y reunión cerrada exitosamente. (simulado)')
+    isApplying.value = false // Stop loading state
+    
+    // Emit completed event or redirect (parent handles this likely via router or store)
+    // store.refreshActiveMeeting() // if needed
+    
   } catch (e) {
     applyError.value = e instanceof Error ? e.message : 'Error al aplicar desembolsos'
-  } finally {
     isApplying.value = false
   }
 }
