@@ -330,6 +330,30 @@ export const mockApi = {
     return []
   },
 
+  async getMemberStockSubscriptions(memberId: string): Promise<any[]> {
+    await delay()
+    return [
+      {
+        id: 'sub1',
+        stock_id: '1',
+        stock_type: 'Acción A',
+        quantity: 2,
+        purchase_date: '2024-12-15T10:30:00Z',
+        status: 'active',
+        financing_loan_id: null
+      },
+      {
+        id: 'sub2',
+        stock_id: '2',
+        stock_type: 'Acción B',
+        quantity: 5,
+        purchase_date: '2024-11-20T10:30:00Z',
+        status: 'active',
+        financing_loan_id: null
+      }
+    ]
+  },
+
   async getMemberTransfers(memberId: string): Promise<any[]> {
     await delay()
     return []

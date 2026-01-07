@@ -184,6 +184,16 @@ export interface GetPaymentScheduleQuery {
   end_date?: string
 }
 
+export interface StockSubscription {
+  id: string
+  stock_id: string
+  stock_type: string
+  quantity: number
+  purchase_date: string | Date
+  status: string
+  financing_loan_id?: string | null
+}
+
 // API Functions
 export const membersApi = {
   // Basic CRUD
@@ -325,6 +335,16 @@ export const membersApi = {
     const queryString = params.toString()
     const url = `/v2/members/${memberId}/exchanges${queryString ? `?${queryString}` : ''}`
     const response = await apiClient.get<StockOperationResponse[]>(url)
+    return response.data
+  },
+
+  async getMemberStockSubscriptions(memberId: string): Promise<StockSubscription[]> {
+    if (USE_MOCKS) {
+      return mockApi.getMemberStockSubscriptions(memberId)
+    }
+    const response = await apiClient.get<StockSubscription[]>(
+      `/v2/members/${memberId}/stock-subscriptions`
+    )
     return response.data
   },
 
