@@ -230,6 +230,12 @@
                 >
                   {{ novelty.noveltyComment }}
                 </p>
+                <p
+                  v-if="novelty.affectedPaymentType"
+                  class="text-xs text-error/70 mt-1 wrap-break-word"
+                >
+                  Afecta: {{ getAffectedPaymentTypeLabel(novelty.affectedPaymentType) }}
+                </p>
               </div>
               <div
                 class="hidden md:block grow border-b-2 border-dotted border-error/40 mx-2 md:mx-4"
@@ -313,7 +319,7 @@
 <script setup lang="ts">
 import { formatCurrency, formatNumber } from '@/shared/utils/formatters'
 import type { MemberDue } from '@/api/members.api'
-import type { Payment } from '../../composables/usePaymentCollection'
+import type { Payment } from '../../../composables/usePaymentCollection'
 
 // Props
 defineProps<{
@@ -338,5 +344,16 @@ defineEmits<{
   'add-novelty': []
   'delete-novelty': [idx: number]
 }>()
+
+function getAffectedPaymentTypeLabel(type: string): string {
+  const typeLabels: Record<string, string> = {
+    mandatory_contribution: 'Aporte obligatorio',
+    stock_fee: 'Cuota de acciones',
+    loan_payment: 'Pago de préstamo',
+    fee: 'Multa/otro pago',
+    insurance: 'Seguro de deuda',
+  }
+  return typeLabels[type] || type
+}
 </script>
 
