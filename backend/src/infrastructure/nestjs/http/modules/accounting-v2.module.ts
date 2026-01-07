@@ -4,6 +4,8 @@ import { AccountingV2Controller } from '../controllers/accounting.v2.controller'
 import { GetOperationsQueryHandler } from '@application/queries/accounting/get-operations.query-handler';
 import { GetLedgerEntriesQueryHandler } from '@application/queries/accounting/get-ledger-entries.query-handler';
 import { GetAccountsSummaryQueryHandler } from '@application/queries/accounting/get-accounts-summary.query-handler';
+import { GetOperationByIdQueryHandler } from '@application/queries/accounting/get-operation-by-id.query-handler';
+import { GetLedgerEntryByIdQueryHandler } from '@application/queries/accounting/get-ledger-entry-by-id.query-handler';
 import { TypeOrmOperationRepository } from '@infrastructure/typeorm/repositories/typeorm-operation.repository';
 import { TypeOrmLedgerEntryRepository } from '@infrastructure/typeorm/repositories/typeorm-ledger-entry.repository';
 import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
@@ -46,6 +48,20 @@ const LEDGER_ENTRY_REPOSITORY = Symbol('LedgerEntryRepository');
       provide: GetAccountsSummaryQueryHandler,
       useFactory: (ledgerEntryRepo: LedgerEntryRepository) =>
         new GetAccountsSummaryQueryHandler(ledgerEntryRepo),
+      inject: [LEDGER_ENTRY_REPOSITORY],
+    },
+    {
+      provide: GetOperationByIdQueryHandler,
+      useFactory: (
+        operationRepo: OperationRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+      ) => new GetOperationByIdQueryHandler(operationRepo, ledgerEntryRepo),
+      inject: [OPERATION_REPOSITORY, LEDGER_ENTRY_REPOSITORY],
+    },
+    {
+      provide: GetLedgerEntryByIdQueryHandler,
+      useFactory: (ledgerEntryRepo: LedgerEntryRepository) =>
+        new GetLedgerEntryByIdQueryHandler(ledgerEntryRepo),
       inject: [LEDGER_ENTRY_REPOSITORY],
     },
     // Repository instances for direct injection if needed
