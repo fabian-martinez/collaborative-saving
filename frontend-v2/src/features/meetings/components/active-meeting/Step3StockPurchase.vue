@@ -31,6 +31,22 @@
 
       <!-- Columna derecha: Formulario y recibo local -->
       <div class="md:col-span-2">
+        <!-- Toggle para ver compras registradas - siempre visible -->
+        <div v-if="selectedMember && hasCompletedPurchases" class="mb-4 flex justify-end items-center gap-3">
+          <span class="text-sm" :class="showPurchaseReceipt ? 'text-base-content/60' : 'text-base-content'">
+            Agregar más compras
+          </span>
+          <input 
+            type="checkbox" 
+            class="toggle toggle-primary"
+            :checked="showPurchaseReceipt"
+            @change="showPurchaseReceipt = !showPurchaseReceipt"
+          />
+          <span class="text-sm" :class="showPurchaseReceipt ? 'text-base-content' : 'text-base-content/60'">
+            Ver compras registradas
+          </span>
+        </div>
+        
         <div class="card bg-base-100 shadow-lg rounded-lg">
           <div class="card-body p-4 md:p-6">
             <div v-if="!selectedMember" class="flex items-center justify-center h-64 text-base-content/60">
@@ -51,21 +67,6 @@
               
               <!-- Purchase Form View -->
               <div v-else>
-                <!-- Toggle para ver compras registradas -->
-                <div v-if="hasCompletedPurchases" class="mb-4 flex justify-end items-center gap-3">
-                  <span class="text-sm" :class="showPurchaseReceipt ? 'text-base-content/60' : 'text-base-content'">
-                    Agregar más compras
-                  </span>
-                  <input 
-                    type="checkbox" 
-                    class="toggle toggle-primary"
-                    :checked="showPurchaseReceipt"
-                    @change="showPurchaseReceipt = !showPurchaseReceipt"
-                  />
-                  <span class="text-sm" :class="showPurchaseReceipt ? 'text-base-content' : 'text-base-content/60'">
-                    Ver compras registradas
-                  </span>
-                </div>
 
                 <!-- Vista de recibo cuando hay compras y está activa -->
                 <PaymentReceiptView
