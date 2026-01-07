@@ -11,6 +11,7 @@ import {
   ACCUMULATED_SURPLUS_ACCOUNT,
 } from '@domain/constants/account-types';
 import { OperationType } from '@domain/enums/operation-type.enum';
+import { LedgerEntry } from '@domain/entities/ledger-entry.entity';
 
 describe('CloseMeetingUseCase', () => {
   let useCase: CloseMeetingUseCase;
@@ -145,7 +146,9 @@ describe('CloseMeetingUseCase', () => {
     ];
 
     meetingRepository.findById.mockResolvedValue(activeMeeting);
-    ledgerEntryRepository.findByMeeting.mockResolvedValue(ledgerEntries as any);
+    ledgerEntryRepository.findByMeeting.mockResolvedValue(
+      ledgerEntries as LedgerEntry[],
+    );
     recordOperationUseCase.execute.mockResolvedValue({
       operationId: 'op-surplus',
       ledgerEntryIds: [],
@@ -154,24 +157,26 @@ describe('CloseMeetingUseCase', () => {
       return await Promise.resolve(meeting);
     });
 
+    const executeSpy = jest.spyOn(recordOperationUseCase, 'execute');
+
     // ACT
     const result = await useCase.execute({ meetingId });
 
     // ASSERT
-    expect(recordOperationUseCase.execute).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: OperationType.SURPLUS_ACCUMULATION,
-        entries: expect.arrayContaining([
-          expect.objectContaining({
-            accountType: ACCUMULATED_SURPLUS_ACCOUNT,
-            amount: 800,
-          }),
-          expect.objectContaining({
-            accountType: CASH_ACCOUNT,
-            amount: -800,
-          }),
-        ]),
-      }),
+    expect(executeSpy).toHaveBeenCalled();
+    const callArgs = executeSpy.mock.calls[0][0];
+    expect(callArgs.type).toBe(OperationType.SURPLUS_ACCUMULATION);
+    expect(callArgs.entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          accountType: ACCUMULATED_SURPLUS_ACCOUNT,
+          amount: 800,
+        }),
+        expect.objectContaining({
+          accountType: CASH_ACCOUNT,
+          amount: -800,
+        }),
+      ]),
     );
     expect(result.status).toBe(MeetingStatus.CLOSED);
   });
@@ -194,7 +199,9 @@ describe('CloseMeetingUseCase', () => {
     ];
 
     meetingRepository.findById.mockResolvedValue(activeMeeting);
-    ledgerEntryRepository.findByMeeting.mockResolvedValue(ledgerEntries as any);
+    ledgerEntryRepository.findByMeeting.mockResolvedValue(
+      ledgerEntries as LedgerEntry[],
+    );
     recordOperationUseCase.execute.mockResolvedValue({
       operationId: 'op-surplus',
       ledgerEntryIds: [],
@@ -203,15 +210,15 @@ describe('CloseMeetingUseCase', () => {
       return await Promise.resolve(meeting);
     });
 
+    const executeSpy = jest.spyOn(recordOperationUseCase, 'execute');
+
     // ACT
     await useCase.execute({ meetingId, authorizedBy: 'John Doe' });
 
     // ASSERT
-    expect(recordOperationUseCase.execute).toHaveBeenCalledWith(
-      expect.objectContaining({
-        description: expect.stringContaining('Autorizado por: John Doe'),
-      }),
-    );
+    expect(executeSpy).toHaveBeenCalled();
+    const callArgs = executeSpy.mock.calls[0][0];
+    expect(callArgs.description).toContain('Autorizado por: John Doe');
   });
 
   it('should throw BusinessRuleError when cash balance is negative', async () => {
@@ -232,7 +239,9 @@ describe('CloseMeetingUseCase', () => {
     ];
 
     meetingRepository.findById.mockResolvedValue(activeMeeting);
-    ledgerEntryRepository.findByMeeting.mockResolvedValue(ledgerEntries as any);
+    ledgerEntryRepository.findByMeeting.mockResolvedValue(
+      ledgerEntries as LedgerEntry[],
+    );
 
     // ACT & ASSERT
     await expect(useCase.execute({ meetingId })).rejects.toThrow(
@@ -241,7 +250,8 @@ describe('CloseMeetingUseCase', () => {
     await expect(useCase.execute({ meetingId })).rejects.toThrow(
       'El balance de efectivo no puede quedar negativo',
     );
-    expect(saveSpy).not.toHaveBeenCalled();
+    const saveSpyCheck = jest.spyOn(meetingRepository, 'save');
+    expect(saveSpyCheck).not.toHaveBeenCalled();
   });
 
   it('should not transfer when cash balance is 0', async () => {
@@ -252,7 +262,7 @@ describe('CloseMeetingUseCase', () => {
     });
     const meetingId = activeMeeting.id;
 
-    const ledgerEntries: any[] = []; // No cash entries
+    const ledgerEntries: LedgerEntry[] = []; // No cash entries
 
     meetingRepository.findById.mockResolvedValue(activeMeeting);
     ledgerEntryRepository.findByMeeting.mockResolvedValue(ledgerEntries);
@@ -264,7 +274,8 @@ describe('CloseMeetingUseCase', () => {
     const result = await useCase.execute({ meetingId });
 
     // ASSERT
-    expect(recordOperationUseCase.execute).not.toHaveBeenCalled();
+    const executeSpy = jest.spyOn(recordOperationUseCase, 'execute');
+    expect(executeSpy).not.toHaveBeenCalled();
     expect(result.status).toBe(MeetingStatus.CLOSED);
   });
 });

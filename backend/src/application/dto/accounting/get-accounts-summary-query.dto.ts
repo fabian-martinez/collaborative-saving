@@ -1,5 +1,17 @@
-import { IsOptional, IsInt, Min, Max, IsDateString, IsArray, IsEnum, IsBoolean } from 'class-validator';
-import { AccountType, ALL_ACCOUNT_TYPES } from '@domain/constants/account-types';
+import {
+  IsOptional,
+  IsInt,
+  Min,
+  Max,
+  IsDateString,
+  IsArray,
+  IsEnum,
+  IsBoolean,
+} from 'class-validator';
+import {
+  AccountType,
+  ALL_ACCOUNT_TYPES,
+} from '@domain/constants/account-types';
 
 export class GetAccountsSummaryQueryDto {
   @IsOptional()
@@ -25,4 +37,3 @@ export class GetAccountsSummaryQueryDto {
   @IsBoolean()
   includeZeroBalance?: boolean = false;
 }
-

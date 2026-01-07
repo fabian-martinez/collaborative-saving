@@ -15,4 +15,3 @@ export class AccountLedgerEntryDto {
   operationType?: OperationType;
   operationDate?: Date;
 }
-

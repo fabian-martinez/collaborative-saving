@@ -5,7 +5,7 @@ import * as request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { EntityManager } from 'typeorm';
 import { MemberFactory } from '../factories/member.factory';
-import { Member } from '../../src/members/entities/member.entity';
+import { Member as MemberEntity } from '../../src/infrastructure/typeorm/entities/member.entity';
 
 describe('Members E2E Tests (Hexagonal Architecture)', () => {
   let app: INestApplication;
@@ -53,21 +53,21 @@ describe('Members E2E Tests (Hexagonal Architecture)', () => {
 
     it('should return list of active members only', async () => {
       // Create test members using factory
-      const activeMember1 = MemberFactory.createActive({
+      const activeMember1: MemberEntity = MemberFactory.createActive({
         name: 'Active Member 1',
         email: 'active1@example.com',
       });
-      const activeMember2 = MemberFactory.createActive({
+      const activeMember2: MemberEntity = MemberFactory.createActive({
         name: 'Active Member 2',
         email: 'active2@example.com',
       });
-      const inactiveMember = MemberFactory.createInactive({
+      const inactiveMember: MemberEntity = MemberFactory.createInactive({
         name: 'Inactive Member',
         email: 'inactive@example.com',
       });
 
       // Insert into database
-      await entityManager.save(Member, [
+      await entityManager.save(MemberEntity, [
         activeMember1,
         activeMember2,
         inactiveMember,
@@ -90,7 +90,7 @@ describe('Members E2E Tests (Hexagonal Architecture)', () => {
     });
 
     it('should return members with all required fields', async () => {
-      const testMember = MemberFactory.createActive({
+      const testMember: MemberEntity = MemberFactory.createActive({
         name: 'Test Member',
         email: 'test@example.com',
         identificationNumber: '123456789',
@@ -101,7 +101,7 @@ describe('Members E2E Tests (Hexagonal Architecture)', () => {
         beneficiary: 'Test Beneficiary',
       });
 
-      await entityManager.save(Member, testMember);
+      await entityManager.save(MemberEntity, testMember);
 
       const response = await request(app.getHttpServer())
         .get('/v2/members')
@@ -312,7 +312,7 @@ describe('Members E2E Tests (Hexagonal Architecture)', () => {
     });
 
     it('should return member detail by id', async () => {
-      const testMember = MemberFactory.createActive({
+      const testMember: MemberEntity = MemberFactory.createActive({
         name: 'Detail Member',
         email: 'detail@example.com',
         identificationNumber: '987654321',
@@ -321,13 +321,26 @@ describe('Members E2E Tests (Hexagonal Architecture)', () => {
         beneficiary: 'Detail Beneficiary',
       });
 
-      const savedMember = await entityManager.save(Member, testMember);
+      const savedMember = await entityManager.save(MemberEntity, testMember);
+
+      if (
+        !savedMember ||
+        typeof savedMember !== 'object' ||
+        !('id' in savedMember)
+      ) {
+        throw new Error('Failed to save member');
+      }
+
+      const memberId = savedMember.id;
+      if (!memberId) {
+        throw new Error('Member ID is missing');
+      }
 
       const response = await request(app.getHttpServer())
-        .get(`/v2/members/${savedMember.id}`)
+        .get(`/v2/members/${memberId}`)
         .expect(200);
 
-      expect(response.body).toHaveProperty('id', savedMember.id);
+      expect(response.body).toHaveProperty('id', memberId);
       expect(response.body).toHaveProperty('name', 'Detail Member');
       expect(response.body).toHaveProperty('email', 'detail@example.com');
       expect(response.body).toHaveProperty('identificationNumber', '987654321');
@@ -339,16 +352,29 @@ describe('Members E2E Tests (Hexagonal Architecture)', () => {
     });
 
     it('should not return deleted members', async () => {
-      const deletedMember = MemberFactory.create({
+      const deletedMember: MemberEntity = MemberFactory.create({
         name: 'Deleted Member',
         email: 'deleted@example.com',
         deletedAt: new Date(), // Soft deleted
       });
 
-      const savedMember = await entityManager.save(Member, deletedMember);
+      const savedMember = await entityManager.save(MemberEntity, deletedMember);
+
+      if (
+        !savedMember ||
+        typeof savedMember !== 'object' ||
+        !('id' in savedMember)
+      ) {
+        throw new Error('Failed to save member');
+      }
+
+      const memberId = savedMember.id;
+      if (!memberId) {
+        throw new Error('Member ID is missing');
+      }
 
       await request(app.getHttpServer())
-        .get(`/v2/members/${savedMember.id}`)
+        .get(`/v2/members/${memberId}`)
         .expect(404);
     });
   });
@@ -357,7 +383,7 @@ describe('Members E2E Tests (Hexagonal Architecture)', () => {
     let testMemberId: string;
 
     beforeEach(async () => {
-      const testMember = MemberFactory.createActive({
+      const testMember: MemberEntity = MemberFactory.createActive({
         name: 'Original Name',
         email: 'original@example.com',
         address: 'Original Address',
@@ -366,8 +392,22 @@ describe('Members E2E Tests (Hexagonal Architecture)', () => {
         role: 'member',
       });
 
-      const savedMember = await entityManager.save(Member, testMember);
-      testMemberId = savedMember.id;
+      const savedMember = await entityManager.save(MemberEntity, testMember);
+
+      if (
+        !savedMember ||
+        typeof savedMember !== 'object' ||
+        !('id' in savedMember)
+      ) {
+        throw new Error('Failed to save member');
+      }
+
+      const memberId = savedMember.id;
+      if (!memberId) {
+        throw new Error('Member ID is missing');
+      }
+
+      testMemberId = memberId;
     });
 
     it('should return 404 when member does not exist', async () => {
@@ -450,13 +490,27 @@ describe('Members E2E Tests (Hexagonal Architecture)', () => {
     let testMemberId: string;
 
     beforeEach(async () => {
-      const testMember = MemberFactory.createActive({
+      const testMember: MemberEntity = MemberFactory.createActive({
         name: 'Member To Delete',
         email: 'todelete@example.com',
       });
 
-      const savedMember = await entityManager.save(Member, testMember);
-      testMemberId = savedMember.id;
+      const savedMember = await entityManager.save(MemberEntity, testMember);
+
+      if (
+        !savedMember ||
+        typeof savedMember !== 'object' ||
+        !('id' in savedMember)
+      ) {
+        throw new Error('Failed to save member');
+      }
+
+      const memberId = savedMember.id;
+      if (!memberId) {
+        throw new Error('Member ID is missing');
+      }
+
+      testMemberId = memberId;
     });
 
     it('should return 404 when member does not exist', async () => {
@@ -493,7 +547,7 @@ describe('Members E2E Tests (Hexagonal Architecture)', () => {
       expect(memberIds).not.toContain(testMemberId);
 
       // Verify member still exists in DB but is marked as deleted
-      const deletedMember = await entityManager.findOne(Member, {
+      const deletedMember = await entityManager.findOne(MemberEntity, {
         where: { id: testMemberId },
         withDeleted: true,
       });

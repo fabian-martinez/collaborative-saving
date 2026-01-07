@@ -6,4 +6,4 @@ import { LoanResponseDto } from './loan-response.dto';
  * Output DTO returned after successfully updating loan terms.
  * Contains the updated loan information.
  */
-export interface UpdateLoanTermsResponseDto extends LoanResponseDto {}
+export type UpdateLoanTermsResponseDto = LoanResponseDto;

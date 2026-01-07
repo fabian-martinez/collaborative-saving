@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { Member } from '../../src/members/entities/member.entity';
+import { Member } from '../../src/infrastructure/typeorm/entities/member.entity';
 
 export class MemberFactory {
   static create(overrides: Partial<Member> = {}): Member {

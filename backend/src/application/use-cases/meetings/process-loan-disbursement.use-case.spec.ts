@@ -144,9 +144,12 @@ describe('ProcessLoanDisbursementUseCase', () => {
         });
 
         // Assert
-        expect(memberRepository.findById).toHaveBeenCalledWith(mockMemberId);
-        expect(meetingRepository.findById).toHaveBeenCalledWith(mockMeetingId);
-        expect(createLoanUseCase.execute).toHaveBeenCalledWith(
+        const findMemberByIdSpy = jest.spyOn(memberRepository, 'findById');
+        const findMeetingByIdSpy = jest.spyOn(meetingRepository, 'findById');
+        const executeLoanSpy = jest.spyOn(createLoanUseCase, 'execute');
+        expect(findMemberByIdSpy).toHaveBeenCalledWith(mockMemberId);
+        expect(findMeetingByIdSpy).toHaveBeenCalledWith(mockMeetingId);
+        expect(executeLoanSpy).toHaveBeenCalledWith(
           expect.objectContaining({
             memberId: mockMemberId,
             meetingId: mockMeetingId,
@@ -191,7 +194,8 @@ describe('ProcessLoanDisbursementUseCase', () => {
         });
 
         // Assert
-        expect(createLoanUseCase.execute).toHaveBeenCalledWith(
+        const executeSpy = jest.spyOn(createLoanUseCase, 'execute');
+        expect(executeSpy).toHaveBeenCalledWith(
           expect.objectContaining({
             loanType: 'corriente',
           }),
@@ -264,7 +268,7 @@ describe('ProcessLoanDisbursementUseCase', () => {
           newLoanRequest: {
             memberId: mockMemberId,
             amount: 10000,
-            loanType: 'invalid' as any,
+            loanType: 'invalid' as 'corriente',
             approvedAmount: 10000,
             monthlyPaymentAmount: 1000,
             interestRate: 12,
@@ -316,11 +320,10 @@ describe('ProcessLoanDisbursementUseCase', () => {
         });
 
         // Assert
-        expect(createLoanUseCase.execute).toHaveBeenCalledWith(
-          expect.objectContaining({
-            term: expect.any(Number),
-          }),
-        );
+        const executeLoanSpy = jest.spyOn(createLoanUseCase, 'execute');
+        expect(executeLoanSpy).toHaveBeenCalled();
+        const callArgs = executeLoanSpy.mock.calls[0][0];
+        expect(callArgs.term).toEqual(expect.any(Number));
       });
 
       it('should use partial disbursement when availableCash is less than amount', async () => {
@@ -355,7 +358,8 @@ describe('ProcessLoanDisbursementUseCase', () => {
         });
 
         // Assert
-        expect(createLoanUseCase.execute).toHaveBeenCalledWith(
+        const executeLoanSpy = jest.spyOn(createLoanUseCase, 'execute');
+        expect(executeLoanSpy).toHaveBeenCalledWith(
           expect.objectContaining({
             disbursedAmount: 5000,
           }),
@@ -407,10 +411,17 @@ describe('ProcessLoanDisbursementUseCase', () => {
         });
 
         // Assert
-        expect(loanRepository.findById).toHaveBeenCalledWith(mockLoanId);
-        expect(loanRepository.save).toHaveBeenCalled();
-        expect(recordOperationUseCase.execute).toHaveBeenCalled();
-        expect(loanTransactionDetailRepository.save).toHaveBeenCalled();
+        const findLoanByIdSpy = jest.spyOn(loanRepository, 'findById');
+        const saveLoanSpy = jest.spyOn(loanRepository, 'save');
+        const executeOpSpy = jest.spyOn(recordOperationUseCase, 'execute');
+        const saveDetailSpy = jest.spyOn(
+          loanTransactionDetailRepository,
+          'save',
+        );
+        expect(findLoanByIdSpy).toHaveBeenCalledWith(mockLoanId);
+        expect(saveLoanSpy).toHaveBeenCalled();
+        expect(executeOpSpy).toHaveBeenCalled();
+        expect(saveDetailSpy).toHaveBeenCalled();
       });
 
       it('should throw LoanNotFoundException when loan not found', async () => {
@@ -508,14 +519,15 @@ describe('ProcessLoanDisbursementUseCase', () => {
         });
 
         // Assert
-        expect(recordOperationUseCase.execute).toHaveBeenCalledWith(
-          expect.objectContaining({
-            entries: expect.arrayContaining([
-              expect.objectContaining({
-                amount: 4000,
-              }),
-            ]),
-          }),
+        const executeOpSpy = jest.spyOn(recordOperationUseCase, 'execute');
+        expect(executeOpSpy).toHaveBeenCalled();
+        const callArgs = executeOpSpy.mock.calls[0][0];
+        expect(callArgs.entries).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              amount: 4000,
+            }),
+          ]),
         );
       });
 
@@ -562,14 +574,15 @@ describe('ProcessLoanDisbursementUseCase', () => {
         });
 
         // Assert
-        expect(recordOperationUseCase.execute).toHaveBeenCalledWith(
-          expect.objectContaining({
-            entries: expect.arrayContaining([
-              expect.objectContaining({
-                amount: 3000,
-              }),
-            ]),
-          }),
+        const executeOpSpy = jest.spyOn(recordOperationUseCase, 'execute');
+        expect(executeOpSpy).toHaveBeenCalled();
+        const callArgs = executeOpSpy.mock.calls[0][0];
+        expect(callArgs.entries).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              amount: 3000,
+            }),
+          ]),
         );
       });
 
@@ -662,10 +675,16 @@ describe('ProcessLoanDisbursementUseCase', () => {
         });
 
         // Assert
-        expect(pendingMemberPaymentRepository.findById).toHaveBeenCalledWith(
-          'pending-payment-id-1',
+        const findPaymentByIdSpy = jest.spyOn(
+          pendingMemberPaymentRepository,
+          'findById',
         );
-        expect(pendingMemberPaymentRepository.save).toHaveBeenCalled();
+        const savePaymentSpy = jest.spyOn(
+          pendingMemberPaymentRepository,
+          'save',
+        );
+        expect(findPaymentByIdSpy).toHaveBeenCalledWith('pending-payment-id-1');
+        expect(savePaymentSpy).toHaveBeenCalled();
       });
 
       it('should create new pending payment when loan is not fully disbursed', async () => {
@@ -720,7 +739,11 @@ describe('ProcessLoanDisbursementUseCase', () => {
         });
 
         // Assert
-        expect(pendingMemberPaymentRepository.save).toHaveBeenCalledWith(
+        const savePaymentSpy = jest.spyOn(
+          pendingMemberPaymentRepository,
+          'save',
+        );
+        expect(savePaymentSpy).toHaveBeenCalledWith(
           expect.objectContaining({
             type: PendingMemberPaymentType.LOAN,
           }),
@@ -770,19 +793,20 @@ describe('ProcessLoanDisbursementUseCase', () => {
         });
 
         // Assert
-        expect(recordOperationUseCase.execute).toHaveBeenCalledWith(
-          expect.objectContaining({
-            entries: expect.arrayContaining([
-              expect.objectContaining({
-                accountType: 'CASH',
-                amount: -5000,
-              }),
-              expect.objectContaining({
-                accountType: 'LOANS_RECEIVABLE',
-                amount: 5000,
-              }),
-            ]),
-          }),
+        const executeOpSpy = jest.spyOn(recordOperationUseCase, 'execute');
+        expect(executeOpSpy).toHaveBeenCalled();
+        const callArgs = executeOpSpy.mock.calls[0][0];
+        expect(callArgs.entries).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              accountType: 'CASH',
+              amount: -5000,
+            }),
+            expect.objectContaining({
+              accountType: 'LOANS_RECEIVABLE',
+              amount: 5000,
+            }),
+          ]),
         );
       });
 
@@ -829,19 +853,20 @@ describe('ProcessLoanDisbursementUseCase', () => {
         });
 
         // Assert
-        expect(recordOperationUseCase.execute).toHaveBeenCalledWith(
-          expect.objectContaining({
-            entries: expect.arrayContaining([
-              expect.objectContaining({
-                accountType: 'LOANS_RECEIVABLE',
-                amount: 5000,
-              }),
-              expect.objectContaining({
-                accountType: 'MEMBER_EQUITY',
-                amount: -5000,
-              }),
-            ]),
-          }),
+        const executeOpSpy = jest.spyOn(recordOperationUseCase, 'execute');
+        expect(executeOpSpy).toHaveBeenCalled();
+        const callArgs = executeOpSpy.mock.calls[0][0];
+        expect(callArgs.entries).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              accountType: 'LOANS_RECEIVABLE',
+              amount: 5000,
+            }),
+            expect.objectContaining({
+              accountType: 'MEMBER_EQUITY',
+              amount: -5000,
+            }),
+          ]),
         );
       });
 

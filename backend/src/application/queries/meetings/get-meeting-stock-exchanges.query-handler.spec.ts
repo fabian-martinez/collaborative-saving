@@ -43,8 +43,13 @@ describe('GetMeetingStockExchangesQueryHandler', () => {
     await expect(queryHandler.execute(meetingId)).rejects.toThrow(
       MeetingNotFoundException,
     );
-    expect(meetingRepository.findById).toHaveBeenCalledWith(meetingId);
-    expect(operationRepository.findByMeetingAndType).not.toHaveBeenCalled();
+    const findByIdSpy = jest.spyOn(meetingRepository, 'findById');
+    const findByMeetingAndTypeSpy = jest.spyOn(
+      operationRepository,
+      'findByMeetingAndType',
+    );
+    expect(findByIdSpy).toHaveBeenCalledWith(meetingId);
+    expect(findByMeetingAndTypeSpy).not.toHaveBeenCalled();
   });
 
   it('should return empty array when no exchanges exist', async () => {
@@ -61,8 +66,13 @@ describe('GetMeetingStockExchangesQueryHandler', () => {
     const result = await queryHandler.execute(meetingId);
 
     // ASSERT
-    expect(meetingRepository.findById).toHaveBeenCalledWith(meetingId);
-    expect(operationRepository.findByMeetingAndType).toHaveBeenCalledWith(
+    const findByIdSpy = jest.spyOn(meetingRepository, 'findById');
+    const findByMeetingAndTypeSpy = jest.spyOn(
+      operationRepository,
+      'findByMeetingAndType',
+    );
+    expect(findByIdSpy).toHaveBeenCalledWith(meetingId);
+    expect(findByMeetingAndTypeSpy).toHaveBeenCalledWith(
       meetingId,
       OperationType.STOCK_MODIFICATION,
     );
@@ -104,8 +114,13 @@ describe('GetMeetingStockExchangesQueryHandler', () => {
     const result = await queryHandler.execute(meetingId);
 
     // ASSERT
-    expect(meetingRepository.findById).toHaveBeenCalledWith(meetingId);
-    expect(operationRepository.findByMeetingAndType).toHaveBeenCalledWith(
+    const findByIdSpy = jest.spyOn(meetingRepository, 'findById');
+    const findByMeetingAndTypeSpy = jest.spyOn(
+      operationRepository,
+      'findByMeetingAndType',
+    );
+    expect(findByIdSpy).toHaveBeenCalledWith(meetingId);
+    expect(findByMeetingAndTypeSpy).toHaveBeenCalledWith(
       meetingId,
       OperationType.STOCK_MODIFICATION,
     );

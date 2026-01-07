@@ -10,4 +10,3 @@ export class OperationResponseDto {
   description: string | null;
   entries: LedgerEntryResponseDto[];
 }
-

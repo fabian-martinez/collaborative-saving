@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, UpdateResult } from 'typeorm';
 import { TypeOrmStockValueHistoryRepository } from './typeorm-stock-value-history.repository';
 import { StockValueHistory as StockValueHistoryEntity } from '../entities/stock-value-history.entity';
 import { StockValueHistory as StockValueHistoryDomain } from '@domain/entities/stock-value-history.entity';
@@ -63,6 +63,7 @@ describe('TypeOrmStockValueHistoryRepository', () => {
       const result = await repository.findById(historyId);
 
       expect(result).toBeNull();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(typeOrmRepo.findOne).toHaveBeenCalledWith({
         where: { id: historyId },
       });
@@ -89,6 +90,7 @@ describe('TypeOrmStockValueHistoryRepository', () => {
       const result = await repository.findByStock('stock-1');
       expect(result).toHaveLength(1);
       expect(result[0]).toBeInstanceOf(StockValueHistoryDomain);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(typeOrmRepo.find).toHaveBeenCalledWith({
         where: { stockId: 'stock-1' },
         order: { createdAt: 'ASC' },
@@ -135,6 +137,7 @@ describe('TypeOrmStockValueHistoryRepository', () => {
       expect(result).toHaveLength(2);
       expect(result[0]).toBeInstanceOf(StockValueHistoryDomain);
       expect(result[1]).toBeInstanceOf(StockValueHistoryDomain);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(typeOrmRepo.find).toHaveBeenCalledWith({
         where: { operationId: 'operation-1' },
         order: { createdAt: 'ASC' },
@@ -169,6 +172,7 @@ describe('TypeOrmStockValueHistoryRepository', () => {
       expect(result).toBeInstanceOf(StockValueHistoryDomain);
       expect(result?.id).toBe('1');
       expect(result?.stockId).toBe('stock-1');
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(typeOrmRepo.findOne).toHaveBeenCalledWith({
         where: { stockId: 'stock-1' },
         order: { createdAt: 'DESC' },
@@ -203,6 +207,7 @@ describe('TypeOrmStockValueHistoryRepository', () => {
 
       expect(result).toBeInstanceOf(StockValueHistoryDomain);
       expect(result?.id).toBe('1');
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(typeOrmRepo.findOne).toHaveBeenCalled();
     });
 
@@ -242,6 +247,7 @@ describe('TypeOrmStockValueHistoryRepository', () => {
 
       const result = await repository.save(domain);
       expect(result).toBeInstanceOf(StockValueHistoryDomain);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(typeOrmRepo.save).toHaveBeenCalled();
     });
 
@@ -280,12 +286,17 @@ describe('TypeOrmStockValueHistoryRepository', () => {
       typeOrmRepo.findOne
         .mockResolvedValueOnce(existingEntity as StockValueHistoryEntity)
         .mockResolvedValueOnce(updatedEntity as StockValueHistoryEntity);
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
+      typeOrmRepo.update.mockResolvedValue({} as UpdateResult);
 
       const result = await repository.save(domain);
 
       expect(result).toBeInstanceOf(StockValueHistoryDomain);
-      expect(typeOrmRepo.update).toHaveBeenCalledWith(domain.id, expect.any(Object));
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(typeOrmRepo.update).toHaveBeenCalledWith(
+        domain.id,
+        expect.any(Object),
+      );
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(typeOrmRepo.findOne).toHaveBeenCalledTimes(2);
     });
 
@@ -315,7 +326,7 @@ describe('TypeOrmStockValueHistoryRepository', () => {
       typeOrmRepo.findOne
         .mockResolvedValueOnce(existingEntity as StockValueHistoryEntity)
         .mockResolvedValueOnce(null);
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
+      typeOrmRepo.update.mockResolvedValue({} as UpdateResult);
 
       await expect(repository.save(domain)).rejects.toThrow(
         'StockValueHistory not found after update',
@@ -370,7 +381,7 @@ describe('TypeOrmStockValueHistoryRepository', () => {
         },
       ];
 
-      (typeOrmRepo.save as jest.Mock).mockImplementation(async (input: any) => {
+      (typeOrmRepo.save as jest.Mock).mockImplementation((input: any) => {
         if (Array.isArray(input)) {
           return savedEntities as StockValueHistoryEntity[];
         }
@@ -382,6 +393,7 @@ describe('TypeOrmStockValueHistoryRepository', () => {
       expect(result).toHaveLength(2);
       expect(result[0]).toBeInstanceOf(StockValueHistoryDomain);
       expect(result[1]).toBeInstanceOf(StockValueHistoryDomain);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(typeOrmRepo.save).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({ id: domain1.id }),
@@ -391,7 +403,7 @@ describe('TypeOrmStockValueHistoryRepository', () => {
     });
 
     it('should return empty array when saving empty array', async () => {
-      (typeOrmRepo.save as jest.Mock).mockImplementation(async (input: any) => {
+      (typeOrmRepo.save as jest.Mock).mockImplementation((input: any) => {
         if (Array.isArray(input)) {
           return [];
         }

@@ -44,4 +44,3 @@ export class GetAccountsSummaryResponseHttpDto {
   @ApiProperty()
   metadata: AccountsSummaryMetadataHttpDto;
 }
-

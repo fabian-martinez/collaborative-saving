@@ -56,9 +56,7 @@ function getAccountCategory(accountType: AccountType): number {
 
 @Injectable()
 export class GetAccountsSummaryQueryHandler {
-  constructor(
-    private readonly ledgerEntryRepository: LedgerEntryRepository,
-  ) {}
+  constructor(private readonly ledgerEntryRepository: LedgerEntryRepository) {}
 
   async execute(
     query: GetAccountsSummaryQueryDto,
@@ -93,8 +91,8 @@ export class GetAccountsSummaryQueryHandler {
     const accounts: AccountSummaryDto[] = accountsData
       .map((data) => {
         const accountSummary: AccountSummaryDto = {
-          accountType: data.accountType as AccountType,
-          accountName: getAccountName(data.accountType as AccountType),
+          accountType: data.accountType,
+          accountName: getAccountName(data.accountType),
           totalBalance: data.totalBalance,
           totalDebits: data.totalDebits,
           totalCredits: data.totalCredits,
@@ -104,7 +102,7 @@ export class GetAccountsSummaryQueryHandler {
             (entry): AccountLedgerEntryDto => ({
               id: entry.id,
               operationId: entry.operationId,
-              accountType: entry.accountType as AccountType,
+              accountType: entry.accountType,
               amount: entry.amount,
               createdAt: entry.createdAt,
               description: entry.description,
@@ -175,4 +173,3 @@ export class GetAccountsSummaryQueryHandler {
     return response;
   }
 }
-

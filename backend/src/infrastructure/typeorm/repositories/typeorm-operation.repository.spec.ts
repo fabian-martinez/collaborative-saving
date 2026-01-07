@@ -16,6 +16,7 @@ describe('TypeOrmOperationRepository', () => {
   let findSpy: jest.SpyInstance;
   let updateSpy: jest.SpyInstance;
   let saveManySpy: jest.SpyInstance;
+  let createQueryBuilderSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -55,6 +56,7 @@ describe('TypeOrmOperationRepository', () => {
     findSpy = jest.spyOn(typeOrmRepo, 'find');
     updateSpy = jest.spyOn(typeOrmRepo, 'update');
     saveManySpy = jest.spyOn(ledgerEntryRepo, 'saveMany');
+    createQueryBuilderSpy = jest.spyOn(typeOrmRepo, 'createQueryBuilder');
   });
 
   describe('findById', () => {
@@ -180,6 +182,171 @@ describe('TypeOrmOperationRepository', () => {
       expect(result).toHaveLength(1);
       expect(result[0].meetingId).toBe(meetingId);
       expect(result[0].type).toBe(type);
+    });
+  });
+
+  describe('findByMeetingAndTypes', () => {
+    it('should return operations of multiple types for a meeting', async () => {
+      // ARRANGE
+      const meetingId = 'meeting-123';
+      const types = [
+        OperationType.MONTHLY_PAYMENT,
+        OperationType.LOAN_PAYMENT,
+        OperationType.MANDATORY_CONTRIBUTION,
+      ];
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+
+      typeOrmRepo.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder);
+
+      const entities: Partial<OperationEntity>[] = [
+        {
+          id: 'op-1',
+          memberId: 'member-1',
+          meetingId,
+          type: OperationType.MONTHLY_PAYMENT,
+          date: new Date('2024-01-15'),
+          description: 'Monthly payment',
+        },
+        {
+          id: 'op-2',
+          memberId: 'member-2',
+          meetingId,
+          type: OperationType.LOAN_PAYMENT,
+          date: new Date('2024-01-15'),
+          description: 'Loan payment',
+        },
+        {
+          id: 'op-3',
+          memberId: 'member-1',
+          meetingId,
+          type: OperationType.MANDATORY_CONTRIBUTION,
+          date: new Date('2024-01-15'),
+          description: 'Mandatory contribution',
+        },
+      ];
+
+      mockQueryBuilder.getMany.mockResolvedValue(entities as OperationEntity[]);
+
+      // ACT
+      const result = await repository.findByMeetingAndTypes(meetingId, types);
+
+      // ASSERT
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        'operation.meeting_id = :meetingId',
+        { meetingId },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'operation.type IN (:...types)',
+        { types },
+      );
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
+        'operation.date',
+        'DESC',
+      );
+      expect(result).toHaveLength(3);
+      expect(result[0]).toBeInstanceOf(OperationDomain);
+      expect(result[0].type).toBe(OperationType.MONTHLY_PAYMENT);
+      expect(result[1].type).toBe(OperationType.LOAN_PAYMENT);
+      expect(result[2].type).toBe(OperationType.MANDATORY_CONTRIBUTION);
+    });
+
+    it('should return empty array when no operations found', async () => {
+      // ARRANGE
+      const meetingId = 'meeting-123';
+      const types = [OperationType.MONTHLY_PAYMENT, OperationType.LOAN_PAYMENT];
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+
+      typeOrmRepo.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder);
+      mockQueryBuilder.getMany.mockResolvedValue([]);
+
+      // ACT
+      const result = await repository.findByMeetingAndTypes(meetingId, types);
+
+      // ASSERT
+      expect(result).toEqual([]);
+      expect(mockQueryBuilder.getMany).toHaveBeenCalled();
+    });
+
+    it('should filter correctly by meetingId and multiple types using IN clause', async () => {
+      // ARRANGE
+      const meetingId = 'meeting-123';
+      const types = [
+        OperationType.MONTHLY_PAYMENT,
+        OperationType.STOCK_FEE,
+        OperationType.FEE,
+      ];
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+
+      typeOrmRepo.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder);
+
+      const entities: Partial<OperationEntity>[] = [
+        {
+          id: 'op-1',
+          meetingId,
+          type: OperationType.MONTHLY_PAYMENT,
+          date: new Date(),
+        },
+        {
+          id: 'op-2',
+          meetingId,
+          type: OperationType.STOCK_FEE,
+          date: new Date(),
+        },
+      ];
+
+      mockQueryBuilder.getMany.mockResolvedValue(entities as OperationEntity[]);
+
+      // ACT
+      const result = await repository.findByMeetingAndTypes(meetingId, types);
+
+      // ASSERT
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        'operation.meeting_id = :meetingId',
+        { meetingId },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'operation.type IN (:...types)',
+        { types },
+      );
+      expect(result).toHaveLength(2);
+      expect(result[0].meetingId).toBe(meetingId);
+      expect(result[1].meetingId).toBe(meetingId);
+      expect(types).toContain(result[0].type);
+      expect(types).toContain(result[1].type);
+    });
+
+    it('should return empty array when types array is empty', async () => {
+      // ARRANGE
+      const meetingId = 'meeting-123';
+      const types: OperationType[] = [];
+
+      // ACT
+      const result = await repository.findByMeetingAndTypes(meetingId, types);
+
+      // ASSERT
+      expect(result).toEqual([]);
+      expect(createQueryBuilderSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -623,11 +790,7 @@ describe('TypeOrmOperationRepository', () => {
       mockQueryBuilder.getCount.mockResolvedValue(25);
       mockQueryBuilder.getMany.mockResolvedValue([]);
 
-      await repository.findWithPagination(
-        {},
-        { page: 2, limit: 10 },
-        'ASC',
-      );
+      await repository.findWithPagination({}, { page: 2, limit: 10 }, 'ASC');
 
       expect(mockQueryBuilder.getCount).toHaveBeenCalled();
       expect(mockQueryBuilder.skip).toHaveBeenCalledWith(10); // (2-1) * 10

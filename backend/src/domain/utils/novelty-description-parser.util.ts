@@ -74,4 +74,3 @@ export function hasAffectedPrefix(
 
   return /^\[AFFECTED:\w+\]/.test(description);
 }
-

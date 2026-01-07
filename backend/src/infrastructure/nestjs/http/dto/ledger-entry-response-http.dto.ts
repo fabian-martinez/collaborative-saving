@@ -1,5 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { AccountType, ALL_ACCOUNT_TYPES } from '@domain/constants/account-types';
+import {
+  AccountType,
+  ALL_ACCOUNT_TYPES,
+} from '@domain/constants/account-types';
 
 /**
  * HTTP Response DTO for Ledger Entry
@@ -37,4 +40,3 @@ export class LedgerEntryResponseHttpDto {
   @ApiProperty({ nullable: true })
   stock_subscription_id: string | null;
 }
-

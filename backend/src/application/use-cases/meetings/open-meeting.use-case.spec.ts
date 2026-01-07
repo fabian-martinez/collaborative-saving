@@ -134,30 +134,34 @@ describe('OpenMeetingUseCase', () => {
       ledgerEntryIds: ['entry-id-1', 'entry-id-2'],
     });
 
+    const sumByAccountTypeSpy = jest.spyOn(
+      ledgerEntryRepository,
+      'sumByAccountType',
+    );
+    const executeSpy = jest.spyOn(recordOperationUseCase, 'execute');
+
     // ACT
     const result = await useCase.execute(openDto);
 
     // ASSERT
-    expect(ledgerEntryRepository.sumByAccountType).toHaveBeenCalledWith(
+    expect(sumByAccountTypeSpy).toHaveBeenCalledWith(
       ACCUMULATED_SURPLUS_ACCOUNT,
     );
-    expect(ledgerEntryRepository.sumByAccountType).toHaveBeenCalledWith(
-      CASH_ACCOUNT,
-    );
-    expect(recordOperationUseCase.execute).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: OperationType.INITIAL_CASH_BALANCE,
-        entries: expect.arrayContaining([
-          expect.objectContaining({
-            accountType: CASH_ACCOUNT,
-            amount: 500,
-          }),
-          expect.objectContaining({
-            accountType: ACCUMULATED_SURPLUS_ACCOUNT,
-            amount: -500,
-          }),
-        ]),
-      }),
+    expect(sumByAccountTypeSpy).toHaveBeenCalledWith(CASH_ACCOUNT);
+    expect(executeSpy).toHaveBeenCalled();
+    const callArgs = executeSpy.mock.calls[0][0];
+    expect(callArgs.type).toBe(OperationType.INITIAL_CASH_BALANCE);
+    expect(callArgs.entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          accountType: CASH_ACCOUNT,
+          amount: 500,
+        }),
+        expect.objectContaining({
+          accountType: ACCUMULATED_SURPLUS_ACCOUNT,
+          amount: -500,
+        }),
+      ]),
     );
     expect(result.status).toBe(MeetingStatus.ACTIVE);
   });
@@ -209,14 +213,20 @@ describe('OpenMeetingUseCase', () => {
     meetingRepository.save.mockResolvedValue(savedMeeting);
     ledgerEntryRepository.sumByAccountType.mockResolvedValue(0); // No surplus
 
+    const sumByAccountTypeSpy = jest.spyOn(
+      ledgerEntryRepository,
+      'sumByAccountType',
+    );
+    const executeSpy = jest.spyOn(recordOperationUseCase, 'execute');
+
     // ACT
     const result = await useCase.execute(openDto);
 
     // ASSERT
-    expect(ledgerEntryRepository.sumByAccountType).toHaveBeenCalledWith(
+    expect(sumByAccountTypeSpy).toHaveBeenCalledWith(
       ACCUMULATED_SURPLUS_ACCOUNT,
     );
-    expect(recordOperationUseCase.execute).not.toHaveBeenCalled();
+    expect(executeSpy).not.toHaveBeenCalled();
     expect(result.status).toBe(MeetingStatus.ACTIVE);
   });
 
@@ -236,7 +246,8 @@ describe('OpenMeetingUseCase', () => {
     const result = await useCase.execute(openDto);
 
     // ASSERT
-    expect(recordOperationUseCase.execute).not.toHaveBeenCalled();
+    const executeSpy = jest.spyOn(recordOperationUseCase, 'execute');
+    expect(executeSpy).not.toHaveBeenCalled();
     expect(result.status).toBe(MeetingStatus.ACTIVE);
   });
 });

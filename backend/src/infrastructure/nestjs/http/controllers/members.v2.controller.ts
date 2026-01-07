@@ -84,10 +84,7 @@ import { StockLoanPaymentResponseDto } from '@application/dto/members/stock-loan
 import { GetPaymentScheduleQueryHttpDto } from '../dto/get-payment-schedule-query-http.dto';
 import { PaymentScheduleResponseHttpDto } from '../dto/payment-schedule-response-http.dto';
 import { PaymentScheduleResponseDto } from '@application/dto/members/payment-schedule-response.dto';
-import {
-  PaymentItemDto,
-  PaymentType,
-} from '@application/dto/members/payment-item.dto';
+import { PaymentItemDto } from '@application/dto/members/payment-item.dto';
 
 @ApiTags('Members V2')
 @Controller('v2/members')
@@ -508,7 +505,7 @@ export class MembersV2Controller {
       queryDto.paymentType = query.type;
     }
     if (query.meeting_id) {
-      queryDto.meetingId = query.meeting_id as string;
+      queryDto.meetingId = query.meeting_id;
     }
     const payments = await this.getMemberPaymentsQuery.execute(id, queryDto);
     return payments.map((payment) => this.mapPaymentToHttp(payment));
@@ -551,7 +548,7 @@ export class MembersV2Controller {
   ): Promise<MemberPurchaseResponseHttpDto[]> {
     try {
       const queryDto: GetMemberPurchasesQueryDto = query.meeting_id
-        ? { meetingId: query.meeting_id as string }
+        ? { meetingId: query.meeting_id }
         : {};
       const purchases = await this.getMemberPurchasesQuery.execute(
         id,
@@ -684,14 +681,13 @@ export class MembersV2Controller {
         paymentDto.description = payment.description;
       }
       if (payment.reference_id) {
-        paymentDto.referenceId = payment.reference_id as string;
+        paymentDto.referenceId = payment.reference_id;
       }
       if (payment.novelty_comment) {
-        paymentDto.noveltyComment = payment.novelty_comment as string;
+        paymentDto.noveltyComment = payment.novelty_comment;
       }
       if (payment.affected_payment_type) {
-        paymentDto.affectedPaymentType =
-          payment.affected_payment_type as PaymentType;
+        paymentDto.affectedPaymentType = payment.affected_payment_type;
       }
       return paymentDto;
     });
@@ -699,7 +695,7 @@ export class MembersV2Controller {
     const result = await this.recordMonthlyPaymentsUseCase.execute({
       memberId: id,
       payments,
-      ...(dto.meeting_id ? { meetingId: dto.meeting_id as string } : {}),
+      ...(dto.meeting_id ? { meetingId: dto.meeting_id } : {}),
     });
     return this.mapRecordMonthlyPaymentsToHttp(result);
   }
@@ -945,7 +941,7 @@ export class MembersV2Controller {
   ): Promise<StockExchangeResponseHttpDto[]> {
     try {
       const queryDto: { meetingId?: string } = query.meeting_id
-        ? { meetingId: query.meeting_id as string }
+        ? { meetingId: query.meeting_id }
         : {};
       const exchanges = await this.getMemberStockExchangesQuery.execute(
         id,
@@ -997,7 +993,7 @@ export class MembersV2Controller {
   ): Promise<StockTransferResponseHttpDto[]> {
     try {
       const queryDto: { meetingId?: string } = query.meeting_id
-        ? { meetingId: query.meeting_id as string }
+        ? { meetingId: query.meeting_id }
         : {};
       const transfers = await this.getMemberStockTransfersQuery.execute(
         id,
@@ -1049,7 +1045,7 @@ export class MembersV2Controller {
   ): Promise<StockLoanPaymentResponseHttpDto[]> {
     try {
       const queryDto: { meetingId?: string } = query.meeting_id
-        ? { meetingId: query.meeting_id as string }
+        ? { meetingId: query.meeting_id }
         : {};
       const payments = await this.getMemberStockLoanPaymentsQuery.execute(
         id,

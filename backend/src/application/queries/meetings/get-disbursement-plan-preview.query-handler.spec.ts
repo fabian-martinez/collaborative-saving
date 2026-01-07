@@ -49,9 +49,11 @@ describe('GetDisbursementPlanPreviewQueryHandler', () => {
     expect(result.plan).toEqual([]);
     expect(result.availableCash).toBe(0);
     expect(result.totalToDisburse).toBe(0);
-    expect(
-      pendingMemberPaymentRepository.findPendingByMeeting,
-    ).toHaveBeenCalledWith(meetingId);
+    const findPendingByMeetingSpy = jest.spyOn(
+      pendingMemberPaymentRepository,
+      'findPendingByMeeting',
+    );
+    expect(findPendingByMeetingSpy).toHaveBeenCalledWith(meetingId);
   });
 
   it('should calculate available cash from ledger entries', async () => {

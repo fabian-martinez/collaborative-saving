@@ -46,6 +46,7 @@ import { TypeOrmLoanTransactionDetailRepository } from '@infrastructure/typeorm/
 import { AssetRevaluationDomainService } from '@domain/services/asset-revaluation.service';
 import { OperationBalanceValidator } from '@domain/services/operation-balance-validator.service';
 import { StockWithdrawalCalculator } from '@domain/services/stock-withdrawal-calculator.service';
+import { PaymentMapperService } from '@domain/services/payment-mapper.service';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
@@ -198,9 +199,21 @@ const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
       useFactory: (
         meetingRepo: MeetingRepository,
         operationRepo: OperationRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+        paymentMapperService: PaymentMapperService,
       ) =>
-        new GetMeetingMonthlyPaymentsQueryHandler(meetingRepo, operationRepo),
-      inject: [MEETING_REPOSITORY, OPERATION_REPOSITORY],
+        new GetMeetingMonthlyPaymentsQueryHandler(
+          meetingRepo,
+          operationRepo,
+          ledgerEntryRepo,
+          paymentMapperService,
+        ),
+      inject: [
+        MEETING_REPOSITORY,
+        OPERATION_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+        PaymentMapperService,
+      ],
     },
     {
       provide: GetMeetingPurchasesQueryHandler,
@@ -472,6 +485,7 @@ const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
     },
     // Services
     MeetingSummaryService,
+    PaymentMapperService,
     // Repository instances for direct injection if needed
     TypeOrmMeetingRepository,
     TypeOrmOperationRepository,

@@ -9,6 +9,7 @@ import { TransactionManager } from '@domain/ports/services/transaction-manager.p
 describe('TypeOrmStockSubscriptionRepository', () => {
   let repository: TypeOrmStockSubscriptionRepository;
   let typeOrmRepo: jest.Mocked<Repository<StockSubscriptionEntity>>;
+  let updateSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -41,6 +42,9 @@ describe('TypeOrmStockSubscriptionRepository', () => {
       TypeOrmStockSubscriptionRepository,
     );
     typeOrmRepo = module.get(getRepositoryToken(StockSubscriptionEntity));
+
+    // Create spies to avoid 'this' scoping issues
+    updateSpy = jest.spyOn(typeOrmRepo, 'update');
   });
 
   describe('findById', () => {
@@ -161,10 +165,7 @@ describe('TypeOrmStockSubscriptionRepository', () => {
       typeOrmRepo.update.mockResolvedValue(undefined as any);
 
       const result = await repository.save(domain);
-      expect(typeOrmRepo.update).toHaveBeenCalledWith(
-        domain.id,
-        expect.any(Object),
-      );
+      expect(updateSpy).toHaveBeenCalledWith(domain.id, expect.any(Object));
       expect(result).toBeInstanceOf(StockSubscriptionDomain);
     });
 
@@ -334,11 +335,11 @@ describe('TypeOrmStockSubscriptionRepository', () => {
         },
       ];
 
-      (typeOrmRepo.save as jest.Mock).mockImplementation(async (input: any) => {
+      (typeOrmRepo.save as jest.Mock).mockImplementation((input: unknown) => {
         if (Array.isArray(input)) {
-          return entities as StockSubscriptionEntity[];
+          return Promise.resolve(entities as StockSubscriptionEntity[]);
         }
-        return entities[0] as StockSubscriptionEntity;
+        return Promise.resolve(entities[0] as StockSubscriptionEntity);
       });
       const result = await repository.saveMany([domain1, domain2]);
 

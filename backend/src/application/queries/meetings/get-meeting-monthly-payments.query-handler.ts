@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
-import { OperationType } from '@domain/enums/operation-type.enum';
+import { PaymentFilterType } from '@domain/enums/payment-filter-type.enum';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { OperationResponseDto } from '@application/dto/meetings/operation-response.dto';
 import { PaymentMapperService } from '@domain/services/payment-mapper.service';
@@ -24,28 +24,34 @@ export class GetMeetingMonthlyPaymentsQueryHandler {
       throw new MeetingNotFoundException(meetingId);
     }
 
-    // 2. Obtener operaciones de tipo MONTHLY_PAYMENT para la reunión
-    const operations = await this.operationRepository.findByMeetingAndType(
+    // 2. Obtener todos los tipos de operaciones que corresponden a pagos mensuales
+    const operationTypes =
+      this.paymentMapperService.mapPaymentFilterToOperationTypes(
+        PaymentFilterType.MONTHLY_PAYMENT,
+      );
+
+    // 3. Obtener operaciones de todos los tipos de pagos mensuales para la reunión
+    const operations = await this.operationRepository.findByMeetingAndTypes(
       meetingId,
-      OperationType.MONTHLY_PAYMENT,
+      operationTypes,
     );
 
-    // 3. Si no hay operaciones, retornar array vacío
+    // 4. Si no hay operaciones, retornar array vacío
     if (operations.length === 0) {
       return [];
     }
 
-    // 4. Obtener todas las ledger entries para estas operaciones
+    // 5. Obtener todas las ledger entries para estas operaciones
     const operationIds = operations.map((op) => op.id);
     const allEntries =
       operationIds.length > 0
         ? await this.ledgerEntryRepository.findByOperations(operationIds)
         : [];
 
-    // 5. Agrupar entries por operación
+    // 6. Agrupar entries por operación
     const entriesByOperation = LedgerEntryGrouper.groupByOperation(allEntries);
 
-    // 6. Mapear domain entities a DTOs con totalAmount calculado
+    // 7. Mapear domain entities a DTOs con totalAmount calculado
     return operations.map((operation) => {
       const entries = entriesByOperation.get(operation.id) || [];
       const totalAmount =

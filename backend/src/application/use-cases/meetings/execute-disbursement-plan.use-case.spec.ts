@@ -15,10 +15,7 @@ import { BusinessRuleError } from '@domain/errors/business-rule.error';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { LedgerEntry } from '@domain/entities/ledger-entry.entity';
 import { CASH_ACCOUNT } from '@domain/constants/account-types';
-import {
-  PendingMemberPayment,
-  PendingMemberPaymentType,
-} from '@domain/entities/pending-member-payment.entity';
+import { PendingMemberPayment } from '@domain/entities/pending-member-payment.entity';
 
 describe('ExecuteDisbursementPlanUseCase', () => {
   let useCase: ExecuteDisbursementPlanUseCase;
@@ -319,13 +316,24 @@ describe('ExecuteDisbursementPlanUseCase', () => {
       ledgerEntryIds: [],
     });
     pendingMemberPaymentRepository.findById.mockResolvedValue(null);
-    pendingMemberPaymentRepository.save.mockResolvedValue({} as any);
+    pendingMemberPaymentRepository.save.mockResolvedValue(
+      PendingMemberPayment.fromPersistence({
+        id: 'payment-id',
+        member_id: 'member-1',
+        meeting_id: 'meeting-1',
+        type: 'dividend',
+        amount: 1000,
+        status: 'pending',
+        created_at: new Date(),
+      }),
+    );
 
+    const executeSpy = jest.spyOn(recordOperationUseCase, 'execute');
     const result = await useCase.execute(dto);
 
     expect(result.success).toBe(true);
     expect(result.processedItems).toBe(1);
-    expect(recordOperationUseCase.execute).toHaveBeenCalled();
+    expect(executeSpy).toHaveBeenCalled();
   });
 
   it('should throw error when disbursed total exceeds initial available cash during processing', async () => {
@@ -386,7 +394,7 @@ describe('ExecuteDisbursementPlanUseCase', () => {
       plan: [
         {
           memberId: 'member-1',
-          type: 'invalid' as any,
+          type: 'invalid' as DisbursementType,
           amount: 200,
         },
       ],
@@ -504,7 +512,17 @@ describe('ExecuteDisbursementPlanUseCase', () => {
       operationId: 'op-2',
       ledgerEntryIds: [],
     });
-    pendingMemberPaymentRepository.save.mockResolvedValue({} as any);
+    pendingMemberPaymentRepository.save.mockResolvedValue(
+      PendingMemberPayment.fromPersistence({
+        id: 'payment-id',
+        member_id: 'member-1',
+        meeting_id: 'meeting-1',
+        type: 'dividend',
+        amount: 1000,
+        status: 'pending',
+        created_at: new Date(),
+      }),
+    );
 
     const result = await useCase.execute(dto);
 

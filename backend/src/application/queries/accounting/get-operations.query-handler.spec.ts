@@ -4,7 +4,10 @@ import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-r
 import { Operation } from '@domain/entities/operation.entity';
 import { LedgerEntry } from '@domain/entities/ledger-entry.entity';
 import { OperationType } from '@domain/enums/operation-type.enum';
-import { CASH_ACCOUNT, STOCK_CAPITAL_ACCOUNT } from '@domain/constants/account-types';
+import {
+  CASH_ACCOUNT,
+  STOCK_CAPITAL_ACCOUNT,
+} from '@domain/constants/account-types';
 
 describe('GetOperationsQueryHandler', () => {
   let queryHandler: GetOperationsQueryHandler;
@@ -76,12 +79,20 @@ describe('GetOperationsQueryHandler', () => {
       expect(result.pagination.page).toBe(1);
       expect(result.pagination.limit).toBe(10);
       expect(result.pagination.totalPages).toBe(1);
-      expect(operationRepository.findWithPagination).toHaveBeenCalledWith(
+      const findWithPaginationSpy = jest.spyOn(
+        operationRepository,
+        'findWithPagination',
+      );
+      const findByOperationsSpy = jest.spyOn(
+        ledgerEntryRepository,
+        'findByOperations',
+      );
+      expect(findWithPaginationSpy).toHaveBeenCalledWith(
         {},
         { page: 1, limit: 10 },
         'DESC',
       );
-      expect(ledgerEntryRepository.findByOperations).toHaveBeenCalledWith([
+      expect(findByOperationsSpy).toHaveBeenCalledWith([
         operations[0].id,
         operations[1].id,
       ]);
@@ -112,7 +123,11 @@ describe('GetOperationsQueryHandler', () => {
         orderBy: 'ASC',
       });
 
-      expect(operationRepository.findWithPagination).toHaveBeenCalledWith(
+      const findWithPaginationSpy = jest.spyOn(
+        operationRepository,
+        'findWithPagination',
+      );
+      expect(findWithPaginationSpy).toHaveBeenCalledWith(
         {
           memberId,
           meetingId,
@@ -135,7 +150,11 @@ describe('GetOperationsQueryHandler', () => {
 
       const result = await queryHandler.execute({});
 
-      expect(operationRepository.findWithPagination).toHaveBeenCalledWith(
+      const findWithPaginationSpy = jest.spyOn(
+        operationRepository,
+        'findWithPagination',
+      );
+      expect(findWithPaginationSpy).toHaveBeenCalledWith(
         {},
         { page: 1, limit: 10 },
         'DESC',
@@ -300,4 +319,3 @@ describe('GetOperationsQueryHandler', () => {
     });
   });
 });
-
