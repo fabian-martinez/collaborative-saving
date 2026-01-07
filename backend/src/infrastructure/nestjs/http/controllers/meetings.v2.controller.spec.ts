@@ -408,6 +408,7 @@ describe('MeetingsV2Controller', () => {
           type: OperationType.MONTHLY_PAYMENT,
           date: new Date('2024-01-15'),
           description: 'Payment 1',
+          totalAmount: 100000,
         },
         {
           id: 'op-2',
@@ -416,6 +417,7 @@ describe('MeetingsV2Controller', () => {
           type: OperationType.MONTHLY_PAYMENT,
           date: new Date('2024-01-15'),
           description: 'Payment 2',
+          totalAmount: 150000,
         },
       ];
 
@@ -427,6 +429,8 @@ describe('MeetingsV2Controller', () => {
           type: OperationType.MONTHLY_PAYMENT,
           date: new Date('2024-01-15'),
           description: 'Payment 1',
+          total_amount: 100000,
+          entries: [],
         },
         {
           id: 'op-2',
@@ -435,6 +439,8 @@ describe('MeetingsV2Controller', () => {
           type: OperationType.MONTHLY_PAYMENT,
           date: new Date('2024-01-15'),
           description: 'Payment 2',
+          total_amount: 150000,
+          entries: [],
         },
       ];
 
@@ -449,6 +455,8 @@ describe('MeetingsV2Controller', () => {
       );
       expect(result).toEqual(expectedHttpResponse);
       expect(result).toHaveLength(2);
+      expect(result[0].total_amount).toBe(100000);
+      expect(result[1].total_amount).toBe(150000);
     });
 
     it('should return empty array when no payments exist', async () => {
@@ -463,6 +471,33 @@ describe('MeetingsV2Controller', () => {
         meetingId,
       );
       expect(result).toEqual([]);
+    });
+
+    it('should map totalAmount to total_amount in HTTP response', async () => {
+      // ARRANGE
+      const mockPayments: OperationResponseDto[] = [
+        {
+          id: 'op-1',
+          memberId: 'member-1',
+          meetingId,
+          type: OperationType.MONTHLY_PAYMENT,
+          date: new Date('2024-01-15'),
+          description: 'Payment with total',
+          totalAmount: 250000,
+        },
+      ];
+
+      getMeetingMonthlyPaymentsQueryExecuteSpy.mockResolvedValue(mockPayments);
+
+      // ACT
+      const result = await controller.getMonthlyPayments(meetingId);
+
+      // ASSERT
+      expect(result).toHaveLength(1);
+      expect(result[0]).toHaveProperty('total_amount');
+      expect(result[0].total_amount).toBe(250000);
+      expect(result[0]).not.toHaveProperty('totalAmount');
+      expect(result[0].entries).toEqual([]);
     });
 
     it('should return 404 when meeting not found', async () => {
@@ -494,6 +529,7 @@ describe('MeetingsV2Controller', () => {
           meetingId,
           type: OperationType.MONTHLY_PAYMENT,
           date: new Date('2024-01-15'),
+          totalAmount: 0,
         },
       ];
 
@@ -504,9 +540,10 @@ describe('MeetingsV2Controller', () => {
 
       // ASSERT
       expect(result[0].member_id).toBeNull();
+      expect(result[0].total_amount).toBe(0);
     });
 
-    it('should not include entries field in response', async () => {
+    it('should include empty entries array in response', async () => {
       // ARRANGE
       const mockPayments: OperationResponseDto[] = [
         {
@@ -516,6 +553,7 @@ describe('MeetingsV2Controller', () => {
           type: OperationType.MONTHLY_PAYMENT,
           date: new Date('2024-01-15'),
           description: 'Payment 1',
+          totalAmount: 100000,
         },
       ];
 
@@ -525,7 +563,8 @@ describe('MeetingsV2Controller', () => {
       const result = await controller.getMonthlyPayments(meetingId);
 
       // ASSERT
-      expect(result[0]).not.toHaveProperty('entries');
+      expect(result[0].entries).toEqual([]);
+      expect(result[0].total_amount).toBe(100000);
       expect(result[0]).toEqual({
         id: 'op-1',
         member_id: 'member-1',
@@ -533,6 +572,8 @@ describe('MeetingsV2Controller', () => {
         type: OperationType.MONTHLY_PAYMENT,
         date: new Date('2024-01-15'),
         description: 'Payment 1',
+        total_amount: 100000,
+        entries: [],
       });
     });
 

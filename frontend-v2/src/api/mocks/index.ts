@@ -418,6 +418,7 @@ export const mockApi = {
         type: 'monthly_payment',
         description: 'Pago mensual',
         date: '2024-12-15T10:30:00Z',
+        total_amount: 100000,
       },
       {
         id: 'op2',
@@ -426,6 +427,7 @@ export const mockApi = {
         type: 'monthly_payment',
         description: 'Pago mensual',
         date: '2024-12-15T10:30:00Z',
+        total_amount: 150000,
       },
     ]
   },
@@ -864,85 +866,85 @@ export const mockApi = {
     return {
       accounts: [
         {
-          accountType: 'CASH',
-          accountName: 'Caja General',
-          totalBalance: 2500000,
-          totalDebits: 5000000,
-          totalCredits: 2500000,
-          entriesCount: 15,
+          account_type: 'CASH',
+          account_name: 'Caja General',
+          total_balance: 2500000,
+          total_debits: 5000000,
+          total_credits: 2500000,
+          entries_count: 15,
           entries: [],
-          hasMoreEntries: false
+          has_more_entries: false
         },
         {
-          accountType: 'LOANS_RECEIVABLE',
-          accountName: 'Cartera de Préstamos',
-          totalBalance: 24500000,
-          totalDebits: 30000000,
-          totalCredits: 5500000,
-          entriesCount: 42,
+          account_type: 'LOANS_RECEIVABLE',
+          account_name: 'Cartera de Préstamos',
+          total_balance: 24500000,
+          total_debits: 30000000,
+          total_credits: 5500000,
+          entries_count: 42,
           entries: [],
-          hasMoreEntries: false
+          has_more_entries: false
         },
         {
-          accountType: 'STOCK_CAPITAL',
-          accountName: 'Capital Social',
-          totalBalance: 16400000,
-          totalDebits: 0,
-          totalCredits: 16400000,
-          entriesCount: 28,
+          account_type: 'STOCK_CAPITAL',
+          account_name: 'Capital Social',
+          total_balance: 16400000,
+          total_debits: 0,
+          total_credits: 16400000,
+          entries_count: 28,
           entries: [],
-          hasMoreEntries: false
+          has_more_entries: false
         },
         {
-          accountType: 'ACCUMULATED_SURPLUS',
-          accountName: 'Utilidades Acumuladas',
-          totalBalance: 18850000,
-          totalDebits: 0,
-          totalCredits: 18850000,
-          entriesCount: 12,
+          account_type: 'ACCUMULATED_SURPLUS',
+          account_name: 'Utilidades Acumuladas',
+          total_balance: 18850000,
+          total_debits: 0,
+          total_credits: 18850000,
+          entries_count: 12,
           entries: [],
-          hasMoreEntries: false
+          has_more_entries: false
         },
         {
-          accountType: 'INTEREST_INCOME',
-          accountName: 'Ingresos por Intereses',
-          totalBalance: 4200000,
-          totalDebits: 0,
-          totalCredits: 4200000,
-          entriesCount: 35,
+          account_type: 'INTEREST_INCOME',
+          account_name: 'Ingresos por Intereses',
+          total_balance: 4200000,
+          total_debits: 0,
+          total_credits: 4200000,
+          entries_count: 35,
           entries: [],
-          hasMoreEntries: false
+          has_more_entries: false
         },
         {
-          accountType: 'OTHER_EXPENSES',
-          accountName: 'Gastos Administrativos',
-          totalBalance: 350000,
-          totalDebits: 350000,
-          totalCredits: 0,
-          entriesCount: 8,
+          account_type: 'OTHER_EXPENSES',
+          account_name: 'Gastos Administrativos',
+          total_balance: 350000,
+          total_debits: 350000,
+          total_credits: 0,
+          entries_count: 8,
           entries: [],
-          hasMoreEntries: false
+          has_more_entries: false
         },
         {
-          accountType: 'NOVELTY_LOSS',
-          accountName: 'Provisión Cartera Incobrable',
-          totalBalance: 200000,
-          totalDebits: 200000,
-          totalCredits: 0,
-          entriesCount: 3,
+          account_type: 'NOVELTY_LOSS',
+          account_name: 'Provisión Cartera Incobrable',
+          total_balance: 200000,
+          total_debits: 200000,
+          total_credits: 0,
+          entries_count: 3,
           entries: [],
-          hasMoreEntries: false
+          has_more_entries: false
         }
       ],
       summary: {
-        totalAccounts: 7,
-        totalDebits: 5350000,
-        totalCredits: 65050000,
-        netBalance: 59700000
+        total_accounts: 7,
+        total_debits: 5350000,
+        total_credits: 65050000,
+        net_balance: 59700000
       },
       metadata: {
-        queryDate: new Date(),
-        entriesLimit: query?.entriesLimit || 10
+        query_date: new Date(),
+        entries_limit: query?.entries_limit || 10
       }
     }
   }

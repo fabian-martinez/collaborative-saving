@@ -27,6 +27,12 @@ export class OperationResponseHttpDto {
   description: string | null;
 
   @ApiProperty({
+    description: 'Total payment amount calculated from CASH_ACCOUNT entries',
+    example: 250000,
+  })
+  total_amount: number;
+
+  @ApiProperty({
     description: 'Ledger entries associated with this operation',
     type: [LedgerEntryResponseHttpDto],
     required: false,

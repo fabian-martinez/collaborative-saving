@@ -1,8 +1,7 @@
-import { ref, computed, type Ref } from 'vue'
+import { ref, computed } from 'vue'
 import { membersApi, type Member, type MemberDue, type MemberPayment } from '@/api/members.api'
 import { meetingsApi, type Operation } from '@/api/meetings.api'
 import { useActiveMeetingStore } from '../stores/activeMeeting'
-import { sumCashEntries } from '@/shared/utils'
 
 export interface Payment {
   type: string
@@ -383,7 +382,7 @@ export function usePaymentCollection() {
         selectedMember.value.id,
         {
           payments: processedPayments,
-          meetingId: store.meetingId,
+          meeting_id: store.meetingId,
         }
       )
 
@@ -437,11 +436,16 @@ export function usePaymentCollection() {
       // Usar el endpoint optimizado de reunión para identificar miembros con pagos
       const operations = await meetingsApi.getMeetingPayments(meetingId)
 
-      // Extraer los member_id únicos de las operaciones
+      // Extraer los member_id únicos y calcular totales por miembro
       const uniqueMemberIds = new Set<string>()
+      const paymentsByMember = new Map<string, number>()
+
       operations.forEach((op: Operation) => {
         if (op.member_id) {
           uniqueMemberIds.add(op.member_id)
+          // Sumar total_amount por miembro
+          const currentTotal = paymentsByMember.get(op.member_id) || 0
+          paymentsByMember.set(op.member_id, currentTotal + (op.total_amount || 0))
         }
       })
 
@@ -452,9 +456,32 @@ export function usePaymentCollection() {
       // Se llenará cuando se seleccione un miembro específico
       paidMemberOperations.value = new Map<string, any[]>()
 
-      // No resetear completedPayments aquí para preservar los pagos ya registrados
-      // Los totales se calcularán cuando se seleccionen miembros individuales
-      // o cuando se registren nuevos pagos
+      // Actualizar completedPayments con los totales desde el endpoint
+      // Crear un mapa de nombres de miembros para búsqueda rápida
+      const memberMap = new Map<string, string>()
+      members.forEach((member) => {
+        memberMap.set(member.id, member.name)
+      })
+
+      // Actualizar o agregar completedPayments basado en los totales del endpoint
+      paymentsByMember.forEach((totalAmount, memberId) => {
+        const memberName = memberMap.get(memberId)
+        if (memberName) {
+          const existingIndex = completedPayments.value.findIndex(
+            (p) => p.memberName === memberName
+          )
+          if (existingIndex >= 0) {
+            // Actualizar el monto existente
+            completedPayments.value[existingIndex].amount = totalAmount
+          } else {
+            // Agregar nuevo pago
+            completedPayments.value.push({
+              memberName,
+              amount: totalAmount,
+            })
+          }
+        }
+      })
     } catch (error) {
       console.error('Error fetching meeting payments', error)
     }

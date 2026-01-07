@@ -10,6 +10,8 @@ describe('GetMeetingPurchasesQueryHandler', () => {
   let queryHandler: GetMeetingPurchasesQueryHandler;
   let meetingRepository: jest.Mocked<MeetingRepository>;
   let operationRepository: jest.Mocked<OperationRepository>;
+  let findByIdSpy: jest.SpyInstance;
+  let findByMeetingAndTypeSpy: jest.SpyInstance;
 
   beforeEach(() => {
     meetingRepository = {
@@ -28,6 +30,12 @@ describe('GetMeetingPurchasesQueryHandler', () => {
       saveWithEntries: jest.fn(),
     } as unknown as jest.Mocked<OperationRepository>;
 
+    findByIdSpy = jest.spyOn(meetingRepository, 'findById');
+    findByMeetingAndTypeSpy = jest.spyOn(
+      operationRepository,
+      'findByMeetingAndType',
+    );
+
     queryHandler = new GetMeetingPurchasesQueryHandler(
       meetingRepository,
       operationRepository,
@@ -37,14 +45,14 @@ describe('GetMeetingPurchasesQueryHandler', () => {
   it('should throw MeetingNotFoundException when meeting does not exist', async () => {
     // ARRANGE
     const meetingId = '550e8400-e29b-41d4-a716-446655440000';
-    meetingRepository.findById.mockResolvedValue(null);
+    findByIdSpy.mockResolvedValue(null);
 
     // ACT & ASSERT
     await expect(queryHandler.execute(meetingId)).rejects.toThrow(
       MeetingNotFoundException,
     );
-    expect(meetingRepository.findById).toHaveBeenCalledWith(meetingId);
-    expect(operationRepository.findByMeetingAndType).not.toHaveBeenCalled();
+    expect(findByIdSpy).toHaveBeenCalledWith(meetingId);
+    expect(findByMeetingAndTypeSpy).not.toHaveBeenCalled();
   });
 
   it('should return empty array when no purchases exist', async () => {
@@ -54,15 +62,15 @@ describe('GetMeetingPurchasesQueryHandler', () => {
       date: new Date('2024-01-15'),
       notes: 'Test meeting',
     });
-    meetingRepository.findById.mockResolvedValue(meeting);
-    operationRepository.findByMeetingAndType.mockResolvedValue([]);
+    findByIdSpy.mockResolvedValue(meeting);
+    findByMeetingAndTypeSpy.mockResolvedValue([]);
 
     // ACT
     const result = await queryHandler.execute(meetingId);
 
     // ASSERT
-    expect(meetingRepository.findById).toHaveBeenCalledWith(meetingId);
-    expect(operationRepository.findByMeetingAndType).toHaveBeenCalledWith(
+    expect(findByIdSpy).toHaveBeenCalledWith(meetingId);
+    expect(findByMeetingAndTypeSpy).toHaveBeenCalledWith(
       meetingId,
       OperationType.STOCK_PURCHASE,
     );
@@ -94,18 +102,15 @@ describe('GetMeetingPurchasesQueryHandler', () => {
       description: 'Purchase 2',
     });
 
-    meetingRepository.findById.mockResolvedValue(meeting);
-    operationRepository.findByMeetingAndType.mockResolvedValue([
-      operation1,
-      operation2,
-    ]);
+    findByIdSpy.mockResolvedValue(meeting);
+    findByMeetingAndTypeSpy.mockResolvedValue([operation1, operation2]);
 
     // ACT
     const result = await queryHandler.execute(meetingId);
 
     // ASSERT
-    expect(meetingRepository.findById).toHaveBeenCalledWith(meetingId);
-    expect(operationRepository.findByMeetingAndType).toHaveBeenCalledWith(
+    expect(findByIdSpy).toHaveBeenCalledWith(meetingId);
+    expect(findByMeetingAndTypeSpy).toHaveBeenCalledWith(
       meetingId,
       OperationType.STOCK_PURCHASE,
     );
@@ -145,8 +150,8 @@ describe('GetMeetingPurchasesQueryHandler', () => {
       description: 'Complete stock purchase',
     });
 
-    meetingRepository.findById.mockResolvedValue(meeting);
-    operationRepository.findByMeetingAndType.mockResolvedValue([operation]);
+    findByIdSpy.mockResolvedValue(meeting);
+    findByMeetingAndTypeSpy.mockResolvedValue([operation]);
 
     // ACT
     const result = await queryHandler.execute(meetingId);
@@ -177,8 +182,8 @@ describe('GetMeetingPurchasesQueryHandler', () => {
       date: new Date('2024-01-15'),
     });
 
-    meetingRepository.findById.mockResolvedValue(meeting);
-    operationRepository.findByMeetingAndType.mockResolvedValue([operation]);
+    findByIdSpy.mockResolvedValue(meeting);
+    findByMeetingAndTypeSpy.mockResolvedValue([operation]);
 
     // ACT
     const result = await queryHandler.execute(meetingId);

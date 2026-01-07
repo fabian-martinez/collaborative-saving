@@ -1,17 +1,25 @@
 import { GetMeetingMonthlyPaymentsQueryHandler } from './get-meeting-monthly-payments.query-handler';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
+import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
+import { PaymentMapperService } from '@domain/services/payment-mapper.service';
 import { Operation } from '@domain/entities/operation.entity';
+import { LedgerEntry } from '@domain/entities/ledger-entry.entity';
 import { OperationType } from '@domain/enums/operation-type.enum';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { Meeting } from '@domain/entities/meeting.entity';
+import { CASH_ACCOUNT } from '@domain/constants/account-types';
 
 describe('GetMeetingMonthlyPaymentsQueryHandler', () => {
   let queryHandler: GetMeetingMonthlyPaymentsQueryHandler;
   let meetingRepository: jest.Mocked<MeetingRepository>;
   let operationRepository: jest.Mocked<OperationRepository>;
+  let ledgerEntryRepository: jest.Mocked<LedgerEntryRepository>;
+  let paymentMapperService: jest.Mocked<PaymentMapperService>;
   let findByIdSpy: jest.SpyInstance;
   let findByMeetingAndTypeSpy: jest.SpyInstance;
+  let findByOperationsSpy: jest.SpyInstance;
+  let calculatePaymentTotalAmountSpy: jest.SpyInstance;
 
   beforeEach(() => {
     meetingRepository = {
@@ -30,15 +38,44 @@ describe('GetMeetingMonthlyPaymentsQueryHandler', () => {
       saveWithEntries: jest.fn(),
     } as unknown as jest.Mocked<OperationRepository>;
 
+    ledgerEntryRepository = {
+      findById: jest.fn(),
+      findByOperation: jest.fn(),
+      findByOperations: jest.fn(),
+      findByMeeting: jest.fn(),
+      findByAccountType: jest.fn(),
+      findWithPagination: jest.fn(),
+      save: jest.fn(),
+      saveMany: jest.fn(),
+      sumByAccountType: jest.fn(),
+      getAccountsSummary: jest.fn(),
+    } as unknown as jest.Mocked<LedgerEntryRepository>;
+
+    paymentMapperService = {
+      calculatePaymentTotalAmount: jest.fn(),
+      mapPaymentFilterToOperationTypes: jest.fn(),
+      mapOperationTypeToPaymentType: jest.fn(),
+    } as unknown as jest.Mocked<PaymentMapperService>;
+
     findByIdSpy = jest.spyOn(meetingRepository, 'findById');
     findByMeetingAndTypeSpy = jest.spyOn(
       operationRepository,
       'findByMeetingAndType',
     );
+    findByOperationsSpy = jest.spyOn(
+      ledgerEntryRepository,
+      'findByOperations',
+    );
+    calculatePaymentTotalAmountSpy = jest.spyOn(
+      paymentMapperService,
+      'calculatePaymentTotalAmount',
+    );
 
     queryHandler = new GetMeetingMonthlyPaymentsQueryHandler(
       meetingRepository,
       operationRepository,
+      ledgerEntryRepository,
+      paymentMapperService,
     );
   });
 
@@ -74,6 +111,7 @@ describe('GetMeetingMonthlyPaymentsQueryHandler', () => {
       meetingId,
       OperationType.MONTHLY_PAYMENT,
     );
+    expect(findByOperationsSpy).not.toHaveBeenCalled();
     expect(result).toEqual([]);
   });
 
@@ -102,8 +140,26 @@ describe('GetMeetingMonthlyPaymentsQueryHandler', () => {
       description: 'Payment 2',
     });
 
+    const entry1 = LedgerEntry.create({
+      operationId: operation1.id,
+      accountType: CASH_ACCOUNT,
+      amount: 100000,
+      description: 'Cash entry 1',
+    });
+
+    const entry2 = LedgerEntry.create({
+      operationId: operation2.id,
+      accountType: CASH_ACCOUNT,
+      amount: 150000,
+      description: 'Cash entry 2',
+    });
+
     findByIdSpy.mockResolvedValue(meeting);
     findByMeetingAndTypeSpy.mockResolvedValue([operation1, operation2]);
+    findByOperationsSpy.mockResolvedValue([entry1, entry2]);
+    calculatePaymentTotalAmountSpy
+      .mockReturnValueOnce(100000)
+      .mockReturnValueOnce(150000);
 
     // ACT
     const result = await queryHandler.execute(meetingId);
@@ -114,6 +170,11 @@ describe('GetMeetingMonthlyPaymentsQueryHandler', () => {
       meetingId,
       OperationType.MONTHLY_PAYMENT,
     );
+    expect(findByOperationsSpy).toHaveBeenCalledWith([
+      operation1.id,
+      operation2.id,
+    ]);
+    expect(calculatePaymentTotalAmountSpy).toHaveBeenCalledTimes(2);
     expect(result).toHaveLength(2);
     expect(result[0]).toEqual({
       id: operation1.id,
@@ -122,6 +183,7 @@ describe('GetMeetingMonthlyPaymentsQueryHandler', () => {
       type: operation1.type,
       date: operation1.date,
       description: operation1.description,
+      totalAmount: 100000,
     });
     expect(result[1]).toEqual({
       id: operation2.id,
@@ -130,6 +192,7 @@ describe('GetMeetingMonthlyPaymentsQueryHandler', () => {
       type: operation2.type,
       date: operation2.date,
       description: operation2.description,
+      totalAmount: 150000,
     });
   });
 
@@ -152,6 +215,8 @@ describe('GetMeetingMonthlyPaymentsQueryHandler', () => {
 
     findByIdSpy.mockResolvedValue(meeting);
     findByMeetingAndTypeSpy.mockResolvedValue([operation]);
+    findByOperationsSpy.mockResolvedValue([]);
+    calculatePaymentTotalAmountSpy.mockReturnValue(250000);
 
     // ACT
     const result = await queryHandler.execute(meetingId);
@@ -163,6 +228,7 @@ describe('GetMeetingMonthlyPaymentsQueryHandler', () => {
       meetingId: meetingId,
       type: OperationType.MONTHLY_PAYMENT,
       description: 'Complete monthly payment',
+      totalAmount: 250000,
     });
     expect(result[0].date).toBeInstanceOf(Date);
     expect(result[0].date).toEqual(new Date('2024-01-15T10:30:00Z'));
@@ -185,11 +251,168 @@ describe('GetMeetingMonthlyPaymentsQueryHandler', () => {
 
     findByIdSpy.mockResolvedValue(meeting);
     findByMeetingAndTypeSpy.mockResolvedValue([operation]);
+    findByOperationsSpy.mockResolvedValue([]);
+    calculatePaymentTotalAmountSpy.mockReturnValue(0);
 
     // ACT
     const result = await queryHandler.execute(meetingId);
 
     // ASSERT
     expect(result[0].memberId).toBeNull();
+    expect(result[0].totalAmount).toBe(0);
+  });
+
+  it('should calculate totalAmount from ledger entries', async () => {
+    // ARRANGE
+    const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+    const memberId = 'member-123';
+    const meeting = Meeting.create({
+      date: new Date('2024-01-15'),
+      notes: 'Test meeting',
+    });
+
+    const operation = Operation.create({
+      memberId,
+      meetingId,
+      type: OperationType.MONTHLY_PAYMENT,
+      date: new Date('2024-01-15'),
+      description: 'Payment with entries',
+    });
+
+    const cashEntry1 = LedgerEntry.create({
+      operationId: operation.id,
+      accountType: CASH_ACCOUNT,
+      amount: 50000,
+      description: 'Cash entry 1',
+    });
+
+    const cashEntry2 = LedgerEntry.create({
+      operationId: operation.id,
+      accountType: CASH_ACCOUNT,
+      amount: 200000,
+      description: 'Cash entry 2',
+    });
+
+    findByIdSpy.mockResolvedValue(meeting);
+    findByMeetingAndTypeSpy.mockResolvedValue([operation]);
+    findByOperationsSpy.mockResolvedValue([cashEntry1, cashEntry2]);
+    calculatePaymentTotalAmountSpy.mockReturnValue(250000);
+
+    // ACT
+    const result = await queryHandler.execute(meetingId);
+
+    // ASSERT
+    expect(findByOperationsSpy).toHaveBeenCalledWith([operation.id]);
+    expect(calculatePaymentTotalAmountSpy).toHaveBeenCalledWith([
+      cashEntry1,
+      cashEntry2,
+    ]);
+    expect(result[0].totalAmount).toBe(250000);
+  });
+
+  it('should return totalAmount as 0 when no cash entries exist', async () => {
+    // ARRANGE
+    const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+    const memberId = 'member-123';
+    const meeting = Meeting.create({
+      date: new Date('2024-01-15'),
+      notes: 'Test meeting',
+    });
+
+    const operation = Operation.create({
+      memberId,
+      meetingId,
+      type: OperationType.MONTHLY_PAYMENT,
+      date: new Date('2024-01-15'),
+      description: 'Payment without cash entries',
+    });
+
+    findByIdSpy.mockResolvedValue(meeting);
+    findByMeetingAndTypeSpy.mockResolvedValue([operation]);
+    findByOperationsSpy.mockResolvedValue([]);
+    calculatePaymentTotalAmountSpy.mockReturnValue(0);
+
+    // ACT
+    const result = await queryHandler.execute(meetingId);
+
+    // ASSERT
+    expect(calculatePaymentTotalAmountSpy).toHaveBeenCalledWith([]);
+    expect(result[0].totalAmount).toBe(0);
+  });
+
+  it('should handle multiple operations with different totals', async () => {
+    // ARRANGE
+    const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+    const meeting = Meeting.create({
+      date: new Date('2024-01-15'),
+      notes: 'Test meeting',
+    });
+
+    const operation1 = Operation.create({
+      memberId: 'member-1',
+      meetingId,
+      type: OperationType.MONTHLY_PAYMENT,
+      date: new Date('2024-01-15'),
+      description: 'Payment 1',
+    });
+
+    const operation2 = Operation.create({
+      memberId: 'member-2',
+      meetingId,
+      type: OperationType.MONTHLY_PAYMENT,
+      date: new Date('2024-01-15'),
+      description: 'Payment 2',
+    });
+
+    const operation3 = Operation.create({
+      memberId: 'member-3',
+      meetingId,
+      type: OperationType.MONTHLY_PAYMENT,
+      date: new Date('2024-01-15'),
+      description: 'Payment 3',
+    });
+
+    const entry1 = LedgerEntry.create({
+      operationId: operation1.id,
+      accountType: CASH_ACCOUNT,
+      amount: 100000,
+      description: 'Entry 1',
+    });
+
+    const entry2 = LedgerEntry.create({
+      operationId: operation2.id,
+      accountType: CASH_ACCOUNT,
+      amount: 200000,
+      description: 'Entry 2',
+    });
+
+    const entry3 = LedgerEntry.create({
+      operationId: operation3.id,
+      accountType: CASH_ACCOUNT,
+      amount: 300000,
+      description: 'Entry 3',
+    });
+
+    findByIdSpy.mockResolvedValue(meeting);
+    findByMeetingAndTypeSpy.mockResolvedValue([
+      operation1,
+      operation2,
+      operation3,
+    ]);
+    findByOperationsSpy.mockResolvedValue([entry1, entry2, entry3]);
+    calculatePaymentTotalAmountSpy
+      .mockReturnValueOnce(100000)
+      .mockReturnValueOnce(200000)
+      .mockReturnValueOnce(300000);
+
+    // ACT
+    const result = await queryHandler.execute(meetingId);
+
+    // ASSERT
+    expect(result).toHaveLength(3);
+    expect(result[0].totalAmount).toBe(100000);
+    expect(result[1].totalAmount).toBe(200000);
+    expect(result[2].totalAmount).toBe(300000);
+    expect(calculatePaymentTotalAmountSpy).toHaveBeenCalledTimes(3);
   });
 });

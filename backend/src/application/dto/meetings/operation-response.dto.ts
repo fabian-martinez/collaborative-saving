@@ -7,4 +7,5 @@ export interface OperationResponseDto {
   type: OperationType;
   date: Date;
   description?: string | null;
+  totalAmount?: number;
 }

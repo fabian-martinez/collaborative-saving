@@ -96,6 +96,7 @@ describe('AccountingV2Controller', () => {
         type: OperationType.MONTHLY_PAYMENT,
         date: new Date('2024-01-15'),
         description: 'Test operation',
+        total_amount: 100,
         entries: [
           {
             id: 'entry-1',
