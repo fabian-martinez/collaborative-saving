@@ -98,6 +98,7 @@ export interface Operation {
   type: string
   description: string
   date: string | Date
+  total_amount: number
 }
 
 export interface GetMeetingQuery {

@@ -24,7 +24,7 @@ import { PaginatedResponseHttpDto } from '../dto/paginated-response-http.dto';
 import { GetOperationsQueryDto } from '@application/dto/accounting/get-operations-query.dto';
 import { GetLedgerEntriesQueryDto } from '@application/dto/accounting/get-ledger-entries-query.dto';
 import { GetAccountsSummaryQueryDto } from '@application/dto/accounting/get-accounts-summary-query.dto';
-import { ALL_ACCOUNT_TYPES, AccountType } from '@domain/constants/account-types';
+import { ALL_ACCOUNT_TYPES, AccountType, CASH_ACCOUNT } from '@domain/constants/account-types';
 
 @ApiTags('Accounting V2')
 @Controller('v2/accounting')
@@ -64,26 +64,34 @@ export class AccountingV2Controller {
     const result = await this.getOperationsQuery.execute(dto);
 
     // Map application DTOs (camelCase) to HTTP DTOs (snake_case)
-    const httpData: OperationResponseHttpDto[] = result.data.map((operation) => ({
-      id: operation.id,
-      member_id: operation.memberId,
-      meeting_id: operation.meetingId,
-      type: operation.type,
-      date: operation.date,
-      description: operation.description,
-      entries: operation.entries.map((entry) => ({
-        id: entry.id,
-        operation_id: entry.operationId,
-        account_type: entry.accountType,
-        amount: entry.amount,
-        created_at: entry.createdAt,
-        description: entry.description,
-        loan_id: entry.loanId,
-        stock_id: entry.stockId,
-        mandatory_contribution_id: entry.mandatoryContributionId,
-        stock_subscription_id: entry.stockSubscriptionId,
-      })),
-    }));
+    const httpData: OperationResponseHttpDto[] = result.data.map((operation) => {
+      // Calculate total_amount from CASH_ACCOUNT entries with positive amounts
+      const totalAmount = operation.entries
+        .filter((entry) => entry.accountType === CASH_ACCOUNT && entry.amount > 0)
+        .reduce((sum, entry) => sum + entry.amount, 0);
+
+      return {
+        id: operation.id,
+        member_id: operation.memberId,
+        meeting_id: operation.meetingId,
+        type: operation.type,
+        date: operation.date,
+        description: operation.description,
+        total_amount: totalAmount,
+        entries: operation.entries.map((entry) => ({
+          id: entry.id,
+          operation_id: entry.operationId,
+          account_type: entry.accountType,
+          amount: entry.amount,
+          created_at: entry.createdAt,
+          description: entry.description,
+          loan_id: entry.loanId,
+          stock_id: entry.stockId,
+          mandatory_contribution_id: entry.mandatoryContributionId,
+          stock_subscription_id: entry.stockSubscriptionId,
+        })),
+      };
+    });
 
     return {
       data: httpData,

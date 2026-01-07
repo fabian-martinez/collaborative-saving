@@ -340,6 +340,9 @@ async function loadRegisteredOperations() {
               description: e.description,
               created_at: e.created_at
             })),
+            total_amount: entries
+              .filter(e => e.account_type === 'CASH' && e.amount > 0)
+              .reduce((sum, e) => sum + e.amount, 0),
             total_debit: entries
               .filter(e => e.account_type === 'CASH' && e.amount > 0)
               .reduce((sum, e) => sum + e.amount, 0)
@@ -353,6 +356,7 @@ async function loadRegisteredOperations() {
             type: 'STOCK_PURCHASE',
             description: `Compra de ${purchase.stock_type} - ${purchase.quantity} uds`,
             date: purchase.purchase_date,
+            total_amount: purchase.total_value,
             ledger_entries: [],
             total_debit: purchase.total_value
           } as Operation & { ledger_entries: any[], total_debit: number }
@@ -557,6 +561,9 @@ async function showMemberPurchaseOperation(purchase: MemberPurchase) {
       type: 'STOCK_PURCHASE',
       description: `Compra de ${purchase.stock_type} - ${purchase.quantity} uds`,
       date: purchase.purchase_date,
+      total_amount: entries
+        .filter(e => e.account_type === 'CASH' && e.amount > 0)
+        .reduce((sum, e) => sum + e.amount, 0),
       ledger_entries: entries.map(e => ({
         id: e.id,
         operation_id: e.operation_id,
