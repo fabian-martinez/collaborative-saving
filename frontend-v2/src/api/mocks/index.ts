@@ -1,5 +1,5 @@
 import type { Member, MemberDue, MemberPayment, MemberPurchase } from '../members.api'
-import type { Meeting } from '../meetings.api'
+import type { Meeting, Operation as MeetingOperation } from '../meetings.api'
 import type { Loan } from '../loans.api'
 import type { Stock } from '../stocks.api'
 import type { MandatoryContribution } from '../contributions.api'
@@ -407,9 +407,27 @@ export const mockApi = {
     return { ...meeting }
   },
 
-  async getMeetingPayments(meetingId: string): Promise<MemberPayment[]> {
+  async getMeetingPayments(meetingId: string): Promise<MeetingOperation[]> {
     await delay()
-    return mockApi.getMemberPayments('1')
+    // Retornar operaciones de múltiples miembros para el mock
+    return [
+      {
+        id: 'op1',
+        member_id: '1',
+        meeting_id: meetingId,
+        type: 'monthly_payment',
+        description: 'Pago mensual',
+        date: '2024-12-15T10:30:00Z',
+      },
+      {
+        id: 'op2',
+        member_id: '2',
+        meeting_id: meetingId,
+        type: 'monthly_payment',
+        description: 'Pago mensual',
+        date: '2024-12-15T10:30:00Z',
+      },
+    ]
   },
 
   async getMeetingPurchases(meetingId: string): Promise<MemberPurchase[]> {

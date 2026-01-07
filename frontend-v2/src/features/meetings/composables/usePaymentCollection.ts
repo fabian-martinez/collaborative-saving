@@ -1,5 +1,6 @@
 import { ref, computed, type Ref } from 'vue'
 import { membersApi, type Member, type MemberDue, type MemberPayment } from '@/api/members.api'
+import { meetingsApi, type Operation } from '@/api/meetings.api'
 import { useActiveMeetingStore } from '../stores/activeMeeting'
 import { sumCashEntries } from '@/shared/utils'
 
@@ -387,12 +388,25 @@ export function usePaymentCollection() {
       )
 
       // Actualizar estado local con el pago registrado
-      completedPayments.value.push({
-        memberName: selectedMember.value.name,
-        amount: response.total_amount,
-      })
+      // Verificar si el miembro ya tiene un pago registrado para actualizarlo o agregarlo
+      const existingPaymentIndex = completedPayments.value.findIndex(
+        (p) => p.memberName === selectedMember.value!.name
+      )
+      if (existingPaymentIndex >= 0) {
+        // Actualizar el monto existente
+        completedPayments.value[existingPaymentIndex].amount = response.total_amount
+      } else {
+        // Agregar nuevo pago
+        completedPayments.value.push({
+          memberName: selectedMember.value.name,
+          amount: response.total_amount,
+        })
+      }
 
-      paidMemberIds.value.push(selectedMember.value.id)
+      // Agregar el miembro a la lista de miembros con pagos si no está ya
+      if (!paidMemberIds.value.includes(selectedMember.value.id)) {
+        paidMemberIds.value.push(selectedMember.value.id)
+      }
 
       // Limpiar selección
       memberDues.value = []
@@ -420,50 +434,27 @@ export function usePaymentCollection() {
         return
       }
 
-      const operationMap = new Map<string, any[]>()
-      const paymentsList: CompletedPayment[] = []
+      // Usar el endpoint optimizado de reunión para identificar miembros con pagos
+      const operations = await meetingsApi.getMeetingPayments(meetingId)
 
-      // Consultar detalles de pagos para todos los miembros (para calcular totales)
-      if (members.length > 0) {
-        const paymentPromises = members.map(async (member) => {
-          const memberId = member.id
-          try {
-            const memberPayments = await membersApi.getMemberPayments(
-              memberId,
-              {
-                meeting_id: meetingId,
-                type: 'monthly_payment',
-              }
-            )
-            if (memberPayments && memberPayments.length > 0) {
-              // Convertir a Operation para calcular totales
-              const operations = memberPayments.map((p) =>
-                mapPaymentToOperation(p, memberId)
-              )
+      // Extraer los member_id únicos de las operaciones
+      const uniqueMemberIds = new Set<string>()
+      operations.forEach((op: Operation) => {
+        if (op.member_id) {
+          uniqueMemberIds.add(op.member_id)
+        }
+      })
 
-              // Actualizar las operaciones en el mapa con los detalles completos
-              operationMap.set(memberId, operations)
+      // Actualizar paidMemberIds con los IDs únicos
+      paidMemberIds.value = Array.from(uniqueMemberIds)
 
-              // Calcular montos para este miembro
-              const amount = sumCashEntries(operations)
+      // Mantener paidMemberOperations vacío inicialmente
+      // Se llenará cuando se seleccione un miembro específico
+      paidMemberOperations.value = new Map<string, any[]>()
 
-              paymentsList.push({ memberName: member.name, amount })
-            }
-          } catch (error) {
-            // Ignorar errores individuales
-            console.debug(
-              `Error fetching payment details for member ${memberId}:`,
-              error
-            )
-          }
-        })
-
-        await Promise.all(paymentPromises)
-      }
-
-      paidMemberOperations.value = operationMap
-      paidMemberIds.value = Array.from(operationMap.keys())
-      completedPayments.value = paymentsList
+      // No resetear completedPayments aquí para preservar los pagos ya registrados
+      // Los totales se calcularán cuando se seleccionen miembros individuales
+      // o cuando se registren nuevos pagos
     } catch (error) {
       console.error('Error fetching meeting payments', error)
     }

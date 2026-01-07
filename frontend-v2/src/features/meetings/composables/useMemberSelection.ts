@@ -39,6 +39,26 @@ export function useMemberSelection(
     sumCashEntries(viewedOperations.value || [])
   )
 
+  // Helper para actualizar completedPayments cuando se obtienen detalles de un miembro
+  function updateCompletedPayments(member: Member, operations: any[]): void {
+    const totalAmount = sumCashEntries(operations)
+    const existingIndex = paymentCollection.completedPayments.value.findIndex(
+      (p) => p.memberName === member.name
+    )
+    if (existingIndex >= 0) {
+      // Actualizar el monto existente
+      paymentCollection.completedPayments.value[existingIndex].amount = totalAmount
+    } else {
+      // Agregar nuevo pago si tiene monto
+      if (totalAmount > 0) {
+        paymentCollection.completedPayments.value.push({
+          memberName: member.name,
+          amount: totalAmount,
+        })
+      }
+    }
+  }
+
   // Helpers
   function getInitials(name: string): string {
     const parts = name.trim().split(/\s+/)
@@ -85,6 +105,8 @@ export function useMemberSelection(
       const cachedOperations = paymentCollection.paidMemberOperations.value.get(member.id)
       if (cachedOperations && cachedOperations.length > 0) {
         viewedOperations.value = cachedOperations
+        // Actualizar completedPayments con el total del miembro desde cache
+        updateCompletedPayments(member, cachedOperations)
         return // Mostrar pagos desde cache
       }
 
@@ -102,13 +124,18 @@ export function useMemberSelection(
           viewedOperations.value = operations
           // Actualizar el cache para futuras consultas
           paymentCollection.paidMemberOperations.value.set(member.id, operations)
+          // Actualizar completedPayments con el total del miembro
+          updateCompletedPayments(member, operations)
           return // Mostrar pagos
         }
       } catch (error) {
         // Si falla, mostrar operaciones básicas guardadas
         console.warn('Error fetching member payments details:', error)
-        viewedOperations.value =
-          paymentCollection.paidMemberOperations.value.get(member.id) || []
+        const fallbackOperations = paymentCollection.paidMemberOperations.value.get(member.id) || []
+        viewedOperations.value = fallbackOperations
+        if (fallbackOperations.length > 0) {
+          updateCompletedPayments(member, fallbackOperations)
+        }
         return
       }
     }
