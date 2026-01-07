@@ -207,6 +207,10 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
     },
   ],
   controllers: [LoansV2Controller],
-  exports: [CreateLoanUseCase, RecordLoanPaymentUseCase],
+  exports: [
+    CreateLoanUseCase,
+    RecordLoanPaymentUseCase,
+    GetMemberLoansQueryHandler,
+  ],
 })
 export class LoansV2Module {}

@@ -11,6 +11,7 @@ import { GetMemberStockTransfersQueryHandler } from '@application/queries/member
 import { GetMemberStockLoanPaymentsQueryHandler } from '@application/queries/members/get-member-stock-loan-payments.query-handler';
 import { GetMemberPaymentScheduleQueryHandler } from '@application/queries/members/get-member-payment-schedule.query-handler';
 import { GetMemberStockSubscriptionsQueryHandler } from '@application/queries/members/get-member-stock-subscriptions.query-handler';
+import { GetMemberLoansQueryHandler } from '@application/queries/loans/get-member-loans.query-handler';
 import { CreateMemberUseCase } from '@application/use-cases/members/create-member.use-case';
 import { UpdateMemberUseCase } from '@application/use-cases/members/update-member.use-case';
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
@@ -32,6 +33,8 @@ import { ProcessStockTransferUseCase } from '@application/use-cases/members/proc
 import { ProcessStockLoanPaymentUseCase } from '@application/use-cases/members/process-stock-loan-payment.use-case';
 import { StockOperationResponseDto } from '@application/dto/members/stock-operation-response.dto';
 import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
+import { LoanResponseDto } from '@application/dto/loans/loan-response.dto';
+import { LoanStatus } from '@domain/entities/loan.entity';
 
 describe('MembersV2Controller', () => {
   let controller: MembersV2Controller;
@@ -50,6 +53,7 @@ describe('MembersV2Controller', () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let getMemberPaymentScheduleQuery: jest.Mocked<GetMemberPaymentScheduleQueryHandler>;
   let getMemberStockSubscriptionsQuery: jest.Mocked<GetMemberStockSubscriptionsQueryHandler>;
+  let getMemberLoansQuery: jest.Mocked<GetMemberLoansQueryHandler>;
   let processStockExchangeUseCase: jest.Mocked<ProcessStockExchangeUseCase>;
   let processStockTransferUseCase: jest.Mocked<ProcessStockTransferUseCase>;
   let processStockLoanPaymentUseCase: jest.Mocked<ProcessStockLoanPaymentUseCase>;
@@ -68,6 +72,7 @@ describe('MembersV2Controller', () => {
   let purchaseStockUseCaseExecuteSpy: jest.SpyInstance;
   let getMemberPurchasesQueryExecuteSpy: jest.SpyInstance;
   let getMemberStockSubscriptionsQueryExecuteSpy: jest.SpyInstance;
+  let getMemberLoansQueryExecuteSpy: jest.SpyInstance;
   let processStockExchangeUseCaseExecuteSpy: jest.SpyInstance;
   let processStockTransferUseCaseExecuteSpy: jest.SpyInstance;
   let processStockLoanPaymentUseCaseExecuteSpy: jest.SpyInstance;
@@ -147,6 +152,12 @@ describe('MembersV2Controller', () => {
         },
         {
           provide: GetMemberStockSubscriptionsQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: GetMemberLoansQueryHandler,
           useValue: {
             execute: jest.fn(),
           },
@@ -235,6 +246,7 @@ describe('MembersV2Controller', () => {
     getMemberStockSubscriptionsQuery = module.get(
       GetMemberStockSubscriptionsQueryHandler,
     );
+    getMemberLoansQuery = module.get(GetMemberLoansQueryHandler);
     processStockExchangeUseCase = module.get(ProcessStockExchangeUseCase);
     processStockTransferUseCase = module.get(ProcessStockTransferUseCase);
     processStockLoanPaymentUseCase = module.get(ProcessStockLoanPaymentUseCase);
@@ -292,6 +304,7 @@ describe('MembersV2Controller', () => {
       getMemberStockSubscriptionsQuery,
       'execute',
     );
+    getMemberLoansQueryExecuteSpy = jest.spyOn(getMemberLoansQuery, 'execute');
   });
 
   it('should be defined', () => {
@@ -1257,6 +1270,101 @@ describe('MembersV2Controller', () => {
 
       const error = (await controller
         .getStockSubscriptions(memberId)
+        .catch((e: unknown) => e)) as HttpException;
+      expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+    });
+  });
+
+  describe('getMemberLoans', () => {
+    const memberId = '550e8400-e29b-41d4-a716-446655440000';
+    const mockLoans: LoanResponseDto[] = [
+      {
+        id: 'loan-id-1',
+        memberId,
+        loanType: 'corriente',
+        approvedAmount: 1000000,
+        disbursedAmount: 1000000,
+        outstandingBalance: 850000,
+        monthlyPaymentAmount: 150000,
+        interestRate: 0.05,
+        term: 12,
+        status: LoanStatus.ACTIVE,
+        creationDate: new Date('2024-01-15'),
+        guaranteedStockId: null,
+      },
+      {
+        id: 'loan-id-2',
+        memberId,
+        loanType: 'agil',
+        approvedAmount: 500000,
+        disbursedAmount: 500000,
+        outstandingBalance: 300000,
+        monthlyPaymentAmount: 75000,
+        interestRate: 0.06,
+        term: 10,
+        status: LoanStatus.ACTIVE,
+        creationDate: new Date('2024-02-01'),
+        guaranteedStockId: 'stock-id-1',
+      },
+    ];
+
+    it('should return loans for a member successfully', async () => {
+      getMemberLoansQueryExecuteSpy.mockResolvedValue(mockLoans);
+
+      const result = await controller.getMemberLoans(memberId);
+
+      expect(getMemberLoansQueryExecuteSpy).toHaveBeenCalledWith(memberId);
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual({
+        id: mockLoans[0].id,
+        member_id: mockLoans[0].memberId,
+        loan_type: mockLoans[0].loanType,
+        approved_amount: mockLoans[0].approvedAmount,
+        disbursed_amount: mockLoans[0].disbursedAmount,
+        outstanding_balance: mockLoans[0].outstandingBalance,
+        monthly_payment_amount: mockLoans[0].monthlyPaymentAmount,
+        interest_rate: mockLoans[0].interestRate,
+        term: mockLoans[0].term,
+        status: mockLoans[0].status,
+        creation_date: mockLoans[0].creationDate,
+        guaranteed_stock_id: mockLoans[0].guaranteedStockId,
+      });
+      expect(result[1]).toEqual({
+        id: mockLoans[1].id,
+        member_id: mockLoans[1].memberId,
+        loan_type: mockLoans[1].loanType,
+        approved_amount: mockLoans[1].approvedAmount,
+        disbursed_amount: mockLoans[1].disbursedAmount,
+        outstanding_balance: mockLoans[1].outstandingBalance,
+        monthly_payment_amount: mockLoans[1].monthlyPaymentAmount,
+        interest_rate: mockLoans[1].interestRate,
+        term: mockLoans[1].term,
+        status: mockLoans[1].status,
+        creation_date: mockLoans[1].creationDate,
+        guaranteed_stock_id: mockLoans[1].guaranteedStockId,
+      });
+    });
+
+    it('should return empty array when member has no loans', async () => {
+      getMemberLoansQueryExecuteSpy.mockResolvedValue([]);
+
+      const result = await controller.getMemberLoans(memberId);
+
+      expect(getMemberLoansQueryExecuteSpy).toHaveBeenCalledWith(memberId);
+      expect(result).toEqual([]);
+    });
+
+    it('should throw HttpException with INTERNAL_SERVER_ERROR for unknown errors', async () => {
+      getMemberLoansQueryExecuteSpy.mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(controller.getMemberLoans(memberId)).rejects.toThrow(
+        HttpException,
+      );
+
+      const error = (await controller
+        .getMemberLoans(memberId)
         .catch((e: unknown) => e)) as HttpException;
       expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
     });

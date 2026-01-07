@@ -96,7 +96,7 @@ export const loansApi = {
     if (USE_MOCKS) {
       return mockApi.getMemberLoans(memberId)
     }
-    const response = await apiClient.get<Loan[]>(`/v2/loans/member/${memberId}`)
+    const response = await apiClient.get<Loan[]>(`/v2/members/${memberId}/loans`)
     return response.data
   },
 

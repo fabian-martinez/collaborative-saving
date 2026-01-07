@@ -22,7 +22,6 @@ import {
 } from '@nestjs/swagger';
 import { GetLoansQueryHandler } from '@application/queries/loans/get-loans.query-handler';
 import { GetLoanDetailQueryHandler } from '@application/queries/loans/get-loan-detail.query-handler';
-import { GetMemberLoansQueryHandler } from '@application/queries/loans/get-member-loans.query-handler';
 import { UpdateLoanTermsUseCase } from '@application/use-cases/loans/update-loan-terms.use-case';
 import { GetPaymentPlanSimulationQueryHandler } from '@application/queries/loans/get-payment-plan-simulation.query-handler';
 import { SimulateLoanPaymentPlanUseCase } from '@application/use-cases/loans/simulate-loan-payment-plan.use-case';
@@ -43,7 +42,6 @@ export class LoansV2Controller {
   constructor(
     private readonly getLoansQuery: GetLoansQueryHandler,
     private readonly getLoanDetailQuery: GetLoanDetailQueryHandler,
-    private readonly getMemberLoansQuery: GetMemberLoansQueryHandler,
     private readonly updateLoanTermsUseCase: UpdateLoanTermsUseCase,
     private readonly getPaymentPlanSimulationQuery: GetPaymentPlanSimulationQueryHandler,
     private readonly simulateLoanPaymentPlanUseCase: SimulateLoanPaymentPlanUseCase,
@@ -99,35 +97,6 @@ export class LoansV2Controller {
       if (error instanceof LoanNotFoundException) {
         throw new HttpException(error.message, HttpStatus.NOT_FOUND);
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @Get('member/:memberId')
-  @ApiOperation({
-    summary: 'Get all loans for a member',
-    description: 'Returns all loans belonging to a specific member',
-  })
-  @ApiParam({
-    name: 'memberId',
-    description: 'The unique identifier of the member',
-    example: 'b1ffcd0a-0d1c-5fg9-cc7e-7cc0ce491e22',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Member loans retrieved successfully',
-    type: [LoanResponseHttpDto],
-  })
-  async findByMember(
-    @Param('memberId', ParseUUIDPipe) memberId: string,
-  ): Promise<LoanResponseHttpDto[]> {
-    try {
-      const loans = await this.getMemberLoansQuery.execute(memberId);
-      return loans.map((loan) => this.mapLoanToHttp(loan));
-    } catch (error: unknown) {
       throw new HttpException(
         error instanceof Error ? error.message : 'Internal server error',
         HttpStatus.INTERNAL_SERVER_ERROR,

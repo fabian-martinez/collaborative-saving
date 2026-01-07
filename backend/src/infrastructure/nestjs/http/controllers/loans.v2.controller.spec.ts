@@ -3,7 +3,6 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { LoansV2Controller } from './loans.v2.controller';
 import { GetLoansQueryHandler } from '@application/queries/loans/get-loans.query-handler';
 import { GetLoanDetailQueryHandler } from '@application/queries/loans/get-loan-detail.query-handler';
-import { GetMemberLoansQueryHandler } from '@application/queries/loans/get-member-loans.query-handler';
 import { UpdateLoanTermsUseCase } from '@application/use-cases/loans/update-loan-terms.use-case';
 import { GetPaymentPlanSimulationQueryHandler } from '@application/queries/loans/get-payment-plan-simulation.query-handler';
 import { SimulateLoanPaymentPlanUseCase } from '@application/use-cases/loans/simulate-loan-payment-plan.use-case';
@@ -16,14 +15,12 @@ describe('LoansV2Controller', () => {
   let controller: LoansV2Controller;
   let getLoansQuery: jest.Mocked<GetLoansQueryHandler>;
   let getLoanDetailQuery: jest.Mocked<GetLoanDetailQueryHandler>;
-  let getMemberLoansQuery: jest.Mocked<GetMemberLoansQueryHandler>;
   let updateLoanTermsUseCase: jest.Mocked<UpdateLoanTermsUseCase>;
   let getPaymentPlanSimulationQuery: jest.Mocked<GetPaymentPlanSimulationQueryHandler>;
   let simulateLoanPaymentPlanUseCase: jest.Mocked<SimulateLoanPaymentPlanUseCase>;
 
   let getLoansQueryExecuteSpy: jest.SpyInstance;
   let getLoanDetailQueryExecuteSpy: jest.SpyInstance;
-  let getMemberLoansQueryExecuteSpy: jest.SpyInstance;
   let updateLoanTermsUseCaseExecuteSpy: jest.SpyInstance;
   let getPaymentPlanSimulationQueryExecuteSpy: jest.SpyInstance;
   let simulateLoanPaymentPlanUseCaseExecuteSpy: jest.SpyInstance;
@@ -52,10 +49,6 @@ describe('LoansV2Controller', () => {
       execute: jest.fn(),
     } as unknown as jest.Mocked<GetLoanDetailQueryHandler>;
 
-    getMemberLoansQuery = {
-      execute: jest.fn(),
-    } as unknown as jest.Mocked<GetMemberLoansQueryHandler>;
-
     updateLoanTermsUseCase = {
       execute: jest.fn(),
     } as unknown as jest.Mocked<UpdateLoanTermsUseCase>;
@@ -70,7 +63,6 @@ describe('LoansV2Controller', () => {
 
     getLoansQueryExecuteSpy = jest.spyOn(getLoansQuery, 'execute');
     getLoanDetailQueryExecuteSpy = jest.spyOn(getLoanDetailQuery, 'execute');
-    getMemberLoansQueryExecuteSpy = jest.spyOn(getMemberLoansQuery, 'execute');
     updateLoanTermsUseCaseExecuteSpy = jest.spyOn(
       updateLoanTermsUseCase,
       'execute',
@@ -94,10 +86,6 @@ describe('LoansV2Controller', () => {
         {
           provide: GetLoanDetailQueryHandler,
           useValue: getLoanDetailQuery,
-        },
-        {
-          provide: GetMemberLoansQueryHandler,
-          useValue: getMemberLoansQuery,
         },
         {
           provide: UpdateLoanTermsUseCase,
@@ -198,27 +186,6 @@ describe('LoansV2Controller', () => {
           status: HttpStatus.NOT_FOUND,
         }),
       );
-    });
-  });
-
-  describe('findByMember', () => {
-    it('should return empty array when member has no loans', async () => {
-      getMemberLoansQueryExecuteSpy.mockResolvedValue([]);
-
-      const result = await controller.findByMember('member-id-1');
-
-      expect(getMemberLoansQueryExecuteSpy).toHaveBeenCalledWith('member-id-1');
-      expect(result).toEqual([]);
-    });
-
-    it('should return loans for a member', async () => {
-      const loans = [mockLoanResponse];
-      getMemberLoansQueryExecuteSpy.mockResolvedValue(loans);
-
-      const result = await controller.findByMember('member-id-1');
-
-      expect(result).toHaveLength(1);
-      expect(result[0].member_id).toBe('member-id-1');
     });
   });
 
