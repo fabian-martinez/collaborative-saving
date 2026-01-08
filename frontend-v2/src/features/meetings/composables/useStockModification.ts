@@ -68,9 +68,46 @@ export function useStockModification() {
   const modificationForm = ref<StockModificationForm>({})
 
   // Receipts
-  const transferReceipt = ref<any>(null)
-  const loanPaymentReceipt = ref<any>(null)
-  const modificationReceipt = ref<any>(null)
+  const transferReceipt = ref<{
+    stockType: string
+    quantity: number
+    unitValue: number
+    totalValue: number
+    toMemberName: string
+    transfer_subscription_id: string
+    transfer_quantity: number
+    to_member_id: string
+  } | null>(null)
+  const loanPaymentReceipt = ref<{
+    stockType: string
+    quantity: number
+    unitValue: number
+    totalValue: number
+    loanType: string
+    currentBalance: number
+    newBalance: number
+    loan_payment_subscription_id: string
+    loan_payment_quantity: number
+    loan_id: string
+  } | null>(null)
+  const modificationReceipt = ref<{
+    fromStockType: string
+    fromQuantity: number
+    fromUnitValue: number
+    fromValue: number
+    toStockType: string
+    toQuantity: number
+    toUnitValue: number
+    toValue: number
+    difference: number
+    differenceHandling: string
+    from_subscription_id: string
+    from_quantity: number
+    to_stock_id: string
+    to_quantity: number
+    difference_handling?: 'cash' | 'credit'
+    target_loan_id?: string
+  } | null>(null)
 
   // Computed
   const totalOperations = computed(() => registeredOperations.value.length)
