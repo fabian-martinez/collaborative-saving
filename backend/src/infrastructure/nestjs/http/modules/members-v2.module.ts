@@ -465,6 +465,7 @@ const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
         stockSubscriptionRepo: StockSubscriptionRepository,
         createLoanUseCase: CreateLoanUseCase,
         recordOperationUseCase: RecordOperationUseCase,
+        transactionMgr: TransactionManager,
       ) =>
         new PurchaseStockUseCase(
           memberRepo,
@@ -473,6 +474,7 @@ const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
           stockSubscriptionRepo,
           createLoanUseCase,
           recordOperationUseCase,
+          transactionMgr,
         ),
       inject: [
         MEMBER_REPOSITORY,
@@ -481,6 +483,7 @@ const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
         STOCK_SUBSCRIPTION_REPOSITORY,
         CreateLoanUseCase,
         RecordOperationUseCase,
+        TRANSACTION_MANAGER,
       ],
     },
     {

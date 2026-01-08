@@ -17,6 +17,7 @@ import { TypeOrmLoanTransactionDetailRepository } from '@infrastructure/typeorm/
 import { TypeOrmPendingMemberPaymentRepository } from '@infrastructure/typeorm/repositories/typeorm-pending-member-payment.repository';
 import { TypeOrmOperationRepository } from '@infrastructure/typeorm/repositories/typeorm-operation.repository';
 import { TypeOrmLedgerEntryRepository } from '@infrastructure/typeorm/repositories/typeorm-ledger-entry.repository';
+import { TypeOrmStockSubscriptionRepository } from '@infrastructure/typeorm/repositories/typeorm-stock-subscription.repository';
 import { TypeOrmTransactionManager } from '@infrastructure/services/transaction-manager/typeorm-transaction-manager.service';
 import { Member } from '@infrastructure/typeorm/entities/member.entity';
 import { Meeting } from '@infrastructure/typeorm/entities/meeting.entity';
@@ -25,6 +26,7 @@ import { LoanTransactionDetail } from '@infrastructure/typeorm/entities/loan-tra
 import { PendingMemberPayment } from '@infrastructure/typeorm/entities/pending-member-payment.entity';
 import { Operation } from '@infrastructure/typeorm/entities/operation.entity';
 import { LedgerEntry } from '@infrastructure/typeorm/entities/ledger-entry.entity';
+import { StockSubscription } from '@infrastructure/typeorm/entities/stock-subscription.entity';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
@@ -32,6 +34,7 @@ import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan
 import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pending-member-payment-repository.port';
 import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
+import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-subscription-repository.port';
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 import { EventBus } from '@domain/ports/services/event-bus.port';
 import { OperationBalanceValidator } from '@domain/services/operation-balance-validator.service';
@@ -48,6 +51,7 @@ const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
 );
 const OPERATION_REPOSITORY = Symbol('OperationRepository');
 const LEDGER_ENTRY_REPOSITORY = Symbol('LedgerEntryRepository');
+const STOCK_SUBSCRIPTION_REPOSITORY = Symbol('StockSubscriptionRepository');
 const TRANSACTION_MANAGER = Symbol('TransactionManager');
 
 @Module({
@@ -60,6 +64,7 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
       PendingMemberPayment,
       Operation,
       LedgerEntry,
+      StockSubscription,
     ]),
   ],
   providers: [
@@ -91,6 +96,10 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
     {
       provide: LEDGER_ENTRY_REPOSITORY,
       useClass: TypeOrmLedgerEntryRepository,
+    },
+    {
+      provide: STOCK_SUBSCRIPTION_REPOSITORY,
+      useClass: TypeOrmStockSubscriptionRepository,
     },
     {
       provide: TRANSACTION_MANAGER,
@@ -179,16 +188,22 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
         loanRepo: LoanRepository,
         loanTransactionDetailRepo: LoanTransactionDetailRepository,
         recordOperationUseCase: RecordOperationUseCase,
+        stockSubscriptionRepo: StockSubscriptionRepository,
+        transactionMgr: TransactionManager,
       ) =>
         new RecordLoanPaymentUseCase(
           loanRepo,
           loanTransactionDetailRepo,
           recordOperationUseCase,
+          stockSubscriptionRepo,
+          transactionMgr,
         ),
       inject: [
         LOAN_REPOSITORY,
         LOAN_TRANSACTION_DETAIL_REPOSITORY,
         RecordOperationUseCase,
+        STOCK_SUBSCRIPTION_REPOSITORY,
+        TRANSACTION_MANAGER,
       ],
     },
     {
