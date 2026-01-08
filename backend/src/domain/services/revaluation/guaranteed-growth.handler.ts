@@ -28,7 +28,7 @@ export class GuaranteedGrowthHandler implements DistributionHandler {
     const requiredByStock: Record<string, number> = {};
     for (const stock of guaranteedStocks) {
       const totalShares = context.subscriptions
-        .filter((sub) => sub.stockId === stock.id)
+        .filter((sub) => sub.stockId === stock.id && sub.isActive())
         .reduce((sum, sub) => sum + sub.quantity, 0);
       if (totalShares === 0) continue;
       const requiredGrowth =
