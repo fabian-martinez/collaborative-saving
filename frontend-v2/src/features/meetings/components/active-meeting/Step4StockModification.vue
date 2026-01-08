@@ -857,7 +857,11 @@ function prepareTransferReceipt() {
     quantity,
     unitValue,
     totalValue,
-    toMemberName: toMember.name
+    toMemberName: toMember.name,
+    // Guardar los IDs necesarios para la confirmación
+    transfer_subscription_id: stockModification.transferForm.value.transferSubscriptionId!,
+    transfer_quantity: stockModification.transferForm.value.transferQuantity!,
+    to_member_id: stockModification.transferForm.value.toMemberId!
   }
   
   stockModification.closeTransferModal()
@@ -882,7 +886,11 @@ function prepareLoanPaymentReceipt() {
     totalValue,
     loanType: loan.loan_type,
     currentBalance: loan.outstanding_balance,
-    newBalance
+    newBalance,
+    // Guardar los IDs necesarios para la confirmación
+    loan_payment_subscription_id: stockModification.loanPaymentForm.value.loanPaymentSubscriptionId!,
+    loan_payment_quantity: stockModification.loanPaymentForm.value.loanPaymentQuantity!,
+    loan_id: stockModification.loanPaymentForm.value.loanId!
   }
   
   stockModification.closeLoanPaymentModal()
@@ -930,7 +938,14 @@ function prepareModificationReceipt() {
     toUnitValue,
     toValue,
     difference,
-    differenceHandling: differenceHandlingLabel
+    differenceHandling: differenceHandlingLabel,
+    // Guardar los IDs necesarios para la confirmación
+    from_subscription_id: stockModification.modificationForm.value.fromSubscriptionId!,
+    from_quantity: stockModification.modificationForm.value.fromQuantity!,
+    to_stock_id: stockModification.modificationForm.value.toStockId!,
+    to_quantity: stockModification.modificationForm.value.toQuantity!,
+    difference_handling: stockModification.modificationForm.value.differenceHandling,
+    target_loan_id: stockModification.modificationForm.value.targetLoanId
   }
   
   stockModification.closeModificationModal()
@@ -956,10 +971,16 @@ async function confirmTransfer() {
   if (!selectedMemberValue.value || !store.meetingId) return
 
   try {
+    // Usar los datos guardados en transferReceipt en lugar del formulario
+    if (!stockModification.transferReceipt.value) {
+      alert('Error: No hay datos de transferencia para confirmar')
+      return
+    }
+
     const data = {
-      transfer_subscription_id: stockModification.transferForm.value.transferSubscriptionId!,
-      transfer_quantity: stockModification.transferForm.value.transferQuantity!,
-      to_member_id: stockModification.transferForm.value.toMemberId!
+      transfer_subscription_id: stockModification.transferReceipt.value.transfer_subscription_id,
+      transfer_quantity: stockModification.transferReceipt.value.transfer_quantity,
+      to_member_id: stockModification.transferReceipt.value.to_member_id
     }
     
     await stockModification.processTransfer(selectedMemberValue.value.id, data)
@@ -978,10 +999,16 @@ async function confirmLoanPayment() {
   if (!selectedMemberValue.value || !store.meetingId) return
 
   try {
+    // Usar los datos guardados en loanPaymentReceipt en lugar del formulario
+    if (!stockModification.loanPaymentReceipt.value) {
+      alert('Error: No hay datos de pago de crédito para confirmar')
+      return
+    }
+
     const data = {
-      loan_payment_subscription_id: stockModification.loanPaymentForm.value.loanPaymentSubscriptionId!,
-      loan_payment_quantity: stockModification.loanPaymentForm.value.loanPaymentQuantity!,
-      loan_id: stockModification.loanPaymentForm.value.loanId!
+      loan_payment_subscription_id: stockModification.loanPaymentReceipt.value.loan_payment_subscription_id,
+      loan_payment_quantity: stockModification.loanPaymentReceipt.value.loan_payment_quantity,
+      loan_id: stockModification.loanPaymentReceipt.value.loan_id
     }
     
     await stockModification.processLoanPayment(selectedMemberValue.value.id, data)
@@ -1000,13 +1027,19 @@ async function confirmModification() {
   if (!selectedMemberValue.value || !store.meetingId) return
 
   try {
+    // Usar los datos guardados en modificationReceipt en lugar del formulario
+    if (!stockModification.modificationReceipt.value) {
+      alert('Error: No hay datos de modificación para confirmar')
+      return
+    }
+
     const data = {
-      from_subscription_id: stockModification.modificationForm.value.fromSubscriptionId!,
-      from_quantity: stockModification.modificationForm.value.fromQuantity!,
-      to_stock_id: stockModification.modificationForm.value.toStockId!,
-      to_quantity: stockModification.modificationForm.value.toQuantity!,
-      difference_handling: stockModification.modificationForm.value.differenceHandling,
-      target_loan_id: stockModification.modificationForm.value.targetLoanId
+      from_subscription_id: stockModification.modificationReceipt.value.from_subscription_id,
+      from_quantity: stockModification.modificationReceipt.value.from_quantity,
+      to_stock_id: stockModification.modificationReceipt.value.to_stock_id,
+      to_quantity: stockModification.modificationReceipt.value.to_quantity,
+      difference_handling: stockModification.modificationReceipt.value.difference_handling,
+      target_loan_id: stockModification.modificationReceipt.value.target_loan_id
     }
     
     await stockModification.processExchange(selectedMemberValue.value.id, data)
