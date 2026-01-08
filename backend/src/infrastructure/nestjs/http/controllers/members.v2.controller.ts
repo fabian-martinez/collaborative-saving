@@ -554,64 +554,6 @@ export class MembersV2Controller {
     return payments.map((payment) => this.mapPaymentToHttp(payment));
   }
 
-  @Get(':id/purchases')
-  @ApiOperation({
-    summary: 'Get member stock purchases',
-    description:
-      'Retrieves all stock purchases made by a member. Supports filtering by meeting ID.',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'The UUID of the member',
-    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-  })
-  @ApiQuery({
-    name: 'meeting_id',
-    required: false,
-    description: 'Filter by meeting ID',
-    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Member purchases retrieved successfully',
-    type: [MemberPurchaseResponseHttpDto],
-  })
-  @ApiBadRequestResponse({
-    description: 'Invalid UUID format or invalid query parameters',
-  })
-  @ApiNotFoundResponse({
-    description: 'Member not found',
-  })
-  @ApiInternalServerErrorResponse({
-    description: 'Internal server error',
-  })
-  async getPurchases(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Query() query: GetMemberPurchasesQueryHttpDto,
-  ): Promise<MemberPurchaseResponseHttpDto[]> {
-    try {
-      const queryDto: GetMemberPurchasesQueryDto = query.meeting_id
-        ? { meetingId: query.meeting_id }
-        : {};
-      const purchases = await this.getMemberPurchasesQuery.execute(
-        id,
-        queryDto,
-      );
-      return purchases.map((purchase) => this.mapPurchaseToHttp(purchase));
-    } catch (e: unknown) {
-      if (e instanceof MemberNotFoundException) {
-        throw new HttpException(e.message, HttpStatus.NOT_FOUND);
-      }
-      if (e instanceof HttpException) {
-        throw e;
-      }
-      throw new HttpException(
-        e instanceof Error ? e.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
   @Get(':id/stock-subscriptions')
   @ApiOperation({
     summary: 'Get member active stock subscriptions',
@@ -858,7 +800,65 @@ export class MembersV2Controller {
     }
   }
 
-  @Post(':id/purchase/exchange')
+  @Get(':id/purchase')
+  @ApiOperation({
+    summary: 'Get member stock purchases',
+    description:
+      'Retrieves all stock purchases made by a member. Supports filtering by meeting ID.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The UUID of the member',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiQuery({
+    name: 'meeting_id',
+    required: false,
+    description: 'Filter by meeting ID',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Member purchases retrieved successfully',
+    type: [MemberPurchaseResponseHttpDto],
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid UUID format or invalid query parameters',
+  })
+  @ApiNotFoundResponse({
+    description: 'Member not found',
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error',
+  })
+  async getPurchases(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: GetMemberPurchasesQueryHttpDto,
+  ): Promise<MemberPurchaseResponseHttpDto[]> {
+    try {
+      const queryDto: GetMemberPurchasesQueryDto = query.meeting_id
+        ? { meetingId: query.meeting_id }
+        : {};
+      const purchases = await this.getMemberPurchasesQuery.execute(
+        id,
+        queryDto,
+      );
+      return purchases.map((purchase) => this.mapPurchaseToHttp(purchase));
+    } catch (e: unknown) {
+      if (e instanceof MemberNotFoundException) {
+        throw new HttpException(e.message, HttpStatus.NOT_FOUND);
+      }
+      if (e instanceof HttpException) {
+        throw e;
+      }
+      throw new HttpException(
+        e instanceof Error ? e.message : 'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post(':id/exchange')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Intercambiar acciones de un tipo a otro',
@@ -904,98 +904,7 @@ export class MembersV2Controller {
     }
   }
 
-  @Post(':id/purchase/transfer')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary: 'Transferir acciones a otro socio',
-    description:
-      'Traslada acciones de una suscripción existente hacia otro socio, ajustando ambas suscripciones y registrando los asientos correspondientes.',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'ID del socio que cede las acciones',
-    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-  })
-  @ApiBody({ type: StockTransferHttpDto })
-  @ApiResponse({
-    status: 201,
-    description: 'Transferencia registrada correctamente',
-    type: StockOperationResponseHttpDto,
-  })
-  @ApiBadRequestResponse({
-    description: 'Datos inválidos para la transferencia',
-  })
-  @ApiNotFoundResponse({
-    description: 'No se encontró el socio, la suscripción o la reunión',
-  })
-  @ApiInternalServerErrorResponse({ description: 'Error interno del servidor' })
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  async transferStocks(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: StockTransferHttpDto,
-  ): Promise<StockOperationResponseHttpDto> {
-    try {
-      const result = await this.processStockTransferUseCase.execute({
-        memberId: id,
-        meetingId: dto.meeting_id,
-        fromSubscriptionId: dto.from_subscription_id,
-        quantity: dto.quantity,
-        toMemberId: dto.to_member_id,
-        notes: dto.notes,
-      });
-      return this.mapStockOperationResponseToHttp(result);
-    } catch (error) {
-      return this.handleStockOperationError(error);
-    }
-  }
-
-  @Post(':id/purchase/loan-payment')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary: 'Pagar un crédito usando acciones',
-    description:
-      'Reduce el saldo de un préstamo aplicando acciones existentes y genera el asiento contable del pago.',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'ID del socio que amortiza el crédito',
-    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-  })
-  @ApiBody({ type: StockLoanPaymentHttpDto })
-  @ApiResponse({
-    status: 201,
-    description: 'Pago con acciones registrado',
-    type: StockOperationResponseHttpDto,
-  })
-  @ApiBadRequestResponse({
-    description: 'Datos inválidos para el pago con acciones',
-  })
-  @ApiNotFoundResponse({
-    description:
-      'No se encontró el socio, la suscripción, el préstamo o la reunión',
-  })
-  @ApiInternalServerErrorResponse({ description: 'Error interno del servidor' })
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  async payLoanWithStocks(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: StockLoanPaymentHttpDto,
-  ): Promise<StockOperationResponseHttpDto> {
-    try {
-      const result = await this.processStockLoanPaymentUseCase.execute({
-        memberId: id,
-        meetingId: dto.meeting_id,
-        subscriptionId: dto.subscription_id,
-        quantity: dto.quantity,
-        loanId: dto.loan_id,
-        notes: dto.notes,
-      });
-      return this.mapStockOperationResponseToHttp(result);
-    } catch (error) {
-      return this.handleStockOperationError(error);
-    }
-  }
-
-  @Get(':id/purchase/exchange')
+  @Get(':id/exchange')
   @ApiOperation({
     summary: 'Obtener intercambios de acciones de un socio',
     description:
@@ -1047,7 +956,52 @@ export class MembersV2Controller {
     }
   }
 
-  @Get(':id/purchase/transfer')
+  @Post(':id/transfer')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Transferir acciones a otro socio',
+    description:
+      'Traslada acciones de una suscripción existente hacia otro socio, ajustando ambas suscripciones y registrando los asientos correspondientes.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del socio que cede las acciones',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiBody({ type: StockTransferHttpDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Transferencia registrada correctamente',
+    type: StockOperationResponseHttpDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Datos inválidos para la transferencia',
+  })
+  @ApiNotFoundResponse({
+    description: 'No se encontró el socio, la suscripción o la reunión',
+  })
+  @ApiInternalServerErrorResponse({ description: 'Error interno del servidor' })
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  async transferStocks(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: StockTransferHttpDto,
+  ): Promise<StockOperationResponseHttpDto> {
+    try {
+      const result = await this.processStockTransferUseCase.execute({
+        memberId: id,
+        meetingId: dto.meeting_id,
+        fromSubscriptionId: dto.transfer_subscription_id,
+        quantity: dto.transfer_quantity,
+        toMemberId: dto.to_member_id,
+        notes: dto.notes,
+      });
+      return this.mapStockOperationResponseToHttp(result);
+    } catch (error) {
+      return this.handleStockOperationError(error);
+    }
+  }
+
+  @Get(':id/transfer')
   @ApiOperation({
     summary: 'Obtener transferencias de acciones de un socio',
     description:
@@ -1099,7 +1053,53 @@ export class MembersV2Controller {
     }
   }
 
-  @Get(':id/purchase/loan-payment')
+  @Post(':id/stock-loan-payment')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Pagar un crédito usando acciones',
+    description:
+      'Reduce el saldo de un préstamo aplicando acciones existentes y genera el asiento contable del pago.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del socio que amortiza el crédito',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiBody({ type: StockLoanPaymentHttpDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Pago con acciones registrado',
+    type: StockOperationResponseHttpDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Datos inválidos para el pago con acciones',
+  })
+  @ApiNotFoundResponse({
+    description:
+      'No se encontró el socio, la suscripción, el préstamo o la reunión',
+  })
+  @ApiInternalServerErrorResponse({ description: 'Error interno del servidor' })
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  async payLoanWithStocks(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: StockLoanPaymentHttpDto,
+  ): Promise<StockOperationResponseHttpDto> {
+    try {
+      const result = await this.processStockLoanPaymentUseCase.execute({
+        memberId: id,
+        meetingId: dto.meeting_id,
+        subscriptionId: dto.loan_payment_subscription_id,
+        quantity: dto.loan_payment_quantity,
+        loanId: dto.loan_id,
+        notes: dto.notes,
+      });
+      return this.mapStockOperationResponseToHttp(result);
+    } catch (error) {
+      return this.handleStockOperationError(error);
+    }
+  }
+
+  @Get(':id/stock-loan-payment')
   @ApiOperation({
     summary: 'Obtener pagos con acciones de un socio',
     description:

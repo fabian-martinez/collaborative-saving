@@ -932,7 +932,7 @@ describe('MembersV2Controller', () => {
     });
   });
 
-  describe('POST /v2/members/:id/purchase/exchange', () => {
+  describe('POST /v2/members/:id/exchange', () => {
     const memberId = 'member-id-1';
     const exchangeDto = {
       meeting_id: 'meeting-id-1',
@@ -984,12 +984,12 @@ describe('MembersV2Controller', () => {
     });
   });
 
-  describe('POST /v2/members/:id/purchase/transfer', () => {
+  describe('POST /v2/members/:id/transfer', () => {
     const memberId = 'member-id-1';
     const transferDto = {
       meeting_id: 'meeting-id-1',
-      from_subscription_id: 'from-subscription-id',
-      quantity: 1,
+      transfer_subscription_id: 'from-subscription-id',
+      transfer_quantity: 1,
       to_member_id: 'member-id-2',
     };
 
@@ -1004,8 +1004,8 @@ describe('MembersV2Controller', () => {
       expect(processStockTransferUseCaseExecuteSpy).toHaveBeenCalledWith({
         memberId,
         meetingId: transferDto.meeting_id,
-        fromSubscriptionId: transferDto.from_subscription_id,
-        quantity: transferDto.quantity,
+        fromSubscriptionId: transferDto.transfer_subscription_id,
+        quantity: transferDto.transfer_quantity,
         toMemberId: transferDto.to_member_id,
         notes: undefined,
       });
@@ -1027,12 +1027,12 @@ describe('MembersV2Controller', () => {
     });
   });
 
-  describe('POST /v2/members/:id/purchase/loan-payment', () => {
+  describe('POST /v2/members/:id/stock-loan-payment', () => {
     const memberId = 'member-id-1';
     const loanPaymentDto = {
       meeting_id: 'meeting-id-1',
-      subscription_id: 'subscription-id',
-      quantity: 1,
+      loan_payment_subscription_id: 'subscription-id',
+      loan_payment_quantity: 1,
       loan_id: 'loan-id',
     };
 
@@ -1050,8 +1050,8 @@ describe('MembersV2Controller', () => {
       expect(processStockLoanPaymentUseCaseExecuteSpy).toHaveBeenCalledWith({
         memberId,
         meetingId: loanPaymentDto.meeting_id,
-        subscriptionId: loanPaymentDto.subscription_id,
-        quantity: loanPaymentDto.quantity,
+        subscriptionId: loanPaymentDto.loan_payment_subscription_id,
+        quantity: loanPaymentDto.loan_payment_quantity,
         loanId: loanPaymentDto.loan_id,
         notes: undefined,
       });
@@ -1370,7 +1370,7 @@ describe('MembersV2Controller', () => {
     });
   });
 
-  describe('GET /v2/members/:id/purchase/exchange', () => {
+  describe('GET /v2/members/:id/exchange', () => {
     const memberId = '550e8400-e29b-41d4-a716-446655440000';
     const meetingId = '750e8400-e29b-41d4-a716-446655440000';
     const mockExchanges = [
@@ -1448,7 +1448,7 @@ describe('MembersV2Controller', () => {
     });
   });
 
-  describe('GET /v2/members/:id/purchase/transfer', () => {
+  describe('GET /v2/members/:id/transfer', () => {
     const memberId = '550e8400-e29b-41d4-a716-446655440000';
     const meetingId = '750e8400-e29b-41d4-a716-446655440000';
     const mockTransfers = [
@@ -1521,7 +1521,7 @@ describe('MembersV2Controller', () => {
     });
   });
 
-  describe('GET /v2/members/:id/purchase/loan-payment', () => {
+  describe('GET /v2/members/:id/stock-loan-payment', () => {
     const memberId = '550e8400-e29b-41d4-a716-446655440000';
     const meetingId = '750e8400-e29b-41d4-a716-446655440000';
     const mockPayments = [
