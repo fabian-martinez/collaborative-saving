@@ -38,16 +38,24 @@
             </p>
           </div>
           <div v-if="isMemberPaid(member.id)" class="shrink-0">
-            <span class="badge badge-success badge-sm">Pagado</span>
+            <span class="badge badge-success badge-sm">
+              <span class="hidden md:inline">Pagado</span>
+            </span>
           </div>
           <div v-else-if="hasPendingPurchase && hasPendingPurchase(member.id)" class="shrink-0">
-            <span class="badge badge-warning badge-sm">Pendiente</span>
+            <span class="badge badge-warning badge-sm">
+              <span class="hidden md:inline">Pendiente</span>
+            </span>
           </div>
           <div v-else-if="hasCompletedPurchase && hasCompletedPurchase(member.id)" class="shrink-0">
-            <span class="badge badge-success badge-sm">Con compras</span>
+            <span class="badge badge-success badge-sm">
+              <span class="hidden md:inline">Con compras</span>
+            </span>
           </div>
           <div v-else-if="hasDisbursement && hasDisbursement(member.id)" class="shrink-0">
-            <span class="badge badge-info badge-sm">Con desembolsos</span>
+            <span class="badge badge-info badge-sm">
+              <span class="hidden md:inline">Con desembolsos</span>
+            </span>
           </div>
         </div>
       </div>
