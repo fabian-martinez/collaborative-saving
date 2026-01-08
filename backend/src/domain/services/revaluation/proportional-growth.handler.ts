@@ -27,7 +27,7 @@ export class ProportionalGrowthHandler implements DistributionHandler {
     const valueByStock: Record<string, number> = {};
     for (const stock of regularStocks) {
       const totalShares = context.subscriptions
-        .filter((sub) => sub.stockId === stock.id)
+        .filter((sub) => sub.stockId === stock.id && sub.isActive())
         .reduce((sum, sub) => sum + sub.quantity, 0);
       const value = stock.value * totalShares;
       valueByStock[stock.id] = value;
