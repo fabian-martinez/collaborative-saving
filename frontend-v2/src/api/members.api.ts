@@ -302,7 +302,7 @@ export const membersApi = {
     const params = new URLSearchParams()
     if (query?.meeting_id) params.append('meeting_id', query.meeting_id)
     const queryString = params.toString()
-    const url = `/v2/members/${memberId}/purchases${queryString ? `?${queryString}` : ''}`
+    const url = `/v2/members/${memberId}/purchase${queryString ? `?${queryString}` : ''}`
     const response = await apiClient.get<MemberPurchase[]>(url)
     return response.data
   },

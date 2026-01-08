@@ -19,7 +19,7 @@ export class StockTransferHttpDto {
     description: 'ID de la suscripción de origen',
   })
   @IsUUID()
-  from_subscription_id!: string;
+  transfer_subscription_id!: string;
 
   @ApiProperty({
     description: 'Cantidad de acciones a transferir',
@@ -27,7 +27,7 @@ export class StockTransferHttpDto {
   })
   @IsNumber()
   @IsPositive()
-  quantity!: number;
+  transfer_quantity!: number;
 
   @ApiProperty({
     description: 'ID del socio que recibirá las acciones',

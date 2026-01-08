@@ -20,7 +20,7 @@ export class StockLoanPaymentHttpDto {
     description: 'ID de la suscripción que se utilizará para pagar el préstamo',
   })
   @IsUUID()
-  subscription_id!: string;
+  loan_payment_subscription_id!: string;
 
   @ApiProperty({
     description: 'Cantidad de acciones a aplicar al préstamo',
@@ -28,7 +28,7 @@ export class StockLoanPaymentHttpDto {
   })
   @IsNumber()
   @IsPositive()
-  quantity!: number;
+  loan_payment_quantity!: number;
 
   @ApiProperty({
     description: 'ID del préstamo que se amortizará',
