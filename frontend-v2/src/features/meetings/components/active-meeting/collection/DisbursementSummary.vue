@@ -1,7 +1,20 @@
 <template>
-  <div class="card bg-base-100 shadow-lg rounded-lg mb-6 sticky top-4 z-10">
+  <div 
+    class="card bg-base-100 shadow-lg rounded-lg mb-6"
+    :class="{ 'sticky top-4 z-10': isSticky }"
+  >
     <div class="card-body p-4 md:p-6">
-      <h3 class="text-lg font-semibold mb-4 text-center">Resumen de Caja</h3>
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Resumen de Caja</h3>
+        <button 
+          class="btn btn-ghost btn-sm" 
+          @click="toggleSticky"
+          :title="isSticky ? 'Desfijar' : 'Fijar'"
+        >
+          <Pin v-if="isSticky" class="w-5 h-5 text-primary" />
+          <PinSlash v-else class="w-5 h-5 text-base-content/50" />
+        </button>
+      </div>
       <div class="space-y-4">
         <div class="text-center">
           <div class="text-xs md:text-sm font-light text-base-content/70 uppercase mb-1">
@@ -36,13 +49,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { Pin, PinSlash } from 'iconoir-vue/regular'
 import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   availableCash: number
   totalToDisburse: number
-}>()
+  sticky?: boolean
+}>(), {
+  sticky: true
+})
+
+const isSticky = ref(props.sticky ?? true)
+
+const toggleSticky = () => {
+  isSticky.value = !isSticky.value
+}
 
 const finalBalance = computed(() => props.availableCash - props.totalToDisburse)
 </script>
