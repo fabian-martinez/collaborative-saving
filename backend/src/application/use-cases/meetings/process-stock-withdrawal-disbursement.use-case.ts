@@ -161,7 +161,7 @@ export class ProcessStockWithdrawalDisbursementUseCase {
           item.notes || ''
         }`.trim(),
       });
-      newPendingPayment.approve();
+      // El pago pendiente se crea con estado PENDING por defecto
       await this.pendingMemberPaymentRepository.save(newPendingPayment);
     } else {
       // No hay saldo pendiente: marcar como PAID
@@ -302,7 +302,7 @@ export class ProcessStockWithdrawalDisbursementUseCase {
         notes:
           `Saldo pendiente por retiro de ${requestedQuantity} acciones ${stock.type} - ${item.notes || ''}`.trim(),
       });
-      newPendingPayment.approve(); // Aprobar automáticamente
+      // El pago pendiente se crea con estado PENDING por defecto
       await this.pendingMemberPaymentRepository.save(newPendingPayment);
     }
   }
