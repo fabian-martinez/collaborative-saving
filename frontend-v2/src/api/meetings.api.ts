@@ -66,13 +66,32 @@ export interface RevaluationResponse {
   operation_id?: string
 }
 
+export interface DisbursementStockRequest {
+  stock_id: string
+  stock_withdrawal_quantity?: number
+}
+
+export interface NewLoanRequest {
+  member_id: string
+  amount: number
+  loan_type: 'corriente' | 'agil' | 'accion' | 'prioritario'
+  approved_amount: number
+  monthly_payment_amount: number
+  interest_rate: number
+  notes?: string
+}
+
 export interface DisbursementPlanItem {
   member_id: string
   type: string
   amount: number
+  status?: string
+  notes?: string
   pending_member_payment_id?: string
   loan_id?: string
-  description?: string
+  stock_subscription_id?: string
+  disbursement_stock_request?: DisbursementStockRequest
+  new_loan_request?: NewLoanRequest
 }
 
 export interface DisbursementPlanPreview {

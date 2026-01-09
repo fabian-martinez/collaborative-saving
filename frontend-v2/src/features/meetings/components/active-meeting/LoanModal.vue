@@ -1,7 +1,26 @@
 <template>
   <dialog class="modal" :class="{ 'modal-open': show }">
     <div class="modal-box max-w-lg">
-      <h3 class="font-bold text-lg mb-4">Registrar Préstamo para {{ member?.name }}</h3>
+      <h3 class="font-bold text-lg mb-4">{{ prevLoan && prevLoan.loanInfo ? 'Editar Desembolso de Préstamo' : 'Registrar Préstamo' }} para {{ member?.name }}</h3>
+      
+      <!-- Información del préstamo cuando se está editando -->
+      <div v-if="prevLoan && prevLoan.loanInfo" class="alert alert-info mb-4">
+        <div class="text-sm">
+          <div class="font-semibold mb-2">Información del Préstamo:</div>
+          <div class="space-y-1">
+            <div>Valor Aprobado: <span class="font-mono font-bold">{{ formatCurrency(prevLoan.approved) }}</span></div>
+            <div>Ya Desembolsado: <span class="font-mono font-bold">{{ formatCurrency(prevLoan.loanInfo.disbursed) }}</span></div>
+            <div>Pendiente por Entregar: <span class="font-mono font-bold text-warning">{{ formatCurrency(prevLoan.loanInfo.pending) }}</span></div>
+            <div v-if="prevLoan.loanInfo.creationDate" class="text-xs text-base-content/70 mt-2">
+              Fecha de creación: {{ formatDate(new Date(prevLoan.loanInfo.creationDate)) }}
+            </div>
+            <div class="text-xs text-base-content/70">
+              Estado: {{ prevLoan.loanInfo.status }}
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <form @submit.prevent="onSubmit">
         <div class="mb-4">
           <label class="block font-semibold mb-1">Tipo de Préstamo</label>
@@ -66,13 +85,23 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import type { Member } from '@/api/members.api'
-import { formatCurrency, formatMoneyInput, parseMoneyInput } from '@/shared/utils/formatters'
+import { formatCurrency, formatMoneyInput, parseMoneyInput, formatDate } from '@/shared/utils/formatters'
 
 const props = defineProps<{
   show: boolean,
   member: Member | null,
   maxCapacity: number,
-  prevLoan?: { type: string; approved: number; delivered: number } | null
+  prevLoan?: { 
+    type: string
+    approved: number
+    delivered: number
+    loanInfo?: {
+      disbursed: number
+      pending: number
+      creationDate: string | Date
+      status: string
+    }
+  } | null
 }>()
 
 const emit = defineEmits(['save', 'cancel'])
@@ -104,9 +133,16 @@ watch(
       ) {
         form.value = { ...prevLoan } as any;
         approvedDisplay.value = formatMoneyInput(prevLoan.approved);
-        deliveredDisplay.value = formatMoneyInput(prevLoan.delivered);
-        // Si el valor entregado es igual al aprobado, activar autoMatchAmount
-        autoMatchAmount.value = prevLoan.approved === prevLoan.delivered;
+        
+        // Si hay información del préstamo y hay pendiente, sugerir el pendiente
+        if (prevLoan.loanInfo && prevLoan.loanInfo.pending > 0) {
+          form.value.delivered = prevLoan.loanInfo.pending;
+          deliveredDisplay.value = formatMoneyInput(prevLoan.loanInfo.pending);
+          autoMatchAmount.value = false; // No auto-igualar si hay pendiente
+        } else {
+          deliveredDisplay.value = formatMoneyInput(prevLoan.delivered);
+          autoMatchAmount.value = prevLoan.approved === prevLoan.delivered;
+        }
       } else {
         form.value = { type: 'corriente', approved: 0, delivered: 0 };
         approvedDisplay.value = formatMoneyInput(0);
