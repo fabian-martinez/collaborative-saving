@@ -86,6 +86,104 @@ describe('GetMemberStockSubscriptionsQueryHandler', () => {
       expect(result).toEqual([]);
     });
 
+    it('should return only active subscriptions when includeInactive is false or undefined', async () => {
+      const member = Member.create({
+        name: 'Test Member',
+        email: 'test@example.com',
+        identificationNumber: '1234567890',
+      });
+
+      const stock = Stock.fromPersistence({
+        id: stockId,
+        type: 'Acción A',
+        value: 100000,
+        monthly_contribution: 50000,
+        is_guaranteed: true,
+        guaranteed_yield: 0.05,
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+      });
+
+      const activeSubscription = StockSubscription.create({
+        memberId,
+        stockId,
+        quantity: 2,
+        purchaseDate: new Date('2024-01-15'),
+      });
+
+      jest.spyOn(memberRepository, 'findById').mockResolvedValue(member);
+      const findActiveByMemberSpy = jest
+        .spyOn(stockSubscriptionRepository, 'findActiveByMember')
+        .mockResolvedValue([activeSubscription]);
+      jest.spyOn(stockRepository, 'findById').mockResolvedValue(stock);
+
+      // Test with undefined
+      const result1 = await queryHandler.execute(memberId);
+      expect(findActiveByMemberSpy).toHaveBeenCalledWith(memberId);
+      expect(result1).toHaveLength(1);
+      expect(result1[0].status).toBe(StockSubscriptionStatus.ACTIVE);
+
+      // Test with false
+      findActiveByMemberSpy.mockClear();
+      const result2 = await queryHandler.execute(memberId, false);
+      expect(findActiveByMemberSpy).toHaveBeenCalledWith(memberId);
+      expect(result2).toHaveLength(1);
+      expect(result2[0].status).toBe(StockSubscriptionStatus.ACTIVE);
+    });
+
+    it('should return active and inactive subscriptions when includeInactive is true', async () => {
+      const member = Member.create({
+        name: 'Test Member',
+        email: 'test@example.com',
+        identificationNumber: '1234567890',
+      });
+
+      const stock = Stock.fromPersistence({
+        id: stockId,
+        type: 'Acción A',
+        value: 100000,
+        monthly_contribution: 50000,
+        is_guaranteed: true,
+        guaranteed_yield: 0.05,
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+      });
+
+      const activeSubscription = StockSubscription.create({
+        memberId,
+        stockId,
+        quantity: 2,
+        purchaseDate: new Date('2024-01-15'),
+      });
+
+      const inactiveSubscription = StockSubscription.create({
+        memberId,
+        stockId,
+        quantity: 0,
+        purchaseDate: new Date('2024-01-10'),
+      });
+      inactiveSubscription.update({ status: StockSubscriptionStatus.INACTIVE });
+
+      jest.spyOn(memberRepository, 'findById').mockResolvedValue(member);
+      const findByMemberSpy = jest
+        .spyOn(stockSubscriptionRepository, 'findByMember')
+        .mockResolvedValue([activeSubscription, inactiveSubscription]);
+      jest.spyOn(stockRepository, 'findById').mockResolvedValue(stock);
+
+      const result = await queryHandler.execute(memberId, true);
+
+      expect(findByMemberSpy).toHaveBeenCalledWith(memberId);
+      expect(result).toHaveLength(2);
+      expect(
+        result.find(
+          (s) => s.status === (StockSubscriptionStatus.ACTIVE as string),
+        ),
+      ).toBeDefined();
+      expect(
+        result.find(
+          (s) => s.status === (StockSubscriptionStatus.INACTIVE as string),
+        ),
+      ).toBeDefined();
+    });
+
     it('should return subscriptions without loan successfully', async () => {
       const member = Member.create({
         name: 'Test Member',

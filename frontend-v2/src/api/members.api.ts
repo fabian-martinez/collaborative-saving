@@ -1,5 +1,4 @@
 import apiClient from './client'
-import type { PaginatedResponse } from './types'
 import { mockApi } from './mocks'
 
 const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
@@ -338,12 +337,45 @@ export const membersApi = {
     return response.data
   },
 
-  async getMemberStockSubscriptions(memberId: string): Promise<StockSubscription[]> {
+  async getMemberStockSubscriptions(
+    memberId: string,
+    includeInactive?: boolean
+  ): Promise<StockSubscription[]> {
     if (USE_MOCKS) {
       return mockApi.getMemberStockSubscriptions(memberId)
     }
-    const response = await apiClient.get<StockSubscription[]>(
-      `/v2/members/${memberId}/stock-subscriptions`
+    const params = new URLSearchParams()
+    if (includeInactive === true) {
+      params.append('includeInactive', 'true')
+    }
+    const queryString = params.toString()
+    const url = `/v2/members/${memberId}/stock-subscriptions${queryString ? `?${queryString}` : ''}`
+    const response = await apiClient.get<StockSubscription[]>(url)
+    return response.data
+  },
+
+  async getStockSubscriptionById(
+    memberId: string,
+    subscriptionId: string
+  ): Promise<StockSubscription> {
+    if (USE_MOCKS) {
+      // For mocks, try to find in existing subscriptions or return a mock
+      const subscriptions = await mockApi.getMemberStockSubscriptions(memberId)
+      const found = subscriptions.find(sub => sub.id === subscriptionId)
+      if (found) return found
+      // Return a mock subscription if not found
+      return {
+        id: subscriptionId,
+        stock_id: 'mock-stock-id',
+        stock_type: 'Acción A',
+        quantity: 0,
+        purchase_date: new Date(),
+        status: 'inactive',
+        financing_loan_id: null
+      }
+    }
+    const response = await apiClient.get<StockSubscription>(
+      `/v2/members/${memberId}/stock-subscriptions/${subscriptionId}`
     )
     return response.data
   },

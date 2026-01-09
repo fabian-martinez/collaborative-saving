@@ -838,38 +838,26 @@ async function applyDisbursements() {
       item => item.type === 'withdrawal' && !item.disbursement_stock_request
     )
     
-    // Si hay withdrawals que necesitan stock_id, cargar suscripciones necesarias
+    // Si hay withdrawals que necesitan stock_id, obtenerlo desde las suscripciones
     if (withdrawalsNeedingStockId.length > 0) {
-      const memberIdsNeeded = [...new Set(withdrawalsNeedingStockId.map(item => item.member_id))]
-      const subscriptionMap = new Map<string, string>() // Map: subscription_id -> stock_id
-      
-      // Cargar suscripciones de los miembros necesarios
       await Promise.all(
-        memberIdsNeeded.map(async (memberId) => {
-          try {
-            const subscriptions = await membersApi.getMemberStockSubscriptions(memberId)
-            subscriptions.forEach(sub => {
-              subscriptionMap.set(sub.id, sub.stock_id)
-            })
-          } catch (e) {
-            console.warn(`Error al cargar suscripciones del miembro ${memberId}:`, e)
-          }
-        })
-      )
-      
-      // Completar los items de withdrawal con stock_id
-      allItems.forEach(item => {
-        if (item.type === 'withdrawal' && !item.disbursement_stock_request) {
+        withdrawalsNeedingStockId.map(async (item) => {
           if (item.stock_subscription_id) {
-            const stockId = subscriptionMap.get(item.stock_subscription_id)
-            if (stockId) {
+            try {
+              // Usar el nuevo endpoint para obtener la suscripción (incluso si está inactiva)
+              const subscription = await membersApi.getStockSubscriptionById(
+                item.member_id,
+                item.stock_subscription_id
+              )
+              
               item.disbursement_stock_request = {
-                stock_id: stockId,
+                stock_id: subscription.stock_id,
                 stock_withdrawal_quantity: undefined
               }
-            } else {
+            } catch (e) {
               throw new Error(
                 `No se pudo obtener el stock_id para el retiro de acciones del socio ${item.member_id}. ` +
+                `Suscripción ID: ${item.stock_subscription_id}. ` +
                 `Por favor, edite el desembolso para agregar la información faltante.`
               )
             }
@@ -879,8 +867,8 @@ async function applyDisbursements() {
               `Por favor, edite el desembolso para agregar la información faltante.`
             )
           }
-        }
-      })
+        })
+      )
     }
     
     await meetingsApi.executeDisbursementPlan(store.meetingId, { plan: allItems })

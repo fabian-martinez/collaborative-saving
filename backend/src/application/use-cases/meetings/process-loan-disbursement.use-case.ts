@@ -124,7 +124,6 @@ export class ProcessLoanDisbursementUseCase {
         interestRate: item.newLoanRequest.interestRate,
         term: calculatedTerm,
         guaranteedStockId: null,
-        outstandingBalance: item.newLoanRequest.approvedAmount,
       });
       return;
     }
@@ -159,20 +158,6 @@ export class ProcessLoanDisbursementUseCase {
       );
     }
 
-    // Calcular monto máximo que se puede desembolsar
-    const remainingApprovedAmount = loan.approvedAmount - loan.disbursedAmount;
-    const maxDisbursable = Math.min(
-      item.amount,
-      availableCash,
-      remainingApprovedAmount,
-    );
-
-    if (maxDisbursable <= 0) {
-      throw new BusinessRuleError(
-        'No hay efectivo disponible o monto aprobado restante para desembolsar este préstamo',
-      );
-    }
-
     // 3. Obtener PendingMemberPayment existente si existe
     let pendingPayment: PendingMemberPayment | null = null;
     if (item.pendingMemberPaymentId) {
@@ -191,6 +176,28 @@ export class ProcessLoanDisbursementUseCase {
         pendingPayment.approve();
         await this.pendingMemberPaymentRepository.save(pendingPayment);
       }
+
+      // Validar que el monto del item no exceda el del pending payment
+      if (item.amount > pendingPayment.amount) {
+        throw new BusinessRuleError(
+          `El monto del desembolso (${item.amount}) excede el monto del pago pendiente (${pendingPayment.amount})`,
+        );
+      }
+    }
+
+    // Calcular monto máximo que se puede desembolsar
+    const remainingApprovedAmount = loan.approvedAmount - loan.disbursedAmount;
+    const maxDisbursable = Math.min(
+      item.amount,
+      availableCash,
+      remainingApprovedAmount,
+      pendingPayment?.amount ?? Infinity,
+    );
+
+    if (maxDisbursable <= 0) {
+      throw new BusinessRuleError(
+        'No hay efectivo disponible o monto aprobado restante para desembolsar este préstamo',
+      );
     }
 
     // 4. Actualizar préstamo usando método de dominio
@@ -246,17 +253,41 @@ export class ProcessLoanDisbursementUseCase {
     // 8. Manejar PendingMemberPayment según sea completo o parcial
     const remainingLoanAmount = loan.approvedAmount - loan.disbursedAmount;
 
-    if (remainingLoanAmount > 0) {
-      // Hay monto pendiente por desembolsar
-      if (pendingPayment) {
-        // Si existe un pending payment, actualizarlo o marcarlo como paid y crear uno nuevo
-        if (pendingPayment.amount === remainingLoanAmount) {
-          // El monto coincide, no hacer nada (se mantendrá para el próximo desembolso)
-        } else {
-          // El monto no coincide, marcar el existente como paid y crear uno nuevo con el monto correcto
-          pendingPayment.markAsPaid();
-          await this.pendingMemberPaymentRepository.save(pendingPayment);
+    if (pendingPayment) {
+      // Si hay un pending payment, manejarlo de forma consistente con otros tipos
+      // Calcular saldo pendiente basado en pendingPayment.amount, no en item.amount
+      const remainingPendingAmount = pendingPayment.amount - maxDisbursable;
 
+      if (remainingPendingAmount > 0) {
+        // Hay saldo pendiente: marcar el existente como PAID y crear nuevo por faltante
+        pendingPayment.markAsPaid();
+        await this.pendingMemberPaymentRepository.save(pendingPayment);
+
+        // Crear nuevo PendingMemberPayment por saldo pendiente
+        // Usar el remainingLoanAmount si el préstamo aún tiene saldo pendiente
+        const newPendingAmount =
+          remainingLoanAmount > 0
+            ? Math.min(remainingPendingAmount, remainingLoanAmount)
+            : remainingPendingAmount;
+
+        if (newPendingAmount > 0) {
+          const newPendingPayment = PendingMemberPayment.create({
+            memberId: item.memberId,
+            meetingId,
+            type: PendingMemberPaymentType.LOAN,
+            amount: newPendingAmount,
+            loanId: loan.id,
+            notes: `Saldo pendiente de préstamo - ${item.notes || ''}`.trim(),
+          });
+          await this.pendingMemberPaymentRepository.save(newPendingPayment);
+        }
+      } else {
+        // No hay saldo pendiente del pending payment: marcar como PAID
+        pendingPayment.markAsPaid();
+        await this.pendingMemberPaymentRepository.save(pendingPayment);
+
+        // Si aún hay monto pendiente en el préstamo, crear un nuevo pending payment
+        if (remainingLoanAmount > 0) {
           const newPendingPayment = PendingMemberPayment.create({
             memberId: item.memberId,
             meetingId,
@@ -267,8 +298,10 @@ export class ProcessLoanDisbursementUseCase {
           });
           await this.pendingMemberPaymentRepository.save(newPendingPayment);
         }
-      } else {
-        // No existe pending payment, crear uno nuevo
+      }
+    } else {
+      // No hay pending payment: crear uno nuevo si hay monto pendiente en el préstamo
+      if (remainingLoanAmount > 0) {
         const newPendingPayment = PendingMemberPayment.create({
           memberId: item.memberId,
           meetingId,
@@ -278,12 +311,6 @@ export class ProcessLoanDisbursementUseCase {
           notes: `Saldo pendiente de préstamo - ${item.notes || ''}`.trim(),
         });
         await this.pendingMemberPaymentRepository.save(newPendingPayment);
-      }
-    } else {
-      // El préstamo está completamente desembolsado, marcar pending payment como paid si existe
-      if (pendingPayment) {
-        pendingPayment.markAsPaid();
-        await this.pendingMemberPaymentRepository.save(pendingPayment);
       }
     }
   }

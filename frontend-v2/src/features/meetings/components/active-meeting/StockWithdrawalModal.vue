@@ -14,7 +14,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(stock, idx) in memberStocks || []" :key="stock.stockId">
+              <tr v-for="(stock, idx) in memberStocks || []" :key="`${stock.stockId}-${idx}`">
                 <td>{{ stock.stockType }}</td>
                 <td>{{ stock.quantity }}</td>
                 <td>{{ formatCurrency(stock.currentValue) }}</td>
@@ -30,7 +30,7 @@
           <label class="block font-semibold mb-2">Resumen de retiro:</label>
           <div class="bg-base-200 p-3 rounded">
             <ul class="text-sm space-y-1">
-              <li v-for="item in withdrawalSummary" :key="item.stockId">
+              <li v-for="(item, idx) in withdrawalSummary" :key="`${item.stockId}-${idx}`">
                 {{ item.stockType }}: {{ item.quantity }} x {{ formatCurrency(item.currentValue) }} = <span class="font-mono font-semibold">{{ formatCurrency(item.total) }}</span>
               </li>
             </ul>

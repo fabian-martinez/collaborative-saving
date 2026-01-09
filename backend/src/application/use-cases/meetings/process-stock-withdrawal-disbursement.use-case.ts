@@ -6,6 +6,7 @@ import { RecordOperationUseCase } from '@application/use-cases/accounting/record
 import { RecordOperationDto } from '@application/dto/accounting/record-operation.dto';
 import { DisbursementPlanItemDto } from '@application/dto/meetings/disbursement-plan-item.dto';
 import { StockWithdrawalCalculator } from '@domain/services/stock-withdrawal-calculator.service';
+import { Stock } from '@domain/entities/stock.entity';
 import {
   StockSubscription,
   StockSubscriptionStatus,
@@ -63,12 +64,133 @@ export class ProcessStockWithdrawalDisbursementUseCase {
       throw new StockNotFoundException(stockId);
     }
 
-    // 3. Calcular cantidad total a retirar (solicitada)
-    const requestedAmount = item.amount;
+    // CASO 1: Si hay pendingMemberPaymentId, es un pago pendiente (valor en efectivo)
+    // NO modificar suscripciones, solo desembolsar efectivo
+    if (item.pendingMemberPaymentId) {
+      return this.processPendingPaymentDisbursement(
+        item,
+        meetingId,
+        availableCash,
+        stock,
+      );
+    }
+
+    // CASO 2: Retiro real de acciones - SÍ modificar suscripciones
+    return this.processStockWithdrawal(item, meetingId, availableCash, stock);
+  }
+
+  /**
+   * Procesa un pago pendiente de retiro de acciones.
+   * NO modifica suscripciones, solo desembolsa efectivo.
+   */
+  private async processPendingPaymentDisbursement(
+    item: DisbursementPlanItemDto,
+    meetingId: string,
+    availableCash: number,
+    stock: Stock,
+  ): Promise<void> {
+    // 1. Obtener el pending payment
+    const pendingPayment = await this.pendingMemberPaymentRepository.findById(
+      item.pendingMemberPaymentId!,
+    );
+    if (!pendingPayment) {
+      throw new NotFoundError(
+        'PendingMemberPayment',
+        item.pendingMemberPaymentId!,
+      );
+    }
+
+    // 2. Aprobar el pending payment si está pendiente
+    if (pendingPayment.status === 'pending') {
+      pendingPayment.approve();
+      await this.pendingMemberPaymentRepository.save(pendingPayment);
+    }
+
+    // 3. Validar que el monto del item no exceda el del pending payment
+    if (item.amount > pendingPayment.amount) {
+      throw new BusinessRuleError(
+        `El monto del desembolso (${item.amount}) excede el monto del pago pendiente (${pendingPayment.amount})`,
+      );
+    }
+
+    // 4. Calcular monto máximo desembolsable (basado en pendingPayment.amount, no item.amount)
+    const maxDisbursable = Math.min(
+      item.amount,
+      availableCash,
+      pendingPayment.amount,
+    );
+
+    if (maxDisbursable <= 0) {
+      throw new BusinessRuleError(
+        'No hay efectivo disponible para desembolsar este pago pendiente',
+      );
+    }
+
+    // 5. Si hay monto a desembolsar, registrar operación contable
+    if (maxDisbursable > 0) {
+      await this.recordOperationUseCase.execute({
+        memberId: item.memberId,
+        meetingId,
+        type: OperationType.STOCK_WITHDRAWAL,
+        description:
+          item.notes || `Pago pendiente de retiro de acciones ${stock.type}`,
+        date: new Date(),
+        entries: this.createWithdrawalLedgerEntries(stock.id, maxDisbursable),
+      });
+    }
+
+    // 6. Calcular saldo pendiente basado en pendingPayment.amount, no item.amount
+    const remainingAmount = pendingPayment.amount - maxDisbursable;
+
+    if (remainingAmount > 0) {
+      // Hay saldo pendiente: marcar el existente como PAID y crear nuevo por faltante
+      pendingPayment.markAsPaid();
+      await this.pendingMemberPaymentRepository.save(pendingPayment);
+
+      const newPendingPayment = PendingMemberPayment.create({
+        memberId: item.memberId,
+        meetingId,
+        type: PendingMemberPaymentType.STOCK_WITHDRAWAL,
+        amount: remainingAmount,
+        stockId: stock.id,
+        stockSubscriptionId:
+          pendingPayment.stockSubscriptionId ||
+          item.stockSubscriptionId ||
+          undefined,
+        notes: `Saldo pendiente de pago de retiro de acciones - ${
+          item.notes || ''
+        }`.trim(),
+      });
+      newPendingPayment.approve();
+      await this.pendingMemberPaymentRepository.save(newPendingPayment);
+    } else {
+      // No hay saldo pendiente: marcar como PAID
+      pendingPayment.markAsPaid();
+      await this.pendingMemberPaymentRepository.save(pendingPayment);
+    }
+  }
+
+  /**
+   * Procesa un retiro real de acciones.
+   * SÍ modifica suscripciones reduciendo cantidades.
+   */
+  private async processStockWithdrawal(
+    item: DisbursementPlanItemDto,
+    meetingId: string,
+    availableCash: number,
+    stock: Stock,
+  ): Promise<void> {
     const stockValue = stock.value;
     if (stockValue <= 0) {
       throw new BusinessRuleError('El valor de la acción debe ser > 0');
     }
+
+    // Si hay stockWithdrawalQuantity, usarlo para calcular el monto total solicitado
+    // De lo contrario, usar item.amount (para compatibilidad con retiros sin cantidad específica)
+    const requestedAmount = item.disbursementStockRequest
+      ?.stockWithdrawalQuantity
+      ? item.disbursementStockRequest.stockWithdrawalQuantity * stockValue
+      : item.amount;
 
     // Redondear a 10 decimales para evitar problemas de precisión de punto flotante
     const requestedQuantity =
@@ -77,14 +199,26 @@ export class ProcessStockWithdrawalDisbursementUseCase {
           CALCULATION_CONSTANTS.FLOATING_POINT_PRECISION,
       ) / CALCULATION_CONSTANTS.FLOATING_POINT_PRECISION;
 
-    // 4. Obtener suscripciones del socio para este stock
-    const allSubscriptions =
-      await this.stockSubscriptionRepository.findByStock(stockId);
+    // 1. Obtener suscripciones del socio para este stock
+    const allSubscriptions = await this.stockSubscriptionRepository.findByStock(
+      stock.id,
+    );
     const memberSubscriptions = allSubscriptions.filter(
       (sub) => sub.memberId === item.memberId,
     );
 
-    // 5. Validar que hay suficientes acciones retirables
+    // Si hay un stockSubscriptionId específico en el item, solo verificar que existe y pertenece al miembro
+    // (es solo una referencia, no restringe el retiro a esa suscripción específica)
+    if (item.stockSubscriptionId) {
+      const specificSubscription = memberSubscriptions.find(
+        (sub) => sub.id === item.stockSubscriptionId,
+      );
+      if (!specificSubscription) {
+        throw new NotFoundError('StockSubscription', item.stockSubscriptionId);
+      }
+    }
+
+    // 2. Validar que hay suficientes acciones retirables
     const hasEnough =
       this.stockWithdrawalCalculator.hasEnoughWithdrawableQuantity(
         memberSubscriptions,
@@ -101,10 +235,10 @@ export class ProcessStockWithdrawalDisbursementUseCase {
       );
     }
 
-    // 6. Calcular monto máximo desembolsable
+    // 3. Calcular monto máximo desembolsable
     const maxDisbursable = Math.min(requestedAmount, availableCash);
 
-    // 7. Usar StockWithdrawalCalculator para calcular retiros FIFO
+    // 4. Usar StockWithdrawalCalculator para calcular retiros FIFO
     // Retirar cantidad completa solicitada (aunque no haya efectivo suficiente)
     const withdrawals = this.stockWithdrawalCalculator.calculateWithdrawalFIFO(
       memberSubscriptions,
@@ -112,7 +246,7 @@ export class ProcessStockWithdrawalDisbursementUseCase {
       stockValue,
     );
 
-    // 8. Actualizar suscripciones reduciendo cantidades completas
+    // 5. Actualizar suscripciones reduciendo cantidades completas
     const subscriptionsToUpdate: StockSubscription[] = [];
     for (const withdrawal of withdrawals) {
       const subscription = memberSubscriptions.find(
@@ -136,7 +270,7 @@ export class ProcessStockWithdrawalDisbursementUseCase {
     // Guardar todas las suscripciones actualizadas
     await this.stockSubscriptionRepository.saveMany(subscriptionsToUpdate);
 
-    // 9. Si hay monto a desembolsar, registrar operación contable
+    // 6. Si hay monto a desembolsar, registrar operación contable
     if (maxDisbursable > 0) {
       await this.recordOperationUseCase.execute({
         memberId: item.memberId,
@@ -148,32 +282,10 @@ export class ProcessStockWithdrawalDisbursementUseCase {
       });
     }
 
-    // 10. Manejar PendingMemberPayment existente si existe
-    let pendingPayment: PendingMemberPayment | null = null;
-    if (item.pendingMemberPaymentId) {
-      pendingPayment = await this.pendingMemberPaymentRepository.findById(
-        item.pendingMemberPaymentId,
-      );
-      if (pendingPayment) {
-        // Aprobar automáticamente si está PENDING
-        if (pendingPayment.status === 'pending') {
-          pendingPayment.approve();
-          await this.pendingMemberPaymentRepository.save(pendingPayment);
-        }
-      }
-    }
-
-    // 11. Calcular saldo pendiente y crear PendingMemberPayment si es necesario
+    // 7. Calcular saldo pendiente y crear PendingMemberPayment si es necesario
     const remainingAmount = requestedAmount - maxDisbursable;
 
     if (remainingAmount > 0) {
-      // Hay saldo pendiente: crear PendingMemberPayment
-      // Si había uno existente, marcarlo como PAID y crear nuevo por faltante
-      if (pendingPayment) {
-        pendingPayment.markAsPaid();
-        await this.pendingMemberPaymentRepository.save(pendingPayment);
-      }
-
       // Crear nuevo PendingMemberPayment por saldo pendiente
       // El saldo pendiente representa dinero que el fondo debe al socio
       // y debe participar en revalorización
@@ -192,10 +304,6 @@ export class ProcessStockWithdrawalDisbursementUseCase {
       });
       newPendingPayment.approve(); // Aprobar automáticamente
       await this.pendingMemberPaymentRepository.save(newPendingPayment);
-    } else if (pendingPayment) {
-      // No hay saldo pendiente: marcar como PAID
-      pendingPayment.markAsPaid();
-      await this.pendingMemberPaymentRepository.save(pendingPayment);
     }
   }
 
