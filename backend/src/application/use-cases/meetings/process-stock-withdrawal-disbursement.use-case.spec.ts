@@ -531,12 +531,13 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
         ]),
       );
 
-      // Debe crear pago pendiente por 150 (300 - 150)
+      // Debe crear pago pendiente por 150 (300 - 150) con estado PENDING
       expect(savePaymentSpy).toHaveBeenCalled();
       const savedPayment = savePaymentSpy.mock.calls[0][0];
       expect(savedPayment.type).toBe(PendingMemberPaymentType.STOCK_WITHDRAWAL);
       expect(savedPayment.amount).toBe(150); // Monto pendiente = 300 (total) - 150 (desembolsado)
       expect(savedPayment.stockId).toBe(mockStock.id); // Se usa stock.id del objeto stock
+      expect(savedPayment.status).toBe('pending'); // Debe crearse con estado PENDING, no APPROVED
     });
 
     it('should handle existing pending payment when provided', async () => {
@@ -1033,12 +1034,13 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       // Should approve pending payment, mark as paid, and create new one
       expect(saveSpy).toHaveBeenCalledTimes(3);
       // Should create new pending payment for remaining amount (2000 = 5000 - 3000)
-      expect(saveSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          amount: 2000,
-          type: PendingMemberPaymentType.STOCK_WITHDRAWAL,
-        }),
+      // El tercer llamado (índice 2) es el nuevo pago pendiente creado
+      const newPendingPaymentCall = saveSpy.mock.calls[2][0];
+      expect(newPendingPaymentCall.amount).toBe(2000);
+      expect(newPendingPaymentCall.type).toBe(
+        PendingMemberPaymentType.STOCK_WITHDRAWAL,
       );
+      expect(newPendingPaymentCall.status).toBe('pending'); // Debe crearse con estado PENDING, no APPROVED
     });
 
     it('should throw BusinessRuleError when item amount exceeds pending payment amount', async () => {
