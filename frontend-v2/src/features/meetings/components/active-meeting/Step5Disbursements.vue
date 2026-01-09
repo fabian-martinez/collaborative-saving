@@ -235,6 +235,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { Trash as TrashIcon } from 'iconoir-vue/regular'
 import { membersApi, type Member, type StockSubscription } from '@/api/members.api'
 import { stocksApi, type Stock } from '@/api/stocks.api'
@@ -255,6 +256,7 @@ import OtherDisbursementModal from './OtherDisbursementModal.vue'
 import type { MemberStockForWithdrawal } from './StockWithdrawalModal.vue'
 
 const store = useActiveMeetingStore()
+const router = useRouter()
 const members = ref<Member[]>([])
 const selectedMember = ref<Member | null>(null)
 const disbursementPlan = ref<DisbursementPlanPreview | null>(null)
@@ -879,8 +881,10 @@ async function applyDisbursements() {
     applySuccess.value = true
     isApplying.value = false // Stop loading state
     
-    // Emit completed event or redirect (parent handles this likely via router or store)
-    // store.refreshActiveMeeting() // if needed
+    // Navegar a la vista de detalle de la reunión
+    if (store.meetingId) {
+      router.push({ name: 'meeting-detail', params: { id: store.meetingId } })
+    }
     
   } catch (e) {
     applyError.value = e instanceof Error ? e.message : 'Error al aplicar desembolsos'
