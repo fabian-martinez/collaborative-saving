@@ -540,6 +540,154 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       expect(savedPayment.status).toBe('pending'); // Debe crearse con estado PENDING, no APPROVED
     });
 
+    it('should respect item.amount when stockWithdrawalQuantity is provided and item.amount is less than availableCash', async () => {
+      // Arrange
+      // Escenario: Usuario quiere retirar 1 acción de 1000, hay 450 disponibles,
+      // pero el usuario especifica que solo quiere desembolsar 400 en esta reunión
+      const stockValue1000 = Stock.create({
+        type: 'Acción',
+        value: 1000,
+        monthlyContribution: 100,
+      });
+
+      const mockSubscription = StockSubscription.create({
+        memberId: mockMemberId,
+        stockId: 'stock-id-1000',
+        quantity: 1,
+      });
+
+      const item: DisbursementPlanItemDto = {
+        memberId: mockMemberId,
+        type: DisbursementType.WITHDRAWAL,
+        amount: 400, // Usuario quiere desembolsar solo 400, aunque haya 450 disponibles
+        disbursementStockRequest: {
+          stockId: 'stock-id-1000',
+          stockWithdrawalQuantity: 1, // Cantidad de acciones a retirar
+        },
+      };
+
+      stockRepository.findById.mockResolvedValue(stockValue1000);
+      stockSubscriptionRepository.findByStock.mockResolvedValue([
+        mockSubscription,
+      ]);
+      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
+        true,
+      );
+      // Debe retirar 1 acción completa
+      stockWithdrawalCalculator.calculateWithdrawalFIFO.mockReturnValue([
+        {
+          subscriptionId: mockSubscription.id,
+          quantity: 1,
+          value: 1000, // 1 * 1000
+        },
+      ]);
+      stockSubscriptionRepository.saveMany.mockResolvedValue([]);
+      recordOperationUseCase.execute.mockResolvedValue({
+        operationId: 'operation-id-1',
+        ledgerEntryIds: [],
+      });
+      pendingMemberPaymentRepository.save.mockResolvedValue(
+        PendingMemberPayment.create({
+          memberId: mockMemberId,
+          meetingId: mockMeetingId,
+          type: PendingMemberPaymentType.STOCK_WITHDRAWAL,
+          amount: 600, // 1000 - 400
+          stockId: 'stock-id-1000',
+        }),
+      );
+
+      // Act
+      await useCase.execute({
+        item,
+        meetingId: mockMeetingId,
+        availableCash: 450, // Hay 450 disponibles, pero solo debe desembolsar 400
+      });
+
+      // Assert
+      const executeOpSpy = jest.spyOn(recordOperationUseCase, 'execute');
+      const savePaymentSpy = jest.spyOn(pendingMemberPaymentRepository, 'save');
+
+      // Debe registrar operación contable por 400 (item.amount), NO por 450
+      expect(executeOpSpy).toHaveBeenCalled();
+      const callArgs = executeOpSpy.mock.calls[0][0];
+      expect(callArgs.entries).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            amount: -400, // Debe desembolsar 400, no 450
+          }),
+        ]),
+      );
+
+      // Debe crear pago pendiente por 600 (1000 - 400) con estado PENDING
+      expect(savePaymentSpy).toHaveBeenCalled();
+      const savedPayment = savePaymentSpy.mock.calls[0][0];
+      expect(savedPayment.type).toBe(PendingMemberPaymentType.STOCK_WITHDRAWAL);
+      expect(savedPayment.amount).toBe(600); // Monto pendiente = 1000 (total) - 400 (desembolsado)
+      expect(savedPayment.stockId).toBe(stockValue1000.id);
+      expect(savedPayment.status).toBe('pending');
+    });
+
+    it('should throw BusinessRuleError when item.amount exceeds availableCash with stockWithdrawalQuantity', async () => {
+      // Arrange
+      // Escenario: Usuario quiere retirar 1 acción de 1000 y desembolsar 500,
+      // pero solo hay 450 disponibles - debe fallar
+      const stockValue1000 = Stock.create({
+        type: 'Acción',
+        value: 1000,
+        monthlyContribution: 100,
+      });
+
+      const mockSubscription = StockSubscription.create({
+        memberId: mockMemberId,
+        stockId: 'stock-id-1000',
+        quantity: 1,
+      });
+
+      const item: DisbursementPlanItemDto = {
+        memberId: mockMemberId,
+        type: DisbursementType.WITHDRAWAL,
+        amount: 500, // Usuario quiere desembolsar 500
+        disbursementStockRequest: {
+          stockId: 'stock-id-1000',
+          stockWithdrawalQuantity: 1, // Cantidad de acciones a retirar
+        },
+      };
+
+      stockRepository.findById.mockResolvedValue(stockValue1000);
+      stockSubscriptionRepository.findByStock.mockResolvedValue([
+        mockSubscription,
+      ]);
+      stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
+        true,
+      );
+
+      // Crear spies antes de ejecutar (aunque la validación ocurre antes de que se ejecuten)
+      const executeOpSpy = jest.spyOn(recordOperationUseCase, 'execute');
+      const saveManySpy = jest.spyOn(stockSubscriptionRepository, 'saveMany');
+
+      // Act & Assert
+      await expect(
+        useCase.execute({
+          item,
+          meetingId: mockMeetingId,
+          availableCash: 450, // Solo hay 450 disponibles, menos que los 500 solicitados
+        }),
+      ).rejects.toThrow(BusinessRuleError);
+      await expect(
+        useCase.execute({
+          item,
+          meetingId: mockMeetingId,
+          availableCash: 450,
+        }),
+      ).rejects.toThrow(
+        'No hay suficiente efectivo disponible para desembolsar el monto solicitado. Solicitado: 500, Disponible: 450',
+      );
+
+      // Verificar que no se ejecutó ninguna operación contable (la validación ocurre antes)
+      expect(executeOpSpy).not.toHaveBeenCalled();
+      expect(saveManySpy).not.toHaveBeenCalled();
+    });
+
     it('should handle existing pending payment when provided', async () => {
       // Arrange
       const mockPendingPayment = PendingMemberPayment.create({

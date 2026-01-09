@@ -235,10 +235,26 @@ export class ProcessStockWithdrawalDisbursementUseCase {
       );
     }
 
-    // 3. Calcular monto máximo desembolsable
-    const maxDisbursable = Math.min(requestedAmount, availableCash);
+    // 3. Validar que hay suficiente efectivo disponible para el desembolso solicitado
+    // Cuando hay stockWithdrawalQuantity, item.amount es el monto exacto que se quiere desembolsar
+    if (item.disbursementStockRequest?.stockWithdrawalQuantity) {
+      if (item.amount > availableCash) {
+        throw new BusinessRuleError(
+          `No hay suficiente efectivo disponible para desembolsar el monto solicitado. Solicitado: ${item.amount}, Disponible: ${availableCash}`,
+        );
+      }
+    }
 
-    // 4. Usar StockWithdrawalCalculator para calcular retiros FIFO
+    // 4. Calcular monto máximo desembolsable
+    // Si hay stockWithdrawalQuantity, item.amount representa cuánto desembolsar en esta reunión
+    // Debe respetarse como límite máximo, además del availableCash
+    const maxDisbursable = Math.min(
+      item.amount, // Lo que el usuario quiere desembolsar en esta reunión
+      availableCash, // Lo que hay disponible
+      requestedAmount, // El monto total del retiro (para validación)
+    );
+
+    // 5. Usar StockWithdrawalCalculator para calcular retiros FIFO
     // Retirar cantidad completa solicitada (aunque no haya efectivo suficiente)
     const withdrawals = this.stockWithdrawalCalculator.calculateWithdrawalFIFO(
       memberSubscriptions,
@@ -246,7 +262,7 @@ export class ProcessStockWithdrawalDisbursementUseCase {
       stockValue,
     );
 
-    // 5. Actualizar suscripciones reduciendo cantidades completas
+    // 6. Actualizar suscripciones reduciendo cantidades completas
     const subscriptionsToUpdate: StockSubscription[] = [];
     for (const withdrawal of withdrawals) {
       const subscription = memberSubscriptions.find(
@@ -270,7 +286,7 @@ export class ProcessStockWithdrawalDisbursementUseCase {
     // Guardar todas las suscripciones actualizadas
     await this.stockSubscriptionRepository.saveMany(subscriptionsToUpdate);
 
-    // 6. Si hay monto a desembolsar, registrar operación contable
+    // 7. Si hay monto a desembolsar, registrar operación contable
     if (maxDisbursable > 0) {
       await this.recordOperationUseCase.execute({
         memberId: item.memberId,
@@ -282,7 +298,7 @@ export class ProcessStockWithdrawalDisbursementUseCase {
       });
     }
 
-    // 7. Calcular saldo pendiente y crear PendingMemberPayment si es necesario
+    // 8. Calcular saldo pendiente y crear PendingMemberPayment si es necesario
     const remainingAmount = requestedAmount - maxDisbursable;
 
     if (remainingAmount > 0) {
