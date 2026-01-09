@@ -11,6 +11,7 @@ import { GetMemberStockTransfersQueryHandler } from '@application/queries/member
 import { GetMemberStockLoanPaymentsQueryHandler } from '@application/queries/members/get-member-stock-loan-payments.query-handler';
 import { GetMemberPaymentScheduleQueryHandler } from '@application/queries/members/get-member-payment-schedule.query-handler';
 import { GetMemberStockSubscriptionsQueryHandler } from '@application/queries/members/get-member-stock-subscriptions.query-handler';
+import { GetStockSubscriptionByIdQueryHandler } from '@application/queries/members/get-stock-subscription-by-id.query-handler';
 import { CreateMemberUseCase } from '@application/use-cases/members/create-member.use-case';
 import { UpdateMemberUseCase } from '@application/use-cases/members/update-member.use-case';
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
@@ -361,6 +362,25 @@ const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
         stockRepo: StockRepository,
       ): GetMemberStockSubscriptionsQueryHandler => {
         return new GetMemberStockSubscriptionsQueryHandler(
+          memberRepo,
+          stockSubscriptionRepo,
+          stockRepo,
+        );
+      },
+      inject: [
+        MEMBER_REPOSITORY,
+        STOCK_SUBSCRIPTION_REPOSITORY,
+        STOCK_REPOSITORY,
+      ],
+    },
+    {
+      provide: GetStockSubscriptionByIdQueryHandler,
+      useFactory: (
+        memberRepo: MemberRepository,
+        stockSubscriptionRepo: StockSubscriptionRepository,
+        stockRepo: StockRepository,
+      ): GetStockSubscriptionByIdQueryHandler => {
+        return new GetStockSubscriptionByIdQueryHandler(
           memberRepo,
           stockSubscriptionRepo,
           stockRepo,

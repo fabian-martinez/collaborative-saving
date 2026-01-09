@@ -8,7 +8,8 @@ import { StockSubscriptionResponseDto } from '@application/dto/members/stock-sub
 /**
  * Get Member Stock Subscriptions Query Handler
  *
- * Retrieves active stock subscriptions for a member.
+ * Retrieves stock subscriptions for a member.
+ * By default, only returns active subscriptions. Set includeInactive to true to include inactive ones.
  */
 @Injectable()
 export class GetMemberStockSubscriptionsQueryHandler {
@@ -18,16 +19,21 @@ export class GetMemberStockSubscriptionsQueryHandler {
     private readonly stockRepository: StockRepository,
   ) {}
 
-  async execute(memberId: string): Promise<StockSubscriptionResponseDto[]> {
+  async execute(
+    memberId: string,
+    includeInactive?: boolean,
+  ): Promise<StockSubscriptionResponseDto[]> {
     // Validate member exists
     const member = await this.memberRepository.findById(memberId);
     if (!member) {
       throw new MemberNotFoundException(memberId);
     }
 
-    // Get active stock subscriptions for the member
-    const stockSubscriptions =
-      await this.stockSubscriptionRepository.findActiveByMember(memberId);
+    // Get stock subscriptions for the member
+    // If includeInactive is true, get all subscriptions; otherwise, only active ones
+    const stockSubscriptions = includeInactive
+      ? await this.stockSubscriptionRepository.findByMember(memberId)
+      : await this.stockSubscriptionRepository.findActiveByMember(memberId);
 
     if (stockSubscriptions.length === 0) {
       return [];

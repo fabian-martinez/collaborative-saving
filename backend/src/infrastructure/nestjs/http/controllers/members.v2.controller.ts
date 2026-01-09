@@ -41,6 +41,7 @@ import { GetMemberStockTransfersQueryHandler } from '@application/queries/member
 import { GetMemberStockLoanPaymentsQueryHandler } from '@application/queries/members/get-member-stock-loan-payments.query-handler';
 import { GetMemberPaymentScheduleQueryHandler } from '@application/queries/members/get-member-payment-schedule.query-handler';
 import { GetMemberStockSubscriptionsQueryHandler } from '@application/queries/members/get-member-stock-subscriptions.query-handler';
+import { GetStockSubscriptionByIdQueryHandler } from '@application/queries/members/get-stock-subscription-by-id.query-handler';
 import { GetMemberLoansQueryHandler } from '@application/queries/loans/get-member-loans.query-handler';
 import { UpdateMemberHttpDto } from '../dto/update-member-http.dto';
 import { CreateMemberHttpDto } from '../dto/create-member-http.dto';
@@ -66,6 +67,7 @@ import { PurchaseStockHttpDto } from '../dto/purchase-stock-http.dto';
 import { PurchaseStockResponseHttpDto } from '../dto/purchase-stock-response-http.dto';
 import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
 import { StockNotFoundException } from '@application/exceptions/stock-not-found.exception';
+import { StockSubscriptionNotFoundException } from '@application/exceptions/stock-subscription-not-found.exception';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
@@ -106,6 +108,7 @@ export class MembersV2Controller {
     private readonly getMemberStockLoanPaymentsQuery: GetMemberStockLoanPaymentsQueryHandler,
     private readonly getMemberPaymentScheduleQuery: GetMemberPaymentScheduleQueryHandler,
     private readonly getMemberStockSubscriptionsQuery: GetMemberStockSubscriptionsQueryHandler,
+    private readonly getStockSubscriptionByIdQuery: GetStockSubscriptionByIdQueryHandler,
     private readonly getMemberLoansQuery: GetMemberLoansQueryHandler,
     private readonly createMemberUseCase: CreateMemberUseCase,
     private readonly updateMemberUseCase: UpdateMemberUseCase,
@@ -556,14 +559,21 @@ export class MembersV2Controller {
 
   @Get(':id/stock-subscriptions')
   @ApiOperation({
-    summary: 'Get member active stock subscriptions',
+    summary: 'Get member stock subscriptions',
     description:
-      'Retrieves all active stock subscriptions for a member. This endpoint is useful to determine what operations the member can perform based on their stock holdings.',
+      'Retrieves stock subscriptions for a member. By default, only returns active subscriptions. Use the includeInactive query parameter to include inactive subscriptions as well. This endpoint is useful to determine what operations the member can perform based on their stock holdings.',
   })
   @ApiParam({
     name: 'id',
     description: 'The UUID of the member',
     example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiQuery({
+    name: 'includeInactive',
+    required: false,
+    description: 'Include inactive subscriptions in the response',
+    type: Boolean,
+    example: false,
   })
   @ApiResponse({
     status: 200,
@@ -581,15 +591,80 @@ export class MembersV2Controller {
   })
   async getStockSubscriptions(
     @Param('id', ParseUUIDPipe) id: string,
+    @Query('includeInactive') includeInactive?: string,
   ): Promise<StockSubscriptionResponseHttpDto[]> {
     try {
-      const subscriptions =
-        await this.getMemberStockSubscriptionsQuery.execute(id);
+      // Convert string query param to boolean if provided
+      // Query params come as strings from the URL, so we need to parse them
+      const includeInactiveBool =
+        includeInactive === 'true' || includeInactive === '1';
+      const subscriptions = await this.getMemberStockSubscriptionsQuery.execute(
+        id,
+        includeInactiveBool,
+      );
       return subscriptions.map((subscription) =>
         this.mapStockSubscriptionToHttp(subscription),
       );
     } catch (e: unknown) {
       if (e instanceof MemberNotFoundException) {
+        throw new HttpException(e.message, HttpStatus.NOT_FOUND);
+      }
+      if (e instanceof HttpException) {
+        throw e;
+      }
+      throw new HttpException(
+        e instanceof Error ? e.message : 'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get(':id/stock-subscriptions/:subscriptionId')
+  @ApiOperation({
+    summary: 'Get specific stock subscription for a member',
+    description:
+      'Retrieves a specific stock subscription by ID for a member, including inactive subscriptions. Validates that the subscription belongs to the member.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The UUID of the member',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiParam({
+    name: 'subscriptionId',
+    description: 'The UUID of the stock subscription',
+    example: 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Stock subscription retrieved successfully',
+    type: StockSubscriptionResponseHttpDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid UUID format',
+  })
+  @ApiNotFoundResponse({
+    description: 'Member, stock subscription, or stock not found',
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error',
+  })
+  async getStockSubscriptionById(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('subscriptionId', ParseUUIDPipe) subscriptionId: string,
+  ): Promise<StockSubscriptionResponseHttpDto> {
+    try {
+      const subscription = await this.getStockSubscriptionByIdQuery.execute(
+        id,
+        subscriptionId,
+      );
+      return this.mapStockSubscriptionToHttp(subscription);
+    } catch (e: unknown) {
+      if (
+        e instanceof MemberNotFoundException ||
+        e instanceof StockSubscriptionNotFoundException ||
+        e instanceof StockNotFoundException
+      ) {
         throw new HttpException(e.message, HttpStatus.NOT_FOUND);
       }
       if (e instanceof HttpException) {
