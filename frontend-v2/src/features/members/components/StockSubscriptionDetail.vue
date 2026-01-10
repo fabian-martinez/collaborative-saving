@@ -25,9 +25,9 @@
         <div>
           <label class="text-sm font-semibold text-base-content/70">Estado</label>
           <div class="mt-1">
-            <Badge :variant="subscription.status === 'active' ? 'success' : 'neutral'">
+            <span :class="['badge', subscription.status === 'active' ? 'badge-success' : 'badge-neutral']">
               {{ subscription.status === 'active' ? 'Activa' : 'Inactiva' }}
-            </Badge>
+            </span>
           </div>
         </div>
         <div v-if="subscription.financing_loan_id" class="col-span-2">
@@ -62,7 +62,6 @@ import { ref, watch } from 'vue'
 import Modal from '@/shared/components/Modal.vue'
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import ErrorMessage from '@/shared/components/ErrorMessage.vue'
-import Badge from '@/shared/components/Badge.vue'
 import { formatDate } from '@/shared/utils/formatters'
 import type { StockSubscription } from '@/api/members.api'
 import { membersApi } from '@/api/members.api'

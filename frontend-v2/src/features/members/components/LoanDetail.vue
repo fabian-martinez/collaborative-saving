@@ -1,21 +1,22 @@
 <template>
-  <ExpandableSection :title="`Préstamo ${loan.loan_type} - ${formatCurrency(loan.approved_amount)}`" :default-expanded="expanded">
-    <template #header>
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 w-full pr-4">
+  <div class="collapse collapse-arrow bg-base-100 border border-base-300 rounded-lg" :class="{ 'collapse-open': isExpanded }">
+    <input type="checkbox" :checked="isExpanded" @change="toggleExpanded" />
+    <div class="collapse-title text-base font-medium">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 w-full">
         <div class="flex items-center gap-3 flex-wrap">
           <span class="font-semibold text-sm sm:text-base break-words">{{ loan.loan_type }}</span>
-          <Badge :variant="getStatusVariant(loan.status)">
+          <span :class="['badge', `badge-${getStatusVariant(loan.status)}`]">
             {{ getStatusLabel(loan.status) }}
-          </Badge>
+          </span>
         </div>
         <div class="text-left sm:text-right shrink-0">
           <div class="text-xs sm:text-sm text-base-content/70 mb-1">Saldo Pendiente</div>
           <div class="text-base sm:text-lg font-bold font-mono break-words">{{ formatCurrency(loan.outstanding_balance) }}</div>
         </div>
       </div>
-    </template>
-
-    <div class="space-y-4">
+    </div>
+    <div class="collapse-content">
+      <div class="space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         <div>
           <label class="text-sm font-semibold text-base-content/70">Monto Aprobado</label>
@@ -57,12 +58,17 @@
 
       <div v-if="loan.outstanding_balance > 0" class="p-3 sm:p-4 bg-base-200 rounded-lg">
         <label class="text-sm font-semibold text-base-content/70 mb-2">Progreso de Pago</label>
-        <ProgressBar
-          :value="getPaidAmount()"
-          :max="loan.approved_amount"
-          :label="`Pagado: ${formatCurrency(getPaidAmount())} de ${formatCurrency(loan.approved_amount)}`"
-          variant="success"
-        />
+        <div class="mb-2">
+          <div class="flex justify-between items-center mb-1 text-xs text-base-content/70">
+            <span>Pagado: {{ formatCurrency(getPaidAmount()) }} de {{ formatCurrency(loan.approved_amount) }}</span>
+            <span>{{ Math.round((getPaidAmount() / loan.approved_amount) * 100) }}%</span>
+          </div>
+          <progress 
+            class="progress progress-success w-full" 
+            :value="getPaidAmount()" 
+            :max="loan.approved_amount"
+          ></progress>
+        </div>
       </div>
 
       <div class="flex flex-wrap gap-2 pt-2 border-t">
@@ -76,14 +82,13 @@
           Ver Cronograma
         </button>
       </div>
+      </div>
     </div>
-  </ExpandableSection>
+  </div>
 </template>
 
 <script setup lang="ts">
-import ExpandableSection from '@/shared/components/ExpandableSection.vue'
-import Badge from '@/shared/components/Badge.vue'
-import ProgressBar from '@/shared/components/ProgressBar.vue'
+import { ref, watch } from 'vue'
 import { formatCurrency, formatDate, formatPercentage } from '@/shared/utils/formatters'
 import type { Loan } from '@/api/members.api'
 
@@ -97,6 +102,16 @@ const props = withDefaults(
   }
 )
 
+const isExpanded = ref(props.expanded)
+
+function toggleExpanded() {
+  isExpanded.value = !isExpanded.value
+}
+
+watch(() => props.expanded, (newValue) => {
+  isExpanded.value = newValue
+})
+
 const emit = defineEmits<{
   pay: [loan: Loan]
   'pay-with-stock': [loan: Loan]
@@ -104,7 +119,7 @@ const emit = defineEmits<{
   'view-stock': [stockId: string]
 }>()
 
-function getStatusVariant(status: string): 'success' | 'warning' | 'error' | 'neutral' {
+function getStatusVariant(status: string): string {
   switch (status) {
     case 'active':
       return 'success'

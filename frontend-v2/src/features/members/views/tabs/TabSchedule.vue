@@ -1,8 +1,8 @@
 <template>
   <div class="tab-schedule">
-    <div class="schedule-header">
-      <h2 class="section-title">Cronograma de Pagos</h2>
-      <div class="schedule-controls">
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0 mb-6">
+      <h2 class="text-xl sm:text-2xl font-bold text-base-content">Cronograma de Pagos</h2>
+      <div class="flex gap-4 items-center">
         <select v-model="monthsToProject" class="select select-bordered" @change="loadSchedule">
           <option :value="3">3 meses</option>
           <option :value="6">6 meses</option>
@@ -17,48 +17,51 @@
     </template>
 
     <template v-else-if="!store.paymentSchedule">
-      <div class="empty-state">
-        <div class="empty-message">No hay cronograma disponible</div>
+      <div class="text-center py-16 px-8">
+        <div class="text-lg text-base-content/60">No hay cronograma disponible</div>
       </div>
     </template>
 
-    <div v-else class="schedule-content">
+    <div v-else class="space-y-6">
       <!-- Resumen del Cronograma -->
-      <Card title="Resumen" variant="elevated" class="summary-card">
-        <div class="summary-grid">
-          <div class="summary-item">
-            <div class="summary-label">Total Pagado</div>
-            <div class="summary-value font-mono font-bold text-green-600">
-              {{ formatCurrency(store.paymentSchedule.summary.total_paid) }}
+      <div class="card bg-base-100 shadow-lg">
+        <div class="card-body">
+          <h3 class="card-title">Resumen</h3>
+          <div class="stats stats-vertical sm:stats-horizontal shadow w-full">
+            <div class="stat">
+              <div class="stat-title">Total Pagado</div>
+              <div class="stat-value text-success font-mono text-lg sm:text-xl">
+                {{ formatCurrency(store.paymentSchedule.summary.total_paid) }}
+              </div>
             </div>
-          </div>
-          <div class="summary-item">
-            <div class="summary-label">Total Pendiente</div>
-            <div class="summary-value font-mono font-bold text-orange-600">
-              {{ formatCurrency(store.paymentSchedule.summary.total_pending) }}
+            <div class="stat">
+              <div class="stat-title">Total Pendiente</div>
+              <div class="stat-value text-warning font-mono text-lg sm:text-xl">
+                {{ formatCurrency(store.paymentSchedule.summary.total_pending) }}
+              </div>
             </div>
-          </div>
-          <div class="summary-item">
-            <div class="summary-label">Próximo Pago</div>
-            <div class="summary-value font-mono font-bold">
-              {{ store.paymentSchedule.summary.next_payment_date ? formatDate(store.paymentSchedule.summary.next_payment_date) : 'N/A' }}
+            <div class="stat">
+              <div class="stat-title">Próximo Pago</div>
+              <div class="stat-value font-mono text-base sm:text-lg">
+                {{ store.paymentSchedule.summary.next_payment_date ? formatDate(store.paymentSchedule.summary.next_payment_date) : 'N/A' }}
+              </div>
+              <div class="stat-desc font-mono">
+                {{ formatCurrency(store.paymentSchedule.summary.next_payment_amount) }}
+              </div>
             </div>
-            <div class="summary-amount font-mono">
-              {{ formatCurrency(store.paymentSchedule.summary.next_payment_amount) }}
-            </div>
-          </div>
-          <div class="summary-item">
-            <div class="summary-label">Saldo Total</div>
-            <div class="summary-value font-mono font-bold">
-              {{ formatCurrency(store.paymentSchedule.summary.total_outstanding_balance) }}
+            <div class="stat">
+              <div class="stat-title">Saldo Total</div>
+              <div class="stat-value font-mono text-lg sm:text-xl">
+                {{ formatCurrency(store.paymentSchedule.summary.total_outstanding_balance) }}
+              </div>
             </div>
           </div>
         </div>
-      </Card>
+      </div>
 
       <!-- Timeline de Pagos -->
-      <div class="timeline-section">
-        <h3 class="timeline-title">Historial y Proyecciones</h3>
+      <div class="mt-6">
+        <h3 class="text-xl sm:text-2xl font-bold text-base-content mb-4">Historial y Proyecciones</h3>
         <Timeline
           :items="allPayments"
           :item-status="(item) => item.status"
@@ -73,7 +76,6 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import Card from '@/shared/components/Card.vue'
 import Timeline, { type TimelineItem } from '@/shared/components/Timeline.vue'
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import { formatCurrency, formatDate } from '@/shared/utils/formatters'
@@ -163,153 +165,10 @@ watch(monthsToProject, () => {
   padding: 1rem 0;
   width: 100%;
   max-width: 100%;
+  min-width: 0;
   overflow-x: hidden;
   box-sizing: border-box;
 }
 
-.schedule-header {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-@media (min-width: 640px) {
-  .schedule-header {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0;
-  }
-}
-
-.section-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0;
-  word-wrap: break-word;
-}
-
-@media (min-width: 640px) {
-  .section-title {
-    font-size: 1.5rem;
-  }
-}
-
-.schedule-controls {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.schedule-content > * + * {
-  margin-top: 2rem;
-}
-
-.summary-card {
-  margin-bottom: 2rem;
-}
-
-.summary-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-  padding: 1rem 0;
-}
-
-@media (min-width: 640px) {
-  .summary-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .summary-grid {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  }
-}
-
-.summary-item {
-  text-align: center;
-  padding: 0.75rem;
-  background: #f9fafb;
-  border-radius: 8px;
-}
-
-@media (min-width: 640px) {
-  .summary-item {
-    padding: 1rem;
-  }
-}
-
-.summary-label {
-  font-size: 0.75rem;
-  color: #6b7280;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  word-wrap: break-word;
-}
-
-@media (min-width: 640px) {
-  .summary-label {
-    font-size: 0.875rem;
-  }
-}
-
-.summary-value {
-  font-size: 1rem;
-  color: #1f2937;
-  margin-bottom: 0.25rem;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-}
-
-@media (min-width: 640px) {
-  .summary-value {
-    font-size: 1.25rem;
-  }
-}
-
-.summary-amount {
-  font-size: 0.75rem;
-  color: #6b7280;
-  word-wrap: break-word;
-}
-
-@media (min-width: 640px) {
-  .summary-amount {
-    font-size: 0.875rem;
-  }
-}
-
-.timeline-section {
-  margin-top: 2rem;
-}
-
-.timeline-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 1.5rem;
-  word-wrap: break-word;
-}
-
-@media (min-width: 640px) {
-  .timeline-title {
-    font-size: 1.25rem;
-  }
-}
-
-.empty-state {
-  text-align: center;
-  padding: 4rem 2rem;
-}
-
-.empty-message {
-  font-size: 1.125rem;
-  color: #6b7280;
-}
 </style>
 

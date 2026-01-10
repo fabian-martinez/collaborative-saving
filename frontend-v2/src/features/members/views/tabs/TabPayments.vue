@@ -19,7 +19,7 @@
         empty-message="No hay pagos que coincidan con los filtros"
       >
         <template #actions="{ item }">
-          <button class="btn btn-sm btn-link" @click="viewPaymentDetail(item.operation_id)">
+          <button class="btn btn-sm btn-link" @click="viewPaymentDetail(item.operation_id as string)">
             Ver Detalle
           </button>
         </template>
@@ -66,8 +66,13 @@ import FilterBar, { type FilterConfig } from '@/shared/components/FilterBar.vue'
 import DataTable from '@/shared/components/DataTable.vue'
 import Modal from '@/shared/components/Modal.vue'
 import { formatCurrency, formatDate } from '@/shared/utils/formatters'
-import type { MemberPayment } from '@/api/members.api'
 import type { useMemberDetailStore } from '@/features/members/stores/memberDetail'
+
+interface Column {
+  key: string
+  label: string
+  format?: 'currency' | 'date' | 'datetime' | 'number' | 'percentage'
+}
 
 const props = defineProps<{
   memberId: string
@@ -97,7 +102,7 @@ const paymentTypeOptions = [
   { value: 'novelty', label: 'Novedad' }
 ]
 
-const paymentColumns = [
+const paymentColumns: Column[] = [
   { key: 'date', label: 'Fecha', format: 'date' },
   { key: 'type', label: 'Tipo' },
   { key: 'description', label: 'Descripción' },
@@ -105,7 +110,7 @@ const paymentColumns = [
   { key: 'meeting_id', label: 'Reunión' }
 ]
 
-const entryColumns = [
+const entryColumns: Column[] = [
   { key: 'type', label: 'Tipo' },
   { key: 'amount', label: 'Monto', format: 'currency' },
   { key: 'description', label: 'Descripción' }
@@ -142,10 +147,12 @@ const selectedPayment = computed(() => {
 function handleFiltersUpdate(newFilters: Record<string, unknown>) {
   filters.value = newFilters
   // Recargar pagos con los filtros aplicados
-  props.store.fetchPayments(props.memberId, {
-    meeting_id: newFilters.meetingId as string | undefined,
-    type: newFilters.type as string | undefined
-  })
+  const meetingId = newFilters.meetingId as string | undefined
+  if (meetingId) {
+    props.store.fetchPayments(props.memberId, meetingId)
+  } else {
+    props.store.fetchPayments(props.memberId)
+  }
 }
 
 function viewPaymentDetail(paymentId: string) {
@@ -159,6 +166,7 @@ function viewPaymentDetail(paymentId: string) {
   padding: 1rem 0;
   width: 100%;
   max-width: 100%;
+  min-width: 0;
   overflow-x: hidden;
   box-sizing: border-box;
 }

@@ -28,6 +28,10 @@ defineProps<{
   border-radius: 8px;
   padding: 0;
   transition: all 0.2s ease;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .card.bordered {
@@ -58,6 +62,11 @@ defineProps<{
 
 .card-body {
   padding: 1.5rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .card-footer {

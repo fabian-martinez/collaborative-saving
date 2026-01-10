@@ -1,5 +1,5 @@
 <template>
-  <div class="py-4 w-full max-w-full overflow-x-hidden">
+  <div class="py-4 w-full max-w-full min-w-0 overflow-x-hidden">
     <div class="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0">
       <div class="filters">
         <select v-model="filterStatus" class="select select-bordered">
@@ -29,8 +29,9 @@
     </div>
 
     <!-- Cálculo de Seguro -->
-    <Card title="Cálculo de Seguro" variant="elevated" class="card bg-base-100 shadow-lg mt-6">
-      <div class="py-4">
+    <div class="card bg-base-100 shadow-lg mt-6">
+      <div class="card-body">
+        <h3 class="card-title">Cálculo de Seguro</h3>
         <LoadingSpinner :loading="store.loadingInsurance" message="Calculando..." />
         <div v-if="!store.loadingInsurance" class="space-y-4">
           <div class="mb-4">
@@ -55,13 +56,12 @@
           </button>
         </div>
       </div>
-    </Card>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import Card from '@/shared/components/Card.vue'
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import LoanDetail from '@/features/members/components/LoanDetail.vue'
 import { formatCurrency } from '@/shared/utils/formatters'

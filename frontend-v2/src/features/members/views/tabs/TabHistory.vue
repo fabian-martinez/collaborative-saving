@@ -22,10 +22,9 @@
     <div v-else>
       <Timeline
         :items="filteredOperations"
-        :item-status="(item) => getStatus(item)"
-        :item-title="(item) => getOperationTitle(item)"
-        :item-description="(item) => getOperationDescription(item)"
-        :item-date="(item) => getOperationDate(item)"
+        :item-title="(item: TimelineItem) => getOperationTitle(item)"
+        :item-description="(item: TimelineItem) => getOperationDescription(item)"
+        :item-date="(item: TimelineItem) => getOperationDate(item)"
       />
     </div>
   </div>
@@ -66,52 +65,52 @@ const allOperations = computed<TimelineItem[]>(() => {
   // Compras
   props.store.purchases.forEach(purchase => {
     items.push({
+      ...purchase,
       id: purchase.operation_id,
       date: purchase.purchase_date,
       title: `Compra de ${purchase.stock_type}`,
       description: `${purchase.quantity} unidades x ${formatCurrency(purchase.unit_value)} = ${formatCurrency(purchase.total_value)}`,
       status: 'completed',
-      type: 'purchase',
-      ...purchase
+      type: 'purchase'
     })
   })
   
   // Intercambios
   props.store.exchanges.forEach(exchange => {
     items.push({
+      ...exchange,
       id: exchange.operation_id,
       date: exchange.date,
       title: 'Intercambio de Acciones',
       description: `De: ${exchange.from_stock_type} (${exchange.from_quantity}) → A: ${exchange.to_stock_type} (${exchange.to_quantity})`,
       status: 'completed',
-      type: 'exchange',
-      ...exchange
+      type: 'exchange'
     })
   })
   
   // Transferencias
   props.store.transfers.forEach(transfer => {
     items.push({
+      ...transfer,
       id: transfer.operation_id,
       date: transfer.date,
       title: 'Transferencia de Acciones',
       description: `${transfer.transfer_stock_type} - ${transfer.transfer_quantity} unidades`,
       status: 'completed',
-      type: 'transfer',
-      ...transfer
+      type: 'transfer'
     })
   })
   
   // Pagos con acciones
   props.store.stockLoanPayments.forEach(payment => {
     items.push({
+      ...payment,
       id: payment.operation_id,
       date: payment.date,
       title: 'Pago con Acciones',
       description: `${payment.payment_stock_type} - ${payment.payment_quantity} unidades para préstamo ${payment.loan_id}`,
       status: 'completed',
-      type: 'stock-loan-payment',
-      ...payment
+      type: 'stock-loan-payment'
     })
   })
   
@@ -137,10 +136,6 @@ const filteredOperations = computed(() => {
   
   return result
 })
-
-function getStatus(item: TimelineItem): 'completed' | 'pending' | 'overdue' | 'upcoming' {
-  return item.status as 'completed' | 'pending' | 'overdue' | 'upcoming' || 'completed'
-}
 
 function getOperationTitle(item: TimelineItem): string {
   return item.title || 'Operación'
@@ -176,6 +171,7 @@ function exportToCSV() {
   padding: 1rem 0;
   width: 100%;
   max-width: 100%;
+  min-width: 0;
   overflow-x: hidden;
   box-sizing: border-box;
 }

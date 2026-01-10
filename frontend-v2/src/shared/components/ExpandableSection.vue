@@ -51,6 +51,10 @@ watch(() => props.defaultExpanded, (newValue) => {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .expandable-header {
@@ -88,6 +92,11 @@ watch(() => props.defaultExpanded, (newValue) => {
 .expandable-content {
   padding: 1.5rem;
   background: white;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .expand-enter-active,
