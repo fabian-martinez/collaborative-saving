@@ -67,7 +67,11 @@ export const useMemberDetailStore = defineStore('memberDetail', () => {
   })
   
   const totalPendingDues = computed(() => {
-    return dues.value.reduce((sum, due) => sum + due.amount, 0)
+    const total = dues.value.reduce((sum, due) => {
+      const amount = typeof due.amount === 'number' ? due.amount : parseFloat(String(due.amount || 0))
+      return sum + (isNaN(amount) ? 0 : amount)
+    }, 0)
+    return isNaN(total) || !isFinite(total) ? 0 : total
   })
 
   async function fetchMember(id: string) {
