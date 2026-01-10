@@ -413,9 +413,9 @@ export class MembersV2Controller {
 
   @Get(':id/dues')
   @ApiOperation({
-    summary: 'Get member dues for active meeting',
+    summary: 'Get member dues and obligations',
     description:
-      'Returns all pending obligations (dues) for a member in the active meeting, including mandatory contributions, stock fees, and loan payments.',
+      'Returns all pending obligations (dues) for a member, including mandatory contributions, stock fees, and loan payments. Works with or without an active meeting. If there is an active meeting, loan payments are filtered to exclude those already paid in that meeting. If there is no active meeting, all active loans are included.',
   })
   @ApiParam({
     name: 'id',
@@ -467,7 +467,7 @@ export class MembersV2Controller {
     description: 'Invalid UUID format',
   })
   @ApiNotFoundResponse({
-    description: 'Member not found or no active meeting exists',
+    description: 'Member not found',
   })
   async getDues(
     @Param('id', ParseUUIDPipe) id: string,

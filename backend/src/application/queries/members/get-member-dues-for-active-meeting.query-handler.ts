@@ -1,6 +1,5 @@
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
-import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
 import { MandatoryContributionRepository } from '@domain/ports/repositories/mandatory-contribution-repository.port';
 import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-subscription-repository.port';
@@ -24,11 +23,8 @@ export class GetMemberDuesForActiveMeetingQueryHandler {
   ) {}
 
   async execute(memberId: string): Promise<MemberDueResponseDto[]> {
-    // 1. Obtener reunión activa
+    // 1. Obtener reunión activa (opcional)
     const activeMeeting = await this.meetingRepository.findActive();
-    if (!activeMeeting) {
-      throw new MeetingNotFoundException();
-    }
 
     // 2. Validar que el miembro existe
     const member = await this.memberRepository.findById(memberId);
@@ -55,10 +51,11 @@ export class GetMemberDuesForActiveMeetingQueryHandler {
     // 7. Calcular obligaciones de acciones
     const stockDues = await this.calculateStockFeeDues(activeSubscriptions);
 
-    // 8. Filtrar préstamos sin pago de interés en la reunión activa y calcular obligaciones
+    // 8. Filtrar préstamos sin pago de interés en la reunión activa (si existe) y calcular obligaciones
+    // Si no hay reunión activa, se retornan todos los préstamos activos sin filtrar
     const unpaidLoans = await this.filterUnpaidLoans(
       activeLoans,
-      activeMeeting.id,
+      activeMeeting?.id,
     );
     const loanDues = this.calculateLoanPaymentDues(unpaidLoans);
 
@@ -114,8 +111,13 @@ export class GetMemberDuesForActiveMeetingQueryHandler {
 
   private async filterUnpaidLoans(
     activeLoans: Loan[],
-    meetingId: string,
+    meetingId?: string,
   ): Promise<Loan[]> {
+    // Si no hay meetingId, retornar todos los préstamos activos sin filtrar
+    if (!meetingId) {
+      return activeLoans;
+    }
+
     const unpaidLoans: Loan[] = [];
 
     for (const loan of activeLoans) {
