@@ -2,13 +2,26 @@
  * Utilidades para formateo de datos
  */
 
-export function formatCurrency(amount: number): string {
+export function formatCurrency(amount: number | string | null | undefined): string {
+  // Handle null, undefined, or invalid values
+  if (amount == null || amount === undefined || amount === '') {
+    return '$ 0'
+  }
+  
+  // Convert string to number if needed
+  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount
+  
+  // Handle NaN or invalid numbers
+  if (isNaN(numAmount) || !isFinite(numAmount)) {
+    return '$ 0'
+  }
+  
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',
     currency: 'COP',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
-  }).format(amount)
+  }).format(numAmount)
 }
 
 export function formatNumber(value: number, decimals: number = 2): string {
