@@ -152,16 +152,98 @@ export interface StockOperationResponse {
   details?: unknown
 }
 
+export interface StockExchangeResponse {
+  operation_id: string
+  meeting_id: string
+  date: string | Date
+  description: string
+  from_stock_id: string
+  from_stock_type: string
+  from_quantity: number
+  from_value: number
+  to_stock_id: string
+  to_stock_type: string
+  to_quantity: number
+  to_value: number
+  difference: number
+  difference_handling?: 'cash' | 'credit'
+  from_subscription_id: string
+  to_subscription_id: string
+  pending_payment_id?: string | null
+  loan_id?: string | null
+}
+
+export interface StockTransferResponse {
+  operation_id: string
+  meeting_id: string
+  date: string | Date
+  description: string
+  transfer_subscription_id: string
+  transfer_stock_id: string
+  transfer_stock_type: string
+  transfer_quantity: number
+  transfer_value: number
+  from_member_id: string
+  to_member_id: string
+  notes?: string
+}
+
+export interface StockLoanPaymentResponse {
+  operation_id: string
+  meeting_id: string
+  date: string | Date
+  description: string
+  loan_id: string
+  payment_subscription_id: string
+  payment_stock_id: string
+  payment_stock_type: string
+  payment_quantity: number
+  payment_value: number
+  notes?: string
+}
+
+export interface Loan {
+  id: string
+  member_id: string
+  loan_type: string
+  approved_amount: number
+  disbursed_amount: number
+  outstanding_balance: number
+  monthly_payment_amount: number
+  interest_rate: number
+  term: number
+  status: string
+  creation_date: string | Date
+  guaranteed_stock_id?: string | null
+}
+
 export interface PaymentScheduleItem {
-  due_date: string | Date
-  type: string
-  amount: number
-  description?: string
+  date: string | Date
+  type: 'historical' | 'projected'
+  loan_id?: string
+  loan_type?: string
+  total_amount: number
+  interest_amount: number
+  principal_amount: number
+  status: 'paid' | 'pending' | 'overdue'
+  operation_id?: string
+  remaining_balance?: number
+  payment_number?: number
+}
+
+export interface PaymentScheduleSummary {
+  total_paid: number
+  total_pending: number
+  next_payment_date?: string | Date
+  next_payment_amount: number
+  total_outstanding_balance: number
 }
 
 export interface PaymentSchedule {
-  items: PaymentScheduleItem[]
-  total_amount: number
+  member_id: string
+  historical_payments: PaymentScheduleItem[]
+  projected_payments: PaymentScheduleItem[]
+  summary: PaymentScheduleSummary
 }
 
 export interface GetMemberPaymentsQuery {
@@ -179,8 +261,7 @@ export interface GetMemberStockModificationsQuery {
 }
 
 export interface GetPaymentScheduleQuery {
-  start_date?: string
-  end_date?: string
+  months?: number
 }
 
 export interface StockSubscription {
@@ -320,20 +401,30 @@ export const membersApi = {
     return response.data
   },
 
+  // Loans
+  async getMemberLoans(memberId: string): Promise<Loan[]> {
+    if (USE_MOCKS) {
+      return mockApi.getMemberLoans ? mockApi.getMemberLoans(memberId) : []
+    }
+    const response = await apiClient.get<Loan[]>(`/v2/members/${memberId}/loans`)
+    return response.data
+  },
+
   // Stock Operations
   async getMemberExchanges(
     memberId: string,
     query?: GetMemberStockModificationsQuery
-  ): Promise<StockOperationResponse[]> {
+  ): Promise<StockExchangeResponse[]> {
     if (USE_MOCKS) {
-      return mockApi.getMemberExchanges(memberId)
+      const result = await mockApi.getMemberExchanges(memberId)
+      return result as unknown as StockExchangeResponse[]
     }
     const params = new URLSearchParams()
     if (query?.meeting_id) params.append('meeting_id', query.meeting_id)
     if (query?.type) params.append('type', query.type)
     const queryString = params.toString()
-    const url = `/v2/members/${memberId}/exchanges${queryString ? `?${queryString}` : ''}`
-    const response = await apiClient.get<StockOperationResponse[]>(url)
+    const url = `/v2/members/${memberId}/exchange${queryString ? `?${queryString}` : ''}`
+    const response = await apiClient.get<StockExchangeResponse[]>(url)
     return response.data
   },
 
@@ -383,32 +474,34 @@ export const membersApi = {
   async getMemberTransfers(
     memberId: string,
     query?: GetMemberStockModificationsQuery
-  ): Promise<StockOperationResponse[]> {
+  ): Promise<StockTransferResponse[]> {
     if (USE_MOCKS) {
-      return mockApi.getMemberTransfers(memberId)
+      const result = await mockApi.getMemberTransfers(memberId)
+      return result as unknown as StockTransferResponse[]
     }
     const params = new URLSearchParams()
     if (query?.meeting_id) params.append('meeting_id', query.meeting_id)
     if (query?.type) params.append('type', query.type)
     const queryString = params.toString()
-    const url = `/v2/members/${memberId}/transfers${queryString ? `?${queryString}` : ''}`
-    const response = await apiClient.get<StockOperationResponse[]>(url)
+    const url = `/v2/members/${memberId}/transfer${queryString ? `?${queryString}` : ''}`
+    const response = await apiClient.get<StockTransferResponse[]>(url)
     return response.data
   },
 
   async getMemberStockLoanPayments(
     memberId: string,
     query?: GetMemberStockModificationsQuery
-  ): Promise<StockOperationResponse[]> {
+  ): Promise<StockLoanPaymentResponse[]> {
     if (USE_MOCKS) {
-      return mockApi.getMemberStockLoanPayments(memberId)
+      const result = await mockApi.getMemberStockLoanPayments(memberId)
+      return result as unknown as StockLoanPaymentResponse[]
     }
     const params = new URLSearchParams()
     if (query?.meeting_id) params.append('meeting_id', query.meeting_id)
     if (query?.type) params.append('type', query.type)
     const queryString = params.toString()
-    const url = `/v2/members/${memberId}/stock-loan-payments${queryString ? `?${queryString}` : ''}`
-    const response = await apiClient.get<StockOperationResponse[]>(url)
+    const url = `/v2/members/${memberId}/stock-loan-payment${queryString ? `?${queryString}` : ''}`
+    const response = await apiClient.get<StockLoanPaymentResponse[]>(url)
     return response.data
   },
 
@@ -463,8 +556,7 @@ export const membersApi = {
       return mockApi.getMemberPaymentSchedule(memberId)
     }
     const params = new URLSearchParams()
-    if (query?.start_date) params.append('startDate', query.start_date)
-    if (query?.end_date) params.append('endDate', query.end_date)
+    if (query?.months !== undefined) params.append('months', String(query.months))
     const queryString = params.toString()
     const url = `/v2/members/${memberId}/payment-schedule${queryString ? `?${queryString}` : ''}`
     const response = await apiClient.get<PaymentSchedule>(url)
