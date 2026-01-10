@@ -1,19 +1,14 @@
 <template>
-  <div class="p-3 sm:p-4 md:p-6 lg:p-8 max-w-full xl:max-w-[1400px] mx-auto min-h-[calc(100vh-4rem)] w-full overflow-x-hidden relative">
+  <div class="w-full max-w-full min-w-0 min-h-[calc(100vh-4rem)] overflow-x-hidden box-border">
     <LoadingSpinner :loading="store.loading && !store.member" message="Cargando miembro..." />
     <ErrorMessage :error="store.error" />
 
-    <div v-if="store.member && !store.loading" class="member-detail">
+    <div v-if="store.member && !store.loading" class="w-full max-w-full min-w-0 overflow-x-hidden box-border">
       <!-- Header del Socio -->
-      <div class="card bg-base-100 shadow-lg mb-6">
-        <div class="card-body">
+      <div class="card bg-base-100 shadow-lg mb-6 w-full max-w-full min-w-0 box-border">
+        <div class="card-body w-full max-w-full min-w-0 overflow-x-hidden box-border">
           <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
             <button @click="$router.push('/members')" class="btn btn-ghost self-start sm:self-auto">← Volver</button>
-            <div class="w-full sm:w-auto">
-              <button class="btn btn-primary w-full sm:w-auto" @click="showRegisterPaymentModal = true">
-                Registrar Pago
-              </button>
-            </div>
           </div>
 
           <div class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mb-8 text-center sm:text-left">
@@ -25,89 +20,86 @@
             <div class="flex-1 min-w-0">
               <h1 class="text-2xl sm:text-4xl font-bold text-base-content mb-2 break-words">{{ store.member.name }}</h1>
               <div class="flex gap-2">
-                <Badge :variant="store.member.status === 'active' ? 'success' : 'neutral'">
+                <span :class="['badge', store.member.status === 'active' ? 'badge-success' : 'badge-neutral']">
                   {{ store.member.status === 'active' ? 'ACTIVO' : store.member.status.toUpperCase() }}
-                </Badge>
+                </span>
               </div>
             </div>
           </div>
 
           <!-- Summary Cards Grid -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-8">
-          <SummaryCard
-            title="Total en Acciones"
-            :value="store.totalInStocks"
-            format="currency"
-            icon="📊"
-            @click="activeTab = 'stocks'"
-            clickable
-          />
-          <SummaryCard
-            title="Préstamos Activos"
-            :value="store.activeLoansTotalAmount"
-            :subtitle="`${store.activeLoansCount} préstamo${store.activeLoansCount !== 1 ? 's' : ''}`"
-            format="currency"
-            icon="💰"
-            @click="activeTab = 'loans'"
-            clickable
-          />
-          <SummaryCard
-            title="Cuotas Pendientes"
-            :value="store.totalPendingDues"
-            format="currency"
-            icon="📋"
-            @click="activeTab = 'dues'"
-            clickable
-          />
-          <SummaryCard
-            title="Seguro Calculado"
-            :value="insuranceAmount"
-            format="currency"
-            icon="🛡️"
-            action="Recalcular"
-            @action-click="recalculateInsurance"
-          />
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-8 w-full max-w-full min-w-0 overflow-x-hidden box-border">
+          <div class="stat bg-base-100 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow" @click="activeTab = 'stocks'">
+            <div class="stat-figure text-primary text-2xl">📊</div>
+            <div class="stat-title">Total en Acciones</div>
+            <div class="stat-value text-primary font-mono">{{ formatCurrency(store.totalInStocks) }}</div>
+          </div>
+          <div class="stat bg-base-100 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow" @click="activeTab = 'loans'">
+            <div class="stat-figure text-primary text-2xl">💰</div>
+            <div class="stat-title">Préstamos Activos</div>
+            <div class="stat-value text-primary font-mono">{{ formatCurrency(store.activeLoansTotalAmount) }}</div>
+            <div class="stat-desc">{{ store.activeLoansCount }} préstamo{{ store.activeLoansCount !== 1 ? 's' : '' }}</div>
+          </div>
+          <div class="stat bg-base-100 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow" @click="activeTab = 'dues'">
+            <div class="stat-figure text-primary text-2xl">📋</div>
+            <div class="stat-title">Cuotas Pendientes</div>
+            <div class="stat-value text-primary font-mono">{{ formatCurrency(store.totalPendingDues) }}</div>
+          </div>
+          <div class="stat bg-base-100 rounded-lg shadow-md">
+            <div class="stat-figure text-primary text-2xl">🛡️</div>
+            <div class="stat-title">Seguro Calculado</div>
+            <div class="stat-value text-primary font-mono">{{ formatCurrency(insuranceAmount) }}</div>
+            <div class="stat-actions">
+              <button class="btn btn-sm btn-ghost" @click.stop="recalculateInsurance">Recalcular</button>
+            </div>
+          </div>
           </div>
         </div>
       </div>
 
       <!-- Información Personal -->
-      <div class="card bg-base-100 shadow-lg mb-8">
-        <div class="card-body">
-          <ExpandableSection title="Información Personal" :default-expanded="false">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 py-4">
-              <div class="flex flex-col gap-2">
-                <span class="text-sm font-semibold text-base-content/70">📧 Email</span>
-                <span class="text-base text-base-content break-words">{{ store.member.email }}</span>
-              </div>
-              <div class="flex flex-col gap-2">
-                <span class="text-sm font-semibold text-base-content/70">🆔 Identificación</span>
-                <span class="text-base text-base-content break-words">{{ store.member.identification_number || 'N/A' }}</span>
-              </div>
-              <div class="flex flex-col gap-2">
-                <span class="text-sm font-semibold text-base-content/70">📱 Teléfono</span>
-                <span class="text-base text-base-content break-words">{{ store.member.phone || 'N/A' }}</span>
-              </div>
-              <div class="flex flex-col gap-2">
-                <span class="text-sm font-semibold text-base-content/70">📍 Dirección</span>
-                <span class="text-base text-base-content break-words">{{ store.member.address || 'N/A' }}</span>
-              </div>
-              <div class="flex flex-col gap-2">
-                <span class="text-sm font-semibold text-base-content/70">👤 Beneficiario</span>
-                <span class="text-base text-base-content break-words">{{ store.member.beneficiary || 'N/A' }}</span>
-              </div>
-              <div class="flex flex-col gap-2">
-                <span class="text-sm font-semibold text-base-content/70">📅 Fecha de Registro</span>
-                <span class="text-base text-base-content break-words">{{ formatDate(store.member.registration_date || store.member.created_at || '') }}</span>
+      <div class="card bg-base-100 shadow-lg mb-8 w-full max-w-full min-w-0 box-border">
+        <div class="card-body w-full max-w-full min-w-0 overflow-x-hidden box-border">
+          <div class="collapse collapse-arrow bg-base-100 border border-base-300 rounded-lg">
+            <input type="checkbox" />
+            <div class="collapse-title text-base font-medium">
+              Información Personal
+            </div>
+            <div class="collapse-content">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 py-4">
+                <div class="flex flex-col gap-2">
+                  <span class="text-sm font-semibold text-base-content/70">📧 Email</span>
+                  <span class="text-base text-base-content break-words">{{ store.member.email }}</span>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <span class="text-sm font-semibold text-base-content/70">🆔 Identificación</span>
+                  <span class="text-base text-base-content break-words">{{ store.member.identification_number || 'N/A' }}</span>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <span class="text-sm font-semibold text-base-content/70">📱 Teléfono</span>
+                  <span class="text-base text-base-content break-words">{{ store.member.phone || 'N/A' }}</span>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <span class="text-sm font-semibold text-base-content/70">📍 Dirección</span>
+                  <span class="text-base text-base-content break-words">{{ store.member.address || 'N/A' }}</span>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <span class="text-sm font-semibold text-base-content/70">👤 Beneficiario</span>
+                  <span class="text-base text-base-content break-words">{{ store.member.beneficiary || 'N/A' }}</span>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <span class="text-sm font-semibold text-base-content/70">📅 Fecha de Registro</span>
+                  <span class="text-base text-base-content break-words">{{ formatDate(store.member.registration_date || store.member.created_at || '') }}</span>
+                </div>
               </div>
             </div>
-          </ExpandableSection>
+          </div>
         </div>
       </div>
 
       <!-- Sistema de Tabs -->
-      <div class="card bg-base-100 shadow-lg">
-        <div class="card-body">
+      <div class="card bg-base-100 shadow-lg w-full max-w-full min-w-0">
+        <div class="card-body w-full max-w-full min-w-0 overflow-x-hidden">
           <Tabs
             :tabs="tabs"
             :model-value="activeTab"
@@ -115,7 +107,6 @@
             :scrollable="true"
             @update:model-value="activeTab = $event"
           >
-        <!-- Tab 1: Resumen Financiero -->
         <template #content-resumen>
           <TabResumen
             :member="store.member!"
@@ -124,7 +115,6 @@
           />
         </template>
 
-        <!-- Tab 2: Acciones y Suscripciones -->
         <template #content-stocks>
           <TabStocks
             :member-id="memberId"
@@ -133,7 +123,6 @@
           />
         </template>
 
-        <!-- Tab 3: Préstamos -->
         <template #content-loans>
           <TabLoans
             :member-id="memberId"
@@ -143,7 +132,6 @@
           />
         </template>
 
-        <!-- Tab 4: Pagos y Transacciones -->
         <template #content-payments>
           <TabPayments
             :member-id="memberId"
@@ -152,7 +140,6 @@
           />
         </template>
 
-        <!-- Tab 5: Cuotas y Obligaciones -->
         <template #content-dues>
           <TabDues
             :member-id="memberId"
@@ -162,7 +149,6 @@
           />
         </template>
 
-        <!-- Tab 6: Cronograma de Pagos -->
         <template #content-schedule>
           <TabSchedule
             :member-id="memberId"
@@ -170,7 +156,6 @@
           />
         </template>
 
-        <!-- Tab 7: Historial de Operaciones -->
         <template #content-history>
           <TabHistory
             :member-id="memberId"
@@ -211,11 +196,8 @@ import { useMemberDetailStore } from '../stores/memberDetail'
 import { useActiveMeetingStore } from '@/features/meetings/stores/activeMeeting'
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import ErrorMessage from '@/shared/components/ErrorMessage.vue'
-import Badge from '@/shared/components/Badge.vue'
 import Tabs from '@/shared/components/Tabs.vue'
 import type { Tab } from '@/shared/components/Tabs.vue'
-import SummaryCard from '@/shared/components/SummaryCard.vue'
-import ExpandableSection from '@/shared/components/ExpandableSection.vue'
 import RegisterPaymentModal from '../components/RegisterPaymentModal.vue'
 import StockSubscriptionDetail from '../components/StockSubscriptionDetail.vue'
 import TabResumen from './tabs/TabResumen.vue'
@@ -225,7 +207,7 @@ import TabPayments from './tabs/TabPayments.vue'
 import TabDues from './tabs/TabDues.vue'
 import TabSchedule from './tabs/TabSchedule.vue'
 import TabHistory from './tabs/TabHistory.vue'
-import { formatDate } from '@/shared/utils/formatters'
+import { formatDate, formatCurrency } from '@/shared/utils/formatters'
 
 const route = useRoute()
 const router = useRouter()
@@ -343,33 +325,33 @@ function handleUseForPayment(subscription: any) {
 }
 
 // Cargar datos cuando cambia el tab activo (lazy loading)
-watch(activeTab, (newTab) => {
+watch(activeTab, (newTab, oldTab) => {
   const id = memberId.value
-  if (!id) return
+  if (!id || !store.member) return
 
   switch (newTab) {
     case 'stocks':
       if (store.stockSubscriptions.length === 0) {
-        store.fetchStockSubscriptions(id)
-        store.fetchExchanges(id)
-        store.fetchTransfers(id)
-        store.fetchStockLoanPayments(id)
+        store.fetchStockSubscriptions(id).catch(() => {})
+        store.fetchExchanges(id).catch(() => {})
+        store.fetchTransfers(id).catch(() => {})
+        store.fetchStockLoanPayments(id).catch(() => {})
       }
       break
     case 'schedule':
       if (!store.paymentSchedule) {
-        store.fetchPaymentSchedule(id, { months: 12 })
+        store.fetchPaymentSchedule(id, { months: 12 }).catch(() => {})
       }
       break
     case 'history':
       if (store.exchanges.length === 0) {
-        store.fetchExchanges(id)
-        store.fetchTransfers(id)
-        store.fetchStockLoanPayments(id)
+        store.fetchExchanges(id).catch(() => {})
+        store.fetchTransfers(id).catch(() => {})
+        store.fetchStockLoanPayments(id).catch(() => {})
       }
       break
   }
-})
+}, { flush: 'post' })
 
 onMounted(async () => {
   await activeMeetingStore.fetchActiveMeeting()

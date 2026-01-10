@@ -66,6 +66,10 @@ defineEmits<{
   align-items: flex-start;
   gap: 1rem;
   transition: all 0.2s ease;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .summary-card.clickable {
