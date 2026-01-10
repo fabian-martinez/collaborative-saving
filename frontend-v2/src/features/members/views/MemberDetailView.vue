@@ -1,122 +1,381 @@
 <template>
   <div class="member-detail-view">
-    <LoadingSpinner :loading="store.loading" message="Cargando miembro..." />
+    <LoadingSpinner :loading="store.loading && !store.member" message="Cargando miembro..." />
     <ErrorMessage :error="store.error" />
 
     <div v-if="store.member && !store.loading" class="member-detail">
-      <div class="member-header">
-        <h1>{{ store.member.name }}</h1>
-        <button @click="$router.push('/members')" class="back-button">← Volver</button>
+      <!-- Header del Socio -->
+      <div class="member-header-section">
+        <div class="header-top">
+          <button @click="$router.push('/members')" class="back-button">← Volver</button>
+          <div class="header-actions">
+            <button class="btn btn-primary" @click="showRegisterPaymentModal = true">
+              Registrar Pago
+            </button>
+          </div>
+        </div>
+
+        <div class="header-content">
+          <div class="avatar-container">
+            <div class="avatar">{{ getInitials(store.member.name) }}</div>
+          </div>
+          <div class="header-info">
+            <h1 class="member-name">{{ store.member.name }}</h1>
+            <div class="member-status">
+              <Badge :variant="store.member.status === 'active' ? 'success' : 'neutral'">
+                {{ store.member.status === 'active' ? 'ACTIVO' : store.member.status.toUpperCase() }}
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary Cards Grid -->
+        <div class="summary-grid">
+          <SummaryCard
+            title="Total en Acciones"
+            :value="store.totalInStocks"
+            format="currency"
+            icon="📊"
+            @click="activeTab = 'stocks'"
+            clickable
+          />
+          <SummaryCard
+            title="Préstamos Activos"
+            :value="store.activeLoansTotalAmount"
+            :subtitle="`${store.activeLoansCount} préstamo${store.activeLoansCount !== 1 ? 's' : ''}`"
+            format="currency"
+            icon="💰"
+            @click="activeTab = 'loans'"
+            clickable
+          />
+          <SummaryCard
+            title="Cuotas Pendientes"
+            :value="store.totalPendingDues"
+            format="currency"
+            icon="📋"
+            @click="activeTab = 'dues'"
+            clickable
+          />
+          <SummaryCard
+            title="Seguro Calculado"
+            :value="insuranceAmount"
+            format="currency"
+            icon="🛡️"
+            action="Recalcular"
+            @action-click="recalculateInsurance"
+          />
+        </div>
       </div>
 
-      <div class="member-info">
-        <div class="info-section">
-          <h2>Información General</h2>
-          <p><strong>Email:</strong> {{ store.member.email }}</p>
-          <p><strong>Identificación:</strong> {{ store.member.identification_number || 'N/A' }}</p>
-          <p><strong>Teléfono:</strong> {{ store.member.phone || 'N/A' }}</p>
-          <p><strong>Dirección:</strong> {{ store.member.address || 'N/A' }}</p>
-          <p><strong>Beneficiario:</strong> {{ store.member.beneficiary || 'N/A' }}</p>
-          <p><strong>Estado:</strong> {{ store.member.status }}</p>
-        </div>
-
-        <div class="tabs">
-          <button
-            v-for="tab in tabs"
-            :key="tab.id"
-            @click="activeTab = tab.id"
-            :class="['tab-button', { active: activeTab === tab.id }]"
-          >
-            {{ tab.label }}
-          </button>
-        </div>
-
-        <div class="tab-content">
-          <div v-if="activeTab === 'purchases'">
-            <h3>Compras de Acciones</h3>
-            <DataTable
-              :data="store.purchases"
-              :columns="purchaseColumns"
-              empty-message="No hay compras registradas"
-            />
+      <!-- Información Personal -->
+      <div class="personal-info-section">
+        <ExpandableSection title="Información Personal" :default-expanded="false">
+          <div class="personal-info-grid">
+            <div class="info-item">
+              <span class="info-label">📧 Email</span>
+              <span class="info-value">{{ store.member.email }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">🆔 Identificación</span>
+              <span class="info-value">{{ store.member.identification_number || 'N/A' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">📱 Teléfono</span>
+              <span class="info-value">{{ store.member.phone || 'N/A' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">📍 Dirección</span>
+              <span class="info-value">{{ store.member.address || 'N/A' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">👤 Beneficiario</span>
+              <span class="info-value">{{ store.member.beneficiary || 'N/A' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">📅 Fecha de Registro</span>
+              <span class="info-value">{{ formatDate(store.member.registration_date || store.member.created_at || '') }}</span>
+            </div>
           </div>
-          <div v-if="activeTab === 'payments'">
-            <h3>Pagos</h3>
-            <DataTable
-              :data="store.payments"
-              :columns="paymentColumns"
-              empty-message="No hay pagos registrados"
-            />
-          </div>
-          <div v-if="activeTab === 'dues'">
-            <h3>Cuotas</h3>
-            <DataTable
-              :data="store.dues"
-              :columns="dueColumns"
-              empty-message="No hay cuotas registradas"
-            />
-          </div>
-        </div>
+        </ExpandableSection>
       </div>
+
+      <!-- Sistema de Tabs -->
+      <Tabs
+        :tabs="tabs"
+        v-model="activeTab"
+        :lazy="true"
+        :scrollable="true"
+        class="member-tabs"
+      >
+        <!-- Tab 1: Resumen Financiero -->
+        <template #content-resumen>
+          <TabResumen
+            :member="store.member!"
+            :store="store"
+            @view-detail="handleViewDetail"
+          />
+        </template>
+
+        <!-- Tab 2: Acciones y Suscripciones -->
+        <template #content-stocks>
+          <TabStocks
+            :member-id="memberId"
+            :store="store"
+            @view-subscription="handleViewSubscription"
+          />
+        </template>
+
+        <!-- Tab 3: Préstamos -->
+        <template #content-loans>
+          <TabLoans
+            :member-id="memberId"
+            :store="store"
+            @view-loan="handleViewLoan"
+            @pay-loan="handlePayLoan"
+          />
+        </template>
+
+        <!-- Tab 4: Pagos y Transacciones -->
+        <template #content-payments>
+          <TabPayments
+            :member-id="memberId"
+            :store="store"
+            @view-payment-detail="handleViewPaymentDetail"
+          />
+        </template>
+
+        <!-- Tab 5: Cuotas y Obligaciones -->
+        <template #content-dues>
+          <TabDues
+            :member-id="memberId"
+            :store="store"
+            :meeting-id="activeMeetingId"
+            @register-payment="showRegisterPaymentModal = true"
+          />
+        </template>
+
+        <!-- Tab 6: Cronograma de Pagos -->
+        <template #content-schedule>
+          <TabSchedule
+            :member-id="memberId"
+            :store="store"
+          />
+        </template>
+
+        <!-- Tab 7: Historial de Operaciones -->
+        <template #content-history>
+          <TabHistory
+            :member-id="memberId"
+            :store="store"
+          />
+        </template>
+      </Tabs>
     </div>
+
+    <!-- Modals -->
+    <RegisterPaymentModal
+      :visible="showRegisterPaymentModal"
+      :member-id="memberId"
+      :dues="store.dues"
+      :meeting-id="activeMeetingId"
+      @close="showRegisterPaymentModal = false"
+      @success="handlePaymentSuccess"
+    />
+
+    <StockSubscriptionDetail
+      :visible="selectedSubscriptionId !== null"
+      :member-id="memberId"
+      :subscription-id="selectedSubscriptionId"
+      @close="selectedSubscriptionId = null"
+      @exchange="handleExchange"
+      @transfer="handleTransfer"
+      @use-for-payment="handleUseForPayment"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useMemberDetailStore } from '../stores/memberDetail'
-import DataTable from '@/shared/components/DataTable.vue'
+import { useActiveMeetingStore } from '@/features/meetings/stores/activeMeeting'
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import ErrorMessage from '@/shared/components/ErrorMessage.vue'
+import Badge from '@/shared/components/Badge.vue'
+import Tabs, { type Tab } from '@/shared/components/Tabs.vue'
+import SummaryCard from '@/shared/components/SummaryCard.vue'
+import ExpandableSection from '@/shared/components/ExpandableSection.vue'
+import RegisterPaymentModal from '../components/RegisterPaymentModal.vue'
+import StockSubscriptionDetail from '../components/StockSubscriptionDetail.vue'
+import TabResumen from './tabs/TabResumen.vue'
+import TabStocks from './tabs/TabStocks.vue'
+import TabLoans from './tabs/TabLoans.vue'
+import TabPayments from './tabs/TabPayments.vue'
+import TabDues from './tabs/TabDues.vue'
+import TabSchedule from './tabs/TabSchedule.vue'
+import TabHistory from './tabs/TabHistory.vue'
+import { formatDate } from '@/shared/utils/formatters'
 
 const route = useRoute()
+const router = useRouter()
 const store = useMemberDetailStore()
-const activeTab = ref('purchases')
+const activeMeetingStore = useActiveMeetingStore()
 
-const tabs = [
-  { id: 'purchases', label: 'Compras' },
-  { id: 'payments', label: 'Pagos' },
-  { id: 'dues', label: 'Cuotas' }
+const memberId = computed(() => route.params.id as string)
+const activeMeetingId = computed(() => activeMeetingStore.meetingId)
+
+const activeTab = ref('resumen')
+const showRegisterPaymentModal = ref(false)
+const selectedSubscriptionId = ref<string | null>(null)
+const insuranceAmount = ref(0)
+const insuranceCapitalPayment = ref(0)
+
+const tabs: Tab[] = [
+  { id: 'resumen', label: 'Resumen Financiero' },
+  { id: 'stocks', label: 'Acciones y Suscripciones' },
+  { id: 'loans', label: 'Préstamos' },
+  { id: 'payments', label: 'Pagos y Transacciones' },
+  { id: 'dues', label: 'Cuotas y Obligaciones' },
+  { id: 'schedule', label: 'Cronograma de Pagos' },
+  { id: 'history', label: 'Historial de Operaciones' }
 ]
 
-const purchaseColumns = [
-  { key: 'stock_type', label: 'Tipo de Acción' },
-  { key: 'quantity', label: 'Cantidad', format: 'number' },
-  { key: 'unit_value', label: 'Valor Unitario', format: 'currency' },
-  { key: 'total_value', label: 'Valor Total', format: 'currency' },
-  { key: 'purchase_date', label: 'Fecha', format: 'date' }
-]
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(n => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+}
 
-const paymentColumns = [
-  { key: 'type', label: 'Tipo' },
-  { key: 'total_amount', label: 'Monto', format: 'currency' },
-  { key: 'date', label: 'Fecha', format: 'date' }
-]
+async function loadInitialData() {
+  const id = memberId.value
+  await store.fetchMember(id)
+  
+  // Cargar datos básicos iniciales
+  await Promise.all([
+    store.fetchDues(id),
+    store.fetchPayments(id),
+    store.fetchPurchases(id),
+    store.fetchLoans(id),
+    store.fetchStockSubscriptions(id),
+    store.fetchInsurance(id)
+  ])
+  
+  if (store.insurance) {
+    insuranceAmount.value = store.insurance.insurance_amount
+  }
+}
 
-const dueColumns = [
-  { key: 'type', label: 'Tipo' },
-  { key: 'description', label: 'Descripción' },
-  { key: 'amount', label: 'Monto', format: 'currency' }
-]
+async function recalculateInsurance() {
+  if (!memberId.value) return
+  await store.fetchInsurance(memberId.value, insuranceCapitalPayment.value || undefined)
+  if (store.insurance) {
+    insuranceAmount.value = store.insurance.insurance_amount
+  }
+}
+
+function handlePaymentSuccess() {
+  // Recargar datos relevantes
+  const id = memberId.value
+  Promise.all([
+    store.fetchDues(id),
+    store.fetchPayments(id),
+    store.fetchLoans(id),
+    store.fetchPaymentSchedule(id)
+  ])
+}
+
+function handleViewDetail(type: string, id: string) {
+  // Navegar o mostrar detalles según el tipo
+  console.log('View detail:', type, id)
+}
+
+function handleViewSubscription(subscriptionId: string) {
+  selectedSubscriptionId.value = subscriptionId
+}
+
+function handleViewLoan(loanId: string) {
+  activeTab.value = 'loans'
+  // Scroll to loan
+}
+
+function handlePayLoan(loanId: string) {
+  activeTab.value = 'dues'
+  showRegisterPaymentModal.value = true
+}
+
+function handleViewPaymentDetail(paymentId: string) {
+  console.log('View payment detail:', paymentId)
+}
+
+function handleExchange(subscription: any) {
+  console.log('Exchange:', subscription)
+  // Navigate to exchange modal or form
+}
+
+function handleTransfer(subscription: any) {
+  console.log('Transfer:', subscription)
+  // Navigate to transfer modal or form
+}
+
+function handleUseForPayment(subscription: any) {
+  console.log('Use for payment:', subscription)
+  // Navigate to payment form with stock selected
+}
+
+// Cargar datos cuando cambia el tab activo (lazy loading)
+watch(activeTab, (newTab) => {
+  const id = memberId.value
+  if (!id) return
+
+  switch (newTab) {
+    case 'stocks':
+      if (store.stockSubscriptions.length === 0) {
+        store.fetchStockSubscriptions(id)
+        store.fetchExchanges(id)
+        store.fetchTransfers(id)
+        store.fetchStockLoanPayments(id)
+      }
+      break
+    case 'schedule':
+      if (!store.paymentSchedule) {
+        store.fetchPaymentSchedule(id, { months: 12 })
+      }
+      break
+    case 'history':
+      if (store.exchanges.length === 0) {
+        store.fetchExchanges(id)
+        store.fetchTransfers(id)
+        store.fetchStockLoanPayments(id)
+      }
+      break
+  }
+})
 
 onMounted(async () => {
-  const memberId = route.params.id as string
-  await store.fetchMember(memberId)
-  await Promise.all([
-    store.fetchPurchases(memberId),
-    store.fetchPayments(memberId),
-    store.fetchDues(memberId)
-  ])
+  await activeMeetingStore.fetchActiveMeeting()
+  await loadInitialData()
 })
 </script>
 
 <style scoped>
 .member-detail-view {
   padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-.member-header {
+.member-header-section {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -127,46 +386,128 @@ onMounted(async () => {
   background-color: #95a5a6;
   color: white;
   padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-.member-info {
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.back-button:hover {
+  background-color: #7f8c8d;
 }
 
-.info-section {
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
   margin-bottom: 2rem;
 }
 
-.info-section p {
-  margin: 0.5rem 0;
+.avatar-container {
+  flex-shrink: 0;
 }
 
-.tabs {
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.header-info {
+  flex: 1;
+}
+
+.member-name {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 0.5rem 0;
+}
+
+.member-status {
   display: flex;
   gap: 0.5rem;
-  border-bottom: 2px solid #ddd;
-  margin-bottom: 1rem;
 }
 
-.tab-button {
-  padding: 0.75rem 1.5rem;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  color: #666;
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
 }
 
-.tab-button.active {
-  color: #3498db;
-  border-bottom-color: #3498db;
+.personal-info-section {
+  background: white;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.tab-content {
+.personal-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
   padding: 1rem 0;
 }
-</style>
 
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.info-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.info-value {
+  font-size: 1rem;
+  color: #1f2937;
+}
+
+.member-tabs {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .member-detail-view {
+    padding: 1rem;
+  }
+
+  .member-header-section {
+    padding: 1.5rem;
+  }
+
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .header-top {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .personal-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

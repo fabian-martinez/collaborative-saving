@@ -31,6 +31,20 @@ export function formatDate(date: string | Date): string {
   }).format(d)
 }
 
+export function formatDateFullSpanish(date: string | Date): string {
+  const d = typeof date === 'string' ? new Date(date) : date
+  const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+  const months = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+  ]
+  const dayName = days[d.getDay()]
+  const day = d.getDate()
+  const month = months[d.getMonth()]
+  const year = d.getFullYear()
+  return `${dayName}, ${day} de ${month} ${year}`
+}
+
 export function formatDateTime(date: string | Date): string {
   const d = typeof date === 'string' ? new Date(date) : date
   return new Intl.DateTimeFormat('es-CO', {
