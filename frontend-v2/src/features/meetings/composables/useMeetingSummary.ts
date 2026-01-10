@@ -1,7 +1,6 @@
 import { ref, computed } from 'vue'
-import { operationsApi, type Operation, type LedgerEntry } from '@/api/operations.api'
-import { meetingsApi, type Meeting } from '@/api/meetings.api'
-import { membersApi } from '@/api/members.api'
+import { operationsApi, type Operation } from '@/api/operations.api'
+import { meetingsApi, type Meeting, type RevaluationResponse } from '@/api/meetings.api'
 import { stocksApi } from '@/api/stocks.api'
 
 export interface MeetingSummaryData {
@@ -32,8 +31,6 @@ export interface MeetingSummaryData {
 const CASH_ACCOUNT = 'CASH'
 const INTEREST_INCOME_ACCOUNT = 'INTEREST_INCOME'
 const FEE_INCOME_ACCOUNT = 'FEE_INCOME'
-const INVESTMENT_IN_STOCKS_ACCOUNT = 'INVESTMENT_IN_STOCKS'
-const REVALUATION_SURPLUS_ACCOUNT = 'REVALUATION_SURPLUS'
 
 export function useMeetingSummary() {
   const loading = ref(false)
@@ -41,6 +38,7 @@ export function useMeetingSummary() {
   const operations = ref<Operation[]>([])
   const allMeetings = ref<Meeting[]>([])
   const meetingNumber = ref<number>(0)
+  const revaluationData = ref<RevaluationResponse | null>(null)
 
   const shareValueRef = ref<number>(0)
 
@@ -161,39 +159,23 @@ export function useMeetingSummary() {
       false
     )
 
-    // Revalorización: Buscar ASSET_REVALUATION y calcular % de cambio
+    // Revalorización: Usar datos del endpoint de revaluación
     let revaluation = null
-    const revaluationOps = operations.value.filter(
-      (op) => op.type === 'ASSET_REVALUATION'
-    )
-    if (revaluationOps.length > 0) {
-      const latestRevaluation = revaluationOps[revaluationOps.length - 1]
-      if (latestRevaluation.entries) {
-        // Intentar obtener valores anteriores y nuevos desde los entries
-        // En una implementación completa, esto debería venir del stock_value_history
-        // Por ahora, calculamos un aproximado desde los ledger entries
-        const investmentChange = latestRevaluation.entries
-          .filter((e) => e.account_type === INVESTMENT_IN_STOCKS_ACCOUNT)
-          .reduce((sum, e) => sum + e.amount, 0)
-        const surplusChange = latestRevaluation.entries
-          .filter((e) => e.account_type === REVALUATION_SURPLUS_ACCOUNT)
-          .reduce((sum, e) => sum + Math.abs(e.amount), 0)
+    if (revaluationData.value && revaluationData.value.details.length > 0) {
+      // Calcular promedio de valores anteriores y nuevos desde los details
+      // Similar a como lo hace el backend en meeting-summary.service.ts
+      const details = revaluationData.value.details
+      const avgPrevious =
+        details.reduce((sum, d) => sum + d.previous_value, 0) / details.length
+      const avgNew =
+        details.reduce((sum, d) => sum + d.new_value, 0) / details.length
+      const percentage =
+        avgPrevious > 0 ? ((avgNew - avgPrevious) / avgPrevious) * 100 : 0
 
-        if (investmentChange > 0 && surplusChange > 0) {
-          // Aproximación: el cambio en investment representa el nuevo valor
-          // Esto debería venir del backend con los valores reales
-          const previousValue = investmentChange - surplusChange
-          const newValue = investmentChange
-          const percentage =
-            previousValue > 0
-              ? ((newValue - previousValue) / previousValue) * 100
-              : 0
-          revaluation = {
-            previousValue,
-            newValue,
-            percentage,
-          }
-        }
+      revaluation = {
+        previousValue: avgPrevious,
+        newValue: avgNew,
+        percentage,
       }
     }
 
@@ -307,6 +289,15 @@ export function useMeetingSummary() {
       )
       const index = sortedMeetings.findIndex((m) => m.id === meetingId)
       meetingNumber.value = index >= 0 ? index + 1 : 0
+
+      // Cargar datos de revaluación desde el endpoint específico
+      try {
+        revaluationData.value = await meetingsApi.getRevaluationPreview(meetingId)
+      } catch (e) {
+        // Si no hay revaluación o hay error, dejar null
+        console.warn('No se pudo cargar la revaluación:', e)
+        revaluationData.value = null
+      }
 
       // Cargar valor de acción después de obtener las operaciones
       // para poder verificar si hay revaluación primero
