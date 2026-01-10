@@ -14,6 +14,7 @@ import { GetMeetingsQueryHandler } from '@application/queries/meetings/get-meeti
 import { GetMeetingQueryHandler } from '@application/queries/meetings/get-meeting.query-handler';
 import { GetActiveMeetingQueryHandler } from '@application/queries/meetings/get-active-meeting.query-handler';
 import { GetRevaluationQueryHandler } from '@application/queries/meetings/get-revaluation.query-handler';
+import { GetDetailedMeetingSummaryQueryHandler } from '@application/queries/meetings/get-detailed-meeting-summary.query-handler';
 import { RecordRevaluationUseCase } from '@application/use-cases/meetings/record-revaluation.use-case';
 import { MeetingStatus } from '@domain/entities/meeting.entity';
 import { OpenMeetingResponseHttpDto } from '../dto/open-meeting-response-http.dto';
@@ -31,14 +32,6 @@ describe('MeetingsV2Controller', () => {
   let openMeetingUseCase: jest.Mocked<OpenMeetingUseCase>;
   let closeMeetingUseCase: jest.Mocked<CloseMeetingUseCase>;
   let getMeetingMonthlyPaymentsQuery: jest.Mocked<GetMeetingMonthlyPaymentsQueryHandler>;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let _getMeetingPurchasesQuery: jest.Mocked<GetMeetingPurchasesQueryHandler>;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let _getMeetingStockTransfersQuery: jest.Mocked<GetMeetingStockTransfersQueryHandler>;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let _getMeetingStockExchangesQuery: jest.Mocked<GetMeetingStockExchangesQueryHandler>;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let _getMeetingStockLoanPaymentsQuery: jest.Mocked<GetMeetingStockLoanPaymentsQueryHandler>;
   let getMeetingsQuery: jest.Mocked<GetMeetingsQueryHandler>;
   let getMeetingQuery: jest.Mocked<GetMeetingQueryHandler>;
   let getActiveMeetingQuery: jest.Mocked<GetActiveMeetingQueryHandler>;
@@ -47,6 +40,7 @@ describe('MeetingsV2Controller', () => {
   let getMeetingStockExchangesQuery: jest.Mocked<GetMeetingStockExchangesQueryHandler>;
   let getMeetingStockLoanPaymentsQuery: jest.Mocked<GetMeetingStockLoanPaymentsQueryHandler>;
   let getRevaluationQuery: jest.Mocked<GetRevaluationQueryHandler>;
+  let getDetailedMeetingSummaryQuery: jest.Mocked<GetDetailedMeetingSummaryQueryHandler>;
   let recordRevaluationUseCase: jest.Mocked<RecordRevaluationUseCase>;
   let getDisbursementPlanPreviewQuery: jest.Mocked<GetDisbursementPlanPreviewQueryHandler>;
   let executeDisbursementPlanUseCase: jest.Mocked<ExecuteDisbursementPlanUseCase>;
@@ -153,6 +147,12 @@ describe('MeetingsV2Controller', () => {
           },
         },
         {
+          provide: GetDetailedMeetingSummaryQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
           provide: RecordRevaluationUseCase,
           useValue: {
             execute: jest.fn(),
@@ -179,16 +179,6 @@ describe('MeetingsV2Controller', () => {
     getMeetingMonthlyPaymentsQuery = module.get(
       GetMeetingMonthlyPaymentsQueryHandler,
     );
-    _getMeetingPurchasesQuery = module.get(GetMeetingPurchasesQueryHandler);
-    _getMeetingStockTransfersQuery = module.get(
-      GetMeetingStockTransfersQueryHandler,
-    );
-    _getMeetingStockExchangesQuery = module.get(
-      GetMeetingStockExchangesQueryHandler,
-    );
-    _getMeetingStockLoanPaymentsQuery = module.get(
-      GetMeetingStockLoanPaymentsQueryHandler,
-    );
     getMeetingsQuery = module.get(GetMeetingsQueryHandler);
     getMeetingQuery = module.get(GetMeetingQueryHandler);
     getActiveMeetingQuery = module.get(GetActiveMeetingQueryHandler);
@@ -203,6 +193,9 @@ describe('MeetingsV2Controller', () => {
       GetMeetingStockLoanPaymentsQueryHandler,
     );
     getRevaluationQuery = module.get(GetRevaluationQueryHandler);
+    getDetailedMeetingSummaryQuery = module.get(
+      GetDetailedMeetingSummaryQueryHandler,
+    );
     recordRevaluationUseCase = module.get(RecordRevaluationUseCase);
     getDisbursementPlanPreviewQuery = module.get(
       GetDisbursementPlanPreviewQueryHandler,
@@ -1384,6 +1377,84 @@ describe('MeetingsV2Controller', () => {
       await expect(
         controller.getDisbursementPlanPreview(meetingId),
       ).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('getDetailedSummary', () => {
+    const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+    let getDetailedMeetingSummaryQueryExecuteSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      getDetailedMeetingSummaryQueryExecuteSpy = jest.spyOn(
+        getDetailedMeetingSummaryQuery,
+        'execute',
+      );
+    });
+
+    it('should return detailed summary successfully', async () => {
+      // ARRANGE
+      const mockDetailedSummary = {
+        meeting: {
+          id: meetingId,
+          date: new Date('2024-01-15'),
+          status: 'closed' as const,
+          notes: 'Test meeting',
+        },
+        summary: {
+          totalCollected: 150000.0,
+          totalDisbursed: 30000.0,
+          shareValue: 1500.0,
+          participants: 15,
+        },
+        collections: {
+          memberContributions: { count: 10, amount: 100000.0 },
+          loanPayments: { count: 5, amount: 30000.0 },
+          interestCollected: 5000.0,
+          feesCollected: 1000.0,
+        },
+        disbursements: {
+          newLoans: { count: 2, amount: 20000.0 },
+          stockLiquidations: { count: 1, amount: 5000.0 },
+          dividendPayments: { count: 3, amount: 5000.0 },
+        },
+        metrics: {
+          attendance: { current: 15, percentage: 100 },
+          revaluation: null,
+          paymentsUpToDate: 8,
+          overduePayments: 2,
+        },
+      };
+
+      getDetailedMeetingSummaryQueryExecuteSpy.mockResolvedValue(
+        mockDetailedSummary,
+      );
+
+      // ACT
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+      const result = await controller.getDetailedSummary(meetingId);
+
+      // ASSERT
+      expect(getDetailedMeetingSummaryQueryExecuteSpy).toHaveBeenCalledWith(
+        meetingId,
+      );
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(result.meeting.id).toBe(meetingId);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(result.summary.total_collected).toBe(150000.0);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(result.collections.member_contributions.count).toBe(10);
+    });
+
+    it('should return 404 when meeting not found', async () => {
+      // ARRANGE
+      const error = new MeetingNotFoundException(meetingId);
+      getDetailedMeetingSummaryQueryExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      await expect(controller.getDetailedSummary(meetingId)).rejects.toThrow(
+        HttpException,
+      );
     });
   });
 

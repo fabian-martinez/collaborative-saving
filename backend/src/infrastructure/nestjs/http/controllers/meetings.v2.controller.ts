@@ -31,12 +31,15 @@ import { GetMeetingsQueryHandler } from '@application/queries/meetings/get-meeti
 import { GetMeetingQueryHandler } from '@application/queries/meetings/get-meeting.query-handler';
 import { GetActiveMeetingQueryHandler } from '@application/queries/meetings/get-active-meeting.query-handler';
 import { GetRevaluationQueryHandler } from '@application/queries/meetings/get-revaluation.query-handler';
+import { GetDetailedMeetingSummaryQueryHandler } from '@application/queries/meetings/get-detailed-meeting-summary.query-handler';
 import { RecordRevaluationUseCase } from '@application/use-cases/meetings/record-revaluation.use-case';
 import { OpenMeetingHttpDto } from '../dto/open-meeting-http.dto';
 import { CloseMeetingHttpDto } from '../dto/close-meeting-http.dto';
 import { MeetingResponseDto } from '@application/dto/meetings/meeting-response.dto';
 import { OpenMeetingResponseHttpDto } from '../dto/open-meeting-response-http.dto';
 import { OperationResponseHttpDto } from '../dto/operation-response-http.dto';
+import { DetailedMeetingSummaryHttpDto } from '../dto/detailed-meeting-summary-http.dto';
+import { DetailedMeetingSummaryDto } from '@application/dto/meetings/detailed-meeting-summary.dto';
 import { OperationResponseDto } from '@application/dto/meetings/operation-response.dto';
 import { RevaluationResponseHttpDto } from '../dto/revaluation-response-http.dto';
 import { RevaluationResultDto } from '@application/dto/meetings/revaluation-result.dto';
@@ -81,6 +84,7 @@ export class MeetingsV2Controller {
     private readonly recordRevaluationUseCase: RecordRevaluationUseCase,
     private readonly getDisbursementPlanPreviewQuery: GetDisbursementPlanPreviewQueryHandler,
     private readonly executeDisbursementPlanUseCase: ExecuteDisbursementPlanUseCase,
+    private readonly getDetailedMeetingSummaryQuery: GetDetailedMeetingSummaryQueryHandler,
   ) {}
 
   @Post()
@@ -260,6 +264,45 @@ export class MeetingsV2Controller {
     try {
       const meeting = await this.getActiveMeetingQuery.execute();
       return this.mapMeetingToHttp(meeting);
+    } catch (error: unknown) {
+      if (error instanceof MeetingNotFoundException) {
+        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+      }
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get(':id/summary')
+  @ApiOperation({
+    summary: 'Get detailed meeting summary for closed meeting dashboard',
+    description:
+      'Returns comprehensive summary with collections, disbursements, and metrics. Designed for displaying detailed information on a closed meeting dashboard.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The unique identifier of the meeting',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Detailed meeting summary retrieved successfully',
+    type: DetailedMeetingSummaryHttpDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Meeting not found',
+  })
+  async getDetailedSummary(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<DetailedMeetingSummaryHttpDto> {
+    try {
+      const result = await this.getDetailedMeetingSummaryQuery.execute(id);
+      return this.mapDetailedSummaryToHttp(result);
     } catch (error: unknown) {
       if (error instanceof MeetingNotFoundException) {
         throw new HttpException(error.message, HttpStatus.NOT_FOUND);
@@ -584,6 +627,67 @@ export class MeetingsV2Controller {
     }
 
     return result;
+  }
+
+  private mapDetailedSummaryToHttp(
+    dto: DetailedMeetingSummaryDto,
+  ): DetailedMeetingSummaryHttpDto {
+    return {
+      meeting: {
+        id: dto.meeting.id,
+        date: dto.meeting.date.toISOString(),
+        status: dto.meeting.status,
+        notes: dto.meeting.notes,
+      },
+      summary: {
+        total_collected: dto.summary.totalCollected,
+        total_disbursed: dto.summary.totalDisbursed,
+        share_value: dto.summary.shareValue,
+        participants: dto.summary.participants,
+      },
+      collections: {
+        member_contributions: {
+          count: dto.collections.memberContributions.count,
+          amount: dto.collections.memberContributions.amount,
+        },
+        loan_payments: {
+          count: dto.collections.loanPayments.count,
+          amount: dto.collections.loanPayments.amount,
+        },
+        interest_collected: dto.collections.interestCollected,
+        fees_collected: dto.collections.feesCollected,
+      },
+      disbursements: {
+        new_loans: {
+          count: dto.disbursements.newLoans.count,
+          amount: dto.disbursements.newLoans.amount,
+        },
+        stock_liquidations: {
+          count: dto.disbursements.stockLiquidations.count,
+          amount: dto.disbursements.stockLiquidations.amount,
+        },
+        dividend_payments: {
+          count: dto.disbursements.dividendPayments.count,
+          amount: dto.disbursements.dividendPayments.amount,
+        },
+      },
+      metrics: {
+        attendance: {
+          current: dto.metrics.attendance.current,
+          expected: dto.metrics.attendance.expected,
+          percentage: dto.metrics.attendance.percentage,
+        },
+        revaluation: dto.metrics.revaluation
+          ? {
+              previous_value: dto.metrics.revaluation.previousValue,
+              new_value: dto.metrics.revaluation.newValue,
+              percentage: dto.metrics.revaluation.percentage,
+            }
+          : null,
+        payments_up_to_date: dto.metrics.paymentsUpToDate,
+        overdue_payments: dto.metrics.overduePayments,
+      },
+    };
   }
 
   private mapOperationToHttp(
