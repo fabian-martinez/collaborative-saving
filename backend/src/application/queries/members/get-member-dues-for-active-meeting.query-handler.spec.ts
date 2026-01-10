@@ -16,7 +16,6 @@ import {
   LoanTransactionType,
 } from '@domain/entities/loan-transaction-detail.entity';
 import { Stock } from '@domain/entities/stock.entity';
-import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
 import { PaymentType } from '@domain/enums/payment-type.enum';
 import { MemberDueResponseDto } from '@application/dto/members/member-due-response.dto';
@@ -271,16 +270,80 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       });
     });
 
-    it('should throw MeetingNotFoundException when no active meeting exists', async () => {
+    it('should return all dues when no active meeting exists', async () => {
       // ARRANGE
-      findActiveSpy.mockResolvedValue(null);
+      const member = Member.fromPersistence({
+        id: memberId,
+        name: 'Test Member',
+        email: 'test@example.com',
+        status: 'active',
+        role: 'member',
+        registrationDate: new Date(),
+      });
 
-      // ACT & ASSERT
-      await expect(queryHandler.execute(memberId)).rejects.toThrow(
-        MeetingNotFoundException,
-      );
+      const mandatoryContributions = [
+        MandatoryContribution.create({ assetType: 'insurance', value: 5000 }),
+      ];
+
+      const stockSubscriptions = [
+        StockSubscription.create({
+          memberId,
+          stockId: 'stock-1',
+          quantity: 5,
+        }),
+      ];
+
+      const activeLoans = [
+        Loan.create({
+          memberId,
+          loanType: 'personal',
+          approvedAmount: 100000,
+          monthlyPaymentAmount: 5000,
+          interestRate: 0.02,
+          term: 12,
+        }),
+      ];
+
+      const stock1 = Stock.create({
+        type: 'Type A',
+        value: 10000,
+        monthlyContribution: 2000,
+      });
+
+      findActiveSpy.mockResolvedValue(null); // No hay reunión activa
+      findByIdMemberSpy.mockResolvedValue(member);
+      findAllMandatorySpy.mockResolvedValue(mandatoryContributions);
+      findActiveByMemberSpy.mockResolvedValue(stockSubscriptions);
+      findActiveByMemberLoanSpy.mockResolvedValue(activeLoans);
+      findByIdStockSpy.mockResolvedValue(stock1);
+
+      // ACT
+      const result: MemberDueResponseDto[] =
+        await queryHandler.execute(memberId);
+
+      // ASSERT
       expect(findActiveSpy).toHaveBeenCalledTimes(1);
-      expect(findByIdMemberSpy).not.toHaveBeenCalled();
+      expect(findByIdMemberSpy).toHaveBeenCalledWith(memberId);
+      expect(findByLoanAndMeetingSpy).not.toHaveBeenCalled(); // No se debe llamar sin meetingId
+      expect(result).toHaveLength(3); // 1 mandatory + 1 stock + 1 loan
+
+      // Verificar que se retornan todas las obligaciones
+      const mandatoryDues = result.filter(
+        (due) => due.type === PaymentType.MANDATORY_CONTRIBUTION,
+      );
+      expect(mandatoryDues).toHaveLength(1);
+
+      const stockDues = result.filter(
+        (due) => due.type === PaymentType.STOCK_FEE,
+      );
+      expect(stockDues).toHaveLength(1);
+
+      // Sin reunión activa, todos los préstamos activos deben estar incluidos
+      const loanDues = result.filter(
+        (due) => due.type === PaymentType.LOAN_PAYMENT,
+      );
+      expect(loanDues).toHaveLength(1);
+      expect(loanDues[0].referenceId).toBe(activeLoans[0].id);
     });
 
     it('should throw MemberNotFoundException when member does not exist', async () => {
