@@ -1,7 +1,7 @@
 <template>
-  <div class="members-view">
-    <div class="view-header">
-      <h1>Miembros</h1>
+  <div class="p-8">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="m-0">Miembros</h1>
       <div class="flex items-center gap-4">
         <div class="relative">
           <input
@@ -12,7 +12,7 @@
           />
           <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
         </div>
-        <button @click="showCreateModal = true" class="create-button">Nuevo Miembro</button>
+        <button @click="showCreateModal = true" class="btn btn-success">Nuevo Miembro</button>
       </div>
     </div>
 
@@ -28,9 +28,9 @@
       row-key="id"
     >
       <template #actions="{ item }">
-        <button @click="viewMember(item.id)" class="action-button">Ver</button>
-        <button @click="editMember(item)" class="action-button">Editar</button>
-        <button @click="deleteMember(item.id)" class="action-button danger">Eliminar</button>
+        <button @click="viewMember(item.id)" class="btn btn-sm btn-primary">Ver</button>
+        <button @click="editMember(item)" class="btn btn-sm btn-primary">Editar</button>
+        <button @click="deleteMember(item.id)" class="btn btn-sm btn-error">Eliminar</button>
       </template>
     </DataTable>
 
@@ -106,53 +106,4 @@ async function handleCreate(data: Parameters<typeof store.createMember>[0]) {
 }
 </script>
 
-<style scoped>
-.members-view {
-  padding: 2rem;
-}
-
-.view-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-.view-header h1 {
-  margin: 0;
-}
-
-.create-button {
-  background-color: #27ae60;
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border-radius: 4px;
-  font-size: 1rem;
-}
-
-.create-button:hover {
-  background-color: #229954;
-}
-
-.action-button {
-  padding: 0.25rem 0.5rem;
-  margin: 0 0.25rem;
-  font-size: 0.875rem;
-  background-color: #3498db;
-  color: white;
-  border-radius: 4px;
-}
-
-.action-button:hover {
-  background-color: #2980b9;
-}
-
-.action-button.danger {
-  background-color: #e74c3c;
-}
-
-.action-button.danger:hover {
-  background-color: #c0392b;
-}
-</style>
 

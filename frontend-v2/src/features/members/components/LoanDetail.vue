@@ -1,52 +1,52 @@
 <template>
   <ExpandableSection :title="`Préstamo ${loan.loan_type} - ${formatCurrency(loan.approved_amount)}`" :default-expanded="expanded">
     <template #header>
-      <div class="flex items-center justify-between w-full pr-4">
-        <div class="flex items-center gap-3">
-          <span class="font-semibold">{{ loan.loan_type }}</span>
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 w-full pr-4">
+        <div class="flex items-center gap-3 flex-wrap">
+          <span class="font-semibold text-sm sm:text-base break-words">{{ loan.loan_type }}</span>
           <Badge :variant="getStatusVariant(loan.status)">
             {{ getStatusLabel(loan.status) }}
           </Badge>
         </div>
-        <div class="text-right">
-          <div class="text-sm text-gray-600">Saldo Pendiente</div>
-          <div class="text-lg font-bold font-mono">{{ formatCurrency(loan.outstanding_balance) }}</div>
+        <div class="text-left sm:text-right shrink-0">
+          <div class="text-xs sm:text-sm text-base-content/70 mb-1">Saldo Pendiente</div>
+          <div class="text-base sm:text-lg font-bold font-mono break-words">{{ formatCurrency(loan.outstanding_balance) }}</div>
         </div>
       </div>
     </template>
 
     <div class="space-y-4">
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         <div>
-          <label class="text-sm font-semibold text-gray-600">Monto Aprobado</label>
+          <label class="text-sm font-semibold text-base-content/70">Monto Aprobado</label>
           <div class="mt-1 font-mono">{{ formatCurrency(loan.approved_amount) }}</div>
         </div>
         <div>
-          <label class="text-sm font-semibold text-gray-600">Monto Desembolsado</label>
+          <label class="text-sm font-semibold text-base-content/70">Monto Desembolsado</label>
           <div class="mt-1 font-mono">{{ formatCurrency(loan.disbursed_amount) }}</div>
         </div>
         <div>
-          <label class="text-sm font-semibold text-gray-600">Saldo Pendiente</label>
+          <label class="text-sm font-semibold text-base-content/70">Saldo Pendiente</label>
           <div class="mt-1 font-mono font-bold">{{ formatCurrency(loan.outstanding_balance) }}</div>
         </div>
         <div>
-          <label class="text-sm font-semibold text-gray-600">Cuota Mensual</label>
+          <label class="text-sm font-semibold text-base-content/70">Cuota Mensual</label>
           <div class="mt-1 font-mono">{{ formatCurrency(loan.monthly_payment_amount) }}</div>
         </div>
         <div>
-          <label class="text-sm font-semibold text-gray-600">Tasa de Interés</label>
+          <label class="text-sm font-semibold text-base-content/70">Tasa de Interés</label>
           <div class="mt-1">{{ formatPercentage(loan.interest_rate, 2) }}</div>
         </div>
         <div>
-          <label class="text-sm font-semibold text-gray-600">Plazo</label>
+          <label class="text-sm font-semibold text-base-content/70">Plazo</label>
           <div class="mt-1">{{ loan.term }} meses</div>
         </div>
         <div>
-          <label class="text-sm font-semibold text-gray-600">Fecha de Creación</label>
+          <label class="text-sm font-semibold text-base-content/70">Fecha de Creación</label>
           <div class="mt-1">{{ formatDate(loan.creation_date) }}</div>
         </div>
         <div v-if="loan.guaranteed_stock_id" class="col-span-2">
-          <label class="text-sm font-semibold text-gray-600">Acción Garantizada</label>
+          <label class="text-sm font-semibold text-base-content/70">Acción Garantizada</label>
           <div class="mt-1">
             <button class="btn btn-sm btn-link" @click="$emit('view-stock', loan.guaranteed_stock_id!)">
               Ver acción #{{ loan.guaranteed_stock_id }}
@@ -55,8 +55,8 @@
         </div>
       </div>
 
-      <div v-if="loan.outstanding_balance > 0" class="progress-section">
-        <label class="text-sm font-semibold text-gray-600 mb-2">Progreso de Pago</label>
+      <div v-if="loan.outstanding_balance > 0" class="p-3 sm:p-4 bg-base-200 rounded-lg">
+        <label class="text-sm font-semibold text-base-content/70 mb-2">Progreso de Pago</label>
         <ProgressBar
           :value="getPaidAmount()"
           :max="loan.approved_amount"
@@ -136,11 +136,4 @@ function getPaidAmount(): number {
 }
 </script>
 
-<style scoped>
-.progress-section {
-  padding: 1rem;
-  background: #f9fafb;
-  border-radius: 8px;
-}
-</style>
 
