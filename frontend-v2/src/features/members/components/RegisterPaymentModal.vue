@@ -19,32 +19,34 @@
           :key="due.reference_id || due.description"
           class="border rounded-lg p-4"
         >
-          <div class="flex items-start gap-3">
-            <input
-              type="checkbox"
-              :checked="isSelected(due)"
-              @change="toggleDue(due)"
-              class="checkbox checkbox-primary mt-1"
-            />
-            <div class="flex-1">
-              <div class="font-semibold">{{ due.description }}</div>
-              <div class="text-sm text-gray-600 mt-1">
-                Monto: {{ formatCurrency(due.amount) }}
-                <span v-if="due.type === 'loan_payment' && due.details">
-                  (Interés: {{ formatCurrency(due.details.interest || 0) }}, 
-                  Capital: {{ formatCurrency(due.details.principal || 0) }})
-                </span>
+          <div class="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-3">
+            <div class="payment-item-main">
+              <input
+                type="checkbox"
+                :checked="isSelected(due)"
+                @change="toggleDue(due)"
+                class="checkbox checkbox-primary cursor-pointer"
+              />
+              <div class="payment-item-info">
+                <div class="font-semibold text-sm sm:text-base break-words mb-1">{{ due.description }}</div>
+                <div class="text-xs sm:text-sm text-base-content/70 break-words leading-relaxed">
+                  Monto: {{ formatCurrency(due.amount) }}
+                  <span v-if="due.type === 'loan_payment' && due.details">
+                    (Interés: {{ formatCurrency(due.details.interest || 0) }}, 
+                    Capital: {{ formatCurrency(due.details.principal || 0) }})
+                  </span>
+                </div>
               </div>
             </div>
-            <div class="text-right">
-              <label class="text-sm text-gray-600">Monto a pagar</label>
+            <div class="w-full text-left sm:w-auto sm:text-right sm:min-w-[150px]">
+              <label class="block text-xs sm:text-sm text-base-content/70 mb-1">Monto a pagar</label>
               <input
                 v-model.number="paymentAmounts[getDueKey(due)]"
                 type="number"
                 step="0.01"
                 min="0"
                 :max="due.amount"
-                class="input input-bordered w-32 mt-1 text-right font-mono"
+                class="w-full sm:w-32 text-right font-mono"
                 :disabled="!isSelected(due)"
               />
             </div>
@@ -65,9 +67,9 @@
       </div>
 
       <div v-if="totalAmount > 0" class="alert alert-info">
-        <div class="flex justify-between items-center">
-          <span class="font-semibold">Total a pagar:</span>
-          <span class="text-xl font-bold font-mono">{{ formatCurrency(totalAmount) }}</span>
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
+          <span class="font-semibold text-sm sm:text-base">Total a pagar:</span>
+          <span class="text-lg sm:text-xl font-bold font-mono break-words">{{ formatCurrency(totalAmount) }}</span>
         </div>
       </div>
     </form>
@@ -203,8 +205,16 @@ watch(() => props.visible, (newValue) => {
 </script>
 
 <style scoped>
-.checkbox {
-  cursor: pointer;
+.payment-item-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.payment-item-info {
+  flex: 1;
+  min-width: 0;
 }
 </style>
 

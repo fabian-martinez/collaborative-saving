@@ -1,32 +1,44 @@
 <template>
-  <form @submit.prevent="handleSubmit" class="member-form">
-    <div class="form-group">
-      <label>Nombre *</label>
-      <input v-model="formData.name" type="text" required />
+  <form @submit.prevent="handleSubmit" class="flex flex-col gap-4">
+    <div class="form-control">
+      <label class="label">
+        <span class="label-text">Nombre *</span>
+      </label>
+      <input v-model="formData.name" type="text" required class="input input-bordered w-full" />
     </div>
-    <div class="form-group">
-      <label>Email *</label>
-      <input v-model="formData.email" type="email" required />
+    <div class="form-control">
+      <label class="label">
+        <span class="label-text">Email *</span>
+      </label>
+      <input v-model="formData.email" type="email" required class="input input-bordered w-full" />
     </div>
-    <div class="form-group">
-      <label>Identificación</label>
-      <input v-model="formData.identification_number" type="text" />
+    <div class="form-control">
+      <label class="label">
+        <span class="label-text">Identificación</span>
+      </label>
+      <input v-model="formData.identification_number" type="text" class="input input-bordered w-full" />
     </div>
-    <div class="form-group">
-      <label>Teléfono</label>
-      <input v-model="formData.phone" type="text" />
+    <div class="form-control">
+      <label class="label">
+        <span class="label-text">Teléfono</span>
+      </label>
+      <input v-model="formData.phone" type="text" class="input input-bordered w-full" />
     </div>
-    <div class="form-group">
-      <label>Dirección</label>
-      <input v-model="formData.address" type="text" />
+    <div class="form-control">
+      <label class="label">
+        <span class="label-text">Dirección</span>
+      </label>
+      <input v-model="formData.address" type="text" class="input input-bordered w-full" />
     </div>
-    <div class="form-group">
-      <label>Beneficiario</label>
-      <input v-model="formData.beneficiary" type="text" />
+    <div class="form-control">
+      <label class="label">
+        <span class="label-text">Beneficiario</span>
+      </label>
+      <input v-model="formData.beneficiary" type="text" class="input input-bordered w-full" />
     </div>
-    <div class="form-actions">
-      <button type="submit" class="submit-button">Guardar</button>
-      <button type="button" @click="$emit('cancel')" class="cancel-button">Cancelar</button>
+    <div class="flex justify-end gap-2 mt-4">
+      <button type="submit" class="btn btn-success">Guardar</button>
+      <button type="button" @click="$emit('cancel')" class="btn btn-ghost">Cancelar</button>
     </div>
   </form>
 </template>
@@ -59,46 +71,4 @@ function handleSubmit() {
 }
 </script>
 
-<style scoped>
-.member-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-group label {
-  font-weight: 600;
-}
-
-.form-group input {
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.submit-button {
-  background-color: #27ae60;
-  color: white;
-  padding: 0.5rem 1rem;
-}
-
-.cancel-button {
-  background-color: #95a5a6;
-  color: white;
-  padding: 0.5rem 1rem;
-}
-</style>
 

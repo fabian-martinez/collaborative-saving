@@ -11,19 +11,19 @@
     <div v-else-if="subscription" class="space-y-4">
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="text-sm font-semibold text-gray-600">Tipo de Acción</label>
+          <label class="text-sm font-semibold text-base-content/70">Tipo de Acción</label>
           <div class="mt-1 text-lg">{{ subscription.stock_type }}</div>
         </div>
         <div>
-          <label class="text-sm font-semibold text-gray-600">Cantidad</label>
+          <label class="text-sm font-semibold text-base-content/70">Cantidad</label>
           <div class="mt-1 text-lg font-mono">{{ subscription.quantity }}</div>
         </div>
         <div>
-          <label class="text-sm font-semibold text-gray-600">Fecha de Compra</label>
+          <label class="text-sm font-semibold text-base-content/70">Fecha de Compra</label>
           <div class="mt-1">{{ formatDate(subscription.purchase_date) }}</div>
         </div>
         <div>
-          <label class="text-sm font-semibold text-gray-600">Estado</label>
+          <label class="text-sm font-semibold text-base-content/70">Estado</label>
           <div class="mt-1">
             <Badge :variant="subscription.status === 'active' ? 'success' : 'neutral'">
               {{ subscription.status === 'active' ? 'Activa' : 'Inactiva' }}
@@ -31,7 +31,7 @@
           </div>
         </div>
         <div v-if="subscription.financing_loan_id" class="col-span-2">
-          <label class="text-sm font-semibold text-gray-600">Préstamo Asociado</label>
+          <label class="text-sm font-semibold text-base-content/70">Préstamo Asociado</label>
           <div class="mt-1">
             <button class="btn btn-sm btn-link" @click="viewLoan(subscription.financing_loan_id!)">
               Ver préstamo #{{ subscription.financing_loan_id }}

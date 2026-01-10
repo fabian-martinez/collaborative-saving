@@ -1,36 +1,39 @@
 <template>
-  <div class="member-detail-view">
+  <div class="p-3 sm:p-4 md:p-6 lg:p-8 max-w-full xl:max-w-[1400px] mx-auto min-h-[calc(100vh-4rem)] w-full overflow-x-hidden relative">
     <LoadingSpinner :loading="store.loading && !store.member" message="Cargando miembro..." />
     <ErrorMessage :error="store.error" />
 
     <div v-if="store.member && !store.loading" class="member-detail">
       <!-- Header del Socio -->
-      <div class="member-header-section">
-        <div class="header-top">
-          <button @click="$router.push('/members')" class="back-button">← Volver</button>
-          <div class="header-actions">
-            <button class="btn btn-primary" @click="showRegisterPaymentModal = true">
-              Registrar Pago
-            </button>
-          </div>
-        </div>
-
-        <div class="header-content">
-          <div class="avatar-container">
-            <div class="avatar">{{ getInitials(store.member.name) }}</div>
-          </div>
-          <div class="header-info">
-            <h1 class="member-name">{{ store.member.name }}</h1>
-            <div class="member-status">
-              <Badge :variant="store.member.status === 'active' ? 'success' : 'neutral'">
-                {{ store.member.status === 'active' ? 'ACTIVO' : store.member.status.toUpperCase() }}
-              </Badge>
+      <div class="card bg-base-100 shadow-lg mb-6">
+        <div class="card-body">
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
+            <button @click="$router.push('/members')" class="btn btn-ghost self-start sm:self-auto">← Volver</button>
+            <div class="w-full sm:w-auto">
+              <button class="btn btn-primary w-full sm:w-auto" @click="showRegisterPaymentModal = true">
+                Registrar Pago
+              </button>
             </div>
           </div>
-        </div>
 
-        <!-- Summary Cards Grid -->
-        <div class="summary-grid">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mb-8 text-center sm:text-left">
+            <div class="shrink-0">
+              <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary text-primary-content flex items-center justify-center text-2xl sm:text-4xl font-bold shadow-lg">
+                {{ getInitials(store.member.name) }}
+              </div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h1 class="text-2xl sm:text-4xl font-bold text-base-content mb-2 break-words">{{ store.member.name }}</h1>
+              <div class="flex gap-2">
+                <Badge :variant="store.member.status === 'active' ? 'success' : 'neutral'">
+                  {{ store.member.status === 'active' ? 'ACTIVO' : store.member.status.toUpperCase() }}
+                </Badge>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary Cards Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-8">
           <SummaryCard
             title="Total en Acciones"
             :value="store.totalInStocks"
@@ -64,49 +67,54 @@
             action="Recalcular"
             @action-click="recalculateInsurance"
           />
+          </div>
         </div>
       </div>
 
       <!-- Información Personal -->
-      <div class="personal-info-section">
-        <ExpandableSection title="Información Personal" :default-expanded="false">
-          <div class="personal-info-grid">
-            <div class="info-item">
-              <span class="info-label">📧 Email</span>
-              <span class="info-value">{{ store.member.email }}</span>
+      <div class="card bg-base-100 shadow-lg mb-8">
+        <div class="card-body">
+          <ExpandableSection title="Información Personal" :default-expanded="false">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 py-4">
+              <div class="flex flex-col gap-2">
+                <span class="text-sm font-semibold text-base-content/70">📧 Email</span>
+                <span class="text-base text-base-content break-words">{{ store.member.email }}</span>
+              </div>
+              <div class="flex flex-col gap-2">
+                <span class="text-sm font-semibold text-base-content/70">🆔 Identificación</span>
+                <span class="text-base text-base-content break-words">{{ store.member.identification_number || 'N/A' }}</span>
+              </div>
+              <div class="flex flex-col gap-2">
+                <span class="text-sm font-semibold text-base-content/70">📱 Teléfono</span>
+                <span class="text-base text-base-content break-words">{{ store.member.phone || 'N/A' }}</span>
+              </div>
+              <div class="flex flex-col gap-2">
+                <span class="text-sm font-semibold text-base-content/70">📍 Dirección</span>
+                <span class="text-base text-base-content break-words">{{ store.member.address || 'N/A' }}</span>
+              </div>
+              <div class="flex flex-col gap-2">
+                <span class="text-sm font-semibold text-base-content/70">👤 Beneficiario</span>
+                <span class="text-base text-base-content break-words">{{ store.member.beneficiary || 'N/A' }}</span>
+              </div>
+              <div class="flex flex-col gap-2">
+                <span class="text-sm font-semibold text-base-content/70">📅 Fecha de Registro</span>
+                <span class="text-base text-base-content break-words">{{ formatDate(store.member.registration_date || store.member.created_at || '') }}</span>
+              </div>
             </div>
-            <div class="info-item">
-              <span class="info-label">🆔 Identificación</span>
-              <span class="info-value">{{ store.member.identification_number || 'N/A' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">📱 Teléfono</span>
-              <span class="info-value">{{ store.member.phone || 'N/A' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">📍 Dirección</span>
-              <span class="info-value">{{ store.member.address || 'N/A' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">👤 Beneficiario</span>
-              <span class="info-value">{{ store.member.beneficiary || 'N/A' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">📅 Fecha de Registro</span>
-              <span class="info-value">{{ formatDate(store.member.registration_date || store.member.created_at || '') }}</span>
-            </div>
-          </div>
-        </ExpandableSection>
+          </ExpandableSection>
+        </div>
       </div>
 
       <!-- Sistema de Tabs -->
-      <Tabs
-        :tabs="tabs"
-        v-model="activeTab"
-        :lazy="true"
-        :scrollable="true"
-        class="member-tabs"
-      >
+      <div class="card bg-base-100 shadow-lg">
+        <div class="card-body">
+          <Tabs
+            :tabs="tabs"
+            :model-value="activeTab"
+            :lazy="true"
+            :scrollable="true"
+            @update:model-value="activeTab = $event"
+          >
         <!-- Tab 1: Resumen Financiero -->
         <template #content-resumen>
           <TabResumen
@@ -169,7 +177,9 @@
             :store="store"
           />
         </template>
-      </Tabs>
+          </Tabs>
+        </div>
+      </div>
     </div>
 
     <!-- Modals -->
@@ -177,7 +187,7 @@
       :visible="showRegisterPaymentModal"
       :member-id="memberId"
       :dues="store.dues"
-      :meeting-id="activeMeetingId"
+      :meeting-id="activeMeetingId || undefined"
       @close="showRegisterPaymentModal = false"
       @success="handlePaymentSuccess"
     />
@@ -202,7 +212,8 @@ import { useActiveMeetingStore } from '@/features/meetings/stores/activeMeeting'
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import ErrorMessage from '@/shared/components/ErrorMessage.vue'
 import Badge from '@/shared/components/Badge.vue'
-import Tabs, { type Tab } from '@/shared/components/Tabs.vue'
+import Tabs from '@/shared/components/Tabs.vue'
+import type { Tab } from '@/shared/components/Tabs.vue'
 import SummaryCard from '@/shared/components/SummaryCard.vue'
 import ExpandableSection from '@/shared/components/ExpandableSection.vue'
 import RegisterPaymentModal from '../components/RegisterPaymentModal.vue'
@@ -251,20 +262,26 @@ function getInitials(name: string): string {
 
 async function loadInitialData() {
   const id = memberId.value
+  if (!id) return
+  
   await store.fetchMember(id)
   
   // Cargar datos básicos iniciales
-  await Promise.all([
-    store.fetchDues(id),
-    store.fetchPayments(id),
-    store.fetchPurchases(id),
-    store.fetchLoans(id),
-    store.fetchStockSubscriptions(id),
-    store.fetchInsurance(id)
-  ])
-  
-  if (store.insurance) {
-    insuranceAmount.value = store.insurance.insurance_amount
+  try {
+    await Promise.all([
+      store.fetchDues(id),
+      store.fetchPayments(id),
+      store.fetchPurchases(id),
+      store.fetchLoans(id),
+      store.fetchStockSubscriptions(id),
+      store.fetchInsurance(id)
+    ])
+    
+    if (store.insurance) {
+      insuranceAmount.value = store.insurance.insurance_amount
+    }
+  } catch (error) {
+    console.error('Error cargando datos iniciales:', error)
   }
 }
 
@@ -361,153 +378,19 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.member-detail-view {
-  padding: 2rem;
-  max-width: 1400px;
-  margin: 0 auto;
+/* Animación de entrada */
+.card {
+  animation: fadeIn 0.3s ease-in;
 }
 
-.member-header-section {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.header-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-.back-button {
-  background-color: #95a5a6;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.back-button:hover {
-  background-color: #7f8c8d;
-}
-
-.header-content {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.avatar-container {
-  flex-shrink: 0;
-}
-
-.avatar {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  font-weight: 700;
-  color: white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.header-info {
-  flex: 1;
-}
-
-.member-name {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 0.5rem 0;
-}
-
-.member-status {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-top: 2rem;
-}
-
-.personal-info-section {
-  background: white;
-  border-radius: 12px;
-  margin-bottom: 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.personal-info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-  padding: 1rem 0;
-}
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.info-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #6b7280;
-}
-
-.info-value {
-  font-size: 1rem;
-  color: #1f2937;
-}
-
-.member-tabs {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-@media (max-width: 768px) {
-  .member-detail-view {
-    padding: 1rem;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
-
-  .member-header-section {
-    padding: 1.5rem;
-  }
-
-  .header-content {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .header-top {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-  }
-
-  .summary-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .personal-info-grid {
-    grid-template-columns: 1fr;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>
