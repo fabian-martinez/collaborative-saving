@@ -1,8 +1,12 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
 import { MeetingSummaryService } from './meeting-summary.service';
 import { LedgerEntry } from '@infrastructure/typeorm/entities/ledger-entry.entity';
 import { Operation } from '@infrastructure/typeorm/entities/operation.entity';
+import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
+import { StockValueHistoryRepository } from '@domain/ports/repositories/stock-value-history-repository.port';
+import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
+import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pending-member-payment-repository.port';
+import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 
 describe('MeetingSummaryService', () => {
   let service: MeetingSummaryService;
@@ -19,19 +23,27 @@ describe('MeetingSummaryService', () => {
     find: jest.fn(),
   };
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        MeetingSummaryService,
-        {
-          provide: DataSource,
-          useValue: mockDataSource,
-        },
-      ],
-    }).compile();
+  const mockOperationRepository = {
+    findByMeetingAndType: jest.fn(),
+  } as unknown as jest.Mocked<OperationRepository>;
 
-    service = module.get<MeetingSummaryService>(MeetingSummaryService);
+  const mockStockValueHistoryRepository = {
+    findByOperation: jest.fn(),
+  } as unknown as jest.Mocked<StockValueHistoryRepository>;
 
+  const mockLoanRepository = {
+    findAll: jest.fn(),
+  } as unknown as jest.Mocked<LoanRepository>;
+
+  const mockPendingMemberPaymentRepository = {
+    findByMeeting: jest.fn(),
+  } as unknown as jest.Mocked<PendingMemberPaymentRepository>;
+
+  const mockStockRepository = {
+    findActive: jest.fn(),
+  } as unknown as jest.Mocked<StockRepository>;
+
+  beforeEach(() => {
     mockDataSource.getRepository.mockImplementation((entity) => {
       if (entity === LedgerEntry) {
         return mockLedgerRepo;
@@ -41,6 +53,23 @@ describe('MeetingSummaryService', () => {
       }
       return null;
     });
+
+    // Reset all repository mocks
+    mockOperationRepository.findByMeetingAndType.mockResolvedValue([]);
+    mockStockValueHistoryRepository.findByOperation.mockResolvedValue([]);
+    mockLoanRepository.findAll.mockResolvedValue([]);
+    mockPendingMemberPaymentRepository.findByMeeting.mockResolvedValue([]);
+    mockStockRepository.findActive.mockResolvedValue([]);
+
+    // Create service instance directly with all dependencies
+    service = new MeetingSummaryService(
+      mockDataSource as unknown as DataSource,
+      mockOperationRepository,
+      mockStockValueHistoryRepository,
+      mockLoanRepository,
+      mockPendingMemberPaymentRepository,
+      mockStockRepository,
+    );
   });
 
   it('should be defined', () => {

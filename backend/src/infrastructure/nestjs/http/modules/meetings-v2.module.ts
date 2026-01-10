@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { Meeting } from '@infrastructure/typeorm/entities/meeting.entity';
 import { Operation } from '@infrastructure/typeorm/entities/operation.entity';
 import { LedgerEntry } from '@infrastructure/typeorm/entities/ledger-entry.entity';
@@ -23,6 +24,7 @@ import { GetMeetingsQueryHandler } from '@application/queries/meetings/get-meeti
 import { GetMeetingQueryHandler } from '@application/queries/meetings/get-meeting.query-handler';
 import { GetActiveMeetingQueryHandler } from '@application/queries/meetings/get-active-meeting.query-handler';
 import { GetRevaluationQueryHandler } from '@application/queries/meetings/get-revaluation.query-handler';
+import { GetDetailedMeetingSummaryQueryHandler } from '@application/queries/meetings/get-detailed-meeting-summary.query-handler';
 import { RecordRevaluationUseCase } from '@application/use-cases/meetings/record-revaluation.use-case';
 import { GetDisbursementPlanPreviewQueryHandler } from '@application/queries/meetings/get-disbursement-plan-preview.query-handler';
 import { ExecuteDisbursementPlanUseCase } from '@application/use-cases/meetings/execute-disbursement-plan.use-case';
@@ -280,6 +282,15 @@ const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
       ],
     },
     {
+      provide: GetDetailedMeetingSummaryQueryHandler,
+      useFactory: (
+        meetingRepo: MeetingRepository,
+        summaryService: MeetingSummaryService,
+      ) =>
+        new GetDetailedMeetingSummaryQueryHandler(meetingRepo, summaryService),
+      inject: [MEETING_REPOSITORY, MeetingSummaryService],
+    },
+    {
       provide: GetDisbursementPlanPreviewQueryHandler,
       useFactory: (
         pendingPaymentRepo: PendingMemberPaymentRepository,
@@ -497,7 +508,33 @@ const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
       ],
     },
     // Services
-    MeetingSummaryService,
+    {
+      provide: MeetingSummaryService,
+      useFactory: (
+        dataSource: DataSource,
+        operationRepo: OperationRepository,
+        stockValueHistoryRepo: StockValueHistoryRepository,
+        loanRepo: LoanRepository,
+        pendingMemberPaymentRepo: PendingMemberPaymentRepository,
+        stockRepo: StockRepository,
+      ) =>
+        new MeetingSummaryService(
+          dataSource,
+          operationRepo,
+          stockValueHistoryRepo,
+          loanRepo,
+          pendingMemberPaymentRepo,
+          stockRepo,
+        ),
+      inject: [
+        DataSource,
+        OPERATION_REPOSITORY,
+        STOCK_VALUE_HISTORY_REPOSITORY,
+        LOAN_REPOSITORY,
+        PENDING_MEMBER_PAYMENT_REPOSITORY,
+        STOCK_REPOSITORY,
+      ],
+    },
     PaymentMapperService,
     // Repository instances for direct injection if needed
     TypeOrmMeetingRepository,
