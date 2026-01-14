@@ -30,7 +30,7 @@
   </div>
 </template>
 
-<script setup lang="ts" generic="T">
+<script setup lang="ts">
 import { formatCurrency, formatDate, formatDateTime, formatNumber } from '@/shared/utils/formatters'
 
 interface Column {
@@ -40,25 +40,25 @@ interface Column {
 }
 
 const props = defineProps<{
-  data: T[]
+  data: Record<string, unknown>[]
   columns: Column[]
   actions?: boolean
   emptyMessage?: string
-  rowKey?: string | ((item: T) => string)
+  rowKey?: string | ((item: Record<string, unknown>) => string)
 }>()
 
-function getRowKey(item: T, index: number): string {
+function getRowKey(item: Record<string, unknown>, index: number): string {
   if (props.rowKey) {
     if (typeof props.rowKey === 'function') {
       return props.rowKey(item)
     }
-    return String((item as any)[props.rowKey] || index)
+    return String(item[props.rowKey] || index)
   }
   return String(index)
 }
 
-function getValue(item: T, key: string): unknown {
-  return (item as any)[key]
+function getValue(item: Record<string, unknown>, key: string): unknown {
+  return item[key]
 }
 
 function formatValue(value: unknown, format?: string): string {
