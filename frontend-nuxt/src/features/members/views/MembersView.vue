@@ -29,26 +29,26 @@
     >
       <!-- Date Slot -->
       <template #cell-registration_date="{ item }">
-        <span class="font-medium">{{ formatDate(item.registration_date) }}</span>
+        <span class="font-medium">{{ formatDate((item as unknown as Member).registration_date) }}</span>
       </template>
 
       <!-- Status Slot -->
       <template #cell-status="{ item }">
-        <span class="badge" :class="getStatusBadgeClass(item.status)">
-          {{ formatStatus(item.status) }}
+        <span class="badge" :class="getStatusBadgeClass((item as unknown as Member).status)">
+          {{ formatStatus((item as unknown as Member).status) }}
         </span>
       </template>
 
       <!-- Actions Slot -->
       <template #actions="{ item }">
         <div class="flex gap-2">
-           <button @click="viewMember(item.id)" class="btn btn-sm btn-ghost" title="Ver detalles">
+           <button @click="viewMember((item as unknown as Member).id)" class="btn btn-sm btn-ghost" title="Ver detalles">
             <Eye class="w-4 h-4" />
           </button>
-          <button @click="editMember(item)" class="btn btn-sm btn-ghost" title="Editar">
+          <button @click="editMember(item as unknown as Member)" class="btn btn-sm btn-ghost" title="Editar">
              <EditPencil class="w-4 h-4" />
           </button>
-          <button @click="confirmDelete(item)" class="btn btn-sm btn-ghost text-error" title="Eliminar">
+          <button @click="confirmDelete(item as unknown as Member)" class="btn btn-sm btn-ghost text-error" title="Eliminar">
             <Trash class="w-4 h-4" />
           </button>
         </div>
