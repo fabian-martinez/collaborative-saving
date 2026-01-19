@@ -25,6 +25,7 @@ import {
   CASH_ACCOUNT,
   STOCK_CAPITAL_ACCOUNT,
 } from '@domain/constants/account-types';
+import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 
 const DEFAULT_DIFFERENCE_LOAN_INTEREST = 0.02;
 const DEFAULT_DIFFERENCE_LOAN_TERM = 24;
@@ -49,158 +50,161 @@ export class ProcessStockExchangeUseCase {
     private readonly recordOperationUseCase: RecordOperationUseCase,
     private readonly createLoanUseCase: CreateLoanUseCase,
     private readonly recordLoanPaymentUseCase: RecordLoanPaymentUseCase,
+    private readonly transactionManager: TransactionManager,
   ) {}
 
   async execute(dto: StockExchangeDto): Promise<StockOperationResponseDto> {
-    const member = await this.memberRepository.findById(dto.memberId);
-    if (!member) {
-      throw new MemberNotFoundException(dto.memberId);
-    }
+    return this.transactionManager.execute(async () => {
+      const member = await this.memberRepository.findById(dto.memberId);
+      if (!member) {
+        throw new MemberNotFoundException(dto.memberId);
+      }
 
-    const meeting = await this.resolveMeeting(dto.meetingId);
-    if (meeting.isClosed()) {
-      throw new InvalidRequestError(
-        'No se pueden modificar acciones en una reunión cerrada',
+      const meeting = await this.resolveMeeting(dto.meetingId);
+      if (meeting.isClosed()) {
+        throw new InvalidRequestError(
+          'No se pueden modificar acciones en una reunión cerrada',
+        );
+      }
+
+      const fromSubscription = await this.stockSubscriptionRepository.findById(
+        dto.fromSubscriptionId,
       );
-    }
+      if (!fromSubscription || fromSubscription.memberId !== dto.memberId) {
+        throw new InvalidRequestError(
+          'La suscripción de origen no pertenece al socio',
+        );
+      }
 
-    const fromSubscription = await this.stockSubscriptionRepository.findById(
-      dto.fromSubscriptionId,
-    );
-    if (!fromSubscription || fromSubscription.memberId !== dto.memberId) {
-      throw new InvalidRequestError(
-        'La suscripción de origen no pertenece al socio',
+      if (dto.fromQuantity <= 0) {
+        throw new InvalidRequestError(
+          'La cantidad origen debe ser mayor que cero',
+        );
+      }
+
+      if (fromSubscription.quantity < dto.fromQuantity) {
+        throw new InvalidRequestError(
+          'El socio no tiene acciones suficientes en la suscripción origen',
+        );
+      }
+
+      if (dto.toQuantity <= 0) {
+        throw new InvalidRequestError(
+          'La cantidad destino debe ser mayor que cero',
+        );
+      }
+
+      const fromStock = await this.stockRepository.findById(
+        fromSubscription.stockId,
       );
-    }
+      if (!fromStock) {
+        throw new StockNotFoundException(fromSubscription.stockId);
+      }
 
-    if (dto.fromQuantity <= 0) {
-      throw new InvalidRequestError(
-        'La cantidad origen debe ser mayor que cero',
-      );
-    }
+      const toStock = await this.stockRepository.findById(dto.toStockId);
+      if (!toStock) {
+        throw new StockNotFoundException(dto.toStockId);
+      }
 
-    if (fromSubscription.quantity < dto.fromQuantity) {
-      throw new InvalidRequestError(
-        'El socio no tiene acciones suficientes en la suscripción origen',
-      );
-    }
-
-    if (dto.toQuantity <= 0) {
-      throw new InvalidRequestError(
-        'La cantidad destino debe ser mayor que cero',
-      );
-    }
-
-    const fromStock = await this.stockRepository.findById(
-      fromSubscription.stockId,
-    );
-    if (!fromStock) {
-      throw new StockNotFoundException(fromSubscription.stockId);
-    }
-
-    const toStock = await this.stockRepository.findById(dto.toStockId);
-    if (!toStock) {
-      throw new StockNotFoundException(dto.toStockId);
-    }
-
-    const { subscription: destinationSubscription, isNew } =
-      await this.getOrCreateDestinationSubscription(
-        dto.memberId,
-        dto.toStockId,
-        dto.toQuantity,
-        meeting,
-      );
-
-    const fromValue = fromStock.value * dto.fromQuantity;
-    const toValue = toStock.value * dto.toQuantity;
-    const difference = fromValue - toValue;
-
-    const updatedFromQuantity = fromSubscription.quantity - dto.fromQuantity;
-    fromSubscription.update({ quantity: updatedFromQuantity });
-    if (isNew) {
-      // el helper ya creó la suscripción con la cantidad solicitada
-    } else {
-      destinationSubscription.update({
-        quantity: destinationSubscription.quantity + dto.toQuantity,
-      });
-    }
-
-    await this.stockSubscriptionRepository.save(fromSubscription);
-    await this.stockSubscriptionRepository.save(destinationSubscription);
-
-    // Build ledger entries for the stock exchange operation
-    const ledgerEntries: RecordOperationDto['entries'] = [
-      {
-        accountType: STOCK_CAPITAL_ACCOUNT,
-        amount: fromValue,
-        description: `Reducción de ${dto.fromQuantity} acciones ${fromStock.type}`,
-        stockId: fromStock.id,
-        stockSubscriptionId: fromSubscription.id,
-      },
-      {
-        accountType: STOCK_CAPITAL_ACCOUNT,
-        amount: -toValue,
-        description: `Creación de ${dto.toQuantity} acciones ${toStock.type}`,
-        stockId: toStock.id,
-        stockSubscriptionId: destinationSubscription.id,
-      },
-    ];
-
-    const details: Record<string, unknown> = {
-      memberId: dto.memberId,
-      meetingId: meeting.id,
-      fromSubscriptionId: fromSubscription.id,
-      toSubscriptionId: destinationSubscription.id,
-      fromValue,
-      toValue,
-      difference,
-      differenceHandling: dto.differenceHandling ?? 'cash',
-    };
-
-    // Handle the difference
-    if (difference !== 0) {
-      const handling = dto.differenceHandling ?? 'cash';
-      if (handling === 'credit') {
-        await this.handleDifferenceWithCredit({
-          dto,
-          difference,
-          ledgerEntries,
-          details,
+      const { subscription: destinationSubscription, isNew } =
+        await this.getOrCreateDestinationSubscription(
+          dto.memberId,
+          dto.toStockId,
+          dto.toQuantity,
           meeting,
-        });
+        );
+
+      const fromValue = fromStock.value * dto.fromQuantity;
+      const toValue = toStock.value * dto.toQuantity;
+      const difference = fromValue - toValue;
+
+      const updatedFromQuantity = fromSubscription.quantity - dto.fromQuantity;
+      fromSubscription.update({ quantity: updatedFromQuantity });
+      if (isNew) {
+        // el helper ya creó la suscripción con la cantidad solicitada
       } else {
-        await this.handleDifferenceWithCash({
-          difference,
-          ledgerEntries,
-          details,
-          meeting,
-          memberId: dto.memberId,
-          stockSubscriptionId: fromSubscription.id,
-          notes: dto.notes,
+        destinationSubscription.update({
+          quantity: destinationSubscription.quantity + dto.toQuantity,
         });
       }
-    }
 
-    // Create the main stock modification operation
-    const operationDto: RecordOperationDto = {
-      memberId: dto.memberId,
-      meetingId: meeting.id,
-      type: OperationType.STOCK_MODIFICATION,
-      date: meeting.date,
-      description:
-        dto.notes ??
-        `Intercambio de ${dto.fromQuantity} ${fromStock.type} a ${dto.toQuantity} ${toStock.type}`,
-      entries: ledgerEntries,
-    };
+      await this.stockSubscriptionRepository.save(fromSubscription);
+      await this.stockSubscriptionRepository.save(destinationSubscription);
 
-    const operationResult =
-      await this.recordOperationUseCase.execute(operationDto);
+      // Build ledger entries for the stock exchange operation
+      const ledgerEntries: RecordOperationDto['entries'] = [
+        {
+          accountType: STOCK_CAPITAL_ACCOUNT,
+          amount: fromValue,
+          description: `Reducción de ${dto.fromQuantity} acciones ${fromStock.type}`,
+          stockId: fromStock.id,
+          stockSubscriptionId: fromSubscription.id,
+        },
+        {
+          accountType: STOCK_CAPITAL_ACCOUNT,
+          amount: -toValue,
+          description: `Creación de ${dto.toQuantity} acciones ${toStock.type}`,
+          stockId: toStock.id,
+          stockSubscriptionId: destinationSubscription.id,
+        },
+      ];
 
-    return {
-      operationId: operationResult.operationId,
-      message: 'Intercambio de acciones procesado correctamente',
-      details,
-    };
+      const details: Record<string, unknown> = {
+        memberId: dto.memberId,
+        meetingId: meeting.id,
+        fromSubscriptionId: fromSubscription.id,
+        toSubscriptionId: destinationSubscription.id,
+        fromValue,
+        toValue,
+        difference,
+        differenceHandling: dto.differenceHandling ?? 'cash',
+      };
+
+      // Handle the difference
+      if (difference !== 0) {
+        const handling = dto.differenceHandling ?? 'cash';
+        if (handling === 'credit') {
+          await this.handleDifferenceWithCredit({
+            dto,
+            difference,
+            ledgerEntries,
+            details,
+            meeting,
+          });
+        } else {
+          await this.handleDifferenceWithCash({
+            difference,
+            ledgerEntries,
+            details,
+            meeting,
+            memberId: dto.memberId,
+            stockSubscriptionId: fromSubscription.id,
+            notes: dto.notes,
+          });
+        }
+      }
+
+      // Create the main stock modification operation
+      const operationDto: RecordOperationDto = {
+        memberId: dto.memberId,
+        meetingId: meeting.id,
+        type: OperationType.STOCK_MODIFICATION,
+        date: meeting.date,
+        description:
+          dto.notes ??
+          `Intercambio de ${dto.fromQuantity} ${fromStock.type} a ${dto.toQuantity} ${toStock.type}`,
+        entries: ledgerEntries,
+      };
+
+      const operationResult =
+        await this.recordOperationUseCase.execute(operationDto);
+
+      return {
+        operationId: operationResult.operationId,
+        message: 'Intercambio de acciones procesado correctamente',
+        details,
+      };
+    });
   }
 
   private async resolveMeeting(meetingId?: string): Promise<Meeting> {

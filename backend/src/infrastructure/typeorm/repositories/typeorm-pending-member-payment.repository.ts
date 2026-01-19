@@ -6,12 +6,14 @@ import { PendingMemberPayment as PendingMemberPaymentDomain } from '@domain/enti
 import { PendingMemberPayment as PendingMemberPaymentEntity } from '../entities/pending-member-payment.entity';
 import { PendingMemberPaymentMapper } from '../mappers/pending-member-payment.mapper';
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
+import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 
 @Injectable()
 export class TypeOrmPendingMemberPaymentRepository implements PendingMemberPaymentRepository {
   constructor(
     @InjectRepository(PendingMemberPaymentEntity)
     private readonly repo: Repository<PendingMemberPaymentEntity>,
+    private readonly transactionManager: TransactionManager,
   ) {}
 
   // LedgerEntryRepository will be injected via setter or passed as parameter
@@ -21,26 +23,43 @@ export class TypeOrmPendingMemberPaymentRepository implements PendingMemberPayme
     this.ledgerEntryRepository = repo;
   }
 
+  /**
+   * Get the repository to use (with or without active transaction)
+   */
+  private getRepository(): Repository<PendingMemberPaymentEntity> {
+    const activeQueryRunner = this.transactionManager.getActiveQueryRunner();
+    if (activeQueryRunner) {
+      return activeQueryRunner.manager.getRepository(
+        PendingMemberPaymentEntity,
+      ) as Repository<PendingMemberPaymentEntity>;
+    }
+    return this.repo;
+  }
+
   async findById(id: string): Promise<PendingMemberPaymentDomain | null> {
-    const entity = await this.repo.findOne({ where: { id } });
+    const repo = this.getRepository();
+    const entity = await repo.findOne({ where: { id } });
     return entity ? PendingMemberPaymentMapper.toDomain(entity) : null;
   }
 
   async findByMember(memberId: string): Promise<PendingMemberPaymentDomain[]> {
-    const entities = await this.repo.find({ where: { memberId } });
+    const repo = this.getRepository();
+    const entities = await repo.find({ where: { memberId } });
     return entities.map((e) => PendingMemberPaymentMapper.toDomain(e));
   }
 
   async findByMeeting(
     meetingId: string,
   ): Promise<PendingMemberPaymentDomain[]> {
-    const entities = await this.repo.find({ where: { meetingId } });
+    const repo = this.getRepository();
+    const entities = await repo.find({ where: { meetingId } });
     return entities.map((e) => PendingMemberPaymentMapper.toDomain(e));
   }
 
   async findPendingByMeeting(
     meetingId: string,
   ): Promise<PendingMemberPaymentDomain[]> {
+    const repo = this.getRepository();
     console.log(
       `[TypeOrmPendingMemberPaymentRepository] findPendingByMeeting - meetingId: ${meetingId}`,
     );
@@ -50,7 +69,7 @@ export class TypeOrmPendingMemberPaymentRepository implements PendingMemberPayme
 
     // Buscar TODOS los pagos pendientes activos, sin importar la reunión
     // Esto permite que pagos pendientes de reuniones anteriores puedan ser pagados en la reunión actual
-    const entities = await this.repo.find({
+    const entities = await repo.find({
       where: { status: 'pending' },
       order: { createdAt: 'ASC' }, // Ordenar por fecha de creación para mantener consistencia
     });
@@ -80,7 +99,8 @@ export class TypeOrmPendingMemberPaymentRepository implements PendingMemberPayme
   async findByReference(
     referenceMeetingId: string,
   ): Promise<PendingMemberPaymentDomain[]> {
-    const entities = await this.repo.find({
+    const repo = this.getRepository();
+    const entities = await repo.find({
       where: { referenceMeetingId },
     });
     return entities.map((e) => PendingMemberPaymentMapper.toDomain(e));
@@ -89,18 +109,19 @@ export class TypeOrmPendingMemberPaymentRepository implements PendingMemberPayme
   async save(
     payment: PendingMemberPaymentDomain,
   ): Promise<PendingMemberPaymentDomain> {
+    const repo = this.getRepository();
     const persistence = PendingMemberPaymentMapper.toPersistence(payment);
-    const existing = await this.repo.findOne({ where: { id: payment.id } });
+    const existing = await repo.findOne({ where: { id: payment.id } });
 
     if (existing) {
-      await this.repo.update(payment.id, persistence);
-      const updated = await this.repo.findOne({ where: { id: payment.id } });
+      await repo.update(payment.id, persistence);
+      const updated = await repo.findOne({ where: { id: payment.id } });
       if (!updated) {
         throw new Error('PendingMemberPayment not found after update');
       }
       return PendingMemberPaymentMapper.toDomain(updated);
     } else {
-      const saved = await this.repo.save(
+      const saved = await repo.save(
         persistence as PendingMemberPaymentEntity,
       );
       return PendingMemberPaymentMapper.toDomain(saved);
@@ -110,10 +131,11 @@ export class TypeOrmPendingMemberPaymentRepository implements PendingMemberPayme
   async saveMany(
     payments: PendingMemberPaymentDomain[],
   ): Promise<PendingMemberPaymentDomain[]> {
+    const repo = this.getRepository();
     const persistences = payments.map((p) =>
       PendingMemberPaymentMapper.toPersistence(p),
     );
-    const saved = await this.repo.save(
+    const saved = await repo.save(
       persistences as PendingMemberPaymentEntity[],
     );
     return saved.map((e) => PendingMemberPaymentMapper.toDomain(e));
