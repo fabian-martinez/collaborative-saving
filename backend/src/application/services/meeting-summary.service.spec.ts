@@ -45,6 +45,7 @@ describe('MeetingSummaryService', () => {
   } as unknown as jest.Mocked<StockRepository>;
 
   beforeEach(() => {
+    jest.clearAllMocks();
     mockDataSource.getRepository.mockImplementation((entity) => {
       if (entity === LedgerEntry) {
         return mockLedgerRepo;
@@ -705,8 +706,8 @@ describe('MeetingSummaryService', () => {
         date: new Date('2024-01-15T14:00:00Z'), // More recent
       } as any;
       mockOperationRepository.findByMeetingAndType.mockResolvedValue([
-        revaluationOp1,
         revaluationOp2,
+        revaluationOp1,
       ]);
 
       // Histories for the most recent revaluation

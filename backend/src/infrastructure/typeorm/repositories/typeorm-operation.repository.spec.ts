@@ -8,6 +8,7 @@ import { Operation } from '@domain/entities/operation.entity';
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
 import { OperationType } from '@domain/enums/operation-type.enum';
 import { CASH_ACCOUNT, AccountType } from '@domain/constants/account-types';
+import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 
 describe('TypeOrmOperationRepository', () => {
   let repository: TypeOrmOperationRepository;
@@ -41,6 +42,13 @@ describe('TypeOrmOperationRepository', () => {
         {
           provide: 'LedgerEntryRepository',
           useValue: mockLedgerEntryRepo,
+        },
+        {
+          provide: TransactionManager,
+          useValue: {
+            execute: jest.fn(),
+            getActiveQueryRunner: jest.fn().mockReturnValue(null),
+          },
         },
       ],
     }).compile();
@@ -571,6 +579,10 @@ describe('TypeOrmOperationRepository', () => {
     it('should throw error when LedgerEntryRepository not set', async () => {
       const repositoryWithoutLedger = new TypeOrmOperationRepository(
         typeOrmRepo as any,
+        {
+           execute: jest.fn(),
+           getActiveQueryRunner: jest.fn().mockReturnValue(null),
+        } as any,
       );
       const domain = Operation.create({
         meetingId: 'meeting-1',

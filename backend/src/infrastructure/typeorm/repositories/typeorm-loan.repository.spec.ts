@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { TypeOrmLoanRepository } from './typeorm-loan.repository';
 import { Loan as LoanEntity } from '../entities/loan.entity';
 import { Loan as LoanDomain } from '@domain/entities/loan.entity';
+import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 
 describe('TypeOrmLoanRepository', () => {
   let repository: TypeOrmLoanRepository;
@@ -18,12 +19,21 @@ describe('TypeOrmLoanRepository', () => {
       update: jest.fn(),
     };
 
+    const mockTransactionManager = {
+      execute: jest.fn(),
+      getActiveQueryRunner: jest.fn().mockReturnValue(null),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TypeOrmLoanRepository,
         {
           provide: getRepositoryToken(LoanEntity),
           useValue: mockTypeOrmRepo,
+        },
+        {
+          provide: TransactionManager,
+          useValue: mockTransactionManager,
         },
       ],
     }).compile();
