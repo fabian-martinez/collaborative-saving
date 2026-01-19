@@ -18,7 +18,7 @@
       </button>
     </div>
     <div class="tab-content-wrapper w-full max-w-full min-w-0 overflow-x-hidden">
-      <div class="tab-content w-full max-w-full min-w-0">
+      <div class="tabs-component-content w-full max-w-full min-w-0">
         <slot :name="`content-${activeTab}`"></slot>
       </div>
     </div>
@@ -120,7 +120,7 @@ defineExpose({
   min-height: 200px;
 }
 
-.tab-content {
+.tabs-component-content {
   width: 100%;
   max-width: 100%;
   min-width: 0;

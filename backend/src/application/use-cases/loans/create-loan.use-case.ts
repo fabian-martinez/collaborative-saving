@@ -114,6 +114,14 @@ export class CreateLoanUseCase {
     // 6. Persist loan before creating accounting operation to satisfy FK constraints
     const savedLoan = await this.loanRepository.save(loan);
 
+    if (dto.skipAccounting) {
+      return {
+        loanId: savedLoan.id,
+        operationId: '', // No operation created
+        status: savedLoan.status,
+      };
+    }
+
     // 7. Create accounting operation using RecordOperationUseCase
     const operationDescription =
       dto.loanType === 'accion'
