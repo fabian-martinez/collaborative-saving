@@ -7,6 +7,7 @@ import { Operation as OperationEntity } from '../entities/operation.entity';
 import { LedgerEntry as LedgerEntryDomain } from '@domain/entities/ledger-entry.entity';
 import { LedgerEntry } from '@domain/entities/ledger-entry.entity';
 import { CASH_ACCOUNT } from '@domain/constants/account-types';
+import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 
 describe('TypeOrmLedgerEntryRepository', () => {
   let repository: TypeOrmLedgerEntryRepository;
@@ -28,6 +29,11 @@ describe('TypeOrmLedgerEntryRepository', () => {
       find: jest.fn(),
     };
 
+    const mockTransactionManager = {
+      execute: jest.fn(),
+      getActiveQueryRunner: jest.fn().mockReturnValue(null),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TypeOrmLedgerEntryRepository,
@@ -38,6 +44,10 @@ describe('TypeOrmLedgerEntryRepository', () => {
         {
           provide: getRepositoryToken(OperationEntity),
           useValue: mockOperationRepo,
+        },
+        {
+          provide: TransactionManager,
+          useValue: mockTransactionManager,
         },
       ],
     }).compile();

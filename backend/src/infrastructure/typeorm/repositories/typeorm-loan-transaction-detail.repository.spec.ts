@@ -8,6 +8,7 @@ import {
   LoanTransactionType,
 } from '@domain/entities/loan-transaction-detail.entity';
 import { LoanTransactionDetail } from '@domain/entities/loan-transaction-detail.entity';
+import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 
 describe('TypeOrmLoanTransactionDetailRepository', () => {
   let repository: TypeOrmLoanTransactionDetailRepository;
@@ -22,12 +23,21 @@ describe('TypeOrmLoanTransactionDetailRepository', () => {
       createQueryBuilder: jest.fn(),
     };
 
+    const mockTransactionManager = {
+      execute: jest.fn(),
+      getActiveQueryRunner: jest.fn().mockReturnValue(null),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TypeOrmLoanTransactionDetailRepository,
         {
           provide: getRepositoryToken(LoanTransactionDetailEntity),
           useValue: mockTypeOrmRepo,
+        },
+        {
+          provide: TransactionManager,
+          useValue: mockTransactionManager,
         },
       ],
     }).compile();

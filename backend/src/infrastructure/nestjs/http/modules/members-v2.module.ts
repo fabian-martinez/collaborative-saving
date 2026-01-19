@@ -517,6 +517,8 @@ const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
         recordOperationUseCase: RecordOperationUseCase,
         createLoanUseCase: CreateLoanUseCase,
         recordLoanPaymentUseCase: RecordLoanPaymentUseCase,
+        transactionMgr: TransactionManager,
+        loanTransactionDetailRepo: LoanTransactionDetailRepository,
       ) =>
         new ProcessStockExchangeUseCase(
           memberRepo,
@@ -527,6 +529,8 @@ const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
           recordOperationUseCase,
           createLoanUseCase,
           recordLoanPaymentUseCase,
+          transactionMgr,
+          loanTransactionDetailRepo,
         ),
       inject: [
         MEMBER_REPOSITORY,
@@ -537,6 +541,8 @@ const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
         RecordOperationUseCase,
         CreateLoanUseCase,
         RecordLoanPaymentUseCase,
+        TRANSACTION_MANAGER,
+        LOAN_TRANSACTION_DETAIL_REPOSITORY,
       ],
     },
     {

@@ -8,6 +8,7 @@ import {
   PendingMemberPaymentType,
 } from '@domain/entities/pending-member-payment.entity';
 import { PendingMemberPayment } from '@domain/entities/pending-member-payment.entity';
+import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 
 describe('TypeOrmPendingMemberPaymentRepository', () => {
   let repository: TypeOrmPendingMemberPaymentRepository;
@@ -22,12 +23,21 @@ describe('TypeOrmPendingMemberPaymentRepository', () => {
       update: jest.fn(),
     };
 
+    const mockTransactionManager = {
+      execute: jest.fn(),
+      getActiveQueryRunner: jest.fn().mockReturnValue(null),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TypeOrmPendingMemberPaymentRepository,
         {
           provide: getRepositoryToken(PendingMemberPaymentEntity),
           useValue: mockTypeOrmRepo,
+        },
+        {
+          provide: TransactionManager,
+          useValue: mockTransactionManager,
         },
       ],
     }).compile();

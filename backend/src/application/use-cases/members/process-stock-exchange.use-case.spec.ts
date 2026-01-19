@@ -8,6 +8,8 @@ import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pendi
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
 import { CreateLoanUseCase } from '@application/use-cases/loans/create-loan.use-case';
 import { RecordLoanPaymentUseCase } from '@application/use-cases/loans/record-loan-payment.use-case';
+import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
+import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
 import { Member } from '@domain/entities/member.entity';
 import { Meeting } from '@domain/entities/meeting.entity';
 import { Stock, StockBehavior } from '@domain/entities/stock.entity';
@@ -20,7 +22,9 @@ import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import {
   CASH_ACCOUNT,
   STOCK_CAPITAL_ACCOUNT,
+  LOANS_RECEIVABLE_ACCOUNT,
 } from '@domain/constants/account-types';
+import { LoanTransactionType } from '@domain/entities/loan-transaction-detail.entity';
 
 describe('ProcessStockExchangeUseCase', () => {
   let useCase: ProcessStockExchangeUseCase;
@@ -32,6 +36,8 @@ describe('ProcessStockExchangeUseCase', () => {
   let recordOperationUseCase: jest.Mocked<RecordOperationUseCase>;
   let createLoanUseCase: jest.Mocked<CreateLoanUseCase>;
   let recordLoanPaymentUseCase: jest.Mocked<RecordLoanPaymentUseCase>;
+  let transactionManager: jest.Mocked<TransactionManager>;
+  let loanTransactionDetailRepository: jest.Mocked<LoanTransactionDetailRepository>;
   let recordOperationExecuteSpy: jest.SpyInstance;
   let pendingPaymentSaveSpy: jest.SpyInstance;
   let createLoanExecuteSpy: jest.SpyInstance;
@@ -129,6 +135,14 @@ describe('ProcessStockExchangeUseCase', () => {
       }),
     } as unknown as jest.Mocked<RecordLoanPaymentUseCase>;
 
+    transactionManager = {
+      execute: jest.fn().mockImplementation(async (cb) => cb()),
+    } as unknown as jest.Mocked<TransactionManager>;
+
+    loanTransactionDetailRepository = {
+      save: jest.fn(),
+    } as unknown as jest.Mocked<LoanTransactionDetailRepository>;
+
     useCase = new ProcessStockExchangeUseCase(
       memberRepository,
       meetingRepository,
@@ -138,6 +152,8 @@ describe('ProcessStockExchangeUseCase', () => {
       recordOperationUseCase,
       createLoanUseCase,
       recordLoanPaymentUseCase,
+      transactionManager,
+      loanTransactionDetailRepository,
     );
 
     recordOperationExecuteSpy = jest.spyOn(recordOperationUseCase, 'execute');
@@ -259,15 +275,46 @@ describe('ProcessStockExchangeUseCase', () => {
         disbursedAmount: 600000,
       }),
     );
-    // Stock modification operation should include CASH_ACCOUNT entry for balance
+    // Stock modification operation should include LOANS_RECEIVABLE_ACCOUNT entry (financing)
     expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         entries: expect.arrayContaining([
           expect.objectContaining({
-            accountType: CASH_ACCOUNT,
-            amount: 600000, // positive = debit (money coming in conceptually)
+            accountType: LOANS_RECEIVABLE_ACCOUNT,
+            amount: 600000, // positive = debit (asset increase)
+            loanId: expect.any(String),
           }),
         ]) as unknown as Array<{ accountType: string; amount: number }>,
+      }),
+    );
+  });
+
+  it('ejecuta la lógica dentro de una transacción', async () => {
+    const dto = { ...createBaseDto(), toStockId: originStock.id };
+    const transactionSpy = jest.spyOn(transactionManager, 'execute');
+    
+    await useCase.execute(dto);
+
+    expect(transactionSpy).toHaveBeenCalled();
+  });
+
+  it('registra el detalle de la transacción del préstamo al crear un crédito', async () => {
+    const dto: StockExchangeDto = {
+      ...createBaseDto(),
+      fromQuantity: 1, 
+      toQuantity: 2, 
+      differenceHandling: 'credit',
+      targetLoanId: 'new_action_loan',
+    };
+
+    await useCase.execute(dto);
+
+    expect(loanTransactionDetailRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        loanId: 'loan-1',
+        transactionType: LoanTransactionType.DISBURSEMENT,
+        amount: 600000,
+        operationId: 'operation-1',
       }),
     );
   });
