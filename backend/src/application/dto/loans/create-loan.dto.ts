@@ -15,4 +15,5 @@ export interface CreateLoanDto {
   guaranteedStockId?: string | null;
   disbursedAmount?: number;
   outstandingBalance?: number;
+  skipAccounting?: boolean;
 }

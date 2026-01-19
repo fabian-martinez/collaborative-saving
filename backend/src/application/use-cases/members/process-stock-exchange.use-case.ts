@@ -24,8 +24,14 @@ import { OperationType } from '@domain/enums/operation-type.enum';
 import {
   CASH_ACCOUNT,
   STOCK_CAPITAL_ACCOUNT,
+  LOANS_RECEIVABLE_ACCOUNT,
 } from '@domain/constants/account-types';
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
+import {
+  LoanTransactionDetail,
+  LoanTransactionType,
+} from '@domain/entities/loan-transaction-detail.entity';
+import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
 
 const DEFAULT_DIFFERENCE_LOAN_INTEREST = 0.02;
 const DEFAULT_DIFFERENCE_LOAN_TERM = 24;
@@ -51,6 +57,7 @@ export class ProcessStockExchangeUseCase {
     private readonly createLoanUseCase: CreateLoanUseCase,
     private readonly recordLoanPaymentUseCase: RecordLoanPaymentUseCase,
     private readonly transactionManager: TransactionManager,
+    private readonly loanTransactionDetailRepository: LoanTransactionDetailRepository,
   ) {}
 
   async execute(dto: StockExchangeDto): Promise<StockOperationResponseDto> {
@@ -198,6 +205,27 @@ export class ProcessStockExchangeUseCase {
 
       const operationResult =
         await this.recordOperationUseCase.execute(operationDto);
+
+      // If a new loan was created (and accounting skipped), record the transaction detail now
+      // knowing the operation ID
+      const loanDetails = details.loan as any;
+      if (
+        loanDetails &&
+        loanDetails.loanId &&
+        loanDetails.amount &&
+        !loanDetails.operationId
+      ) {
+        const transactionDetail = LoanTransactionDetail.create({
+          loanId: loanDetails.loanId,
+          transactionType: LoanTransactionType.DISBURSEMENT,
+          amount: loanDetails.amount,
+          operationId: operationResult.operationId,
+        });
+        await this.loanTransactionDetailRepository.save(transactionDetail);
+        
+        // Update details with operationId
+        loanDetails.operationId = operationResult.operationId;
+      }
 
       return {
         operationId: operationResult.operationId,
@@ -358,7 +386,8 @@ export class ProcessStockExchangeUseCase {
       );
     }
 
-    // Use CreateLoanUseCase to create the loan
+    // Use CreateLoanUseCase to create the loan WITHOUT accounting
+    // We will merge the accounting into the stock exchange operation to avoid cash movements
     const loanResult = await this.createLoanUseCase.execute({
       memberId: dto.memberId,
       meetingId: meeting.id,
@@ -368,20 +397,23 @@ export class ProcessStockExchangeUseCase {
       monthlyPaymentAmount: 0,
       interestRate: DEFAULT_DIFFERENCE_LOAN_INTEREST,
       term: DEFAULT_DIFFERENCE_LOAN_TERM,
+      skipAccounting: true,
     });
 
     // Add the balancing entry to the stock modification operation
-    // Note: The loan disbursement ledger entries are handled by CreateLoanUseCase in a separate operation
+    // Replaces Cash movement with direct Loan Receivable
     ledgerEntries.push({
-      accountType: CASH_ACCOUNT,
+      accountType: LOANS_RECEIVABLE_ACCOUNT,
       amount: absoluteDifference,
       description: 'Financiamiento de diferencia por intercambio de acciones',
+      loanId: loanResult.loanId,
     });
 
     details.loan = {
       loanId: loanResult.loanId,
-      operationId: loanResult.operationId,
+      operationId: '', // Will be linked to the main operation later
       loanType,
+      amount: absoluteDifference, // Capture amount for transaction detail creation
     };
   }
 
