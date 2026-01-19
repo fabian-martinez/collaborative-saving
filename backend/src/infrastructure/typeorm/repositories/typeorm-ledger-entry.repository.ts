@@ -14,6 +14,7 @@ import { LedgerEntry as LedgerEntryDomain } from '@domain/entities/ledger-entry.
 import { LedgerEntry as LedgerEntryEntity } from '../entities/ledger-entry.entity';
 import { LedgerEntryMapper } from '../mappers/ledger-entry.mapper';
 import { Operation as OperationEntity } from '../entities/operation.entity';
+import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 
 @Injectable()
 export class TypeOrmLedgerEntryRepository implements LedgerEntryRepository {
@@ -22,15 +23,31 @@ export class TypeOrmLedgerEntryRepository implements LedgerEntryRepository {
     private readonly repo: Repository<LedgerEntryEntity>,
     @InjectRepository(OperationEntity)
     private readonly operationRepo: Repository<OperationEntity>,
+    private readonly transactionManager: TransactionManager,
   ) {}
 
+  /**
+   * Get the repository to use (with or without active transaction)
+   */
+  private getRepository(): Repository<LedgerEntryEntity> {
+    const activeQueryRunner = this.transactionManager.getActiveQueryRunner();
+    if (activeQueryRunner) {
+      return activeQueryRunner.manager.getRepository(
+        LedgerEntryEntity,
+      ) as Repository<LedgerEntryEntity>;
+    }
+    return this.repo;
+  }
+
   async findById(id: string): Promise<LedgerEntryDomain | null> {
-    const entity = await this.repo.findOne({ where: { id } });
+    const repo = this.getRepository();
+    const entity = await repo.findOne({ where: { id } });
     return entity ? LedgerEntryMapper.toDomain(entity) : null;
   }
 
   async findByOperation(operationId: string): Promise<LedgerEntryDomain[]> {
-    const entities = await this.repo.find({ where: { operationId } });
+    const repo = this.getRepository();
+    const entities = await repo.find({ where: { operationId } });
     return entities.map((e) => LedgerEntryMapper.toDomain(e));
   }
 
@@ -38,7 +55,8 @@ export class TypeOrmLedgerEntryRepository implements LedgerEntryRepository {
     if (operationIds.length === 0) {
       return [];
     }
-    const entities = await this.repo
+    const repo = this.getRepository();
+    const entities = await repo
       .createQueryBuilder('ledger_entry')
       .where('ledger_entry.operation_id IN (:...operationIds)', {
         operationIds,
@@ -49,7 +67,8 @@ export class TypeOrmLedgerEntryRepository implements LedgerEntryRepository {
 
   async findByMeeting(meetingId: string): Promise<LedgerEntryDomain[]> {
     // Join with operations to filter by meeting
-    const entities = await this.repo
+    const repo = this.getRepository();
+    const entities = await repo
       .createQueryBuilder('ledger_entry')
       .innerJoin('ledger_entry.operation', 'operation')
       .where('operation.meeting_id = :meetingId', { meetingId })
@@ -58,35 +77,39 @@ export class TypeOrmLedgerEntryRepository implements LedgerEntryRepository {
   }
 
   async findByAccountType(accountType: string): Promise<LedgerEntryDomain[]> {
-    const entities = await this.repo.find({ where: { accountType } });
+    const repo = this.getRepository();
+    const entities = await repo.find({ where: { accountType } });
     return entities.map((e) => LedgerEntryMapper.toDomain(e));
   }
 
   async save(entry: LedgerEntryDomain): Promise<LedgerEntryDomain> {
+    const repo = this.getRepository();
     const persistence = LedgerEntryMapper.toPersistence(entry);
-    const existing = await this.repo.findOne({ where: { id: entry.id } });
+    const existing = await repo.findOne({ where: { id: entry.id } });
 
     if (existing) {
-      await this.repo.update(entry.id, persistence);
-      const updated = await this.repo.findOne({ where: { id: entry.id } });
+      await repo.update(entry.id, persistence);
+      const updated = await repo.findOne({ where: { id: entry.id } });
       if (!updated) {
         throw new Error('LedgerEntry not found after update');
       }
       return LedgerEntryMapper.toDomain(updated);
     } else {
-      const saved = await this.repo.save(persistence as LedgerEntryEntity);
+      const saved = await repo.save(persistence as LedgerEntryEntity);
       return LedgerEntryMapper.toDomain(saved);
     }
   }
 
   async saveMany(entries: LedgerEntryDomain[]): Promise<LedgerEntryDomain[]> {
+    const repo = this.getRepository();
     const persistences = entries.map((e) => LedgerEntryMapper.toPersistence(e));
-    const saved = await this.repo.save(persistences as LedgerEntryEntity[]);
+    const saved = await repo.save(persistences as LedgerEntryEntity[]);
     return saved.map((e) => LedgerEntryMapper.toDomain(e));
   }
 
   async sumByAccountType(accountType: string): Promise<number> {
-    const result = await this.repo
+    const repo = this.getRepository();
+    const result = await repo
       .createQueryBuilder('ledger_entry')
       .select('SUM(ledger_entry.amount)', 'sum')
       .where('ledger_entry.accountType = :accountType', { accountType })
@@ -100,7 +123,8 @@ export class TypeOrmLedgerEntryRepository implements LedgerEntryRepository {
     pagination: PaginationOptions,
     orderBy: 'ASC' | 'DESC',
   ): Promise<PaginatedResult<LedgerEntryDomain>> {
-    const qb = this.repo.createQueryBuilder('ledger_entry');
+    const repo = this.getRepository();
+    const qb = repo.createQueryBuilder('ledger_entry');
 
     // Only join with operations if we need to filter by memberId
     if (filters.memberId) {
@@ -151,7 +175,8 @@ export class TypeOrmLedgerEntryRepository implements LedgerEntryRepository {
     entriesLimit: number,
   ): Promise<AccountSummaryData[]> {
     // Step 1: Get aggregated data grouped by account type
-    const summaryQb = this.repo
+    const repo = this.getRepository();
+    const summaryQb = repo
       .createQueryBuilder('ledger_entry')
       .select('ledger_entry.account_type', 'accountType')
       .addSelect('SUM(ledger_entry.amount)', 'totalBalance')
@@ -201,7 +226,7 @@ export class TypeOrmLedgerEntryRepository implements LedgerEntryRepository {
       const accountType = summary.accountType;
 
       // Get limited entries for this account type
-      const entriesQb = this.repo
+      const entriesQb = repo
         .createQueryBuilder('ledger_entry')
         .leftJoin('ledger_entry.operation', 'operation')
         .select('ledger_entry.id', 'id')

@@ -5,21 +5,38 @@ import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan
 import { LoanTransactionDetail as LoanTransactionDetailDomain } from '@domain/entities/loan-transaction-detail.entity';
 import { LoanTransactionDetail as LoanTransactionDetailEntity } from '../entities/loan-transaction-detail.entity';
 import { LoanTransactionDetailMapper } from '../mappers/loan-transaction-detail.mapper';
+import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 
 @Injectable()
 export class TypeOrmLoanTransactionDetailRepository implements LoanTransactionDetailRepository {
   constructor(
     @InjectRepository(LoanTransactionDetailEntity)
     private readonly repo: Repository<LoanTransactionDetailEntity>,
+    private readonly transactionManager: TransactionManager,
   ) {}
 
+  /**
+   * Get the repository to use (with or without active transaction)
+   */
+  private getRepository(): Repository<LoanTransactionDetailEntity> {
+    const activeQueryRunner = this.transactionManager.getActiveQueryRunner();
+    if (activeQueryRunner) {
+      return activeQueryRunner.manager.getRepository(
+        LoanTransactionDetailEntity,
+      ) as Repository<LoanTransactionDetailEntity>;
+    }
+    return this.repo;
+  }
+
   async findById(id: string): Promise<LoanTransactionDetailDomain | null> {
-    const entity = await this.repo.findOne({ where: { id } });
+    const repo = this.getRepository();
+    const entity = await repo.findOne({ where: { id } });
     return entity ? LoanTransactionDetailMapper.toDomain(entity) : null;
   }
 
   async findByLoan(loanId: string): Promise<LoanTransactionDetailDomain[]> {
-    const entities = await this.repo.find({ where: { loanId } });
+    const repo = this.getRepository();
+    const entities = await repo.find({ where: { loanId } });
     return entities.map((e) => LoanTransactionDetailMapper.toDomain(e));
   }
 
@@ -28,7 +45,8 @@ export class TypeOrmLoanTransactionDetailRepository implements LoanTransactionDe
     meetingId: string,
   ): Promise<LoanTransactionDetailDomain[]> {
     // Join with operations table to filter by meetingId
-    const entities = await this.repo
+    const repo = this.getRepository();
+    const entities = await repo
       .createQueryBuilder('loan_transaction_detail')
       .innerJoin(
         'operations',
@@ -44,14 +62,15 @@ export class TypeOrmLoanTransactionDetailRepository implements LoanTransactionDe
   async save(
     transaction: LoanTransactionDetailDomain,
   ): Promise<LoanTransactionDetailDomain> {
+    const repo = this.getRepository();
     const persistence = LoanTransactionDetailMapper.toPersistence(transaction);
-    const existing = await this.repo.findOne({
+    const existing = await repo.findOne({
       where: { id: transaction.id },
     });
 
     if (existing) {
-      await this.repo.update(transaction.id, persistence);
-      const updated = await this.repo.findOne({
+      await repo.update(transaction.id, persistence);
+      const updated = await repo.findOne({
         where: { id: transaction.id },
       });
       if (!updated) {
@@ -59,7 +78,7 @@ export class TypeOrmLoanTransactionDetailRepository implements LoanTransactionDe
       }
       return LoanTransactionDetailMapper.toDomain(updated);
     } else {
-      const saved = await this.repo.save(
+      const saved = await repo.save(
         persistence as LoanTransactionDetailEntity,
       );
       return LoanTransactionDetailMapper.toDomain(saved);
@@ -69,10 +88,11 @@ export class TypeOrmLoanTransactionDetailRepository implements LoanTransactionDe
   async saveMany(
     transactions: LoanTransactionDetailDomain[],
   ): Promise<LoanTransactionDetailDomain[]> {
+    const repo = this.getRepository();
     const persistences = transactions.map((t) =>
       LoanTransactionDetailMapper.toPersistence(t),
     );
-    const saved = await this.repo.save(
+    const saved = await repo.save(
       persistences as LoanTransactionDetailEntity[],
     );
     return saved.map((e) => LoanTransactionDetailMapper.toDomain(e));

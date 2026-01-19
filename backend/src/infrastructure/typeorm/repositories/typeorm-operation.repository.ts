@@ -14,12 +14,14 @@ import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-r
 import { LedgerEntry } from '@domain/entities/ledger-entry.entity';
 import { AccountType } from '@domain/constants/account-types';
 import { OperationType } from '@domain/enums/operation-type.enum';
+import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 
 @Injectable()
 export class TypeOrmOperationRepository implements OperationRepository {
   constructor(
     @InjectRepository(OperationEntity)
     private readonly repo: Repository<OperationEntity>,
+    private readonly transactionManager: TransactionManager,
   ) {}
 
   // LedgerEntryRepository will be injected via setter or passed as parameter
@@ -29,13 +31,28 @@ export class TypeOrmOperationRepository implements OperationRepository {
     this.ledgerEntryRepository = repo;
   }
 
+  /**
+   * Get the repository to use (with or without active transaction)
+   */
+  private getRepository(): Repository<OperationEntity> {
+    const activeQueryRunner = this.transactionManager.getActiveQueryRunner();
+    if (activeQueryRunner) {
+      return activeQueryRunner.manager.getRepository(
+        OperationEntity,
+      ) as Repository<OperationEntity>;
+    }
+    return this.repo;
+  }
+
   async findById(id: string): Promise<OperationDomain | null> {
-    const entity = await this.repo.findOne({ where: { id } });
+    const repo = this.getRepository();
+    const entity = await repo.findOne({ where: { id } });
     return entity ? OperationMapper.toDomain(entity) : null;
   }
 
   async findByMeeting(meetingId: string): Promise<OperationDomain[]> {
-    const entities = await this.repo.find({ where: { meetingId } });
+    const repo = this.getRepository();
+    const entities = await repo.find({ where: { meetingId } });
     return entities.map((e) => OperationMapper.toDomain(e));
   }
 
@@ -43,7 +60,8 @@ export class TypeOrmOperationRepository implements OperationRepository {
     meetingId: string,
     type: OperationType,
   ): Promise<OperationDomain[]> {
-    const entities = await this.repo.find({
+    const repo = this.getRepository();
+    const entities = await repo.find({
       where: { meetingId, type },
     });
     return entities.map((e) => OperationMapper.toDomain(e));
@@ -57,7 +75,8 @@ export class TypeOrmOperationRepository implements OperationRepository {
       return [];
     }
 
-    const qb = this.repo
+    const repo = this.getRepository();
+    const qb = repo
       .createQueryBuilder('operation')
       .where('operation.meeting_id = :meetingId', { meetingId })
       .andWhere('operation.type IN (:...types)', { types })
@@ -74,7 +93,8 @@ export class TypeOrmOperationRepository implements OperationRepository {
       types?: OperationType[];
     },
   ): Promise<OperationDomain[]> {
-    const qb = this.repo
+    const repo = this.getRepository();
+    const qb = repo
       .createQueryBuilder('operation')
       .where('operation.member_id = :memberId', { memberId })
       .orderBy('operation.date', 'DESC');
@@ -100,7 +120,8 @@ export class TypeOrmOperationRepository implements OperationRepository {
     pagination: PaginationOptions,
     orderBy: 'ASC' | 'DESC',
   ): Promise<PaginatedResult<OperationDomain>> {
-    const qb = this.repo.createQueryBuilder('operation');
+    const repo = this.getRepository();
+    const qb = repo.createQueryBuilder('operation');
 
     if (filters.memberId) {
       qb.andWhere('operation.member_id = :memberId', {
@@ -145,18 +166,19 @@ export class TypeOrmOperationRepository implements OperationRepository {
   }
 
   async save(operation: OperationDomain): Promise<OperationDomain> {
+    const repo = this.getRepository();
     const persistence = OperationMapper.toPersistence(operation);
-    const existing = await this.repo.findOne({ where: { id: operation.id } });
+    const existing = await repo.findOne({ where: { id: operation.id } });
 
     if (existing) {
-      await this.repo.update(operation.id, persistence);
-      const updated = await this.repo.findOne({ where: { id: operation.id } });
+      await repo.update(operation.id, persistence);
+      const updated = await repo.findOne({ where: { id: operation.id } });
       if (!updated) {
         throw new Error('Operation not found after update');
       }
       return OperationMapper.toDomain(updated);
     } else {
-      const saved = await this.repo.save(persistence as OperationEntity);
+      const saved = await repo.save(persistence as OperationEntity);
       return OperationMapper.toDomain(saved);
     }
   }
@@ -189,6 +211,7 @@ export class TypeOrmOperationRepository implements OperationRepository {
       }),
     );
 
+    // LedgerEntryRepository should handle active transaction internally if properly refactored
     await this.ledgerEntryRepository.saveMany(ledgerEntries);
 
     return savedOperation;
