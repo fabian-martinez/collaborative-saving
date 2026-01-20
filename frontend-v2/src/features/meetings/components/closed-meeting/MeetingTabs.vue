@@ -27,6 +27,7 @@ const tabs = [
   { id: 'loans', label: 'Préstamos' },
   { id: 'stocks', label: 'Acciones' },
   { id: 'entries', label: 'Asientos' },
+  { id: 'balance_summary', label: 'Balance Socios' },
 ]
 </script>
 
