@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
@@ -11,6 +12,8 @@ import { LoansV2Module } from './infrastructure/nestjs/http/modules/loans-v2.mod
 import { AccountingV2Module } from './infrastructure/nestjs/http/modules/accounting-v2.module';
 import { EventBusModule } from './infrastructure/services/event-bus/event-bus.module';
 import { TransactionManagerModule } from './infrastructure/services/transaction-manager/transaction-manager.module';
+import { FirebaseAdminModule } from './infrastructure/services/firebase-admin/firebase-admin.module';
+import { FirebaseAuthGuard } from './infrastructure/nestjs/auth/guards/firebase-auth.guard';
 
 @Module({
   imports: [
@@ -25,6 +28,7 @@ import { TransactionManagerModule } from './infrastructure/services/transaction-
     }),
     EventBusModule,
     TransactionManagerModule,
+    FirebaseAdminModule,
     MembersV2Module,
     StocksV2Module,
     MeetingsV2Module,
@@ -33,6 +37,12 @@ import { TransactionManagerModule } from './infrastructure/services/transaction-
     AccountingV2Module,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: FirebaseAuthGuard,
+    },
+  ],
 })
 export class AppModule {}
