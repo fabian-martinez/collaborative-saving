@@ -1,6 +1,7 @@
 import axios, { type AxiosInstance, type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { ApiException } from './types'
 import type { ApiError } from './types'
+import { useAuthStore } from '@/features/auth/stores/authStore'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
@@ -15,7 +16,14 @@ const apiClient: AxiosInstance = axios.create({
 
 // Interceptor de request
 apiClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
+  async (config: InternalAxiosRequestConfig) => {
+    // Inject auth token
+    const authStore = useAuthStore()
+    const token = await authStore.getToken()
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+
     // Logging en desarrollo
     if (import.meta.env.DEV) {
       console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, {
