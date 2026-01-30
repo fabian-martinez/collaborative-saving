@@ -26,14 +26,17 @@ export class FirebaseAuthGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
+    
     if (!token) {
+      console.error('[FirebaseAuthGuard] No token found in request headers');
       throw new UnauthorizedException();
     }
 
     try {
       const payload = await this.firebaseAdminService.auth.verifyIdToken(token);
       request['user'] = payload;
-    } catch {
+    } catch (error: any) {
+      console.error('[FirebaseAuthGuard] Token verification failed:', error.message);
       throw new UnauthorizedException();
     }
     return true;

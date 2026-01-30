@@ -78,6 +78,11 @@ apiClient.interceptors.response.use(
           errors: apiError.errors
         })
       }
+
+      if (error.response.status === 401) {
+        const authStore = useAuthStore()
+        authStore.logout()
+      }
       
       return Promise.reject(apiError)
     } else if (error.request) {

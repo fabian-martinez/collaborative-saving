@@ -11,8 +11,11 @@ import {
   InfoCircle, 
   Folder,
   NavArrowLeft,
+  LogOut,
 } from 'iconoir-vue/regular'
 import { useSidebar } from '@/shared/composables/useSidebar'
+import { useAuthStore } from '@/features/auth/stores/authStore'
+import { useRouter } from 'vue-router'
 
 const route = useRoute()
 const { isCollapsed, isMobileOpen, toggleCollapse, closeMobile } = useSidebar()
@@ -49,6 +52,14 @@ const nextMeeting = {
   number: 24,
   date: '15 Enero, 2024',
   title: 'Reunión #24'
+}
+
+const authStore = useAuthStore()
+const router = useRouter()
+
+async function handleLogout() {
+  await authStore.logout()
+  router.push('/login')
 }
 </script>
 
@@ -125,6 +136,19 @@ const nextMeeting = {
       <div class="text-xs text-gray-400 uppercase font-semibold mb-2">Próxima Reunión</div>
       <div class="text-sm font-medium">{{ nextMeeting.date }}</div>
       <div class="text-xs text-gray-300">{{ nextMeeting.title }}</div>
+    </div>
+
+    <!-- Logout Button -->
+    <div class="p-4 border-t border-blue-800">
+      <button
+        @click="handleLogout"
+        class="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-gray-300 hover:bg-red-900/50 hover:text-white transition-colors duration-150"
+        :class="{ 'justify-center': isCollapsed }"
+        :title="isCollapsed ? 'Cerrar Sesión' : undefined"
+      >
+        <LogOut class="w-5 h-5 flex-shrink-0" />
+        <span v-show="!isCollapsed">Cerrar Sesión</span>
+      </button>
     </div>
   </aside>
 </template>
