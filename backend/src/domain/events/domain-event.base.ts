@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 export abstract class DomainEvent<T = any> {
   readonly occurredOn: Date;
   readonly eventId: string;
@@ -9,6 +11,6 @@ export abstract class DomainEvent<T = any> {
     eventId?: string,
   ) {
     this.occurredOn = occurredOn || new Date();
-    this.eventId = eventId || crypto.randomUUID();
+    this.eventId = eventId || randomUUID();
   }
 }

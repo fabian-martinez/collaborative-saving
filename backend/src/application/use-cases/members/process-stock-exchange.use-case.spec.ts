@@ -136,7 +136,7 @@ describe('ProcessStockExchangeUseCase', () => {
     } as unknown as jest.Mocked<RecordLoanPaymentUseCase>;
 
     transactionManager = {
-      execute: jest.fn().mockImplementation(async (cb) => cb()),
+      execute: jest.fn().mockImplementation((cb: () => Promise<any>) => cb()),
     } as unknown as jest.Mocked<TransactionManager>;
 
     loanTransactionDetailRepository = {
@@ -183,7 +183,7 @@ describe('ProcessStockExchangeUseCase', () => {
       expect.objectContaining({
         entries: expect.arrayContaining([
           expect.objectContaining({ accountType: STOCK_CAPITAL_ACCOUNT }),
-        ]) as unknown as Array<{ accountType: string }>,
+        ]) as unknown as Array<Record<string, any>>,
       }),
     );
   });
@@ -209,7 +209,7 @@ describe('ProcessStockExchangeUseCase', () => {
       expect.objectContaining({
         entries: expect.arrayContaining([
           expect.objectContaining({ accountType: CASH_ACCOUNT }),
-        ]) as unknown as Array<{ accountType: string }>,
+        ]) as unknown as Array<Record<string, any>>,
       }),
     );
   });
@@ -247,7 +247,7 @@ describe('ProcessStockExchangeUseCase', () => {
             accountType: CASH_ACCOUNT,
             amount: -1200000, // negative = credit (money going out conceptually)
           }),
-        ]) as unknown as Array<{ accountType: string; amount: number }>,
+        ]) as unknown as Array<Record<string, any>>,
       }),
     );
   });
@@ -282,9 +282,9 @@ describe('ProcessStockExchangeUseCase', () => {
           expect.objectContaining({
             accountType: LOANS_RECEIVABLE_ACCOUNT,
             amount: 600000, // positive = debit (asset increase)
-            loanId: expect.any(String),
+            loanId: expect.any(String) as string,
           }),
-        ]) as unknown as Array<{ accountType: string; amount: number }>,
+        ]) as unknown as Array<Record<string, any>>,
       }),
     );
   });
@@ -309,6 +309,7 @@ describe('ProcessStockExchangeUseCase', () => {
 
     await useCase.execute(dto);
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(loanTransactionDetailRepository.save).toHaveBeenCalledWith(
       expect.objectContaining({
         loanId: 'loan-1',
