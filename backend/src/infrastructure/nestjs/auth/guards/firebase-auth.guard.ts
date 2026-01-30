@@ -24,7 +24,7 @@ export class FirebaseAuthGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<Record<string, any>>();
     const token = this.extractTokenFromHeader(request);
     
     if (!token) {
@@ -35,15 +35,20 @@ export class FirebaseAuthGuard implements CanActivate {
     try {
       const payload = await this.firebaseAdminService.auth.verifyIdToken(token);
       request['user'] = payload;
-    } catch (error: any) {
-      console.error('[FirebaseAuthGuard] Token verification failed:', error.message);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[FirebaseAuthGuard] Token verification failed:', message);
       throw new UnauthorizedException();
     }
     return true;
   }
 
-  private extractTokenFromHeader(request: any): string | undefined {
-    const [type, token] = request.headers.authorization?.split(' ') ?? [];
+  private extractTokenFromHeader(request: Record<string, any>): string | undefined {
+    const authorization = request.headers?.authorization;
+    if (!authorization || typeof authorization !== 'string') {
+      return undefined;
+    }
+    const [type, token] = authorization.split(' ') ?? [];
     return type === 'Bearer' ? token : undefined;
   }
 }
