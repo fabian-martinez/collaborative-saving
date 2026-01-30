@@ -23,9 +23,9 @@ export class StockSubscription {
   quantity: number;
 
   @Column({
-    type: 'date',
+    type: 'timestamp with time zone',
     name: 'purchase_date',
-    default: () => 'CURRENT_DATE',
+    default: () => 'CURRENT_TIMESTAMP',
   })
   purchaseDate: Date;
 
