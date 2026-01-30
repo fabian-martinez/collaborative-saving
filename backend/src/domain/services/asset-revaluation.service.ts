@@ -5,6 +5,7 @@ import { StockSubscriptionRepository } from '../ports/repositories/stock-subscri
 import { LoanRepository } from '../ports/repositories/loan-repository.port';
 import { OperationRepository } from '../ports/repositories/operation-repository.port';
 import { StockValueHistoryRepository } from '../ports/repositories/stock-value-history-repository.port';
+import { InterestDistributionConfigRepository } from '../ports/repositories/interest-distribution-config-repository.port';
 import { Stock } from '../entities/stock.entity';
 import { StockSubscription } from '../entities/stock-subscription.entity';
 import { OperationType } from '../enums/operation-type.enum';
@@ -55,6 +56,7 @@ export class AssetRevaluationDomainService {
     private readonly loanRepository: LoanRepository,
     private readonly operationRepository: OperationRepository,
     private readonly stockValueHistoryRepository: StockValueHistoryRepository,
+    private readonly distributionConfigRepository: InterestDistributionConfigRepository,
   ) {}
 
   async calculateRevaluationData(
@@ -98,13 +100,36 @@ export class AssetRevaluationDomainService {
       loanIds.length > 0 ? await this.loanRepository.findByIds(loanIds) : [];
     const loanMap = new Map(loans.map((loan) => [loan.id, loan]));
 
-    const agilePriorityInterest = interestEntries
-      .filter((e) => {
-        if (!e.loanId) return false;
-        const loan = loanMap.get(e.loanId);
-        return loan && ['agil', 'prioritario'].includes(loan.loanType);
-      })
-      .reduce((sum, e) => sum + Math.abs(e.amount), 0);
+    // Fetch all distribution configs
+    const distributionConfigs =
+      await this.distributionConfigRepository.findAll();
+
+    // Obtener stocks
+    const stocks = await this.stockRepository.findAll();
+
+    // Group interest by Stock ID based on configs
+    const interestByStock: Record<string, number> = {};
+    interestEntries.forEach((e) => {
+      if (!e.loanId) return;
+      const loan = loanMap.get(e.loanId);
+      if (!loan || !loan.loanTypeId) return;
+
+      // Find configs for this loan type
+      const configs = distributionConfigs.filter(
+        (c) => c.loanTypeId === loan.loanTypeId,
+      );
+
+      // Distribute this interest entry among configured stocks
+      configs.forEach((config) => {
+        const targetStocks = stocks.filter(
+          (s) => s.stockTypeId === config.stockTypeId,
+        );
+        targetStocks.forEach((s) => {
+          if (!interestByStock[s.id]) interestByStock[s.id] = 0;
+          interestByStock[s.id] += Math.abs(e.amount) / targetStocks.length;
+        });
+      });
+    });
 
     // Calcular aportes de capital (solo MONTHLY_PAYMENT)
     const totalStockContributions = ledgerEntries
@@ -121,8 +146,7 @@ export class AssetRevaluationDomainService {
       .filter((e) => e.accountType === MANDATORY_CONTRIBUTION_INCOME_ACCOUNT)
       .reduce((sum, e) => sum + Math.abs(e.amount), 0);
 
-    // Obtener stocks y subscriptions
-    const stocks = await this.stockRepository.findAll();
+    // Obtener subscriptions
     const allSubscriptions = await Promise.all(
       stocks.map((stock) =>
         this.stockSubscriptionRepository.findByStock(stock.id),
@@ -155,7 +179,7 @@ export class AssetRevaluationDomainService {
       totalStockContributions,
       interestAvailableForDistribution: totalInterest,
       totalRequiredGuaranteedGrowth,
-      agilePriorityInterest,
+      interestByStock,
       stocks,
       subscriptions,
       ledgerEntries,

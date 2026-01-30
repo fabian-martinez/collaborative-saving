@@ -71,6 +71,11 @@ const routes: RouteRecordRaw[] = [
     path: '/ledger',
     name: 'ledger',
     component: () => import('@/features/ledger/views/LedgerView.vue')
+  },
+  {
+    path: '/settings',
+    name: 'settings',
+    component: () => import('@/features/settings/views/SettingsView.vue')
   }
 ]
 

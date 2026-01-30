@@ -25,7 +25,7 @@ describe('ProportionalGrowthHandler', () => {
       totalStockContributions: 5000,
       interestAvailableForDistribution: 1000,
       totalRequiredGuaranteedGrowth: 50,
-      agilePriorityInterest: 500,
+      interestByStock: {},
       stocks: [guaranteedStock],
       subscriptions: [],
       ledgerEntries: [],
@@ -58,7 +58,7 @@ describe('ProportionalGrowthHandler', () => {
       totalStockContributions: 0,
       interestAvailableForDistribution: 0,
       totalRequiredGuaranteedGrowth: 0,
-      agilePriorityInterest: 0,
+      interestByStock: {},
       stocks: [regularStock],
       subscriptions: [
         StockSubscription.create({
@@ -108,7 +108,7 @@ describe('ProportionalGrowthHandler', () => {
       totalStockContributions: 5000,
       interestAvailableForDistribution: 1000,
       totalRequiredGuaranteedGrowth: 0,
-      agilePriorityInterest: 0,
+      interestByStock: {},
       stocks: [regularStock1, regularStock2],
       subscriptions: [
         StockSubscription.create({
@@ -173,7 +173,7 @@ describe('ProportionalGrowthHandler', () => {
       totalStockContributions: 5000,
       interestAvailableForDistribution: 1000,
       totalRequiredGuaranteedGrowth: 50,
-      agilePriorityInterest: 50,
+      interestByStock: {},
       stocks: [guaranteedStock, regularStock1, regularStock2],
       subscriptions: [
         StockSubscription.create({
@@ -230,7 +230,7 @@ describe('ProportionalGrowthHandler', () => {
       totalStockContributions: 5000,
       interestAvailableForDistribution: 1000,
       totalRequiredGuaranteedGrowth: 0,
-      agilePriorityInterest: 0,
+      interestByStock: {},
       stocks: [regularStock1, regularStock2],
       subscriptions: [
         StockSubscription.create({
@@ -272,7 +272,7 @@ describe('ProportionalGrowthHandler', () => {
       totalStockContributions: 5000,
       interestAvailableForDistribution: 1000,
       totalRequiredGuaranteedGrowth: 0,
-      agilePriorityInterest: 0,
+      interestByStock: {},
       stocks: [regularStock],
       subscriptions: [
         StockSubscription.create({

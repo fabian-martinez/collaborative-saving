@@ -149,6 +149,22 @@ describe('Stock Entity', () => {
       expect(stock.deletedAt).toEqual(deletedDate);
       expect(stock.isDeleted()).toBe(true);
     });
+
+    it('should handle stock_type_id', () => {
+      const stock = Stock.fromPersistence({
+        id: mockId,
+        type: 'test',
+        value: 100,
+        monthly_contribution: 50,
+        is_guaranteed: false,
+        guaranteed_yield: null,
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        created_at: mockDate,
+        stock_type_id: 'stock-type-123',
+      });
+
+      expect(stock.stockTypeId).toBe('stock-type-123');
+    });
   });
 
   describe('update method', () => {
@@ -213,6 +229,17 @@ describe('Stock Entity', () => {
       expect(() => {
         stock.update({ value: -10 });
       }).toThrow('Stock value must be >= 0');
+    });
+
+    it('should update stockTypeId', () => {
+      const stock = Stock.create({
+        type: 'test',
+        value: 100,
+        monthlyContribution: 50,
+      });
+
+      stock.update({ stockTypeId: 'new-type-id' });
+      expect(stock.stockTypeId).toBe('new-type-id');
     });
   });
 

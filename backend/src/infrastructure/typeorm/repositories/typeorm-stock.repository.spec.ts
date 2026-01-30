@@ -2,8 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { TypeOrmStockRepository } from './typeorm-stock.repository';
-import { Stock as StockEntity, StockBehavior } from '../entities/stock.entity';
-import { Stock as StockDomain } from '@domain/entities/stock.entity';
+import { Stock as StockEntity } from '../entities/stock.entity';
+import { Stock as StockDomain, StockBehavior } from '@domain/entities/stock.entity';
 
 describe('TypeOrmStockRepository', () => {
   let repository: TypeOrmStockRepository;

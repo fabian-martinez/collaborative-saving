@@ -16,7 +16,8 @@ describe('LoanMapper', () => {
         interestRate: 0.02,
         term: 24,
         status: 'active',
-        creationDate: new Date('2024-01-15'),
+        creationDate: new Date('2024-01-15T00:00:00.000Z'),
+        loanTypeId: 'type-id-123',
         guaranteedStockId: null,
       };
 
@@ -27,6 +28,8 @@ describe('LoanMapper', () => {
       expect(domain.memberId).toBe(entity.memberId);
       expect(domain.approvedAmount).toBe(10000);
       expect(domain.disbursedAmount).toBe(5000);
+      expect(domain.interestRate).toBe(0.02);
+      expect(domain.loanTypeId).toBe('type-id-123');
     });
 
     it('should handle guaranteedStockId', () => {
@@ -52,13 +55,19 @@ describe('LoanMapper', () => {
 
   describe('toPersistence', () => {
     it('should map Domain Loan to LoanEntity', () => {
-      const domain = Loan.create({
-        memberId: 'member-1',
-        loanType: 'corriente',
-        approvedAmount: 10000,
-        monthlyPaymentAmount: 500,
-        interestRate: 0.02,
+      const domain = Loan.fromPersistence({
+        id: 'loan-1',
+        member_id: 'member-1',
+        loan_type: 'corriente',
+        approved_amount: 10000,
+        disbursed_amount: 0,
+        outstanding_balance: 10000,
+        monthly_payment_amount: 500,
+        interest_rate: 0.02,
         term: 24,
+        status: 'pending',
+        creation_date: new Date('2024-01-15T00:00:00.000Z'),
+        loan_type_id: 'type-id-123',
       });
 
       const persistence = LoanMapper.toPersistence(domain);
@@ -67,6 +76,8 @@ describe('LoanMapper', () => {
       expect(persistence.memberId).toBe(domain.memberId);
       expect(persistence.approvedAmount).toBe(domain.approvedAmount);
       expect(persistence.status).toBe(domain.status);
+      expect(persistence.term).toBe(24);
+      expect(persistence.loanTypeId).toBe('type-id-123');
     });
   });
 });

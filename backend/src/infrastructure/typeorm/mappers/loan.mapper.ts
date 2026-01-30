@@ -17,6 +17,7 @@ export class LoanMapper {
         status: persistence.status,
         creation_date: persistence.creationDate,
         guaranteed_stock_id: persistence.guaranteedStockId ?? null,
+        loan_type_id: persistence.loanTypeId,
       });
     } catch (error) {
       throw new Error(
@@ -39,6 +40,7 @@ export class LoanMapper {
       status: domain.status,
       creationDate: domain.creationDate,
       guaranteedStockId: domain.guaranteedStockId ?? null,
+      loanTypeId: domain.loanTypeId,
     };
   }
 }

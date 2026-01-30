@@ -14,6 +14,7 @@ export class Stock {
     private _guaranteedYield: number | null,
     private _behavior: StockBehavior,
     public readonly createdAt: Date,
+    private _stockTypeId: string | null = null,
     private _deletedAt: Date | null = null,
   ) {
     this.validateInvariants();
@@ -40,6 +41,7 @@ export class Stock {
       behavior,
       new Date(),
       null,
+      null,
     );
   }
 
@@ -51,6 +53,7 @@ export class Stock {
     is_guaranteed: boolean;
     guaranteed_yield: number | null;
     behavior: string;
+    stock_type_id?: string | null;
     created_at?: Date | string;
     deleted_at?: Date | string | null;
   }): Stock {
@@ -67,6 +70,7 @@ export class Stock {
           ? new Date(data.created_at)
           : data.created_at
         : new Date(),
+      data.stock_type_id ?? null,
       data.deleted_at
         ? typeof data.deleted_at === 'string'
           ? new Date(data.deleted_at)
@@ -82,6 +86,7 @@ export class Stock {
     isGuaranteed?: boolean;
     guaranteedYield?: number | null;
     behavior?: StockBehavior;
+    stockTypeId?: string | null;
   }): void {
     if (data.type !== undefined) this._type = data.type;
     if (data.value !== undefined) this._value = data.value;
@@ -97,6 +102,7 @@ export class Stock {
       this._guaranteedYield = data.guaranteedYield;
     }
     if (data.behavior !== undefined) this._behavior = data.behavior;
+    if (data.stockTypeId !== undefined) this._stockTypeId = data.stockTypeId;
 
     this.validateInvariants();
   }
@@ -150,6 +156,10 @@ export class Stock {
 
   get deletedAt(): Date | null {
     return this._deletedAt;
+  }
+
+  get stockTypeId(): string | null {
+    return this._stockTypeId;
   }
 
   isDeleted(): boolean {

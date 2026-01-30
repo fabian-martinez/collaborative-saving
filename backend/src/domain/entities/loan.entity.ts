@@ -18,6 +18,7 @@ export class Loan {
     private _status: LoanStatus,
     private _creationDate: Date,
     private _guaranteedStockId?: string | null,
+    private _loanTypeId?: string | null,
   ) {
     this.validateInvariants();
   }
@@ -45,6 +46,7 @@ export class Loan {
       LoanStatus.PENDING,
       new Date(), // creationDate
       data.guaranteedStockId || null,
+      null, // loanTypeId
     );
   }
 
@@ -61,6 +63,7 @@ export class Loan {
     status: string;
     creation_date: Date | string;
     guaranteed_stock_id?: string | null;
+    loan_type_id?: string | null;
   }): Loan {
     return new Loan(
       data.id,
@@ -77,6 +80,7 @@ export class Loan {
         ? new Date(data.creation_date)
         : data.creation_date,
       data.guaranteed_stock_id ?? undefined,
+      data.loan_type_id ?? undefined,
     );
   }
 
@@ -276,6 +280,10 @@ export class Loan {
 
   get guaranteedStockId(): string | null | undefined {
     return this._guaranteedStockId;
+  }
+
+  get loanTypeId(): string | null | undefined {
+    return this._loanTypeId;
   }
 
   isActive(): boolean {

@@ -145,6 +145,25 @@ describe('Loan Entity', () => {
       expect(loan.creationDate).toBeInstanceOf(Date);
     });
 
+    it('should handle loan_type_id', () => {
+      const loan = Loan.fromPersistence({
+        id: mockId,
+        member_id: 'member-1',
+        loan_type: 'corriente',
+        approved_amount: 10000,
+        disbursed_amount: 0,
+        outstanding_balance: 10000,
+        monthly_payment_amount: 500,
+        interest_rate: 0.02,
+        term: 24,
+        status: 'pending',
+        creation_date: mockDate,
+        loan_type_id: 'type-id-123',
+      });
+
+      expect(loan.loanTypeId).toBe('type-id-123');
+    });
+
     it('should handle string numbers', () => {
       const loan = Loan.fromPersistence({
         id: mockId,

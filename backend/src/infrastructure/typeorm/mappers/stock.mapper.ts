@@ -14,6 +14,7 @@ export class StockMapper {
           ? Number(persistence.guaranteed_yield)
           : null,
         behavior: persistence.behavior,
+        stock_type_id: persistence.stockTypeId,
         created_at:
           (persistence as unknown as { created_at?: Date | string })
             .created_at || new Date(),
@@ -35,6 +36,7 @@ export class StockMapper {
       is_guaranteed: domain.isGuaranteed,
       guaranteed_yield: domain.guaranteedYield,
       behavior: domain.behavior,
+      stockTypeId: domain.stockTypeId,
     };
 
     // Handle deleted_at - solo incluir si está marcado como eliminado

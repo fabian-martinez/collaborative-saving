@@ -23,7 +23,7 @@ export class GuaranteedGrowthHandler implements DistributionHandler {
       };
     }
 
-    const availableFromAgilePriority = context.agilePriorityInterest;
+    const interestByStock = context.interestByStock;
     let totalRequired = 0;
     const requiredByStock: Record<string, number> = {};
     for (const stock of guaranteedStocks) {
@@ -47,15 +47,25 @@ export class GuaranteedGrowthHandler implements DistributionHandler {
 
     const assignedByStock: Record<string, number> = {};
     let totalAssigned = 0;
+    
+    // Sum only interest available for these specific guaranteed stocks
+    const totalSpecificAvailable = guaranteedStocks.reduce(
+      (sum, s) => sum + (interestByStock[s.id] || 0),
+      0,
+    );
+
     for (const stock of guaranteedStocks) {
       const required = requiredByStock[stock.id] || 0;
       if (required === 0) continue;
 
       let assign = 0;
-      if (availableFromAgilePriority >= totalRequired) {
+      const specificAvailable = interestByStock[stock.id] || 0;
+      
+      if (totalSpecificAvailable >= totalRequired) {
         assign = required;
       } else {
-        assign = (required / totalRequired) * availableFromAgilePriority;
+        // Distribute what's available proportionally among those who need it
+        assign = (required / totalRequired) * totalSpecificAvailable;
       }
 
       assign = Math.max(assign, 0);

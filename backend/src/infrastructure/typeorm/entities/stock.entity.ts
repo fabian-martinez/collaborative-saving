@@ -3,12 +3,11 @@ import {
   Column,
   PrimaryGeneratedColumn,
   DeleteDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
-
-export enum StockBehavior {
-  CAPITAL_APPRECIATION = 'CAPITAL_APPRECIATION',
-  DIVIDEND_YIELD = 'DIVIDEND_YIELD',
-}
+import { StockType } from './stock-type.entity';
+import { StockBehavior } from '../enums/stock-behavior.enum';
 
 @Entity({ name: 'stocks' })
 export class Stock {
@@ -47,6 +46,13 @@ export class Stock {
     default: StockBehavior.CAPITAL_APPRECIATION,
   })
   behavior: StockBehavior;
+
+  @Column({ type: 'uuid', name: 'stock_type_id', nullable: true })
+  stockTypeId: string | null;
+
+  @ManyToOne(() => StockType)
+  @JoinColumn({ name: 'stock_type_id' })
+  stockType: StockType | null;
 
   @DeleteDateColumn({ name: 'deleted_at' })
   deleted_at: Date | null;

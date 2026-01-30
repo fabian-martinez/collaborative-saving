@@ -33,6 +33,7 @@ import { ProcessStockWithdrawalDisbursementUseCase } from '@application/use-case
 import { ProcessDividendDisbursementUseCase } from '@application/use-cases/meetings/process-dividend-disbursement.use-case';
 import { CreateLoanUseCase } from '@application/use-cases/loans/create-loan.use-case';
 import { LoansV2Module } from './loans-v2.module';
+import { SettingsV2Module } from './settings-v2.module';
 import { MeetingSummaryService } from '@application/services/meeting-summary.service';
 import { TypeOrmMeetingRepository } from '@infrastructure/typeorm/repositories/typeorm-meeting.repository';
 import { TypeOrmOperationRepository } from '@infrastructure/typeorm/repositories/typeorm-operation.repository';
@@ -60,6 +61,11 @@ import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pendi
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
 import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
+import { InterestDistributionConfigRepository } from '@domain/ports/repositories/interest-distribution-config-repository.port';
+
+import { 
+  INTEREST_DISTRIBUTION_CONFIG_REPOSITORY as SETTINGS_DISTRIBUTION_CONFIG_REPOSITORY 
+} from './settings.tokens';
 
 const MEETING_REPOSITORY = Symbol('MeetingRepository');
 const OPERATION_REPOSITORY = Symbol('OperationRepository');
@@ -76,6 +82,7 @@ const MEMBER_REPOSITORY = Symbol('MemberRepository');
 const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
   'LoanTransactionDetailRepository',
 );
+const INTEREST_DISTRIBUTION_CONFIG_REPOSITORY = SETTINGS_DISTRIBUTION_CONFIG_REPOSITORY;
 
 @Module({
   imports: [
@@ -92,6 +99,7 @@ const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
       Member,
     ]),
     LoansV2Module,
+    SettingsV2Module,
   ],
   controllers: [MeetingsV2Controller],
   providers: [
@@ -152,6 +160,7 @@ const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
         loanRepo: LoanRepository,
         operationRepo: OperationRepository,
         stockValueHistoryRepo: StockValueHistoryRepository,
+        distributionConfigRepo: InterestDistributionConfigRepository,
       ) =>
         new AssetRevaluationDomainService(
           meetingRepo,
@@ -161,6 +170,7 @@ const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
           loanRepo,
           operationRepo,
           stockValueHistoryRepo,
+          distributionConfigRepo,
         ),
       inject: [
         MEETING_REPOSITORY,
@@ -170,6 +180,7 @@ const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
         LOAN_REPOSITORY,
         OPERATION_REPOSITORY,
         STOCK_VALUE_HISTORY_REPOSITORY,
+        INTEREST_DISTRIBUTION_CONFIG_REPOSITORY,
       ],
     },
     OperationBalanceValidator,

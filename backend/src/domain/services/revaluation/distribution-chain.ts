@@ -7,7 +7,7 @@ export interface DistributionContext {
   totalStockContributions: number;
   interestAvailableForDistribution: number;
   totalRequiredGuaranteedGrowth: number;
-  agilePriorityInterest: number;
+  interestByStock: Record<string, number>; // Mapping of pre-allocated interest for specific stocks
   stocks: Stock[];
   subscriptions: StockSubscription[];
   ledgerEntries: LedgerEntry[];

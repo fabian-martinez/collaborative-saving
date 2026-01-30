@@ -6,6 +6,7 @@ import { StockSubscriptionRepository } from '../ports/repositories/stock-subscri
 import { LoanRepository } from '../ports/repositories/loan-repository.port';
 import { OperationRepository } from '../ports/repositories/operation-repository.port';
 import { StockValueHistoryRepository } from '../ports/repositories/stock-value-history-repository.port';
+import { InterestDistributionConfigRepository } from '../ports/repositories/interest-distribution-config-repository.port';
 import { Meeting } from '../entities/meeting.entity';
 import { Stock, StockBehavior } from '../entities/stock.entity';
 import { StockSubscription } from '../entities/stock-subscription.entity';
@@ -32,6 +33,7 @@ describe('AssetRevaluationDomainService', () => {
   let loanRepository: jest.Mocked<LoanRepository>;
   let operationRepository: jest.Mocked<OperationRepository>;
   let stockValueHistoryRepository: jest.Mocked<StockValueHistoryRepository>;
+  let distributionConfigRepository: jest.Mocked<InterestDistributionConfigRepository>;
 
   beforeEach(() => {
     meetingRepository = {
@@ -101,6 +103,15 @@ describe('AssetRevaluationDomainService', () => {
       saveMany: jest.fn(),
     } as unknown as jest.Mocked<StockValueHistoryRepository>;
 
+    distributionConfigRepository = {
+      findAll: jest.fn(),
+      findByLoanType: jest.fn(),
+      save: jest.fn(),
+      delete: jest.fn(),
+    } as unknown as jest.Mocked<InterestDistributionConfigRepository>;
+
+    distributionConfigRepository.findAll.mockResolvedValue([]);
+
     service = new AssetRevaluationDomainService(
       meetingRepository,
       ledgerEntryRepository,
@@ -109,6 +120,7 @@ describe('AssetRevaluationDomainService', () => {
       loanRepository,
       operationRepository,
       stockValueHistoryRepository,
+      distributionConfigRepository,
     );
   });
 

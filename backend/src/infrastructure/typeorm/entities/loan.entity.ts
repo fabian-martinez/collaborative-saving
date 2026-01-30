@@ -7,6 +7,7 @@ import {
 } from 'typeorm';
 import { Member } from './member.entity';
 import { Stock } from './stock.entity';
+import { LoanType } from './loan-type.entity';
 
 @Entity({ name: 'loans' })
 export class Loan {
@@ -18,6 +19,9 @@ export class Loan {
 
   @Column({ type: 'text', name: 'loan_type' })
   loanType: string;
+
+  @Column({ type: 'uuid', name: 'loan_type_id', nullable: true })
+  loanTypeId: string | null;
 
   @Column({ type: 'decimal', precision: 12, scale: 2, name: 'approved_amount' })
   approvedAmount: number;
@@ -75,4 +79,8 @@ export class Loan {
   @ManyToOne(() => Stock, { nullable: true })
   @JoinColumn({ name: 'guaranteed_stock_id' })
   guaranteedStock: Stock | null;
+
+  @ManyToOne(() => LoanType)
+  @JoinColumn({ name: 'loan_type_id' })
+  loanTypeEntity: LoanType | null;
 }

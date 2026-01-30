@@ -14,7 +14,8 @@ describe('StockMapper', () => {
         guaranteed_yield: null,
         behavior: StockBehavior.CAPITAL_APPRECIATION,
         deleted_at: null,
-      } as StockEntity;
+        stockTypeId: 'type-id-123',
+      } as any;
 
       const domain = StockMapper.toDomain(entity as StockEntity);
 
@@ -26,6 +27,7 @@ describe('StockMapper', () => {
       expect(domain.isGuaranteed).toBe(false);
       expect(domain.guaranteedYield).toBeNull();
       expect(domain.behavior).toBe(StockBehavior.CAPITAL_APPRECIATION);
+      expect(domain.stockTypeId).toBe('type-id-123');
     });
 
     it('should handle guaranteed stock', () => {
@@ -38,13 +40,15 @@ describe('StockMapper', () => {
         guaranteed_yield: 0.02,
         behavior: StockBehavior.DIVIDEND_YIELD,
         deleted_at: null,
-      } as StockEntity;
+        stockTypeId: 'type-id-456',
+      } as any;
 
       const domain = StockMapper.toDomain(entity as StockEntity);
 
       expect(domain.isGuaranteed).toBe(true);
       expect(domain.guaranteedYield).toBe(0.02);
       expect(domain.behavior).toBe(StockBehavior.DIVIDEND_YIELD);
+      expect(domain.stockTypeId).toBe('type-id-456');
     });
 
     it('should handle deleted stock', () => {
@@ -58,12 +62,14 @@ describe('StockMapper', () => {
         guaranteed_yield: null,
         behavior: StockBehavior.CAPITAL_APPRECIATION,
         deleted_at: deletedDate,
-      } as StockEntity;
+        stockTypeId: 'type-id-789',
+      } as any;
 
       const domain = StockMapper.toDomain(entity as StockEntity);
 
       expect(domain.deletedAt).toEqual(deletedDate);
       expect(domain.isDeleted()).toBe(true);
+      expect(domain.stockTypeId).toBe('type-id-789');
     });
   });
 
@@ -74,6 +80,7 @@ describe('StockMapper', () => {
         value: 100,
         monthlyContribution: 50,
       });
+      domain.update({ stockTypeId: 'type-id-123' });
 
       const persistence = StockMapper.toPersistence(domain);
 
@@ -84,6 +91,7 @@ describe('StockMapper', () => {
       expect(persistence.is_guaranteed).toBe(domain.isGuaranteed);
       expect(persistence.guaranteed_yield).toBe(domain.guaranteedYield);
       expect(persistence.behavior).toBe(domain.behavior);
+      expect(persistence.stockTypeId).toBe(domain.stockTypeId);
     });
 
     it('should map deleted stock correctly', () => {
@@ -92,11 +100,13 @@ describe('StockMapper', () => {
         value: 100,
         monthlyContribution: 50,
       });
+      domain.update({ stockTypeId: 'type-id-456' });
       domain.markAsDeleted();
 
       const persistence = StockMapper.toPersistence(domain);
 
       expect(persistence.deleted_at).toEqual(domain.deletedAt);
+      expect(persistence.stockTypeId).toBe(domain.stockTypeId);
     });
 
     it('should map guaranteed stock correctly', () => {
@@ -108,12 +118,14 @@ describe('StockMapper', () => {
         guaranteedYield: 0.02,
         behavior: StockBehavior.DIVIDEND_YIELD,
       });
+      domain.update({ stockTypeId: 'type-id-789' });
 
       const persistence = StockMapper.toPersistence(domain);
 
       expect(persistence.is_guaranteed).toBe(true);
       expect(persistence.guaranteed_yield).toBe(0.02);
       expect(persistence.behavior).toBe(StockBehavior.DIVIDEND_YIELD);
+      expect(persistence.stockTypeId).toBe(domain.stockTypeId);
     });
   });
 });

@@ -18,7 +18,7 @@ describe('GuaranteedGrowthHandler', () => {
       totalStockContributions: 5000,
       interestAvailableForDistribution: 1000,
       totalRequiredGuaranteedGrowth: 0,
-      agilePriorityInterest: 500,
+      interestByStock: {},
       stocks: [
         Stock.create({
           type: 'regular',
@@ -59,7 +59,7 @@ describe('GuaranteedGrowthHandler', () => {
       totalStockContributions: 0,
       interestAvailableForDistribution: 0,
       totalRequiredGuaranteedGrowth: 50,
-      agilePriorityInterest: 0,
+      interestByStock: {},
       stocks: [guaranteedStock],
       subscriptions: [
         StockSubscription.create({
@@ -110,7 +110,10 @@ describe('GuaranteedGrowthHandler', () => {
       totalStockContributions: 5000,
       interestAvailableForDistribution: 1000,
       totalRequiredGuaranteedGrowth: 80,
-      agilePriorityInterest: 1000,
+      interestByStock: {
+        [guaranteedStock1.id]: 500,
+        [guaranteedStock2.id]: 500,
+      },
       stocks: [guaranteedStock1, guaranteedStock2],
       subscriptions: [
         StockSubscription.create({
@@ -159,7 +162,7 @@ describe('GuaranteedGrowthHandler', () => {
       totalStockContributions: 5000,
       interestAvailableForDistribution: 1000,
       totalRequiredGuaranteedGrowth: 50,
-      agilePriorityInterest: 30, // Less than required
+      interestByStock: { [guaranteedStock.id]: 30 }, // Less than required
       stocks: [guaranteedStock],
       subscriptions: [
         StockSubscription.create({
@@ -201,7 +204,7 @@ describe('GuaranteedGrowthHandler', () => {
       totalStockContributions: 5000,
       interestAvailableForDistribution: 1000,
       totalRequiredGuaranteedGrowth: 120,
-      agilePriorityInterest: 200, // More than required
+      interestByStock: { [guaranteedStock.id]: 200 }, // More than required
       stocks: [guaranteedStock],
       subscriptions: [
         StockSubscription.create({
@@ -255,7 +258,10 @@ describe('GuaranteedGrowthHandler', () => {
       totalStockContributions: 5000,
       interestAvailableForDistribution: 1000,
       totalRequiredGuaranteedGrowth: 80,
-      agilePriorityInterest: 40, // Less than required
+      interestByStock: {
+        [guaranteedStock1.id]: 25,
+        [guaranteedStock2.id]: 15,
+      }, // Less than required
       stocks: [guaranteedStock1, guaranteedStock2],
       subscriptions: [
         StockSubscription.create({
