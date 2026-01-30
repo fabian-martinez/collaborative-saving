@@ -124,12 +124,11 @@ describe('GetMemberStockTransfersQueryHandler', () => {
 
       const stock = Stock.fromPersistence({
         id: stockId,
-        type: 'Acción Mediana',
+        name: 'Acción Mediana',
         value: 500000,
         monthly_contribution: 25000,
         is_guaranteed: true,
         guaranteed_yield: 0.05,
-        behavior: StockBehavior.CAPITAL_APPRECIATION,
       });
 
       const fromSubscription = StockSubscription.create({
@@ -211,7 +210,7 @@ describe('GetMemberStockTransfersQueryHandler', () => {
         operationId: operation.id,
         meetingId,
         stockId,
-        stockType: stock.type,
+        stockType: stock.name,
         quantity: 2,
         value: 1000000,
         fromMemberId,

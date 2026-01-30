@@ -183,12 +183,12 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       ];
 
       const stock1 = Stock.create({
-        type: 'Type A',
+        name: 'Type A',
         value: 10000,
         monthlyContribution: 2000,
       });
       const stock2 = Stock.create({
-        type: 'Type B',
+        name: 'Type B',
         value: 15000,
         monthlyContribution: 3000,
       });
@@ -305,7 +305,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       ];
 
       const stock1 = Stock.create({
-        type: 'Type A',
+        name: 'Type A',
         value: 10000,
         monthlyContribution: 2000,
       });
@@ -498,7 +498,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       ];
 
       const stock = Stock.create({
-        type: 'Type A',
+        name: 'Type A',
         value: 10000,
         monthlyContribution: 0, // Sin contribución mensual
       });

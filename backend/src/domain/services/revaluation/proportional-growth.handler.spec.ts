@@ -14,7 +14,7 @@ describe('ProportionalGrowthHandler', () => {
     // ARRANGE
     const available = 1000;
     const guaranteedStock = Stock.create({
-      type: 'guaranteed',
+      name: 'guaranteed',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: true,
@@ -48,7 +48,7 @@ describe('ProportionalGrowthHandler', () => {
     // ARRANGE
     const available = 0;
     const regularStock = Stock.create({
-      type: 'regular',
+      name: 'regular',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: false,
@@ -86,13 +86,13 @@ describe('ProportionalGrowthHandler', () => {
     // ARRANGE
     const available = 1000;
     const regularStock1 = Stock.create({
-      type: 'regular-1',
+      name: 'regular-1',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: false,
     });
     const regularStock2 = Stock.create({
-      type: 'regular-2',
+      name: 'regular-2',
       value: 200,
       monthlyContribution: 20,
       isGuaranteed: false,
@@ -143,24 +143,23 @@ describe('ProportionalGrowthHandler', () => {
     // ARRANGE
     const available = 1000;
     const guaranteedStock = Stock.create({
-      type: 'guaranteed',
+      name: 'guaranteed',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: true,
       guaranteedYield: 0.05,
     });
     const regularStock1 = Stock.create({
-      type: 'regular-1',
+      name: 'regular-1',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: false,
     });
     const regularStock2 = Stock.create({
-      type: 'regular-2',
+      name: 'regular-2',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: false,
-      behavior: StockBehavior.DIVIDEND_YIELD,
     });
 
     // Only regular stocks should be included
@@ -209,13 +208,13 @@ describe('ProportionalGrowthHandler', () => {
     // ARRANGE
     const available = 1000;
     const regularStock1 = Stock.create({
-      type: 'regular-1',
+      name: 'regular-1',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: false,
     });
     const regularStock2 = Stock.create({
-      type: 'regular-2',
+      name: 'regular-2',
       value: 200,
       monthlyContribution: 20,
       isGuaranteed: false,
@@ -261,7 +260,7 @@ describe('ProportionalGrowthHandler', () => {
     // ARRANGE
     const available = 500;
     const regularStock = Stock.create({
-      type: 'regular',
+      name: 'regular',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: false,

@@ -8,33 +8,32 @@ export class CreateStockUseCase {
   constructor(private readonly stockRepository: StockRepository) {}
 
   async execute(dto: CreateStockDto): Promise<StockResponseDto> {
-    // Validar que no exista un stock con el mismo tipo
-    const existing = await this.stockRepository.findByType(dto.type);
+    // Validar que no exista un stock con el mismo nombre
+    const existing = await this.stockRepository.findByName(dto.name);
     if (existing && !existing.isDeleted()) {
       throw new InvalidRequestError(
-        `Stock with type "${dto.type}" already exists`,
+        `Stock with name "${dto.name}" already exists`,
       );
     }
 
     const stock = Stock.create({
-      type: dto.type,
+      name: dto.name,
       value: dto.value,
       monthlyContribution: dto.monthlyContribution,
       isGuaranteed: dto.isGuaranteed,
       guaranteedYield: dto.guaranteedYield,
-      behavior: dto.behavior,
+      stockTypeId: dto.stockTypeId,
     });
 
     const saved = await this.stockRepository.save(stock);
 
     return {
       id: saved.id,
-      type: saved.type,
+      name: saved.name,
       value: saved.value,
       monthlyContribution: saved.monthlyContribution,
       isGuaranteed: saved.isGuaranteed,
       guaranteedYield: saved.guaranteedYield,
-      behavior: saved.behavior,
       createdAt: saved.createdAt,
     };
   }

@@ -138,7 +138,7 @@ export class GetMemberPurchasesQueryHandler {
       const purchase: MemberPurchaseResponseDto = {
         stockSubscriptionId: subscription.id,
         stockId: subscription.stockId,
-        stockType: stock.type,
+        stockType: stock.name,
         quantity: subscription.quantity,
         unitValue,
         totalValue,

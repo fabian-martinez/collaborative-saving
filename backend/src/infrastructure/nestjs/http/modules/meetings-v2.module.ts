@@ -54,6 +54,7 @@ import { MeetingRepository } from '@domain/ports/repositories/meeting-repository
 import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
+import { StockTypeRepository } from '@domain/ports/repositories/stock-type-repository.port';
 import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-subscription-repository.port';
 import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
 import { StockValueHistoryRepository } from '@domain/ports/repositories/stock-value-history-repository.port';
@@ -62,9 +63,9 @@ import { TransactionManager } from '@domain/ports/services/transaction-manager.p
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
 import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
 import { InterestDistributionConfigRepository } from '@domain/ports/repositories/interest-distribution-config-repository.port';
-
-import { 
-  INTEREST_DISTRIBUTION_CONFIG_REPOSITORY as SETTINGS_DISTRIBUTION_CONFIG_REPOSITORY 
+import {
+  INTEREST_DISTRIBUTION_CONFIG_REPOSITORY as SETTINGS_DISTRIBUTION_CONFIG_REPOSITORY,
+  STOCK_TYPE_REPOSITORY as SETTINGS_STOCK_TYPE_REPOSITORY,
 } from './settings.tokens';
 
 const MEETING_REPOSITORY = Symbol('MeetingRepository');
@@ -83,6 +84,7 @@ const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
   'LoanTransactionDetailRepository',
 );
 const INTEREST_DISTRIBUTION_CONFIG_REPOSITORY = SETTINGS_DISTRIBUTION_CONFIG_REPOSITORY;
+const STOCK_TYPE_REPOSITORY = SETTINGS_STOCK_TYPE_REPOSITORY;
 
 @Module({
   imports: [
@@ -156,6 +158,7 @@ const INTEREST_DISTRIBUTION_CONFIG_REPOSITORY = SETTINGS_DISTRIBUTION_CONFIG_REP
         meetingRepo: MeetingRepository,
         ledgerEntryRepo: LedgerEntryRepository,
         stockRepo: StockRepository,
+        stockTypeRepo: StockTypeRepository,
         stockSubscriptionRepo: StockSubscriptionRepository,
         loanRepo: LoanRepository,
         operationRepo: OperationRepository,
@@ -166,6 +169,7 @@ const INTEREST_DISTRIBUTION_CONFIG_REPOSITORY = SETTINGS_DISTRIBUTION_CONFIG_REP
           meetingRepo,
           ledgerEntryRepo,
           stockRepo,
+          stockTypeRepo,
           stockSubscriptionRepo,
           loanRepo,
           operationRepo,
@@ -176,6 +180,7 @@ const INTEREST_DISTRIBUTION_CONFIG_REPOSITORY = SETTINGS_DISTRIBUTION_CONFIG_REP
         MEETING_REPOSITORY,
         LEDGER_ENTRY_REPOSITORY,
         STOCK_REPOSITORY,
+        STOCK_TYPE_REPOSITORY,
         STOCK_SUBSCRIPTION_REPOSITORY,
         LOAN_REPOSITORY,
         OPERATION_REPOSITORY,

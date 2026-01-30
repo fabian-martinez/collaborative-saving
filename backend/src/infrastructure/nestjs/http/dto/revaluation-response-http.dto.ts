@@ -4,8 +4,8 @@ export class RevaluationDetailHttpDto {
   @ApiProperty({ example: 'stock-1', description: 'ID de la acción' })
   stock_id: string;
 
-  @ApiProperty({ example: 'Acción A', description: 'Tipo de acción' })
-  type: string;
+  @ApiProperty({ example: 'Acción A', description: 'Nombre de la acción' })
+  name: string;
 
   @ApiProperty({ example: true, description: 'Si la acción es garantizada' })
   is_guaranteed: boolean;

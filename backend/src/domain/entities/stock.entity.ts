@@ -7,12 +7,11 @@ export { StockBehavior };
 export class Stock {
   constructor(
     public readonly id: string,
-    private _type: string,
+    private _name: string,
     private _value: number,
     private _monthlyContribution: number,
     private _isGuaranteed: boolean,
     private _guaranteedYield: number | null,
-    private _behavior: StockBehavior,
     public readonly createdAt: Date,
     private _stockTypeId: string | null = null,
     private _deletedAt: Date | null = null,
@@ -21,50 +20,46 @@ export class Stock {
   }
 
   static create(data: {
-    type: string;
+    name: string;
     value: number;
     monthlyContribution: number;
     isGuaranteed?: boolean;
     guaranteedYield?: number | null;
-    behavior?: StockBehavior;
+    stockTypeId?: string | null;
   }): Stock {
     const id = randomUUID();
-    const behavior = data.behavior || StockBehavior.CAPITAL_APPRECIATION;
 
     return new Stock(
       id,
-      data.type,
+      data.name,
       data.value,
       data.monthlyContribution,
       data.isGuaranteed || false,
       data.isGuaranteed ? data.guaranteedYield || null : null,
-      behavior,
       new Date(),
-      null,
+      data.stockTypeId || null,
       null,
     );
   }
 
   static fromPersistence(data: {
     id: string;
-    type: string;
+    name: string;
     value: number;
     monthly_contribution: number;
     is_guaranteed: boolean;
     guaranteed_yield: number | null;
-    behavior: string;
     stock_type_id?: string | null;
     created_at?: Date | string;
     deleted_at?: Date | string | null;
   }): Stock {
     return new Stock(
       data.id,
-      data.type,
+      data.name,
       Number(data.value),
       Number(data.monthly_contribution),
       data.is_guaranteed,
       data.guaranteed_yield ? Number(data.guaranteed_yield) : null,
-      data.behavior as StockBehavior,
       data.created_at
         ? typeof data.created_at === 'string'
           ? new Date(data.created_at)
@@ -80,15 +75,14 @@ export class Stock {
   }
 
   update(data: {
-    type?: string;
+    name?: string;
     value?: number;
     monthlyContribution?: number;
     isGuaranteed?: boolean;
     guaranteedYield?: number | null;
-    behavior?: StockBehavior;
     stockTypeId?: string | null;
   }): void {
-    if (data.type !== undefined) this._type = data.type;
+    if (data.name !== undefined) this._name = data.name;
     if (data.value !== undefined) this._value = data.value;
     if (data.monthlyContribution !== undefined)
       this._monthlyContribution = data.monthlyContribution;
@@ -101,7 +95,6 @@ export class Stock {
     if (data.guaranteedYield !== undefined && this._isGuaranteed) {
       this._guaranteedYield = data.guaranteedYield;
     }
-    if (data.behavior !== undefined) this._behavior = data.behavior;
     if (data.stockTypeId !== undefined) this._stockTypeId = data.stockTypeId;
 
     this.validateInvariants();
@@ -125,13 +118,13 @@ export class Stock {
     ) {
       throw new Error('Guaranteed yield must be >= 0 when stock is guaranteed');
     }
-    if (!this._type || this._type.trim().length === 0) {
-      throw new Error('Stock type is required');
+    if (!this._name || this._name.trim().length === 0) {
+      throw new Error('Stock name is required');
     }
   }
 
-  get type(): string {
-    return this._type;
+  get name(): string {
+    return this._name;
   }
 
   get value(): number {
@@ -148,10 +141,6 @@ export class Stock {
 
   get guaranteedYield(): number | null {
     return this._guaranteedYield;
-  }
-
-  get behavior(): StockBehavior {
-    return this._behavior;
   }
 
   get deletedAt(): Date | null {

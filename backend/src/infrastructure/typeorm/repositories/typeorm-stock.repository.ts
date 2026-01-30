@@ -20,9 +20,9 @@ export class TypeOrmStockRepository implements StockRepository {
     return entity ? StockMapper.toDomain(entity) : null;
   }
 
-  async findByType(type: string): Promise<StockDomain | null> {
+  async findByName(name: string): Promise<StockDomain | null> {
     const entity = await this.repo.findOne({
-      where: { type, deleted_at: IsNull() },
+      where: { name, deleted_at: IsNull() },
     });
     return entity ? StockMapper.toDomain(entity) : null;
   }

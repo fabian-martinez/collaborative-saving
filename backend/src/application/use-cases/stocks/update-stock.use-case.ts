@@ -21,35 +21,34 @@ export class UpdateStockUseCase {
       throw new InvalidRequestError(`Stock with ID ${stockId} is deleted`);
     }
 
-    // Si se está actualizando el tipo, verificar que no exista otro stock con el mismo tipo
-    if (dto.type && dto.type !== stock.type) {
-      const existing = await this.stockRepository.findByType(dto.type);
+    // Si se está actualizando el nombre, verificar que no exista otro stock con el mismo nombre
+    if (dto.name && dto.name !== stock.name) {
+      const existing = await this.stockRepository.findByName(dto.name);
       if (existing && existing.id !== stockId && !existing.isDeleted()) {
         throw new InvalidRequestError(
-          `Stock with type "${dto.type}" already exists`,
+          `Stock with name "${dto.name}" already exists`,
         );
       }
     }
 
     stock.update({
-      type: dto.type,
+      name: dto.name,
       value: dto.value,
       monthlyContribution: dto.monthlyContribution,
       isGuaranteed: dto.isGuaranteed,
       guaranteedYield: dto.guaranteedYield,
-      behavior: dto.behavior,
+      stockTypeId: dto.stockTypeId,
     });
 
     const saved = await this.stockRepository.save(stock);
 
     return {
       id: saved.id,
-      type: saved.type,
+      name: saved.name,
       value: saved.value,
       monthlyContribution: saved.monthlyContribution,
       isGuaranteed: saved.isGuaranteed,
       guaranteedYield: saved.guaranteedYield,
-      behavior: saved.behavior,
       createdAt: saved.createdAt,
     };
   }

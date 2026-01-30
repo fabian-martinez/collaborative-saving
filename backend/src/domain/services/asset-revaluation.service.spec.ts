@@ -2,6 +2,7 @@ import { AssetRevaluationDomainService } from './asset-revaluation.service';
 import { MeetingRepository } from '../ports/repositories/meeting-repository.port';
 import { LedgerEntryRepository } from '../ports/repositories/ledger-entry-repository.port';
 import { StockRepository } from '../ports/repositories/stock-repository.port';
+import { StockTypeRepository } from '../ports/repositories/stock-type-repository.port';
 import { StockSubscriptionRepository } from '../ports/repositories/stock-subscription-repository.port';
 import { LoanRepository } from '../ports/repositories/loan-repository.port';
 import { OperationRepository } from '../ports/repositories/operation-repository.port';
@@ -29,6 +30,7 @@ describe('AssetRevaluationDomainService', () => {
   let meetingRepository: jest.Mocked<MeetingRepository>;
   let ledgerEntryRepository: jest.Mocked<LedgerEntryRepository>;
   let stockRepository: jest.Mocked<StockRepository>;
+  let stockTypeRepository: jest.Mocked<StockTypeRepository>;
   let stockSubscriptionRepository: jest.Mocked<StockSubscriptionRepository>;
   let loanRepository: jest.Mocked<LoanRepository>;
   let operationRepository: jest.Mocked<OperationRepository>;
@@ -57,12 +59,19 @@ describe('AssetRevaluationDomainService', () => {
 
     stockRepository = {
       findById: jest.fn(),
-      findByType: jest.fn(),
+      findByName: jest.fn(),
       findAll: jest.fn(),
       findActive: jest.fn(),
       save: jest.fn(),
       findGuaranteed: jest.fn(),
     } as unknown as jest.Mocked<StockRepository>;
+
+    stockTypeRepository = {
+      findAll: jest.fn(),
+      findById: jest.fn(),
+      save: jest.fn(),
+      delete: jest.fn(),
+    } as unknown as jest.Mocked<StockTypeRepository>;
 
     stockSubscriptionRepository = {
       findById: jest.fn(),
@@ -111,11 +120,13 @@ describe('AssetRevaluationDomainService', () => {
     } as unknown as jest.Mocked<InterestDistributionConfigRepository>;
 
     distributionConfigRepository.findAll.mockResolvedValue([]);
+    stockTypeRepository.findAll.mockResolvedValue([]);
 
     service = new AssetRevaluationDomainService(
       meetingRepository,
       ledgerEntryRepository,
       stockRepository,
+      stockTypeRepository,
       stockSubscriptionRepository,
       loanRepository,
       operationRepository,
@@ -147,7 +158,7 @@ describe('AssetRevaluationDomainService', () => {
       });
 
       const regularStock = Stock.create({
-        type: 'regular',
+        name: 'regular',
         value: 100,
         monthlyContribution: 10,
         isGuaranteed: false,
@@ -212,7 +223,7 @@ describe('AssetRevaluationDomainService', () => {
       });
 
       const guaranteedStock = Stock.create({
-        type: 'guaranteed',
+        name: 'guaranteed',
         value: 100,
         monthlyContribution: 10,
         isGuaranteed: true,
@@ -273,12 +284,18 @@ describe('AssetRevaluationDomainService', () => {
         date: new Date('2024-01-15'),
       });
 
+      const dividendStockType = {
+        id: 'dividend-type-id',
+        name: 'dividend',
+        behavior: StockBehavior.DIVIDEND_YIELD,
+      };
+
       const dividendStock = Stock.create({
-        type: 'dividend',
+        name: 'dividend',
         value: 100,
         monthlyContribution: 10,
         isGuaranteed: false,
-        behavior: StockBehavior.DIVIDEND_YIELD,
+        stockTypeId: dividendStockType.id,
       });
 
       const subscription = StockSubscription.create({
@@ -306,6 +323,7 @@ describe('AssetRevaluationDomainService', () => {
         monthlyPaymentOperation,
       ]);
       stockRepository.findAll.mockResolvedValue([dividendStock]);
+      stockTypeRepository.findAll.mockResolvedValue([dividendStockType as any]);
       stockSubscriptionRepository.findByStock.mockResolvedValue([subscription]);
       loanRepository.findByIds.mockResolvedValue([]);
 
@@ -353,7 +371,7 @@ describe('AssetRevaluationDomainService', () => {
       });
 
       const stock = Stock.create({
-        type: 'regular',
+        name: 'regular',
         value: 100,
         monthlyContribution: 10,
         isGuaranteed: false,
@@ -426,7 +444,7 @@ describe('AssetRevaluationDomainService', () => {
       });
 
       const stock = Stock.create({
-        type: 'regular',
+        name: 'regular',
         value: 100,
         monthlyContribution: 10,
         isGuaranteed: false,
@@ -505,14 +523,14 @@ describe('AssetRevaluationDomainService', () => {
       });
 
       const stockA = Stock.create({
-        type: 'Acción Z',
+        name: 'Acción Z',
         value: 100,
         monthlyContribution: 10,
         isGuaranteed: false,
       });
 
       const stockB = Stock.create({
-        type: 'Acción A',
+        name: 'Acción A',
         value: 100,
         monthlyContribution: 10,
         isGuaranteed: false,
@@ -544,8 +562,8 @@ describe('AssetRevaluationDomainService', () => {
 
       // ASSERT
       expect(result.details).toHaveLength(2);
-      expect(result.details[0].type).toBe('Acción A');
-      expect(result.details[1].type).toBe('Acción Z');
+      expect(result.details[0].name).toBe('Acción A');
+      expect(result.details[1].name).toBe('Acción Z');
     });
   });
 
@@ -580,7 +598,7 @@ describe('AssetRevaluationDomainService', () => {
       // ARRANGE
       const meetingId = '550e8400-e29b-41d4-a716-446655440000';
       const stock = Stock.create({
-        type: 'regular',
+        name: 'regular',
         value: 100,
         monthlyContribution: 10,
         isGuaranteed: false,
@@ -616,7 +634,7 @@ describe('AssetRevaluationDomainService', () => {
       // ARRANGE
       const meetingId = '550e8400-e29b-41d4-a716-446655440000';
       const stock = Stock.create({
-        type: 'regular',
+        name: 'regular',
         value: 100,
         monthlyContribution: 10,
         isGuaranteed: false,
@@ -651,7 +669,7 @@ describe('AssetRevaluationDomainService', () => {
       // ARRANGE
       const meetingId = '550e8400-e29b-41d4-a716-446655440000';
       const guaranteedStock = Stock.create({
-        type: 'guaranteed',
+        name: 'guaranteed',
         value: 100,
         monthlyContribution: 10,
         isGuaranteed: true,
@@ -687,7 +705,7 @@ describe('AssetRevaluationDomainService', () => {
       // ARRANGE
       const meetingId = '550e8400-e29b-41d4-a716-446655440000';
       const stock = Stock.create({
-        type: 'regular',
+        name: 'regular',
         value: 100,
         monthlyContribution: 10,
         isGuaranteed: false,
@@ -718,7 +736,7 @@ describe('AssetRevaluationDomainService', () => {
       const meetingId = '550e8400-e29b-41d4-a716-446655440000';
 
       const stock = Stock.create({
-        type: 'regular',
+        name: 'regular',
         value: 100,
         monthlyContribution: 10,
         isGuaranteed: false,
@@ -796,11 +814,10 @@ describe('AssetRevaluationDomainService', () => {
       const meetingId = '550e8400-e29b-41d4-a716-446655440000';
 
       const dividendStock = Stock.create({
-        type: 'dividend',
+        name: 'dividend',
         value: 100,
         monthlyContribution: 10,
         isGuaranteed: false,
-        behavior: StockBehavior.DIVIDEND_YIELD,
       });
 
       const subscription = StockSubscription.create({
@@ -851,14 +868,14 @@ describe('AssetRevaluationDomainService', () => {
       const meetingId = '550e8400-e29b-41d4-a716-446655440000';
 
       const stock1 = Stock.create({
-        type: 'Acción A',
+        name: 'Acción A',
         value: 100,
         monthlyContribution: 10,
         isGuaranteed: false,
       });
 
       const stock2 = Stock.create({
-        type: 'Acción B',
+        name: 'Acción B',
         value: 200,
         monthlyContribution: 20,
         isGuaranteed: true,
@@ -930,7 +947,7 @@ describe('AssetRevaluationDomainService', () => {
       const meetingId = '550e8400-e29b-41d4-a716-446655440000';
 
       const stock = Stock.create({
-        type: 'regular',
+        name: 'regular',
         value: 100,
         monthlyContribution: 10,
         isGuaranteed: false,

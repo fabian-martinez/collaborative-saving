@@ -56,12 +56,11 @@ describe('PurchaseStockUseCase', () => {
     notes: 'Test meeting',
   });
   const mockStock = Stock.create({
-    type: 'Acción A',
+    name: 'Acción A',
     value: 100000,
     monthlyContribution: 50000,
     isGuaranteed: true,
     guaranteedYield: 0.05,
-    behavior: StockBehavior.CAPITAL_APPRECIATION,
   });
 
   beforeEach(() => {

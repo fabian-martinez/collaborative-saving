@@ -31,10 +31,10 @@ describe('ProcessStockLoanPaymentUseCase', () => {
   });
   const meeting = Meeting.create({ date: new Date('2024-08-01') });
   const stock = Stock.create({
-    type: 'Acción Corriente',
+    name: 'Acción Corriente',
     value: 300000,
     monthlyContribution: 15000,
-    behavior: StockBehavior.CAPITAL_APPRECIATION,
+    stockTypeId: '1',
   });
   let subscription: StockSubscription;
   const loan = Loan.create({

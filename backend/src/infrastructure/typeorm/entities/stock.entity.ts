@@ -7,7 +7,6 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { StockType } from './stock-type.entity';
-import { StockBehavior } from '../enums/stock-behavior.enum';
 
 @Entity({ name: 'stocks' })
 export class Stock {
@@ -15,7 +14,7 @@ export class Stock {
   id: string;
 
   @Column({ type: 'text', unique: true })
-  type: string;
+  name: string;
 
   @Column({ type: 'numeric', precision: 12, scale: 2 })
   value: number;
@@ -41,11 +40,6 @@ export class Stock {
   })
   guaranteed_yield: number | null;
 
-  @Column({
-    type: 'text',
-    default: StockBehavior.CAPITAL_APPRECIATION,
-  })
-  behavior: StockBehavior;
 
   @Column({ type: 'uuid', name: 'stock_type_id', nullable: true })
   stockTypeId: string | null;

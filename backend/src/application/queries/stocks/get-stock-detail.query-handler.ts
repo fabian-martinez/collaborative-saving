@@ -12,12 +12,11 @@ export class GetStockDetailQueryHandler {
     }
     return {
       id: stock.id,
-      type: stock.type,
+      name: stock.name,
       value: stock.value,
       monthlyContribution: stock.monthlyContribution,
       isGuaranteed: stock.isGuaranteed,
       guaranteedYield: stock.guaranteedYield,
-      behavior: stock.behavior,
       createdAt: stock.createdAt,
     };
   }

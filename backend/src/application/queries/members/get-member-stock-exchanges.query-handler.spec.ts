@@ -152,22 +152,20 @@ describe('GetMemberStockExchangesQueryHandler', () => {
 
       const fromStock = Stock.fromPersistence({
         id: fromStockId,
-        type: 'Acción Grande',
+        name: 'Acción Grande',
         value: 1000000,
         monthly_contribution: 50000,
         is_guaranteed: true,
         guaranteed_yield: 0.05,
-        behavior: StockBehavior.CAPITAL_APPRECIATION,
       });
 
       const toStock = Stock.fromPersistence({
         id: toStockId,
-        type: 'Acción Super',
+        name: 'Acción Super',
         value: 800000,
         monthly_contribution: 40000,
         is_guaranteed: true,
         guaranteed_yield: 0.05,
-        behavior: StockBehavior.CAPITAL_APPRECIATION,
       });
 
       const fromSubscription = StockSubscription.create({
@@ -268,9 +266,9 @@ describe('GetMemberStockExchangesQueryHandler', () => {
         operationId: operation.id,
         meetingId,
         fromStockId,
-        fromStockType: fromStock.type,
+        fromStockType: fromStock.name,
         toStockId,
-        toStockType: toStock.type,
+        toStockType: toStock.name,
         difference: 200000,
         differenceHandling: 'cash',
         fromSubscriptionId: fromSubscription.id,
@@ -288,22 +286,20 @@ describe('GetMemberStockExchangesQueryHandler', () => {
 
       const fromStock = Stock.fromPersistence({
         id: fromStockId,
-        type: 'Acción Grande',
+        name: 'Acción Grande',
         value: 800000,
         monthly_contribution: 40000,
         is_guaranteed: true,
         guaranteed_yield: 0.05,
-        behavior: StockBehavior.CAPITAL_APPRECIATION,
       });
 
       const toStock = Stock.fromPersistence({
         id: toStockId,
-        type: 'Acción Super',
+        name: 'Acción Super',
         value: 1000000,
         monthly_contribution: 50000,
         is_guaranteed: true,
         guaranteed_yield: 0.05,
-        behavior: StockBehavior.CAPITAL_APPRECIATION,
       });
 
       const fromSubscription = StockSubscription.create({

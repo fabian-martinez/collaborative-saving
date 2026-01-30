@@ -10,7 +10,7 @@ describe('GetStocksQueryHandler', () => {
   beforeEach(() => {
     stockRepository = {
       findById: jest.fn(),
-      findByType: jest.fn(),
+      findByName: jest.fn(),
       findAll: jest.fn(),
       findActive: jest.fn(),
       save: jest.fn(),
@@ -38,17 +38,16 @@ describe('GetStocksQueryHandler', () => {
     // ARRANGE
     const stocks = [
       Stock.create({
-        type: 'preferential',
+        name: 'preferential',
         value: 100,
         monthlyContribution: 50,
       }),
       Stock.create({
-        type: 'guaranteed',
+        name: 'guaranteed',
         value: 150,
         monthlyContribution: 75,
         isGuaranteed: true,
         guaranteedYield: 0.02,
-        behavior: StockBehavior.DIVIDEND_YIELD,
       }),
     ];
 
@@ -61,22 +60,20 @@ describe('GetStocksQueryHandler', () => {
     expect(result).toHaveLength(2);
     expect(result[0]).toEqual({
       id: stocks[0].id,
-      type: stocks[0].type,
+      name: stocks[0].name,
       value: stocks[0].value,
       monthlyContribution: stocks[0].monthlyContribution,
       isGuaranteed: stocks[0].isGuaranteed,
       guaranteedYield: stocks[0].guaranteedYield,
-      behavior: stocks[0].behavior,
       createdAt: stocks[0].createdAt,
     });
     expect(result[1]).toEqual({
       id: stocks[1].id,
-      type: stocks[1].type,
+      name: stocks[1].name,
       value: stocks[1].value,
       monthlyContribution: stocks[1].monthlyContribution,
       isGuaranteed: stocks[1].isGuaranteed,
       guaranteedYield: stocks[1].guaranteedYield,
-      behavior: stocks[1].behavior,
       createdAt: stocks[1].createdAt,
     });
     expect(findActiveSpy).toHaveBeenCalledTimes(1);

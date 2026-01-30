@@ -8,13 +8,13 @@ describe('UpdateStockUseCase', () => {
   let useCase: UpdateStockUseCase;
   let stockRepository: jest.Mocked<StockRepository>;
   let findByIdSpy: jest.SpyInstance;
-  let findByTypeSpy: jest.SpyInstance;
+  let findByNameSpy: jest.SpyInstance;
   let saveSpy: jest.SpyInstance;
 
   beforeEach(() => {
     stockRepository = {
       findById: jest.fn(),
-      findByType: jest.fn(),
+      findByName: jest.fn(),
       findAll: jest.fn(),
       findActive: jest.fn(),
       save: jest.fn(),
@@ -23,7 +23,7 @@ describe('UpdateStockUseCase', () => {
 
     // Create spies to avoid 'this' scoping issues
     findByIdSpy = jest.spyOn(stockRepository, 'findById');
-    findByTypeSpy = jest.spyOn(stockRepository, 'findByType');
+    findByNameSpy = jest.spyOn(stockRepository, 'findByName');
     saveSpy = jest.spyOn(stockRepository, 'save');
 
     useCase = new UpdateStockUseCase(stockRepository);
@@ -32,7 +32,7 @@ describe('UpdateStockUseCase', () => {
   it('should update a stock successfully', async () => {
     const stockId = '550e8400-e29b-41d4-a716-446655440000';
     const existingStock = Stock.create({
-      type: 'preferential',
+      name: 'preferential',
       value: 100,
       monthlyContribution: 50,
     });
@@ -72,7 +72,7 @@ describe('UpdateStockUseCase', () => {
   it('should throw InvalidRequestError if stock is deleted', async () => {
     const stockId = '550e8400-e29b-41d4-a716-446655440000';
     const deletedStock = Stock.create({
-      type: 'preferential',
+      name: 'preferential',
       value: 100,
       monthlyContribution: 50,
     });
@@ -90,38 +90,38 @@ describe('UpdateStockUseCase', () => {
     expect(saveSpy).not.toHaveBeenCalled();
   });
 
-  it('should throw InvalidRequestError if new type already exists', async () => {
+  it('should throw InvalidRequestError if new name already exists', async () => {
     const stockId = '550e8400-e29b-41d4-a716-446655440000';
     const existingStock = Stock.create({
-      type: 'preferential',
+      name: 'preferential',
       value: 100,
       monthlyContribution: 50,
     });
 
     const otherStock = Stock.create({
-      type: 'new-type',
+      name: 'new-name',
       value: 200,
       monthlyContribution: 100,
     });
 
     stockRepository.findById.mockResolvedValue(existingStock);
-    stockRepository.findByType.mockResolvedValue(otherStock);
+    stockRepository.findByName.mockResolvedValue(otherStock);
 
     await expect(
-      useCase.execute(stockId, { type: 'new-type' }),
+      useCase.execute(stockId, { name: 'new-name' }),
     ).rejects.toThrow(InvalidRequestError);
     await expect(
-      useCase.execute(stockId, { type: 'new-type' }),
-    ).rejects.toThrow('Stock with type "new-type" already exists');
+      useCase.execute(stockId, { name: 'new-name' }),
+    ).rejects.toThrow('Stock with name "new-name" already exists');
 
-    expect(findByTypeSpy).toHaveBeenCalledWith('new-type');
+    expect(findByNameSpy).toHaveBeenCalledWith('new-name');
     expect(saveSpy).not.toHaveBeenCalled();
   });
 
-  it('should allow updating type to same value', async () => {
+  it('should allow updating name to same value', async () => {
     const stockId = '550e8400-e29b-41d4-a716-446655440000';
     const existingStock = Stock.create({
-      type: 'preferential',
+      name: 'preferential',
       value: 100,
       monthlyContribution: 50,
     });
@@ -130,7 +130,7 @@ describe('UpdateStockUseCase', () => {
     stockRepository.save.mockResolvedValue(existingStock);
 
     const result = await useCase.execute(stockId, {
-      type: 'preferential',
+      name: 'preferential',
       value: 150,
     });
 
@@ -138,23 +138,22 @@ describe('UpdateStockUseCase', () => {
     expect(saveSpy).toHaveBeenCalled();
   });
 
-  it('should update behavior correctly', async () => {
+  it('should update stock basics correctly', async () => {
     const stockId = '550e8400-e29b-41d4-a716-446655440000';
     const existingStock = Stock.create({
-      type: 'test',
+      name: 'test',
       value: 100,
       monthlyContribution: 50,
-      behavior: StockBehavior.CAPITAL_APPRECIATION,
     });
 
     stockRepository.findById.mockResolvedValue(existingStock);
-    existingStock.update({ behavior: StockBehavior.DIVIDEND_YIELD });
+    existingStock.update({ value: 120 });
     stockRepository.save.mockResolvedValue(existingStock);
 
     const result = await useCase.execute(stockId, {
-      behavior: StockBehavior.DIVIDEND_YIELD,
+      value: 120,
     });
 
-    expect(result.behavior).toBe(StockBehavior.DIVIDEND_YIELD);
+    expect(result.value).toBe(120);
   });
 });

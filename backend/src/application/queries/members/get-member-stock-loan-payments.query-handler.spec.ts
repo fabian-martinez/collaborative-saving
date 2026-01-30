@@ -149,12 +149,11 @@ describe('GetMemberStockLoanPaymentsQueryHandler', () => {
 
       const stock = Stock.fromPersistence({
         id: stockId,
-        type: 'Acción Corriente',
+        name: 'Acción Corriente',
         value: 300000,
         monthly_contribution: 15000,
         is_guaranteed: true,
         guaranteed_yield: 0.05,
-        behavior: StockBehavior.CAPITAL_APPRECIATION,
       });
 
       const subscription = StockSubscription.create({
@@ -237,7 +236,7 @@ describe('GetMemberStockLoanPaymentsQueryHandler', () => {
         operationId: operation.id,
         meetingId,
         stockId,
-        stockType: stock.type,
+        stockType: stock.name,
         quantity: 2,
         paymentValue: 600000,
         loanId: loan.id,

@@ -53,12 +53,11 @@ describe('CalculateMemberInsuranceUseCase', () => {
   function createStock(params: { id: string; value: number }): Stock {
     return Stock.fromPersistence({
       id: params.id,
-      type: 'Type A',
+      name: 'Type A',
       value: params.value,
       monthly_contribution: 0,
       is_guaranteed: false,
       guaranteed_yield: null,
-      behavior: StockBehavior.CAPITAL_APPRECIATION,
     });
   }
 

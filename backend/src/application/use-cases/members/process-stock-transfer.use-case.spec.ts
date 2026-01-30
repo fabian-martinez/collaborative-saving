@@ -32,10 +32,9 @@ describe('ProcessStockTransferUseCase', () => {
   });
   const meeting = Meeting.create({ date: new Date('2024-08-01') });
   const stock = Stock.create({
-    type: 'Acción Mediana',
+    name: 'Acción Mediana',
     value: 500000,
     monthlyContribution: 25000,
-    behavior: StockBehavior.CAPITAL_APPRECIATION,
   });
   const fromSubscription = StockSubscription.create({
     memberId: fromMember.id,

@@ -7,19 +7,20 @@ import {
   IsEnum,
   IsOptional,
   IsBoolean,
+  IsUUID,
 } from 'class-validator';
 import { CreateStockHttpDto } from './create-stock-http.dto';
-import { StockBehavior } from '@domain/entities/stock.entity';
+// import { StockBehavior } from '@domain/entities/stock.entity'; // Removed as 'behavior' property is removed
 
 export class UpdateStockHttpDto extends PartialType(CreateStockHttpDto) {
   @ApiProperty({
     description: 'The type or name of the stock',
-    example: 'preferential',
+    example: 'Acciones Preferenciales', // Updated example
     required: false,
   })
   @IsString()
   @IsOptional()
-  type?: string;
+  name?: string; // Renamed from 'type'
 
   @ApiProperty({
     description: 'The current value of one stock unit',
@@ -63,12 +64,11 @@ export class UpdateStockHttpDto extends PartialType(CreateStockHttpDto) {
   guaranteed_yield?: number | null;
 
   @ApiProperty({
-    description:
-      'Comportamiento de la acción: apreciación de capital o dividendos',
-    enum: StockBehavior,
+    description: 'The ID of the stock type associated with this stock', // New description for stockTypeId
+    example: 'uuid',
     required: false,
   })
-  @IsEnum(StockBehavior)
+  @IsUUID()
   @IsOptional()
-  behavior?: StockBehavior;
+  stockTypeId?: string; // New property
 }

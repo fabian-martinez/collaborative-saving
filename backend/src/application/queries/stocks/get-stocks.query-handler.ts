@@ -8,12 +8,11 @@ export class GetStocksQueryHandler {
     const stocks = await this.stockRepository.findActive();
     return stocks.map((s) => ({
       id: s.id,
-      type: s.type,
+      name: s.name,
       value: s.value,
       monthlyContribution: s.monthlyContribution,
       isGuaranteed: s.isGuaranteed,
       guaranteedYield: s.guaranteedYield,
-      behavior: s.behavior,
       createdAt: s.createdAt,
     }));
   }

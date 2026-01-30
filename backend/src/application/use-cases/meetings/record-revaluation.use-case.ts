@@ -106,7 +106,7 @@ export class RecordRevaluationUseCase {
         }
 
         // Si es DIVIDEND_YIELD, no aumentar el valor, solo registrar historia
-        const isDividendYield = stock.behavior === StockBehavior.DIVIDEND_YIELD;
+        const isDividendYield = detail.dividendsGenerated !== undefined;
         const newValue = isDividendYield
           ? detail.previousValue
           : detail.newValue;
@@ -177,7 +177,7 @@ export class RecordRevaluationUseCase {
         const stock = await this.stockRepository.findById(detail.stockId);
         if (!stock) continue;
 
-        const isDividendYield = stock.behavior === StockBehavior.DIVIDEND_YIELD;
+        const isDividendYield = detail.dividendsGenerated !== undefined;
 
         if (isDividendYield) {
           // Generar dividendos
@@ -206,7 +206,7 @@ export class RecordRevaluationUseCase {
                     meetingId: dto.meetingId,
                     type: PendingMemberPaymentType.DIVIDEND,
                     amount: memberDividend,
-                    notes: `Dividendo generado por acción ${stock.type}`,
+                    notes: `Dividendo generado por acción ${stock.name}`,
                     stockId: detail.stockId,
                     stockSubscriptionId: sub.id,
                     referenceMeetingId: dto.meetingId,
@@ -223,13 +223,13 @@ export class RecordRevaluationUseCase {
                 {
                   accountType: DIVIDENDS_PAYABLE_ACCOUNT,
                   amount: totalDividends,
-                  description: `Dividendo generado por acción ${stock.type}`,
+                  description: `Dividendo generado por acción ${stock.name}`,
                   stockId: detail.stockId,
                 },
                 {
                   accountType: REVALUATION_SURPLUS_ACCOUNT,
                   amount: -totalDividends,
-                  description: `Contrapartida por dividendos en acción ${stock.type}`,
+                  description: `Contrapartida por dividendos en acción ${stock.name}`,
                   stockId: detail.stockId,
                 },
               );
@@ -244,13 +244,13 @@ export class RecordRevaluationUseCase {
               {
                 accountType: INVESTMENT_IN_STOCKS_ACCOUNT,
                 amount: totalGrowth,
-                description: `Aumento de valor por aportes de capital en acción ${detail.type}`,
+                description: `Aumento de valor por aportes de capital en acción ${detail.name}`,
                 stockId: detail.stockId,
               },
               {
                 accountType: REVALUATION_SURPLUS_ACCOUNT,
                 amount: -totalGrowth,
-                description: `Contrapartida por aportes de capital en acción ${detail.type}`,
+                description: `Contrapartida por aportes de capital en acción ${detail.name}`,
                 stockId: detail.stockId,
               },
             );
@@ -263,13 +263,13 @@ export class RecordRevaluationUseCase {
               {
                 accountType: INVESTMENT_IN_STOCKS_ACCOUNT,
                 amount: totalGrowth,
-                description: `Aumento de valor por intereses en acción ${detail.type}`,
+                description: `Aumento de valor por intereses en acción ${detail.name}`,
                 stockId: detail.stockId,
               },
               {
                 accountType: REVALUATION_SURPLUS_ACCOUNT,
                 amount: -totalGrowth,
-                description: `Contrapartida por intereses en acción ${detail.type}`,
+                description: `Contrapartida por intereses en acción ${detail.name}`,
                 stockId: detail.stockId,
               },
             );

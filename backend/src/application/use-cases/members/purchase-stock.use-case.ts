@@ -151,7 +151,7 @@ export class PurchaseStockUseCase {
         );
 
       // 8. Create accounting operation using RecordOperationUseCase
-      const operationDescription = `Compra de ${dto.quantity} acciones de ${stock.type}`;
+      const operationDescription = `Compra de ${dto.quantity} acciones de ${stock.name}`;
 
       const ledgerEntries: RecordOperationDto['entries'] = [];
 

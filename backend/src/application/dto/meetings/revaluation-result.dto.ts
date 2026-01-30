@@ -1,6 +1,6 @@
 export class RevaluationDetailDto {
   stockId: string;
-  type: string;
+  name: string;
   isGuaranteed: boolean;
   totalShares: number;
   previousValue: number;

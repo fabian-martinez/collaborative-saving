@@ -200,7 +200,7 @@ describe('RecordRevaluationUseCase', () => {
       details: [
         {
           stockId: 'stock-1',
-          type: 'Acción A',
+          name: 'Acción A',
           isGuaranteed: false,
           totalShares: 10,
           previousValue: 100,
@@ -243,7 +243,7 @@ describe('RecordRevaluationUseCase', () => {
     });
 
     const regularStock = Stock.create({
-      type: 'regular',
+      name: 'regular',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: false,
@@ -256,7 +256,7 @@ describe('RecordRevaluationUseCase', () => {
       details: [
         {
           stockId: regularStock.id,
-          type: 'regular',
+          name: 'regular',
           isGuaranteed: false,
           totalShares: 10,
           previousValue: 100,
@@ -309,7 +309,7 @@ describe('RecordRevaluationUseCase', () => {
     });
 
     const stock = Stock.create({
-      type: 'regular',
+      name: 'regular',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: false,
@@ -322,7 +322,7 @@ describe('RecordRevaluationUseCase', () => {
       details: [
         {
           stockId: stock.id,
-          type: 'regular',
+          name: 'regular',
           isGuaranteed: false,
           totalShares: 10,
           previousValue: 100,
@@ -388,7 +388,7 @@ describe('RecordRevaluationUseCase', () => {
     });
 
     const stock = Stock.create({
-      type: 'regular',
+      name: 'regular',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: false,
@@ -401,7 +401,7 @@ describe('RecordRevaluationUseCase', () => {
       details: [
         {
           stockId: stock.id,
-          type: 'regular',
+          name: 'regular',
           isGuaranteed: false,
           totalShares: 10,
           previousValue: 100,
@@ -468,7 +468,7 @@ describe('RecordRevaluationUseCase', () => {
     });
 
     const stock = Stock.create({
-      type: 'regular',
+      name: 'regular',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: false,
@@ -481,7 +481,7 @@ describe('RecordRevaluationUseCase', () => {
       details: [
         {
           stockId: stock.id,
-          type: 'regular',
+          name: 'regular',
           isGuaranteed: false,
           totalShares: 10,
           previousValue: 100,
@@ -548,7 +548,7 @@ describe('RecordRevaluationUseCase', () => {
     });
 
     const stock = Stock.create({
-      type: 'regular',
+      name: 'regular',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: false,
@@ -561,7 +561,7 @@ describe('RecordRevaluationUseCase', () => {
       details: [
         {
           stockId: stock.id,
-          type: 'regular',
+          name: 'regular',
           isGuaranteed: false,
           totalShares: 10,
           previousValue: 100,
@@ -619,11 +619,10 @@ describe('RecordRevaluationUseCase', () => {
     });
 
     const dividendStock = Stock.create({
-      type: 'dividend',
+      name: 'dividend',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: false,
-      behavior: StockBehavior.DIVIDEND_YIELD,
     });
 
     const subscription1 = StockSubscription.create({
@@ -645,7 +644,7 @@ describe('RecordRevaluationUseCase', () => {
       details: [
         {
           stockId: dividendStock.id,
-          type: 'dividend',
+          name: 'dividend',
           isGuaranteed: false,
           totalShares: 10,
           previousValue: 100,
@@ -705,7 +704,7 @@ describe('RecordRevaluationUseCase', () => {
     });
 
     const guaranteedStock = Stock.create({
-      type: 'guaranteed',
+      name: 'guaranteed',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: true,
@@ -719,7 +718,7 @@ describe('RecordRevaluationUseCase', () => {
       details: [
         {
           stockId: guaranteedStock.id,
-          type: 'guaranteed',
+          name: 'guaranteed',
           isGuaranteed: true,
           totalShares: 10,
           previousValue: 100,
@@ -768,7 +767,7 @@ describe('RecordRevaluationUseCase', () => {
     });
 
     const regularStock = Stock.create({
-      type: 'regular',
+      name: 'regular',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: false,
@@ -781,7 +780,7 @@ describe('RecordRevaluationUseCase', () => {
       details: [
         {
           stockId: regularStock.id,
-          type: 'regular',
+          name: 'regular',
           isGuaranteed: false,
           totalShares: 10,
           previousValue: 100,
@@ -831,7 +830,7 @@ describe('RecordRevaluationUseCase', () => {
     });
 
     const stock = Stock.create({
-      type: 'regular',
+      name: 'regular',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: false,
@@ -844,7 +843,7 @@ describe('RecordRevaluationUseCase', () => {
       details: [
         {
           stockId: stock.id,
-          type: 'regular',
+          name: 'regular',
           isGuaranteed: false,
           totalShares: 10,
           previousValue: 100,

@@ -184,7 +184,7 @@ export class GetMemberStockLoanPaymentsQueryHandler {
         date: operation.date,
         description: operation.description || '',
         stockId: stock.id,
-        stockType: stock.type,
+        stockType: stock.name,
         quantity,
         paymentValue,
         loanId: loan.id,

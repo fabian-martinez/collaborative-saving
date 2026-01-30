@@ -797,7 +797,7 @@ export class MeetingsV2Controller {
       total_to_distribute: result.totalToDistribute,
       details: result.details.map((detail) => ({
         stock_id: detail.stockId,
-        type: detail.type,
+        name: detail.name,
         is_guaranteed: detail.isGuaranteed,
         total_shares: detail.totalShares,
         previous_value: detail.previousValue,

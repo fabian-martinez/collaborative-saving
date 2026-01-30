@@ -1,6 +1,7 @@
 import { MeetingRepository } from '../ports/repositories/meeting-repository.port';
 import { LedgerEntryRepository } from '../ports/repositories/ledger-entry-repository.port';
 import { StockRepository } from '../ports/repositories/stock-repository.port';
+import { StockTypeRepository } from '../ports/repositories/stock-type-repository.port';
 import { StockSubscriptionRepository } from '../ports/repositories/stock-subscription-repository.port';
 import { LoanRepository } from '../ports/repositories/loan-repository.port';
 import { OperationRepository } from '../ports/repositories/operation-repository.port';
@@ -29,7 +30,7 @@ export interface RevaluationCalculationResult {
   totalToDistribute: number;
   details: Array<{
     stockId: string;
-    type: string;
+    name: string;
     isGuaranteed: boolean;
     totalShares: number;
     previousValue: number;
@@ -52,6 +53,7 @@ export class AssetRevaluationDomainService {
     private readonly meetingRepository: MeetingRepository,
     private readonly ledgerEntryRepository: LedgerEntryRepository,
     private readonly stockRepository: StockRepository,
+    private readonly stockTypeRepository: StockTypeRepository,
     private readonly stockSubscriptionRepository: StockSubscriptionRepository,
     private readonly loanRepository: LoanRepository,
     private readonly operationRepository: OperationRepository,
@@ -130,6 +132,10 @@ export class AssetRevaluationDomainService {
         });
       });
     });
+
+    // Obtener todos los stock types para conocer el behavior
+    const stockTypes = await this.stockTypeRepository.findAll();
+    const stockTypeMap = new Map(stockTypes.map((st) => [st.id, st]));
 
     // Calcular aportes de capital (solo MONTHLY_PAYMENT)
     const totalStockContributions = ledgerEntries
@@ -229,7 +235,11 @@ export class AssetRevaluationDomainService {
           ? (contributionsByStock[stock.id] || 0) / totalShares
           : 0;
 
-      const isDividendYield = stock.behavior === StockBehavior.DIVIDEND_YIELD;
+      const stockType = stock.stockTypeId
+        ? stockTypeMap.get(stock.stockTypeId)
+        : null;
+      const isDividendYield =
+        stockType?.behavior === StockBehavior.DIVIDEND_YIELD;
       const assigned = assignedInterest[stock.id] || 0;
       const growthFromInterest = isDividendYield
         ? 0
@@ -244,7 +254,7 @@ export class AssetRevaluationDomainService {
 
       return {
         stockId: stock.id,
-        type: stock.type,
+        name: stock.name,
         isGuaranteed: stock.isGuaranteed,
         totalShares,
         previousValue: stock.value,
@@ -286,7 +296,7 @@ export class AssetRevaluationDomainService {
       totalContributions: totalStockContributions,
       totalInterest,
       totalToDistribute: totalStockContributions + totalInterest,
-      details: details.sort((a, b) => a.type.localeCompare(b.type)),
+      details: details.sort((a, b) => a.name.localeCompare(b.name)),
       totalMandatoryContributions,
       mandatoryContributionsByType,
     };
@@ -315,14 +325,14 @@ export class AssetRevaluationDomainService {
     }
 
     // Validar acciones garantizadas
-    const guaranteedStocks = stocks.filter((s) => s.isGuaranteed);
-    for (const stock of guaranteedStocks) {
-      if (!stock.guaranteedYield || stock.guaranteedYield <= 0) {
-        throw new InvalidRequestError(
-          `Guaranteed stock ${stock.type} must have a positive guaranteed yield.`,
-        );
+      const guaranteedStocks = stocks.filter((s) => s.isGuaranteed);
+      for (const stock of guaranteedStocks) {
+        if (!stock.guaranteedYield || stock.guaranteedYield <= 0) {
+          throw new InvalidRequestError(
+            `Guaranteed stock ${stock.name} must have a positive guaranteed yield.`,
+          );
+        }
       }
-    }
   }
 
   async getExecutedRevaluationData(
@@ -333,8 +343,11 @@ export class AssetRevaluationDomainService {
     const stockHistories =
       await this.stockValueHistoryRepository.findByOperation(operationId);
 
-    // Obtener stocks y subscriptions
+    // Obtener stocks, stock types y subscriptions
     const stocks = await this.stockRepository.findAll();
+    const stockTypes = await this.stockTypeRepository.findAll();
+    const stockTypeMap = new Map(stockTypes.map((st) => [st.id, st]));
+
     const allSubscriptions = await Promise.all(
       stocks.map((stock) =>
         this.stockSubscriptionRepository.findByStock(stock.id),
@@ -353,7 +366,7 @@ export class AssetRevaluationDomainService {
     // Reconstruir los detalles de la revaluación ejecutada
     const details: Array<{
       stockId: string;
-      type: string;
+      name: string;
       isGuaranteed: boolean;
       totalShares: number;
       previousValue: number;
@@ -389,7 +402,7 @@ export class AssetRevaluationDomainService {
 
       details.push({
         stockId: history.stockId,
-        type: stock.type,
+        name: stock.name,
         isGuaranteed: stock.isGuaranteed,
         totalShares,
         previousValue: history.previousValue,
@@ -448,7 +461,7 @@ export class AssetRevaluationDomainService {
       totalContributions,
       totalInterest,
       totalToDistribute: totalContributions + totalInterest,
-      details: details.sort((a, b) => a.type.localeCompare(b.type)),
+      details: details.sort((a, b) => a.name.localeCompare(b.name)),
       totalMandatoryContributions,
       mandatoryContributionsByType: Object.values(mandatoryContributionMap),
     };

@@ -7,54 +7,51 @@ describe('Stock Entity', () => {
   describe('create static method', () => {
     it('should create Stock with minimal required fields', () => {
       const stock = Stock.create({
-        type: 'preferential',
+        name: 'preferential',
         value: 100,
         monthlyContribution: 50,
       });
 
       expect(stock.id).toBeDefined();
-      expect(stock.type).toBe('preferential');
+      expect(stock.name).toBe('preferential');
       expect(stock.value).toBe(100);
       expect(stock.monthlyContribution).toBe(50);
       expect(stock.isGuaranteed).toBe(false);
       expect(stock.guaranteedYield).toBe(null);
-      expect(stock.behavior).toBe(StockBehavior.CAPITAL_APPRECIATION);
       expect(stock.createdAt).toBeInstanceOf(Date);
       expect(stock.deletedAt).toBeNull();
     });
 
     it('should create Stock with all fields', () => {
       const stock = Stock.create({
-        type: 'guaranteed',
+        name: 'guaranteed',
         value: 150,
         monthlyContribution: 75,
         isGuaranteed: true,
         guaranteedYield: 0.02,
-        behavior: StockBehavior.DIVIDEND_YIELD,
       });
 
-      expect(stock.type).toBe('guaranteed');
+      expect(stock.name).toBe('guaranteed');
       expect(stock.value).toBe(150);
       expect(stock.monthlyContribution).toBe(75);
       expect(stock.isGuaranteed).toBe(true);
       expect(stock.guaranteedYield).toBe(0.02);
-      expect(stock.behavior).toBe(StockBehavior.DIVIDEND_YIELD);
     });
 
-    it('should default behavior to CAPITAL_APPRECIATION when not provided', () => {
+    it('should default guaranteed false when not provided', () => {
       const stock = Stock.create({
-        type: 'test',
+        name: 'test',
         value: 100,
         monthlyContribution: 50,
       });
 
-      expect(stock.behavior).toBe(StockBehavior.CAPITAL_APPRECIATION);
+      expect(stock.isGuaranteed).toBe(false);
     });
 
     it('should throw error if value is negative', () => {
       expect(() => {
         Stock.create({
-          type: 'test',
+          name: 'test',
           value: -10,
           monthlyContribution: 50,
         });
@@ -64,7 +61,7 @@ describe('Stock Entity', () => {
     it('should throw error if monthlyContribution is negative', () => {
       expect(() => {
         Stock.create({
-          type: 'test',
+          name: 'test',
           value: 100,
           monthlyContribution: -10,
         });
@@ -74,7 +71,7 @@ describe('Stock Entity', () => {
     it('should throw error if guaranteed yield is negative', () => {
       expect(() => {
         Stock.create({
-          type: 'test',
+          name: 'test',
           value: 100,
           monthlyContribution: 50,
           isGuaranteed: true,
@@ -83,14 +80,14 @@ describe('Stock Entity', () => {
       }).toThrow('Guaranteed yield must be >= 0 when stock is guaranteed');
     });
 
-    it('should throw error if type is empty', () => {
+    it('should throw error if name is empty', () => {
       expect(() => {
         Stock.create({
-          type: '',
+          name: '',
           value: 100,
           monthlyContribution: 50,
         });
-      }).toThrow('Stock type is required');
+      }).toThrow('Stock name is required');
     });
   });
 
@@ -98,18 +95,17 @@ describe('Stock Entity', () => {
     it('should create Stock from persistence data', () => {
       const stock = Stock.fromPersistence({
         id: mockId,
-        type: 'preferential',
+        name: 'preferential',
         value: 100,
         monthly_contribution: 50,
         is_guaranteed: false,
         guaranteed_yield: null,
-        behavior: StockBehavior.CAPITAL_APPRECIATION,
         created_at: mockDate,
         deleted_at: null,
       });
 
       expect(stock.id).toBe(mockId);
-      expect(stock.type).toBe('preferential');
+      expect(stock.name).toBe('preferential');
       expect(stock.value).toBe(100);
       expect(stock.monthlyContribution).toBe(50);
       expect(stock.createdAt).toEqual(mockDate);
@@ -119,12 +115,11 @@ describe('Stock Entity', () => {
     it('should handle string dates', () => {
       const stock = Stock.fromPersistence({
         id: mockId,
-        type: 'test',
+        name: 'test',
         value: 100,
         monthly_contribution: 50,
         is_guaranteed: false,
         guaranteed_yield: null,
-        behavior: StockBehavior.CAPITAL_APPRECIATION,
         created_at: '2024-01-15T00:00:00.000Z',
         deleted_at: null,
       });
@@ -136,12 +131,11 @@ describe('Stock Entity', () => {
       const deletedDate = new Date('2024-02-01');
       const stock = Stock.fromPersistence({
         id: mockId,
-        type: 'test',
+        name: 'test',
         value: 100,
         monthly_contribution: 50,
         is_guaranteed: false,
         guaranteed_yield: null,
-        behavior: StockBehavior.CAPITAL_APPRECIATION,
         created_at: mockDate,
         deleted_at: deletedDate,
       });
@@ -153,12 +147,11 @@ describe('Stock Entity', () => {
     it('should handle stock_type_id', () => {
       const stock = Stock.fromPersistence({
         id: mockId,
-        type: 'test',
+        name: 'test',
         value: 100,
         monthly_contribution: 50,
         is_guaranteed: false,
         guaranteed_yield: null,
-        behavior: StockBehavior.CAPITAL_APPRECIATION,
         created_at: mockDate,
         stock_type_id: 'stock-type-123',
       });
@@ -170,7 +163,7 @@ describe('Stock Entity', () => {
   describe('update method', () => {
     it('should update stock fields', () => {
       const stock = Stock.create({
-        type: 'test',
+        name: 'test',
         value: 100,
         monthlyContribution: 50,
       });
@@ -182,12 +175,12 @@ describe('Stock Entity', () => {
 
       expect(stock.value).toBe(150);
       expect(stock.monthlyContribution).toBe(75);
-      expect(stock.type).toBe('test'); // unchanged
+      expect(stock.name).toBe('test'); // unchanged
     });
 
     it('should update guaranteed fields when isGuaranteed is true', () => {
       const stock = Stock.create({
-        type: 'test',
+        name: 'test',
         value: 100,
         monthlyContribution: 50,
         isGuaranteed: false,
@@ -204,7 +197,7 @@ describe('Stock Entity', () => {
 
     it('should clear guaranteedYield when isGuaranteed is false', () => {
       const stock = Stock.create({
-        type: 'test',
+        name: 'test',
         value: 100,
         monthlyContribution: 50,
         isGuaranteed: true,
@@ -221,7 +214,7 @@ describe('Stock Entity', () => {
 
     it('should validate invariants after update', () => {
       const stock = Stock.create({
-        type: 'test',
+        name: 'test',
         value: 100,
         monthlyContribution: 50,
       });
@@ -233,7 +226,7 @@ describe('Stock Entity', () => {
 
     it('should update stockTypeId', () => {
       const stock = Stock.create({
-        type: 'test',
+        name: 'test',
         value: 100,
         monthlyContribution: 50,
       });
@@ -246,7 +239,7 @@ describe('Stock Entity', () => {
   describe('markAsDeleted method', () => {
     it('should mark stock as deleted', () => {
       const stock = Stock.create({
-        type: 'test',
+        name: 'test',
         value: 100,
         monthlyContribution: 50,
       });
@@ -261,20 +254,18 @@ describe('Stock Entity', () => {
   describe('getters', () => {
     it('should return correct property values', () => {
       const stock = Stock.create({
-        type: 'test',
+        name: 'test',
         value: 100,
         monthlyContribution: 50,
         isGuaranteed: true,
         guaranteedYield: 0.02,
-        behavior: StockBehavior.DIVIDEND_YIELD,
       });
 
-      expect(stock.type).toBe('test');
+      expect(stock.name).toBe('test');
       expect(stock.value).toBe(100);
       expect(stock.monthlyContribution).toBe(50);
       expect(stock.isGuaranteed).toBe(true);
       expect(stock.guaranteedYield).toBe(0.02);
-      expect(stock.behavior).toBe(StockBehavior.DIVIDEND_YIELD);
     });
   });
 });

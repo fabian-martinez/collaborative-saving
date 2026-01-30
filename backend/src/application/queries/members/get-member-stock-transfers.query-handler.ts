@@ -161,7 +161,7 @@ export class GetMemberStockTransfersQueryHandler {
         date: operation.date,
         description,
         stockId: stock.id,
-        stockType: stock.type,
+        stockType: stock.name,
         quantity,
         value,
         fromMemberId: memberId,

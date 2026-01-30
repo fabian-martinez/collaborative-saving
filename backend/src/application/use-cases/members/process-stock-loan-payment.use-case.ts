@@ -98,7 +98,7 @@ export class ProcessStockLoanPaymentUseCase {
       {
         accountType: STOCK_CAPITAL_ACCOUNT,
         amount: paymentValue,
-        description: `Aplicación de ${dto.quantity} ${stock.type} para pagar crédito`,
+        description: `Aplicación de ${dto.quantity} ${stock.name} para pagar crédito`,
         stockId: stock.id,
         stockSubscriptionId: subscription.id,
       },
@@ -117,7 +117,7 @@ export class ProcessStockLoanPaymentUseCase {
       date: meeting.date,
       description:
         dto.notes ??
-        `Pago de crédito con ${dto.quantity} acciones ${stock.type}`,
+        `Pago de crédito con ${dto.quantity} acciones ${stock.name}`,
       entries: stockConversionEntries,
     });
 

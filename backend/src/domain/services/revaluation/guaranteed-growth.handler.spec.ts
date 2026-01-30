@@ -21,7 +21,7 @@ describe('GuaranteedGrowthHandler', () => {
       interestByStock: {},
       stocks: [
         Stock.create({
-          type: 'regular',
+          name: 'regular',
           value: 100,
           monthlyContribution: 10,
           isGuaranteed: false,
@@ -48,7 +48,7 @@ describe('GuaranteedGrowthHandler', () => {
     // ARRANGE
     const available = 0;
     const guaranteedStock = Stock.create({
-      type: 'guaranteed',
+      name: 'guaranteed',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: true,
@@ -87,14 +87,14 @@ describe('GuaranteedGrowthHandler', () => {
     // ARRANGE
     const available = 1000;
     const guaranteedStock1 = Stock.create({
-      type: 'guaranteed-1',
+      name: 'guaranteed-1',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: true,
       guaranteedYield: 0.05, // 5%
     });
     const guaranteedStock2 = Stock.create({
-      type: 'guaranteed-2',
+      name: 'guaranteed-2',
       value: 200,
       monthlyContribution: 20,
       isGuaranteed: true,
@@ -148,7 +148,7 @@ describe('GuaranteedGrowthHandler', () => {
     // ARRANGE
     const available = 1000;
     const guaranteedStock = Stock.create({
-      type: 'guaranteed',
+      name: 'guaranteed',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: true,
@@ -191,7 +191,7 @@ describe('GuaranteedGrowthHandler', () => {
     // ARRANGE
     const available = 1000;
     const guaranteedStock = Stock.create({
-      type: 'guaranteed',
+      name: 'guaranteed',
       value: 150,
       monthlyContribution: 15,
       isGuaranteed: true,
@@ -233,14 +233,14 @@ describe('GuaranteedGrowthHandler', () => {
     // ARRANGE
     const available = 1000;
     const guaranteedStock1 = Stock.create({
-      type: 'guaranteed-1',
+      name: 'guaranteed-1',
       value: 100,
       monthlyContribution: 10,
       isGuaranteed: true,
       guaranteedYield: 0.05, // 5%
     });
     const guaranteedStock2 = Stock.create({
-      type: 'guaranteed-2',
+      name: 'guaranteed-2',
       value: 200,
       monthlyContribution: 20,
       isGuaranteed: true,

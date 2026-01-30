@@ -6,16 +6,19 @@ import {
   IsEnum,
   IsOptional,
   IsBoolean,
+  IsNotEmpty,
+  IsUUID,
 } from 'class-validator';
 import { StockBehavior } from '@domain/entities/stock.entity';
 
 export class CreateStockHttpDto {
   @ApiProperty({
     description: 'The type or name of the stock',
-    example: 'preferential',
+    example: 'Acciones Ordinarias',
   })
   @IsString()
-  type: string;
+  @IsNotEmpty()
+  name: string;
 
   @ApiProperty({
     description: 'The initial value of one stock unit',
@@ -55,14 +58,8 @@ export class CreateStockHttpDto {
   @IsOptional()
   guaranteed_yield?: number | null;
 
-  @ApiProperty({
-    description:
-      'Comportamiento de la acción: apreciación de capital o dividendos',
-    enum: StockBehavior,
-    default: StockBehavior.CAPITAL_APPRECIATION,
-    required: false,
-  })
-  @IsEnum(StockBehavior)
+  @ApiProperty({ example: 'uuid', required: false })
+  @IsUUID()
   @IsOptional()
-  behavior?: StockBehavior;
+  stockTypeId?: string;
 }

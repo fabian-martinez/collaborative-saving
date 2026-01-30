@@ -164,12 +164,11 @@ describe('GetMemberPurchasesQueryHandler', () => {
 
       const stock = Stock.fromPersistence({
         id: stockId,
-        type: 'Acción A',
+        name: 'Acción A',
         value: 100000,
         monthly_contribution: 50000,
         is_guaranteed: true,
         guaranteed_yield: 0.05,
-        behavior: StockBehavior.CAPITAL_APPRECIATION,
       });
 
       const stockSubscription = StockSubscription.create({
@@ -217,7 +216,7 @@ describe('GetMemberPurchasesQueryHandler', () => {
       expect(result[0]).toEqual({
         stockSubscriptionId: stockSubscription.id,
         stockId,
-        stockType: stock.type,
+        stockType: stock.name,
         quantity: 2,
         unitValue: 100000,
         totalValue: 200000,
@@ -237,12 +236,11 @@ describe('GetMemberPurchasesQueryHandler', () => {
 
       const stock = Stock.fromPersistence({
         id: stockId,
-        type: 'Acción A',
+        name: 'Acción A',
         value: 100000,
         monthly_contribution: 50000,
         is_guaranteed: true,
         guaranteed_yield: 0.05,
-        behavior: StockBehavior.CAPITAL_APPRECIATION,
       });
 
       const loan = Loan.create({
@@ -305,7 +303,7 @@ describe('GetMemberPurchasesQueryHandler', () => {
       expect(result[0]).toEqual({
         stockSubscriptionId: stockSubscription.id,
         stockId,
-        stockType: stock.type,
+        stockType: stock.name,
         quantity: 2,
         unitValue: 100000,
         totalValue: 200000,
@@ -330,12 +328,11 @@ describe('GetMemberPurchasesQueryHandler', () => {
 
       const stock = Stock.fromPersistence({
         id: stockId,
-        type: 'Acción A',
+        name: 'Acción A',
         value: 100000,
         monthly_contribution: 50000,
         is_guaranteed: true,
         guaranteed_yield: 0.05,
-        behavior: StockBehavior.CAPITAL_APPRECIATION,
       });
 
       const stockSubscription = StockSubscription.create({

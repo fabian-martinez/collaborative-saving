@@ -152,14 +152,14 @@ export class ProcessStockExchangeUseCase {
         {
           accountType: STOCK_CAPITAL_ACCOUNT,
           amount: fromValue,
-          description: `Reducción de ${dto.fromQuantity} acciones ${fromStock.type}`,
+          description: `Reducción de ${dto.fromQuantity} acciones ${fromStock.name}`,
           stockId: fromStock.id,
           stockSubscriptionId: fromSubscription.id,
         },
         {
           accountType: STOCK_CAPITAL_ACCOUNT,
           amount: -toValue,
-          description: `Creación de ${dto.toQuantity} acciones ${toStock.type}`,
+          description: `Creación de ${dto.toQuantity} acciones ${toStock.name}`,
           stockId: toStock.id,
           stockSubscriptionId: destinationSubscription.id,
         },
@@ -208,7 +208,7 @@ export class ProcessStockExchangeUseCase {
         date: meeting.date,
         description:
           dto.notes ??
-          `Intercambio de ${dto.fromQuantity} ${fromStock.type} a ${dto.toQuantity} ${toStock.type}`,
+          `Intercambio de ${dto.fromQuantity} ${fromStock.name} a ${dto.toQuantity} ${toStock.name}`,
         entries: ledgerEntries,
       };
 

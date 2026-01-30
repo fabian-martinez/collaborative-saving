@@ -36,7 +36,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
   const mockMeetingId = 'meeting-id-1';
   const mockStockId = 'stock-id-1';
   const mockStock = Stock.create({
-    type: 'Bono',
+    name: 'Bono',
     value: 100,
     monthlyContribution: 50,
   });
@@ -225,7 +225,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
     it('should throw BusinessRuleError when stock value is <= 0', async () => {
       // Arrange
       const invalidStock = Stock.create({
-        type: 'Bono',
+        name: 'Bono',
         value: 0,
         monthlyContribution: 50,
       });
@@ -545,7 +545,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       // Escenario: Usuario quiere retirar 1 acción de 1000, hay 450 disponibles,
       // pero el usuario especifica que solo quiere desembolsar 400 en esta reunión
       const stockValue1000 = Stock.create({
-        type: 'Acción',
+        name: 'Acción',
         value: 1000,
         monthlyContribution: 100,
       });
@@ -632,7 +632,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       // Escenario: Usuario quiere retirar 1 acción de 1000 y desembolsar 500,
       // pero solo hay 450 disponibles - debe fallar
       const stockValue1000 = Stock.create({
-        type: 'Acción',
+        name: 'Acción',
         value: 1000,
         monthlyContribution: 100,
       });

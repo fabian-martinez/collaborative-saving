@@ -50,16 +50,14 @@ describe('ProcessStockExchangeUseCase', () => {
   });
   const meeting = Meeting.create({ date: new Date('2024-08-01') });
   const originStock = Stock.create({
-    type: 'Grande',
+    name: 'Grande',
     value: 1000000,
     monthlyContribution: 50000,
-    behavior: StockBehavior.CAPITAL_APPRECIATION,
   });
   const destinationStock = Stock.create({
-    type: 'Super',
+    name: 'Super',
     value: 800000,
     monthlyContribution: 40000,
-    behavior: StockBehavior.CAPITAL_APPRECIATION,
   });
   let originSubscription: StockSubscription;
 

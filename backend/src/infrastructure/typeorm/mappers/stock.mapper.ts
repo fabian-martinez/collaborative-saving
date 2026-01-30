@@ -6,14 +6,13 @@ export class StockMapper {
     try {
       return Stock.fromPersistence({
         id: persistence.id,
-        type: persistence.type,
+        name: persistence.name,
         value: Number(persistence.value),
         monthly_contribution: Number(persistence.monthly_contribution),
         is_guaranteed: persistence.is_guaranteed,
         guaranteed_yield: persistence.guaranteed_yield
           ? Number(persistence.guaranteed_yield)
           : null,
-        behavior: persistence.behavior,
         stock_type_id: persistence.stockTypeId,
         created_at:
           (persistence as unknown as { created_at?: Date | string })
@@ -30,12 +29,11 @@ export class StockMapper {
   static toPersistence(domain: Stock): Partial<StockEntity> {
     const result: Partial<StockEntity> = {
       id: domain.id,
-      type: domain.type,
+      name: domain.name,
       value: domain.value,
       monthly_contribution: domain.monthlyContribution,
       is_guaranteed: domain.isGuaranteed,
       guaranteed_yield: domain.guaranteedYield,
-      behavior: domain.behavior,
       stockTypeId: domain.stockTypeId,
     };
 

@@ -96,7 +96,7 @@ export class GetMemberDuesForActiveMeetingQueryHandler {
         if (stock && stock.monthlyContribution > 0) {
           stockDues.push({
             type: PaymentType.STOCK_FEE,
-            description: `Cuota de acción: ${stock.type}`,
+            description: `Cuota de acción: ${stock.name}`,
             amount: totalQuantity * stock.monthlyContribution,
             referenceId: stock.id,
             monthlyContribution: stock.monthlyContribution,

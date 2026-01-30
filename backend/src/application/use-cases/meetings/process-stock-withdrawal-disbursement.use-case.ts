@@ -133,7 +133,7 @@ export class ProcessStockWithdrawalDisbursementUseCase {
         meetingId,
         type: OperationType.STOCK_WITHDRAWAL,
         description:
-          item.notes || `Pago pendiente de retiro de acciones ${stock.type}`,
+          item.notes || `Pago pendiente de retiro de acciones ${stock.name}`,
         date: new Date(),
         entries: this.createWithdrawalLedgerEntries(stock.id, maxDisbursable),
       });
@@ -292,7 +292,7 @@ export class ProcessStockWithdrawalDisbursementUseCase {
         memberId: item.memberId,
         meetingId,
         type: OperationType.STOCK_WITHDRAWAL,
-        description: item.notes || `Retiro de acciones ${stock.type}`,
+        description: item.notes || `Retiro de acciones ${stock.name}`,
         date: new Date(),
         entries: this.createWithdrawalLedgerEntries(stock.id, maxDisbursable),
       });
@@ -316,7 +316,7 @@ export class ProcessStockWithdrawalDisbursementUseCase {
           item.stockSubscriptionId ||
           undefined,
         notes:
-          `Saldo pendiente por retiro de ${requestedQuantity} acciones ${stock.type} - ${item.notes || ''}`.trim(),
+          `Saldo pendiente por retiro de ${requestedQuantity} acciones ${stock.name} - ${item.notes || ''}`.trim(),
       });
       // El pago pendiente se crea con estado PENDING por defecto
       await this.pendingMemberPaymentRepository.save(newPendingPayment);

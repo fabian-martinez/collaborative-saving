@@ -103,14 +103,14 @@ export class ProcessStockTransferUseCase {
       {
         accountType: STOCK_CAPITAL_ACCOUNT,
         amount: transferValue,
-        description: `Transferencia de ${dto.quantity} ${stock.type} a ${toMember.name}`,
+        description: `Transferencia de ${dto.quantity} ${stock.name} a ${toMember.name}`,
         stockId: stock.id,
         stockSubscriptionId: fromSubscription.id,
       },
       {
         accountType: STOCK_CAPITAL_ACCOUNT,
         amount: -transferValue,
-        description: `Recepción de ${dto.quantity} ${stock.type} desde ${fromMember.name}`,
+        description: `Recepción de ${dto.quantity} ${stock.name} desde ${fromMember.name}`,
         stockId: stock.id,
         stockSubscriptionId: destinationSubscription.id,
       },
@@ -123,7 +123,7 @@ export class ProcessStockTransferUseCase {
       date: meeting.date,
       description:
         dto.notes ??
-        `Transferencia de ${dto.quantity} ${stock.type} a ${toMember.name}`,
+        `Transferencia de ${dto.quantity} ${stock.name} a ${toMember.name}`,
       entries: ledgerEntries,
     });
 
