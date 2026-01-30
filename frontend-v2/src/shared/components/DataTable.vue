@@ -33,7 +33,7 @@
 <script setup lang="ts" generic="T">
 import { formatCurrency, formatDate, formatDateTime, formatNumber } from '@/shared/utils/formatters'
 
-interface Column {
+export interface Column {
   key: string
   label: string
   format?: 'currency' | 'date' | 'datetime' | 'number' | 'percentage'

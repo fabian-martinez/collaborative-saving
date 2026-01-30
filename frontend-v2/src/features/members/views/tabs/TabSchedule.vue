@@ -64,10 +64,10 @@
         <h3 class="text-xl sm:text-2xl font-bold text-base-content mb-4">Historial y Proyecciones</h3>
         <Timeline
           :items="allPayments"
-          :item-status="(item) => item.status"
-          :item-title="(item) => getPaymentTitle(item)"
-          :item-description="(item) => getPaymentDescription(item)"
-          :item-date="(item) => item.date"
+          :item-status="(item: any) => item.status"
+          :item-title="(item: any) => getPaymentTitle(item)"
+          :item-description="(item: any) => getPaymentDescription(item)"
+          :item-date="(item: any) => item.date"
         />
       </div>
     </div>
@@ -95,28 +95,26 @@ const allPayments = computed<TimelineItem[]>(() => {
   const items: TimelineItem[] = []
   
   // Pagos históricos
-  props.store.paymentSchedule.historical_payments.forEach(item => {
+  props.store.paymentSchedule.historical_payments.forEach((item: PaymentScheduleItem) => {
     items.push({
       id: item.operation_id || `hist-${item.date}`,
       date: item.date,
       title: `Pago de ${item.loan_type || 'Préstamo'}`,
       description: `Interés: ${formatCurrency(item.interest_amount)}, Capital: ${formatCurrency(item.principal_amount)}`,
       status: 'completed',
-      type: 'historical',
-      ...item
+      type: 'historical'
     })
   })
   
   // Pagos proyectados
-  props.store.paymentSchedule.projected_payments.forEach(item => {
+  props.store.paymentSchedule.projected_payments.forEach((item: PaymentScheduleItem) => {
     items.push({
       id: `proj-${item.date}-${item.payment_number}`,
       date: item.date,
       title: `Pago Proyectado - ${item.loan_type || 'Préstamo'}`,
       description: `Interés: ${formatCurrency(item.interest_amount)}, Capital: ${formatCurrency(item.principal_amount)}, Saldo Restante: ${formatCurrency(item.remaining_balance || 0)}`,
       status: item.status === 'overdue' ? 'overdue' : 'upcoming',
-      type: 'projected',
-      ...item
+      type: 'projected'
     })
   })
   
@@ -128,14 +126,14 @@ async function loadSchedule() {
   await props.store.fetchPaymentSchedule(props.memberId, { months: monthsToProject.value })
 }
 
-function getPaymentTitle(item: PaymentScheduleItem & TimelineItem): string {
+function getPaymentTitle(item: PaymentScheduleItem): string {
   if (item.type === 'historical') {
     return `Pago Realizado - ${item.loan_type || 'Préstamo'}`
   }
   return `Pago Proyectado - ${item.loan_type || 'Préstamo'}`
 }
 
-function getPaymentDescription(item: PaymentScheduleItem & TimelineItem): string {
+function getPaymentDescription(item: PaymentScheduleItem): string {
   const parts = [
     `Total: ${formatCurrency(item.total_amount)}`,
     `Interés: ${formatCurrency(item.interest_amount)}`,

@@ -1,7 +1,7 @@
 <template>
   <Modal :show="visible" title="Registrar Pago" @close="$emit('close')">
     <div v-if="loading" class="flex items-center justify-center py-8">
-      <LoadingSpinner message="Cargando cuotas..." />
+      <LoadingSpinner :loading="loading" message="Cargando cuotas..." />
     </div>
     
     <div v-else-if="error" class="alert alert-error">

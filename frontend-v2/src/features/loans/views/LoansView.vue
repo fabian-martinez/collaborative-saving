@@ -35,7 +35,7 @@ import { useRouter } from 'vue-router'
 import { Search } from 'iconoir-vue/regular'
 import { loansApi, type Loan } from '@/api/loans.api'
 import { useSearchableList } from '@/shared/composables/useSearchableList'
-import DataTable from '@/shared/components/DataTable.vue'
+import DataTable, { type Column } from '@/shared/components/DataTable.vue'
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import ErrorMessage from '@/shared/components/ErrorMessage.vue'
 
@@ -52,7 +52,7 @@ const { searchQuery, filteredItems } = useSearchableList<Loan>(loansRef, [
   'member_id'
 ])
 
-const columns = [
+const columns: Column[] = [
   { key: 'member_id', label: 'Miembro' },
   { key: 'loan_type', label: 'Tipo' },
   { key: 'approved_amount', label: 'Monto Aprobado', format: 'currency' },

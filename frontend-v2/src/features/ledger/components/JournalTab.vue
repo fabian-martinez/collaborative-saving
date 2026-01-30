@@ -169,8 +169,8 @@ async function fetchEntries() {
     entries.value = await ledgerApi.getLedgerEntries({
       page: page.value,
       limit: limit.value,
-      accountType: selectedAccount.value || undefined,
-      orderBy: 'DESC'
+      account_type: selectedAccount.value || undefined,
+      order_by: 'DESC'
     })
     
     // Filtrar por búsqueda en el frontend si hay searchQuery
@@ -222,8 +222,8 @@ async function exportData() {
     // Obtener todas las entradas sin paginación para exportar
     const allEntries = await ledgerApi.getLedgerEntries({
       limit: 10000,
-      accountType: selectedAccount.value || undefined,
-      orderBy: 'DESC'
+      account_type: selectedAccount.value || undefined,
+      order_by: 'DESC'
     })
 
     // Filtrar por búsqueda si hay
