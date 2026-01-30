@@ -309,8 +309,8 @@ describe('ProcessStockExchangeUseCase', () => {
 
     await useCase.execute(dto);
 
-    const saveSpy = loanTransactionDetailRepository.save;
-    expect(saveSpy).toHaveBeenCalledWith(
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(loanTransactionDetailRepository.save).toHaveBeenCalledWith(
       expect.objectContaining({
         loanId: 'loan-1',
         transactionType: LoanTransactionType.DISBURSEMENT,
