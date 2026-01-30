@@ -36,6 +36,15 @@ import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan
 const DEFAULT_DIFFERENCE_LOAN_INTEREST = 0.02;
 const DEFAULT_DIFFERENCE_LOAN_TERM = 24;
 
+interface LoanDetails {
+  loanId: string;
+  amount?: number;
+  operationId?: string;
+  principalPaid?: number;
+  newBalance?: number;
+  loanType?: string;
+}
+
 /**
  * Process Stock Exchange Use Case
  *
@@ -208,7 +217,7 @@ export class ProcessStockExchangeUseCase {
 
       // If a new loan was created (and accounting skipped), record the transaction detail now
       // knowing the operation ID
-      const loanDetails = details.loan as any;
+      const loanDetails = details.loan as LoanDetails | undefined;
       if (
         loanDetails &&
         loanDetails.loanId &&
