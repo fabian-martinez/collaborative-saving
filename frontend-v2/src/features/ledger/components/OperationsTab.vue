@@ -345,19 +345,19 @@ async function fetchOperations() {
 
 async function loadMeetingsAndMembers() {
   try {
-    const [meetings, members] = await Promise.all([
+    const [meetingsData, members] = await Promise.all([
       meetingsApi.getMeetings(),
       membersApi.getMembers()
     ])
     
-    meetingsList.value = meetings
+    meetingsList.value = meetingsData
     membersList.value = members.sort((a, b) => a.name.localeCompare(b.name))
     
     // Actualizar el mapa de reuniones con todos los datos
-    meetings.forEach((meeting, index) => {
+    meetingsData.forEach((meeting, index) => {
       meetings.value.set(meeting.id, {
         date: new Date(meeting.date),
-        number: meetings.length - index
+        number: meetingsData.length - index
       })
     })
   } catch (e) {

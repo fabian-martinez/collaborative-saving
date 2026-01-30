@@ -26,7 +26,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { contributionsApi, type MandatoryContribution } from '@/api/contributions.api'
-import DataTable from '@/shared/components/DataTable.vue'
+import DataTable, { type Column } from '@/shared/components/DataTable.vue'
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import ErrorMessage from '@/shared/components/ErrorMessage.vue'
 
@@ -35,7 +35,7 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const showCreateModal = ref(false)
 
-const columns = [
+const columns: Column[] = [
   { key: 'asset_type', label: 'Tipo de Activo' },
   { key: 'value', label: 'Valor', format: 'currency' }
 ]

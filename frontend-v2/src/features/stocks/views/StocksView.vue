@@ -35,7 +35,7 @@ import { useRouter } from 'vue-router'
 import { Search } from 'iconoir-vue/regular'
 import { stocksApi, type Stock } from '@/api/stocks.api'
 import { useSearchableList } from '@/shared/composables/useSearchableList'
-import DataTable from '@/shared/components/DataTable.vue'
+import DataTable, { type Column } from '@/shared/components/DataTable.vue'
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import ErrorMessage from '@/shared/components/ErrorMessage.vue'
 
@@ -51,7 +51,7 @@ const { searchQuery, filteredItems } = useSearchableList<Stock>(stocksRef, [
   'behavior'
 ])
 
-const columns = [
+const columns: Column[] = [
   { key: 'type', label: 'Tipo' },
   { key: 'value', label: 'Valor', format: 'currency' },
   { key: 'monthly_contribution', label: 'Aporte Mensual', format: 'currency' },
