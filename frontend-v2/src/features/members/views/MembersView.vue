@@ -60,6 +60,16 @@
       <MemberForm @submit="handleCreate" @cancel="showCreateModal = false" />
     </Modal>
 
+    <!-- Edit Modal -->
+    <Modal :show="showEditModal" title="Editar Miembro" @close="showEditModal = false">
+      <MemberForm
+        v-if="memberToEdit"
+        :initial-data="memberToEdit"
+        @submit="handleEdit"
+        @cancel="showEditModal = false"
+      />
+    </Modal>
+
      <!-- Delete Confirmation Modal -->
     <Modal :show="showDeleteModal" title="Confirmar Eliminación" @close="cancelDelete">
       <div class="p-4">
@@ -106,6 +116,8 @@ const store = useMembersStore()
 
 // State
 const showCreateModal = ref(false)
+const showEditModal = ref(false)
+const memberToEdit = ref<Member | null>(null)
 const showDeleteModal = ref(false)
 const memberToDelete = ref<Member | null>(null)
 const isDeleting = ref(false)
@@ -151,8 +163,20 @@ function viewMember(id: string) {
 }
 
 function editMember(member: Member) {
-  // TODO: Implementar edición real
-  console.log('Edit member', member)
+  memberToEdit.value = member
+  showEditModal.value = true
+}
+
+async function handleEdit(data: Parameters<typeof store.updateMember>[1]) {
+  if (!memberToEdit.value) return
+
+  try {
+    await store.updateMember(memberToEdit.value.id, data)
+    showEditModal.value = false
+    memberToEdit.value = null
+  } catch (e) {
+    // Error manejado por store/componente
+  }
 }
 
 function confirmDelete(member: Member) {
@@ -189,5 +213,3 @@ async function handleCreate(data: Parameters<typeof store.createMember>[0]) {
   }
 }
 </script>
-
-
