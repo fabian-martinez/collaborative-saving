@@ -23,6 +23,13 @@ export class TypeOrmInterestDistributionConfigRepository implements InterestDist
     return entities.map((e) => InterestDistributionConfigMapper.toDomain(e));
   }
 
+  async findByStockType(
+    stockTypeId: string,
+  ): Promise<InterestDistributionConfigDomain[]> {
+    const entities = await this.repo.find({ where: { stockTypeId } });
+    return entities.map((e) => InterestDistributionConfigMapper.toDomain(e));
+  }
+
   async save(config: InterestDistributionConfigDomain): Promise<InterestDistributionConfigDomain> {
     const persistence = InterestDistributionConfigMapper.toPersistence(config);
     const saved = await this.repo.save(persistence as InterestDistributionConfigEntity);

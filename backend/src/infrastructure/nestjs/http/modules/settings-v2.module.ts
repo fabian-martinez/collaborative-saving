@@ -22,6 +22,10 @@ import { DeleteStockTypeUseCase } from '@application/use-cases/settings/delete-s
 import { LoanTypeRepository } from '@domain/ports/repositories/loan-type-repository.port';
 import { StockTypeRepository } from '@domain/ports/repositories/stock-type-repository.port';
 import { InterestDistributionConfigRepository } from '@domain/ports/repositories/interest-distribution-config-repository.port';
+import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
+import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
+import { StocksV2Module, STOCK_REPOSITORY } from './stocks-v2.module';
+import { LoansV2Module, LOAN_REPOSITORY } from './loans-v2.module';
 
 import { 
   LOAN_TYPE_REPOSITORY, 
@@ -36,6 +40,8 @@ import {
       StockType,
       InterestDistributionConfig,
     ]),
+    StocksV2Module,
+    LoansV2Module,
   ],
   controllers: [SettingsV2Controller],
   providers: [
@@ -100,8 +106,16 @@ import {
     },
     {
       provide: DeleteLoanTypeUseCase,
-      useFactory: (repo: LoanTypeRepository) => new DeleteLoanTypeUseCase(repo),
-      inject: [LOAN_TYPE_REPOSITORY],
+      useFactory: (
+        ltRepo: LoanTypeRepository,
+        loanRepo: LoanRepository,
+        configRepo: InterestDistributionConfigRepository,
+      ) => new DeleteLoanTypeUseCase(ltRepo, loanRepo, configRepo),
+      inject: [
+        LOAN_TYPE_REPOSITORY,
+        LOAN_REPOSITORY,
+        INTEREST_DISTRIBUTION_CONFIG_REPOSITORY,
+      ],
     },
     {
       provide: CreateStockTypeUseCase,
@@ -115,8 +129,16 @@ import {
     },
     {
       provide: DeleteStockTypeUseCase,
-      useFactory: (repo: StockTypeRepository) => new DeleteStockTypeUseCase(repo),
-      inject: [STOCK_TYPE_REPOSITORY],
+      useFactory: (
+        stRepo: StockTypeRepository,
+        stockRepo: StockRepository,
+        configRepo: InterestDistributionConfigRepository,
+      ) => new DeleteStockTypeUseCase(stRepo, stockRepo, configRepo),
+      inject: [
+        STOCK_TYPE_REPOSITORY,
+        STOCK_REPOSITORY,
+        INTEREST_DISTRIBUTION_CONFIG_REPOSITORY,
+      ],
     },
   ],
   exports: [

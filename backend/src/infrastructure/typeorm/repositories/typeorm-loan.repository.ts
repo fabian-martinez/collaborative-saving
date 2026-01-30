@@ -152,4 +152,9 @@ export class TypeOrmLoanRepository implements LoanRepository {
 
     return validLoans;
   }
+
+  async countByLoanType(loanTypeId: string): Promise<number> {
+    const repo = this.getRepository();
+    return repo.count({ where: { loanTypeId } });
+  }
 }

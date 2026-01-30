@@ -66,9 +66,11 @@ export class TypeOrmStockRepository implements StockRepository {
   }
 
   async findGuaranteed(): Promise<StockDomain[]> {
-    const entities = await this.repo.find({
-      where: { is_guaranteed: true, deleted_at: IsNull() },
-    });
-    return entities.map((e) => StockMapper.toDomain(e));
+    const stocks = await this.repo.find({ where: { is_guaranteed: true } });
+    return stocks.map((stock) => StockMapper.toDomain(stock));
+  }
+
+  async countByStockType(stockTypeId: string): Promise<number> {
+    return this.repo.count({ where: { stockTypeId } });
   }
 }

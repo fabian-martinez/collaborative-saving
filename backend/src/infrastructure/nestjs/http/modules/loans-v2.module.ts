@@ -42,7 +42,7 @@ import { AmortizationCalculatorService } from '@domain/services/amortization-cal
 
 const MEMBER_REPOSITORY = Symbol('MemberRepository');
 const MEETING_REPOSITORY = Symbol('MeetingRepository');
-const LOAN_REPOSITORY = Symbol('LoanRepository');
+export const LOAN_REPOSITORY = Symbol('LoanRepository');
 const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
   'LoanTransactionDetailRepository',
 );
@@ -226,6 +226,7 @@ const TRANSACTION_MANAGER = Symbol('TransactionManager');
     CreateLoanUseCase,
     RecordLoanPaymentUseCase,
     GetMemberLoansQueryHandler,
+    LOAN_REPOSITORY,
   ],
 })
 export class LoansV2Module {}

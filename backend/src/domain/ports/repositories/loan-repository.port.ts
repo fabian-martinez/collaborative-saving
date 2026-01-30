@@ -8,4 +8,5 @@ export interface LoanRepository {
   findPendingByMember(memberId: string): Promise<Loan[]>;
   save(loan: Loan): Promise<Loan>;
   findByIds(ids: string[]): Promise<Loan[]>;
+  countByLoanType(loanTypeId: string): Promise<number>;
 }

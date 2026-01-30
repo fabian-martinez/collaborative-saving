@@ -7,4 +7,5 @@ export interface StockRepository {
   findActive(): Promise<Stock[]>;
   save(stock: Stock): Promise<Stock>;
   findGuaranteed(): Promise<Stock[]>;
+  countByStockType(stockTypeId: string): Promise<number>;
 }
