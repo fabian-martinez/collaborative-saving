@@ -153,3 +153,4 @@ docs/.DS_Store
 supabase/backup_**-*-*.sql
 supabase/backup_**-*.sql
 backend/.env.test
+backend/secrets/

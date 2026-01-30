@@ -1,5 +1,8 @@
 <template>
-  <div class="flex h-screen bg-base-300">
+  <div v-if="route.name === 'login'" class="h-screen w-screen bg-base-200">
+    <router-view />
+  </div>
+  <div v-else class="flex h-screen bg-base-300">
     <AppSidebar />
     <div
       class="flex flex-1 flex-col ml-0 transition-all duration-300"
@@ -18,11 +21,13 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import AppSidebar from '@/shared/layout/AppSidebar.vue'
 import AppHeader from '@/shared/layout/AppHeader.vue'
 import { useSidebar } from '@/shared/composables/useSidebar'
 import { useMeetingsStore } from '@/features/meetings/stores/meetings'
 
+const route = useRoute()
 const { isCollapsed } = useSidebar()
 const meetingsStore = useMeetingsStore()
 
