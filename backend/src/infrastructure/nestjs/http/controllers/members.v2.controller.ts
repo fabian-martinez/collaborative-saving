@@ -15,6 +15,8 @@ import {
   HttpCode,
   Query,
 } from '@nestjs/common';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { MemberRole } from '@domain/enums/member-role.enum';
 import {
   ApiTags,
   ApiOperation,
@@ -166,6 +168,7 @@ export class MembersV2Controller {
   }
 
   @Post()
+  @Roles(MemberRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Create a new member',
@@ -313,6 +316,7 @@ export class MembersV2Controller {
   }
 
   @Patch(':id')
+  @Roles(MemberRole.ADMIN)
   @ApiOperation({
     summary: 'Update member information',
     description:
@@ -378,6 +382,7 @@ export class MembersV2Controller {
   }
 
   @Delete(':id')
+  @Roles(MemberRole.ADMIN)
   @ApiOperation({
     summary: 'Soft delete a member',
     description:
@@ -720,6 +725,7 @@ export class MembersV2Controller {
   }
 
   @Post(':id/payments')
+  @Roles(MemberRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Record monthly payments for a member',
@@ -809,6 +815,7 @@ export class MembersV2Controller {
   }
 
   @Post(':id/purchase')
+  @Roles(MemberRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Purchase stocks for a member',
@@ -934,6 +941,7 @@ export class MembersV2Controller {
   }
 
   @Post(':id/exchange')
+  @Roles(MemberRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Intercambiar acciones de un tipo a otro',
@@ -1032,6 +1040,7 @@ export class MembersV2Controller {
   }
 
   @Post(':id/transfer')
+  @Roles(MemberRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Transferir acciones a otro socio',
@@ -1129,6 +1138,7 @@ export class MembersV2Controller {
   }
 
   @Post(':id/stock-loan-payment')
+  @Roles(MemberRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Pagar un crédito usando acciones',
