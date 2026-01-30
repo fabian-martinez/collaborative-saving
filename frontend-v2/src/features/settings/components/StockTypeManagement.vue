@@ -1,30 +1,79 @@
 <template>
   <div class="stock-type-management">
     <Card title="Tipos de Acciones" subtitle="Define los tipos de activos en los que se invierte el capital.">
+      <div class="flex justify-end mb-4">
+        <button class="btn btn-primary" @click="openModal()">
+          Nuevo Tipo de Activo
+        </button>
+      </div>
+
       <DataTable
         :columns="columns"
         :data="stockTypes"
         :loading="loading"
+        actions
       >
         <template #cell-behavior="{ item }">
           <Badge :variant="getBehaviorVariant((item as any).behavior)">
             {{ getBehaviorLabel((item as any).behavior) }}
           </Badge>
         </template>
+        <template #actions="{ item }">
+          <div class="flex gap-2">
+            <button class="btn btn-ghost btn-xs" @click="openModal(item as StockType)">
+              Editar
+            </button>
+            <button class="btn btn-ghost btn-xs text-error" @click="confirmDelete(item as StockType)">
+              Eliminar
+            </button>
+          </div>
+        </template>
       </DataTable>
     </Card>
+
+    <Modal :show="showModal" :title="isEditing ? 'Editar Tipo de Activo' : 'Nuevo Tipo de Activo'" @close="showModal = false">
+      <form @submit.prevent="handleSubmit" class="space-y-4">
+        <div class="form-control">
+          <label class="label">Nombre</label>
+          <input v-model="form.name" type="text" class="input input-bordered w-full" required placeholder="Ej: Acción Ordinaria" />
+        </div>
+
+        <div class="form-control">
+          <label class="label">Comportamiento / Clase de Activo</label>
+          <select v-model="form.behavior" class="select select-bordered w-full" required>
+            <option value="CAPITAL_APPRECIATION">Solo Valorización (Acción)</option>
+            <option value="DIVIDEND_YIELD">Valorización + Dividendos (Fondo/Bono)</option>
+          </select>
+        </div>
+
+        <div class="modal-action">
+          <button type="button" class="btn" @click="showModal = false">Cancelar</button>
+          <button type="submit" class="btn btn-primary" :loading="saving">Guardar</button>
+        </div>
+      </form>
+    </Modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { settingsApi, type StockType } from '@/api/settings.api'
 import Card from '@/shared/components/Card.vue'
 import DataTable from '@/shared/components/DataTable.vue'
 import Badge from '@/shared/components/Badge.vue'
+import Modal from '@/shared/components/Modal.vue'
 
 const stockTypes = ref<StockType[]>([])
 const loading = ref(false)
+const showModal = ref(false)
+const saving = ref(false)
+const editingId = ref<string | null>(null)
+const isEditing = computed(() => !!editingId.value)
+
+const form = ref({
+  name: '',
+  behavior: 'CAPITAL_APPRECIATION' as 'CAPITAL_APPRECIATION' | 'DIVIDEND_YIELD'
+})
 
 const columns = [
   { key: 'name', label: 'Nombre' },
@@ -33,23 +82,21 @@ const columns = [
 
 const getBehaviorVariant = (behavior: string) => {
   switch (behavior) {
-    case 'share': return 'success'
-    case 'bond': return 'info'
-    case 'fixed': return 'warning'
+    case 'CAPITAL_APPRECIATION': return 'success'
+    case 'DIVIDEND_YIELD': return 'info'
     default: return 'neutral'
   }
 }
 
 const getBehaviorLabel = (behavior: string) => {
   switch (behavior) {
-    case 'share': return 'Acción'
-    case 'bond': return 'Bono'
-    case 'fixed': return 'Fijo'
+    case 'CAPITAL_APPRECIATION': return 'Valorización'
+    case 'DIVIDEND_YIELD': return 'Dividendos'
     default: return behavior
   }
 }
 
-onMounted(async () => {
+const fetchData = async () => {
   loading.value = true
   try {
     stockTypes.value = await settingsApi.getStockTypes()
@@ -58,5 +105,52 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
-})
+}
+
+const openModal = (item?: StockType) => {
+  if (item) {
+    editingId.value = item.id
+    form.value = {
+      name: item.name,
+      behavior: item.behavior as any
+    }
+  } else {
+    editingId.value = null
+    form.value = {
+      name: '',
+      behavior: 'CAPITAL_APPRECIATION'
+    }
+  }
+  showModal.value = true
+}
+
+const handleSubmit = async () => {
+  saving.value = true
+  try {
+    if (isEditing.value && editingId.value) {
+      await settingsApi.updateStockType(editingId.value, form.value)
+    } else {
+      await settingsApi.createStockType(form.value)
+    }
+    await fetchData()
+    showModal.value = false
+  } catch (error) {
+    console.error('Error saving stock type:', error)
+  } finally {
+    saving.value = false
+  }
+}
+
+const confirmDelete = async (item: StockType) => {
+  if (confirm(`¿Estás seguro de eliminar el tipo de activo "${item.name}"?`)) {
+    try {
+      await settingsApi.deleteStockType(item.id)
+      await fetchData()
+    } catch (error) {
+      console.error('Error deleting stock type:', error)
+    }
+  }
+}
+
+onMounted(fetchData)
 </script>

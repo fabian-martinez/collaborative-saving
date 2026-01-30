@@ -11,7 +11,14 @@ import { GetLoanTypesQueryHandler } from '@application/queries/settings/get-loan
 import { GetStockTypesQueryHandler } from '@application/queries/settings/get-stock-types.query-handler';
 import { GetInterestDistributionConfigsQueryHandler } from '@application/queries/settings/get-interest-distribution-configs.query-handler';
 import { CreateInterestDistributionConfigUseCase } from '@application/use-cases/settings/create-interest-distribution-config.use-case';
+import { UpdateInterestDistributionConfigUseCase } from '@application/use-cases/settings/update-interest-distribution-config.use-case';
 import { DeleteInterestDistributionConfigUseCase } from '@application/use-cases/settings/delete-interest-distribution-config.use-case';
+import { CreateLoanTypeUseCase } from '@application/use-cases/settings/create-loan-type.use-case';
+import { UpdateLoanTypeUseCase } from '@application/use-cases/settings/update-loan-type.use-case';
+import { DeleteLoanTypeUseCase } from '@application/use-cases/settings/delete-loan-type.use-case';
+import { CreateStockTypeUseCase } from '@application/use-cases/settings/create-stock-type.use-case';
+import { UpdateStockTypeUseCase } from '@application/use-cases/settings/update-stock-type.use-case';
+import { DeleteStockTypeUseCase } from '@application/use-cases/settings/delete-stock-type.use-case';
 import { LoanTypeRepository } from '@domain/ports/repositories/loan-type-repository.port';
 import { StockTypeRepository } from '@domain/ports/repositories/stock-type-repository.port';
 import { InterestDistributionConfigRepository } from '@domain/ports/repositories/interest-distribution-config-repository.port';
@@ -70,10 +77,46 @@ import {
       inject: [INTEREST_DISTRIBUTION_CONFIG_REPOSITORY],
     },
     {
+      provide: UpdateInterestDistributionConfigUseCase,
+      useFactory: (repo: InterestDistributionConfigRepository) => 
+        new UpdateInterestDistributionConfigUseCase(repo),
+      inject: [INTEREST_DISTRIBUTION_CONFIG_REPOSITORY],
+    },
+    {
       provide: DeleteInterestDistributionConfigUseCase,
       useFactory: (repo: InterestDistributionConfigRepository) => 
         new DeleteInterestDistributionConfigUseCase(repo),
       inject: [INTEREST_DISTRIBUTION_CONFIG_REPOSITORY],
+    },
+    {
+      provide: CreateLoanTypeUseCase,
+      useFactory: (repo: LoanTypeRepository) => new CreateLoanTypeUseCase(repo),
+      inject: [LOAN_TYPE_REPOSITORY],
+    },
+    {
+      provide: UpdateLoanTypeUseCase,
+      useFactory: (repo: LoanTypeRepository) => new UpdateLoanTypeUseCase(repo),
+      inject: [LOAN_TYPE_REPOSITORY],
+    },
+    {
+      provide: DeleteLoanTypeUseCase,
+      useFactory: (repo: LoanTypeRepository) => new DeleteLoanTypeUseCase(repo),
+      inject: [LOAN_TYPE_REPOSITORY],
+    },
+    {
+      provide: CreateStockTypeUseCase,
+      useFactory: (repo: StockTypeRepository) => new CreateStockTypeUseCase(repo),
+      inject: [STOCK_TYPE_REPOSITORY],
+    },
+    {
+      provide: UpdateStockTypeUseCase,
+      useFactory: (repo: StockTypeRepository) => new UpdateStockTypeUseCase(repo),
+      inject: [STOCK_TYPE_REPOSITORY],
+    },
+    {
+      provide: DeleteStockTypeUseCase,
+      useFactory: (repo: StockTypeRepository) => new DeleteStockTypeUseCase(repo),
+      inject: [STOCK_TYPE_REPOSITORY],
     },
   ],
   exports: [
@@ -84,7 +127,14 @@ import {
     GetStockTypesQueryHandler,
     GetInterestDistributionConfigsQueryHandler,
     CreateInterestDistributionConfigUseCase,
+    UpdateInterestDistributionConfigUseCase,
     DeleteInterestDistributionConfigUseCase,
+    CreateLoanTypeUseCase,
+    UpdateLoanTypeUseCase,
+    DeleteLoanTypeUseCase,
+    CreateStockTypeUseCase,
+    UpdateStockTypeUseCase,
+    DeleteStockTypeUseCase,
   ],
 })
 export class SettingsV2Module {}

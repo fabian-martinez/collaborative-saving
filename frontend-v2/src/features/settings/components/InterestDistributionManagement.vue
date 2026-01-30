@@ -2,7 +2,7 @@
   <div class="interest-distribution-management">
     <Card title="Distribución de Intereses" subtitle="Configura qué tipos de préstamos generan rendimientos para qué activos.">
       <div class="flex justify-end mb-4">
-        <button class="btn btn-primary" @click="showCreateModal = true">
+        <button class="btn btn-primary" @click="openModal()">
           Nueva Relación
         </button>
       </div>
@@ -14,16 +14,21 @@
         actions
       >
         <template #actions="{ item }">
-          <button class="btn btn-ghost btn-xs text-error" @click="confirmDelete(item as any)">
-            Eliminar
-          </button>
+          <div class="flex gap-2">
+            <button class="btn btn-ghost btn-xs" @click="openModal(item as any)">
+              Editar
+            </button>
+            <button class="btn btn-ghost btn-xs text-error" @click="confirmDelete(item as any)">
+              Eliminar
+            </button>
+          </div>
         </template>
       </DataTable>
     </Card>
 
-    <!-- Create Modal -->
-    <Modal :show="showCreateModal" title="Nueva Relación de Distribución" @close="showCreateModal = false">
-      <form @submit.prevent="handleCreate" class="space-y-4">
+    <!-- Create/Edit Modal -->
+    <Modal :show="showModal" :title="isEditing ? 'Editar Relación' : 'Nueva Relación de Distribución'" @close="showModal = false">
+      <form @submit.prevent="handleSubmit" class="space-y-4">
         <div class="form-control">
           <label class="label">Tipo de Préstamo</label>
           <select v-model="form.loan_type_id" class="select select-bordered w-full" required>
@@ -45,8 +50,8 @@
         </div>
 
         <div class="modal-action">
-          <button type="button" class="btn" @click="showCreateModal = false">Cancelar</button>
-          <button type="submit" class="btn btn-primary" :loading="creating">Guardar</button>
+          <button type="button" class="btn" @click="showModal = false">Cancelar</button>
+          <button type="submit" class="btn btn-primary" :loading="saving">Guardar</button>
         </div>
       </form>
     </Modal>
@@ -64,8 +69,10 @@ const configs = ref<InterestDistributionConfig[]>([])
 const loanTypes = ref<LoanType[]>([])
 const stockTypes = ref<StockType[]>([])
 const loading = ref(false)
-const showCreateModal = ref(false)
-const creating = ref(false)
+const showModal = ref(false)
+const saving = ref(false)
+const editingId = ref<string | null>(null)
+const isEditing = computed(() => !!editingId.value)
 
 const form = ref({
   loan_type_id: '',
@@ -103,17 +110,35 @@ const fetchData = async () => {
   }
 }
 
-const handleCreate = async () => {
-  creating.value = true
+const openModal = (item?: InterestDistributionConfig) => {
+  if (item) {
+    editingId.value = item.id
+    form.value = {
+      loan_type_id: item.loan_type_id,
+      stock_type_id: item.stock_type_id
+    }
+  } else {
+    editingId.value = null
+    form.value = { loan_type_id: '', stock_type_id: '' }
+  }
+  showModal.value = true
+}
+
+const handleSubmit = async () => {
+  saving.value = true
   try {
-    await settingsApi.createDistributionConfig(form.value)
+    if (isEditing.value && editingId.value) {
+      await settingsApi.updateDistributionConfig(editingId.value, form.value)
+    } else {
+      await settingsApi.createDistributionConfig(form.value)
+    }
     await fetchData()
-    showCreateModal.value = false
+    showModal.value = false
     form.value = { loan_type_id: '', stock_type_id: '' }
   } catch (error) {
-    console.error('Error creating distribution config:', error)
+    console.error('Error saving distribution config:', error)
   } finally {
-    creating.value = false
+    saving.value = false
   }
 }
 
