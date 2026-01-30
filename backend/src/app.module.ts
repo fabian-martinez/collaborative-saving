@@ -14,6 +14,7 @@ import { EventBusModule } from './infrastructure/services/event-bus/event-bus.mo
 import { TransactionManagerModule } from './infrastructure/services/transaction-manager/transaction-manager.module';
 import { FirebaseAdminModule } from './infrastructure/services/firebase-admin/firebase-admin.module';
 import { FirebaseAuthGuard } from './infrastructure/nestjs/auth/guards/firebase-auth.guard';
+import { RolesGuard } from './infrastructure/nestjs/auth/guards/roles.guard';
 
 @Module({
   imports: [
@@ -42,6 +43,10 @@ import { FirebaseAuthGuard } from './infrastructure/nestjs/auth/guards/firebase-
     {
       provide: APP_GUARD,
       useClass: FirebaseAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
 })
