@@ -1,7 +1,7 @@
 <template>
   <Modal :show="visible" :title="subscription ? `Detalle de Suscripción: ${subscription.stock_type}` : 'Detalle de Suscripción'" @close="$emit('close')">
     <div v-if="loading" class="flex items-center justify-center py-8">
-      <LoadingSpinner message="Cargando detalles..." />
+      <LoadingSpinner :loading="loading" message="Cargando detalles..." />
     </div>
 
     <div v-else-if="error" class="alert alert-error">
