@@ -102,7 +102,7 @@ const mockLoans: Loan[] = [
 const mockStocks: Stock[] = [
   {
     id: '1',
-    type: 'Acción A',
+    name: 'Acción A',
     value: 100000,
     monthly_contribution: 50000,
     is_guaranteed: true,
@@ -112,7 +112,7 @@ const mockStocks: Stock[] = [
   },
   {
     id: '2',
-    type: 'Acción B',
+    name: 'Acción B',
     value: 200000,
     monthly_contribution: 75000,
     is_guaranteed: false,
@@ -620,6 +620,24 @@ export const mockApi = {
     if (!stock) throw new Error('Stock not found')
     Object.assign(stock, data)
     return { ...stock }
+  },
+
+  async createStock(data: any): Promise<Stock> {
+    await delay()
+    const newStock: Stock = {
+      id: String(mockStocks.length + 1),
+      ...data,
+      created_at: new Date().toISOString()
+    }
+    mockStocks.push(newStock)
+    return newStock
+  },
+
+  async deleteStock(id: string): Promise<void> {
+    await delay()
+    const index = mockStocks.findIndex(s => s.id === id)
+    if (index === -1) throw new Error('Stock not found')
+    mockStocks.splice(index, 1)
   },
 
   // Contributions
