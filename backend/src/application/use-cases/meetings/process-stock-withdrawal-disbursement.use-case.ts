@@ -200,12 +200,11 @@ export class ProcessStockWithdrawalDisbursementUseCase {
       ) / CALCULATION_CONSTANTS.FLOATING_POINT_PRECISION;
 
     // 1. Obtener suscripciones del socio para este stock
-    const allSubscriptions = await this.stockSubscriptionRepository.findByStock(
-      stock.id,
-    );
-    const memberSubscriptions = allSubscriptions.filter(
-      (sub) => sub.memberId === item.memberId,
-    );
+    const memberSubscriptions =
+      await this.stockSubscriptionRepository.findAllByMemberAndStock(
+        item.memberId,
+        stock.id,
+      );
 
     // Si hay un stockSubscriptionId específico en el item, solo verificar que existe y pertenece al miembro
     // (es solo una referencia, no restringe el retiro a esa suscripción específica)
