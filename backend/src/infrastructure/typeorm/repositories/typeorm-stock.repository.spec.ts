@@ -43,13 +43,19 @@ describe('TypeOrmStockRepository', () => {
     it('should return Stock when found and not deleted', async () => {
       // Arrange
       const stockId = '550e8400-e29b-41d4-a716-446655440000';
-      const entity: StockEntity =  {
+      const entity: StockEntity = {
         id: stockId,
         name: 'Bono',
         value: 100,
         monthly_contribution: 50,
-        is_guaranteed: false,
-        guaranteed_yield: null,
+        stockTypeId: '1',
+        stockType: {
+          id: '1',
+          name: 'Type 1',
+          isGuaranteed: false,
+          guaranteedYield: null,
+          behavior: StockBehavior.CAPITAL_APPRECIATION,
+        },
         deleted_at: null,
       } as StockEntity;
 
@@ -103,9 +109,14 @@ describe('TypeOrmStockRepository', () => {
         name: stockName,
         value: 100,
         monthly_contribution: 50,
-        is_guaranteed: false,
-        guaranteed_yield: null,
         stockTypeId: '1',
+        stockType: {
+          id: '1',
+          name: 'Type 1',
+          isGuaranteed: false,
+          guaranteedYield: null,
+          behavior: StockBehavior.CAPITAL_APPRECIATION,
+        },
         deleted_at: null,
       } as StockEntity;
 
@@ -147,8 +158,14 @@ describe('TypeOrmStockRepository', () => {
           name: 'Bono',
           value: 100,
           monthly_contribution: 50,
-          is_guaranteed: false,
-          guaranteed_yield: null,
+          stockTypeId: '1',
+          stockType: {
+            id: '1',
+            name: 'Type 1',
+            isGuaranteed: false,
+            guaranteedYield: null,
+            behavior: StockBehavior.CAPITAL_APPRECIATION,
+          },
           deleted_at: null,
         } as StockEntity,
         {
@@ -156,8 +173,14 @@ describe('TypeOrmStockRepository', () => {
           name: 'Super',
           value: 200,
           monthly_contribution: 100,
-          is_guaranteed: false,
-          guaranteed_yield: null,
+          stockTypeId: '1',
+          stockType: {
+            id: '1',
+            name: 'Type 1',
+            isGuaranteed: false,
+            guaranteedYield: null,
+            behavior: StockBehavior.CAPITAL_APPRECIATION,
+          },
           deleted_at: null,
         } as StockEntity,
       ];
@@ -204,8 +227,14 @@ describe('TypeOrmStockRepository', () => {
           name: 'Bono',
           value: 100,
           monthly_contribution: 50,
-          is_guaranteed: false,
-          guaranteed_yield: null,
+          stockTypeId: '1',
+          stockType: {
+            id: '1',
+            name: 'Type 1',
+            isGuaranteed: false,
+            guaranteedYield: null,
+            behavior: StockBehavior.CAPITAL_APPRECIATION,
+          },
           deleted_at: null,
         } as StockEntity,
       ];
@@ -235,12 +264,20 @@ describe('TypeOrmStockRepository', () => {
         name: stock.name,
         value: stock.value,
         monthly_contribution: stock.monthlyContribution,
-        is_guaranteed: stock.isGuaranteed,
-        guaranteed_yield: stock.guaranteedYield,
+        stockTypeId: stock.stockTypeId,
+        stockType: {
+          id: stock.stockTypeId || '1',
+          name: 'Type 1',
+          isGuaranteed: stock.isGuaranteed,
+          guaranteedYield: stock.guaranteedYield,
+          behavior: StockBehavior.CAPITAL_APPRECIATION,
+        },
         deleted_at: null,
       } as StockEntity;
 
-      typeOrmRepo.findOne.mockResolvedValueOnce(null); // Not found
+      typeOrmRepo.findOne
+        .mockResolvedValueOnce(null) // Not found
+        .mockResolvedValueOnce(entity); // Fetch with relations
       typeOrmRepo.save.mockResolvedValue(entity);
 
       // Act
@@ -269,8 +306,14 @@ describe('TypeOrmStockRepository', () => {
         name: 'Bono',
         value: 100,
         monthly_contribution: 50,
-        is_guaranteed: false,
-        guaranteed_yield: null,
+        stockTypeId: '1',
+        stockType: {
+          id: '1',
+          name: 'Type 1',
+          isGuaranteed: false,
+          guaranteedYield: null,
+          behavior: StockBehavior.CAPITAL_APPRECIATION,
+        },
         deleted_at: null,
       } as StockEntity;
 
@@ -279,8 +322,14 @@ describe('TypeOrmStockRepository', () => {
         name: 'Bono',
         value: 150,
         monthly_contribution: 75,
-        is_guaranteed: false,
-        guaranteed_yield: null,
+        stockTypeId: '1',
+        stockType: {
+          id: '1',
+          name: 'Type 1',
+          isGuaranteed: false,
+          guaranteedYield: null,
+          behavior: StockBehavior.CAPITAL_APPRECIATION,
+        },
         deleted_at: null,
       } as StockEntity;
 
@@ -313,8 +362,14 @@ describe('TypeOrmStockRepository', () => {
         name: 'Bono',
         value: 100,
         monthly_contribution: 50,
-        is_guaranteed: false,
-        guaranteed_yield: null,
+        stockTypeId: '1',
+        stockType: {
+          id: '1',
+          name: 'Type 1',
+          isGuaranteed: false,
+          guaranteedYield: null,
+          behavior: StockBehavior.CAPITAL_APPRECIATION,
+        },
         deleted_at: null,
       } as StockEntity;
 
@@ -339,8 +394,14 @@ describe('TypeOrmStockRepository', () => {
           name: 'Bono',
           value: 100,
           monthly_contribution: 50,
-          is_guaranteed: true,
-          guaranteed_yield: 0.05,
+          stockTypeId: '1',
+          stockType: {
+            id: '1',
+            name: 'Type 1',
+            isGuaranteed: true,
+            guaranteedYield: 0.05,
+            behavior: StockBehavior.CAPITAL_APPRECIATION,
+          },
           deleted_at: null,
         } as StockEntity,
       ];
@@ -356,10 +417,8 @@ describe('TypeOrmStockRepository', () => {
       if (!findCall) {
         throw new Error('findCall is undefined');
       }
-      const where = Array.isArray(findCall.where)
-        ? findCall.where[0]
-        : findCall.where;
-      expect(where?.is_guaranteed).toBe(true);
+      const where = findCall.where as any;
+      expect(where?.stockType?.isGuaranteed).toBe(true);
       expect(result).toHaveLength(1);
       expect(result[0]).toBeInstanceOf(StockDomain);
       expect(result[0].isGuaranteed).toBe(true);

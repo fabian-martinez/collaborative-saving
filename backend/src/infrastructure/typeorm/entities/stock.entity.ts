@@ -28,19 +28,6 @@ export class Stock {
   })
   monthly_contribution: number;
 
-  @Column({ type: 'boolean', default: false, name: 'is_guaranteed' })
-  is_guaranteed: boolean;
-
-  @Column({
-    type: 'numeric',
-    precision: 5,
-    scale: 4,
-    nullable: true,
-    name: 'guaranteed_yield',
-  })
-  guaranteed_yield: number | null;
-
-
   @Column({ type: 'uuid', name: 'stock_type_id', nullable: true })
   stockTypeId: string | null;
 

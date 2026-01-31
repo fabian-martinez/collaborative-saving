@@ -5,6 +5,7 @@ import {
   Patch,
   Body,
   Param,
+  Delete,
   ParseUUIDPipe,
   HttpStatus,
   HttpException,
@@ -106,12 +107,11 @@ export class StocksV2Controller {
         summary: 'Stock details',
         value: {
           id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-          type: 'Acción A',
+          name: 'Acción A',
           value: 100000,
           monthlyContribution: 50000,
           isGuaranteed: true,
           guaranteedYield: 0.05,
-          behavior: 'CAPITAL_APPRECIATION',
           createdAt: '2024-01-15T10:30:00Z',
         },
       },
@@ -140,7 +140,7 @@ export class StocksV2Controller {
   @Post()
   @ApiOperation({
     summary: 'Create a new stock',
-    description: 'Creates a new stock type with the specified parameters',
+    description: 'Creates a new stock with the specified parameters',
   })
   @ApiBody({ type: CreateStockHttpDto })
   @ApiResponse({
@@ -152,12 +152,11 @@ export class StocksV2Controller {
         summary: 'Created stock',
         value: {
           id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-          type: 'Acción A',
+          name: 'Acción A',
           value: 100000,
           monthlyContribution: 50000,
           isGuaranteed: true,
           guaranteedYield: 0.05,
-          behavior: 'CAPITAL_APPRECIATION',
           createdAt: '2024-01-15T10:30:00Z',
         },
       },
@@ -253,6 +252,11 @@ export class StocksV2Controller {
     }
   }
 
+  @Delete(':id')
+  @ApiOperation({
+    summary: 'Delete a stock',
+    description: 'Soft delete an existing stock',
+  })
   @ApiResponse({
     status: 200,
     description: 'Stock deleted successfully',

@@ -10,10 +10,15 @@ describe('StockMapper', () => {
         name: 'preferential',
         value: 100,
         monthly_contribution: 50,
-        is_guaranteed: false,
-        guaranteed_yield: null,
-        deleted_at: null,
         stockTypeId: 'type-id-123',
+        stockType: {
+          id: 'type-id-123',
+          name: 'Type 1',
+          isGuaranteed: false,
+          guaranteedYield: null,
+          behavior: StockBehavior.CAPITAL_APPRECIATION,
+        } as any,
+        deleted_at: null,
       } as any;
 
       const domain = StockMapper.toDomain(entity as StockEntity);
@@ -34,10 +39,15 @@ describe('StockMapper', () => {
         name: 'guaranteed',
         value: 150,
         monthly_contribution: 75,
-        is_guaranteed: true,
-        guaranteed_yield: 0.02,
-        deleted_at: null,
         stockTypeId: 'type-id-456',
+        stockType: {
+          id: 'type-id-456',
+          name: 'Type 2',
+          isGuaranteed: true,
+          guaranteedYield: 0.02,
+          behavior: StockBehavior.DIVIDEND_YIELD,
+        } as any,
+        deleted_at: null,
       } as any;
 
       const domain = StockMapper.toDomain(entity as StockEntity);
@@ -54,10 +64,15 @@ describe('StockMapper', () => {
         name: 'test',
         value: 100,
         monthly_contribution: 50,
-        is_guaranteed: false,
-        guaranteed_yield: null,
-        deleted_at: deletedDate,
         stockTypeId: 'type-id-789',
+        stockType: {
+          id: 'type-id-789',
+          name: 'Type 3',
+          isGuaranteed: false,
+          guaranteedYield: null,
+          behavior: StockBehavior.CAPITAL_APPRECIATION,
+        } as any,
+        deleted_at: deletedDate,
       } as any;
 
       const domain = StockMapper.toDomain(entity as StockEntity);
@@ -83,8 +98,6 @@ describe('StockMapper', () => {
       expect(persistence.name).toBe(domain.name);
       expect(persistence.value).toBe(domain.value);
       expect(persistence.monthly_contribution).toBe(domain.monthlyContribution);
-      expect(persistence.is_guaranteed).toBe(domain.isGuaranteed);
-      expect(persistence.guaranteed_yield).toBe(domain.guaranteedYield);
       expect(persistence.stockTypeId).toBe(domain.stockTypeId);
     });
 
@@ -115,8 +128,6 @@ describe('StockMapper', () => {
 
       const persistence = StockMapper.toPersistence(domain);
 
-      expect(persistence.is_guaranteed).toBe(true);
-      expect(persistence.guaranteed_yield).toBe(0.02);
       expect(persistence.stockTypeId).toBe(domain.stockTypeId);
     });
   });

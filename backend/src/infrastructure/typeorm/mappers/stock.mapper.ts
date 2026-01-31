@@ -9,9 +9,9 @@ export class StockMapper {
         name: persistence.name,
         value: Number(persistence.value),
         monthly_contribution: Number(persistence.monthly_contribution),
-        is_guaranteed: persistence.is_guaranteed,
-        guaranteed_yield: persistence.guaranteed_yield
-          ? Number(persistence.guaranteed_yield)
+        is_guaranteed: persistence.stockType?.isGuaranteed ?? false,
+        guaranteed_yield: persistence.stockType?.guaranteedYield
+          ? Number(persistence.stockType.guaranteedYield)
           : null,
         stock_type_id: persistence.stockTypeId,
         created_at:
@@ -32,8 +32,6 @@ export class StockMapper {
       name: domain.name,
       value: domain.value,
       monthly_contribution: domain.monthlyContribution,
-      is_guaranteed: domain.isGuaranteed,
-      guaranteed_yield: domain.guaranteedYield,
       stockTypeId: domain.stockTypeId,
     };
 

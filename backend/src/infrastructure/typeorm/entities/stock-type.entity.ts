@@ -18,4 +18,16 @@ export class StockType {
     default: StockBehavior.CAPITAL_APPRECIATION,
   })
   behavior: StockBehavior;
+
+  @Column({ type: 'boolean', default: false, name: 'is_guaranteed' })
+  isGuaranteed: boolean;
+
+  @Column({
+    type: 'numeric',
+    precision: 5,
+    scale: 4,
+    nullable: true,
+    name: 'guaranteed_yield',
+  })
+  guaranteedYield: number | null;
 }

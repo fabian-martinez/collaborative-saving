@@ -16,6 +16,7 @@ export class TypeOrmStockRepository implements StockRepository {
   async findById(id: string): Promise<StockDomain | null> {
     const entity = await this.repo.findOne({
       where: { id, deleted_at: IsNull() },
+      relations: ['stockType'],
     });
     return entity ? StockMapper.toDomain(entity) : null;
   }
@@ -23,6 +24,7 @@ export class TypeOrmStockRepository implements StockRepository {
   async findByName(name: string): Promise<StockDomain | null> {
     const entity = await this.repo.findOne({
       where: { name, deleted_at: IsNull() },
+      relations: ['stockType'],
     });
     return entity ? StockMapper.toDomain(entity) : null;
   }
@@ -30,6 +32,7 @@ export class TypeOrmStockRepository implements StockRepository {
   async findAll(): Promise<StockDomain[]> {
     const entities = await this.repo.find({
       where: { deleted_at: IsNull() },
+      relations: ['stockType'],
     });
     return entities.map((e) => StockMapper.toDomain(e));
   }
@@ -52,6 +55,7 @@ export class TypeOrmStockRepository implements StockRepository {
       await this.repo.update(stock.id, persistence);
       const updated = await this.repo.findOne({
         where: { id: stock.id },
+        relations: ['stockType'],
         withDeleted: true,
       });
       if (!updated) {
@@ -61,12 +65,25 @@ export class TypeOrmStockRepository implements StockRepository {
     } else {
       // Insert new stock
       const saved = await this.repo.save(persistence as StockEntity);
-      return StockMapper.toDomain(saved);
+      const withRelations = await this.repo.findOne({
+        where: { id: saved.id },
+        relations: ['stockType'],
+      });
+      return StockMapper.toDomain(withRelations!);
     }
   }
 
+  // find stocks that are guaranteed stock type is guaranteed
   async findGuaranteed(): Promise<StockDomain[]> {
-    const stocks = await this.repo.find({ where: { is_guaranteed: true } });
+    const stocks = await this.repo.find({
+      relations: ['stockType'],
+      where: {
+        stockType: {
+          isGuaranteed: true,
+        },
+        deleted_at: IsNull(),
+      },
+    });
     return stocks.map((stock) => StockMapper.toDomain(stock));
   }
 
