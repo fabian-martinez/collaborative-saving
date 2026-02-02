@@ -8,6 +8,7 @@
             v-model="searchQuery"
             type="text"
             placeholder="Buscar por nombre, email o identificación..."
+            aria-label="Buscar miembros"
             class="input input-bordered w-64 pl-10"
           />
           <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -42,13 +43,13 @@
       <!-- Actions Slot -->
       <template #actions="{ item }">
         <div class="flex gap-2">
-           <button @click="viewMember(item.id)" class="btn btn-sm btn-ghost" title="Ver detalles">
+           <button @click="viewMember(item.id)" class="btn btn-sm btn-ghost" title="Ver detalles" aria-label="Ver detalles">
             <Eye class="w-4 h-4" />
           </button>
-          <button @click="editMember(item)" class="btn btn-sm btn-ghost" title="Editar">
+          <button @click="editMember(item)" class="btn btn-sm btn-ghost" title="Editar" aria-label="Editar">
              <EditPencil class="w-4 h-4" />
           </button>
-          <button @click="confirmDelete(item)" class="btn btn-sm btn-ghost text-error" title="Eliminar">
+          <button @click="confirmDelete(item)" class="btn btn-sm btn-ghost text-error" title="Eliminar" aria-label="Eliminar">
             <Trash class="w-4 h-4" />
           </button>
         </div>
@@ -78,6 +79,7 @@
         <div class="flex justify-end gap-3">
           <button @click="cancelDelete" class="btn btn-ghost">Cancelar</button>
           <button @click="handleDelete" class="btn btn-error" :disabled="isDeleting">
+            <span v-if="isDeleting" class="loading loading-spinner loading-sm"></span>
             {{ isDeleting ? 'Eliminando...' : 'Eliminar' }}
           </button>
         </div>
