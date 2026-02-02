@@ -62,8 +62,8 @@ import { TypeOrmPendingMemberPaymentRepository } from '@infrastructure/typeorm/r
 import { ProcessStockExchangeUseCase } from '@application/use-cases/members/process-stock-exchange.use-case';
 import { ProcessStockTransferUseCase } from '@application/use-cases/members/process-stock-transfer.use-case';
 import { ProcessStockLoanPaymentUseCase } from '@application/use-cases/members/process-stock-loan-payment.use-case';
+import { MEMBER_REPOSITORY } from '@domain/constants/injection-tokens';
 
-const MEMBER_REPOSITORY = Symbol('MemberRepository');
 const MEETING_REPOSITORY = Symbol('MeetingRepository');
 const MANDATORY_CONTRIBUTION_REPOSITORY = Symbol(
   'MandatoryContributionRepository',
