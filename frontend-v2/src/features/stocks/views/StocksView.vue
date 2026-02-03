@@ -37,11 +37,15 @@
         <template #cell-is_guaranteed="{ item }">
           <div class="flex items-center gap-2">
             <span 
-              v-if="item.is_guaranteed" 
+              v-if="item.is_guaranteed && item.guaranteed_yield != null" 
               class="badge badge-success badge-sm gap-1 pl-1"
             >
               <CheckCircle class="w-3 h-3" />
-              Garantizado ({{ ((item.guaranteed_yield || 0) * 100).toFixed(1) }}%)
+              Garantizado ({{ (item.guaranteed_yield * 100).toFixed(1) }}%)
+            </span>
+            <span v-else-if="item.is_guaranteed" class="badge badge-success badge-sm gap-1 pl-1">
+              <CheckCircle class="w-3 h-3" />
+              Garantizado
             </span>
             <span v-else class="badge badge-ghost badge-sm">Variable</span>
           </div>
@@ -147,8 +151,7 @@ const isDeleting = ref(false)
 // Búsqueda contextual
 const stocksRef = computed(() => store.stocks)
 const { searchQuery, filteredItems } = useSearchableList<Stock>(stocksRef, [
-  'name',
-  'behavior'
+  'name'
 ])
 
 const columns: Column[] = [

@@ -6,9 +6,10 @@
 
 -- Step 1: Add the missing columns to the `stocks` table.
 ALTER TABLE public.stocks
-ADD COLUMN IF NOT EXISTS value NUMERIC(12, 2) DEFAULT 0,
-ADD COLUMN IF NOT EXISTS name TEXT DEFAULT '',
-ADD COLUMN IF NOT EXISTS monthly_contribution NUMERIC(12, 2) DEFAULT 0;
+ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+ADD COLUMN IF NOT EXISTS value NUMERIC(12, 2) DEFAULT 0 NOT NULL,
+ADD COLUMN IF NOT EXISTS name TEXT DEFAULT '' NOT NULL,
+ADD COLUMN IF NOT EXISTS monthly_contribution NUMERIC(12, 2) DEFAULT 0 NOT NULL;
 
 -- Step 2: Move the data from `stocks_types` to `stocks`.
 UPDATE public.stocks s

@@ -13,6 +13,8 @@ export interface StockType {
   id: string
   name: string
   behavior: 'CAPITAL_APPRECIATION' | 'DIVIDEND_YIELD'
+  isGuaranteed: boolean
+  guaranteedYield: number | null
 }
 
 export interface InterestDistributionConfig {

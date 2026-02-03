@@ -12,17 +12,19 @@ create extension if not exists "uuid-ossp" with schema public;
 -- ----------------------------------------------------------------
 -- ▤ Drop existing objects for a clean slate
 -- ----------------------------------------------------------------
-drop table if exists "public"."members" cascade;
-drop table if exists "public"."meetings" cascade;
-drop table if exists "public"."operations" cascade;
 drop table if exists "public"."ledger_entries" cascade;
-drop table if exists "public"."stocks" cascade;
+drop table if exists "public"."operations" cascade;
 drop table if exists "public"."pending_member_payments";
 drop table if exists "public"."stock_subscriptions" cascade;
+drop table if exists "public"."stock_value_history" cascade;
+drop table if exists "public"."stocks" cascade;
+drop table if exists "public"."stock_types" cascade;
 drop table if exists "public"."mandatory_contributions" cascade;
 drop table if exists "public"."loan_transaction_details" cascade;
+drop table if exists "public"."loan_types" cascade;
 drop table if exists "public"."loans" cascade;
-drop table if exists "public"."stock_value_history" cascade;
+drop table if exists "public"."meetings" cascade;
+drop table if exists "public"."members" cascade;
 drop type if exists "public"."member_due" cascade;
 
 

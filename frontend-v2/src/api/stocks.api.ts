@@ -19,16 +19,14 @@ export interface CreateStockRequest {
   name: string
   value: number
   monthly_contribution: number
-  is_guaranteed: boolean
-  guaranteed_yield?: number | null
+  stockTypeId: string
 }
 
 export interface UpdateStockRequest {
   name?: string
   value?: number
   monthly_contribution?: number
-  is_guaranteed?: boolean
-  guaranteed_yield?: number | null
+  stockTypeId?: string
 }
 
 // API Functions

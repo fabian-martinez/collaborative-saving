@@ -13,6 +13,28 @@
       />
     </div>
 
+    <div class="form-control">
+      <label class="label">
+        <span class="label-text font-medium">Tipo de Activo *</span>
+      </label>
+      <select 
+        v-model="formData.stockTypeId" 
+        required 
+        class="select select-bordered w-full focus:select-primary"
+      >
+        <option value="" disabled>Seleccione un tipo de activo</option>
+        <option v-for="type in stockTypes" :key="type.id" :value="type.id">
+          {{ type.name }} ({{ type.isGuaranteed ? 'Garantizado' : 'Variable' }})
+        </option>
+      </select>
+      <p v-if="selectedType" class="text-xs text-base-content/60 mt-1">
+        Comportamiento: {{ selectedType.behavior === 'CAPITAL_APPRECIATION' ? 'Solo Valorización' : 'Dividendos' }}
+        <span v-if="selectedType.isGuaranteed && selectedType.guaranteedYield !== null"> 
+          - Tasa: {{ (selectedType.guaranteedYield * 100).toFixed(1) }}%
+        </span>
+      </p>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="form-control">
         <label class="label">
@@ -49,34 +71,10 @@
       </div>
     </div>
 
-    <div class="form-control bg-base-200 p-4 rounded-lg mt-2">
-      <label class="label cursor-pointer justify-start gap-4">
-        <input 
-          v-model="formData.is_guaranteed" 
-          type="checkbox" 
-          class="checkbox checkbox-primary" 
-        />
-        <span class="label-text font-medium text-base">¿Es de rendimiento garantizado?</span>
-      </label>
-      
-      <div v-if="formData.is_guaranteed" class="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
-        <label class="label">
-          <span class="label-text font-medium text-primary">Tasa de Rendimiento Garantizada (%)</span>
-        </label>
-        <div class="relative">
-          <input 
-            v-model.number="formData.guaranteed_yield" 
-            type="number" 
-            placeholder="0.05"
-            min="0"
-            max="1"
-            step="0.001"
-            required
-            class="input input-bordered w-full focus:input-primary" 
-          />
-          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/50">decimal</span>
-        </div>
-        <p class="text-xs text-base-content/60 mt-1">Multiplica por 100 para obtener el porcentaje (ej: 0.05 = 5%)</p>
+    <div v-if="selectedType" class="alert alert-info py-2 px-4 text-sm mt-2">
+      <div class="flex items-center gap-2">
+        <InfoCircle class="w-4 h-4" />
+        <span>El rendimiento será <strong>{{ selectedType.isGuaranteed ? 'Garantizado' : 'Variable' }}</strong> según el tipo de activo.</span>
       </div>
     </div>
 
@@ -99,11 +97,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import type { CreateStockRequest } from '@/api/stocks.api'
+import { ref, onMounted, computed } from 'vue'
+import type { CreateStockRequest, Stock } from '@/api/stocks.api'
+import { settingsApi, type StockType } from '@/api/settings.api'
+import { InfoCircle } from 'iconoir-vue/regular'
 
 const props = defineProps<{
-  initialData?: Partial<CreateStockRequest>
+  initialData?: Partial<Stock>
 }>()
 
 const emit = defineEmits<{
@@ -115,16 +115,24 @@ const formData = ref<CreateStockRequest>({
   name: props.initialData?.name || '',
   value: props.initialData?.value || 0,
   monthly_contribution: props.initialData?.monthly_contribution || 0,
-  is_guaranteed: props.initialData?.is_guaranteed || false,
-  guaranteed_yield: props.initialData?.guaranteed_yield || null
+  stockTypeId: (props.initialData as any)?.stockTypeId || ''
 })
 
-// Resetear rendimiento si se desmarca
-watch(() => formData.value.is_guaranteed, (isGuaranteed) => {
-  if (!isGuaranteed) {
-    formData.value.guaranteed_yield = null
-  } else if (formData.value.guaranteed_yield === null) {
-    formData.value.guaranteed_yield = 0.05
+const stockTypes = ref<StockType[]>([])
+const loadingTypes = ref(false)
+
+const selectedType = computed(() => 
+  stockTypes.value.find(t => t.id === formData.value.stockTypeId)
+)
+
+onMounted(async () => {
+  loadingTypes.value = true
+  try {
+    stockTypes.value = await settingsApi.getStockTypes()
+  } catch (e) {
+    console.error('Error loading stock types', e)
+  } finally {
+    loadingTypes.value = false
   }
 })
 

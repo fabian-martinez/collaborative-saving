@@ -18,6 +18,17 @@
             {{ getBehaviorLabel((item as any).behavior) }}
           </Badge>
         </template>
+        <template #cell-isGuaranteed="{ item }">
+          <Badge :variant="item.isGuaranteed ? 'success' : 'neutral'">
+            {{ item.isGuaranteed ? 'Garantizado' : 'Variable' }}
+          </Badge>
+        </template>
+        <template #cell-guaranteedYield="{ item }">
+          <span v-if="item.isGuaranteed && item.guaranteedYield !== null" class="font-mono">
+            {{ (item.guaranteedYield * 100).toFixed(1) }}%
+          </span>
+          <span v-else class="text-base-content/40">-</span>
+        </template>
         <template #actions="{ item }">
           <div class="flex gap-2">
             <button class="btn btn-ghost btn-xs" @click="openModal(item as StockType)">
@@ -46,6 +57,18 @@
           </select>
         </div>
 
+        <div class="form-control bg-base-200 p-4 rounded-lg">
+          <label class="label cursor-pointer justify-start gap-4">
+            <input v-model="form.isGuaranteed" type="checkbox" class="checkbox checkbox-primary" />
+            <span class="label-text font-medium">¿Es de rendimiento garantizado?</span>
+          </label>
+          
+          <div v-if="form.isGuaranteed" class="mt-4">
+            <label class="label">Tasa de Rendimiento Garantizada (decimal, ej: 0.05)</label>
+            <input v-model.number="form.guaranteedYield" type="number" step="0.001" min="0" max="1" class="input input-bordered w-full" required />
+          </div>
+        </div>
+
         <div class="modal-action">
           <button type="button" class="btn" @click="showModal = false">Cancelar</button>
           <button type="submit" class="btn btn-primary" :loading="saving">Guardar</button>
@@ -72,12 +95,16 @@ const isEditing = computed(() => !!editingId.value)
 
 const form = ref({
   name: '',
-  behavior: 'CAPITAL_APPRECIATION' as 'CAPITAL_APPRECIATION' | 'DIVIDEND_YIELD'
+  behavior: 'CAPITAL_APPRECIATION' as 'CAPITAL_APPRECIATION' | 'DIVIDEND_YIELD',
+  isGuaranteed: false,
+  guaranteedYield: null as number | null
 })
 
 const columns = [
   { key: 'name', label: 'Nombre' },
-  { key: 'behavior', label: 'Comportamiento' }
+  { key: 'behavior', label: 'Comportamiento' },
+  { key: 'isGuaranteed', label: 'Tipo Rendimiento' },
+  { key: 'guaranteedYield', label: 'Rentabilidad' }
 ]
 
 const getBehaviorVariant = (behavior: string) => {
@@ -112,13 +139,17 @@ const openModal = (item?: StockType) => {
     editingId.value = item.id
     form.value = {
       name: item.name,
-      behavior: item.behavior as any
+      behavior: item.behavior as any,
+      isGuaranteed: item.isGuaranteed,
+      guaranteedYield: item.guaranteedYield
     }
   } else {
     editingId.value = null
     form.value = {
       name: '',
-      behavior: 'CAPITAL_APPRECIATION'
+      behavior: 'CAPITAL_APPRECIATION',
+      isGuaranteed: false,
+      guaranteedYield: null
     }
   }
   showModal.value = true

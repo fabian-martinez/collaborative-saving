@@ -4,7 +4,7 @@
     <LoadingSpinner :loading="loading" />
     <ErrorMessage :error="error" />
     <div v-if="stock">
-      <p>Tipo: {{ stock.type }}</p>
+      <p>Nombre: {{ stock.name }}</p>
       <p>Valor: {{ formatCurrency(stock.value) }}</p>
       <p>Aporte Mensual: {{ formatCurrency(stock.monthly_contribution) }}</p>
       <p>Garantizada: {{ stock.is_guaranteed ? 'Sí' : 'No' }}</p>
