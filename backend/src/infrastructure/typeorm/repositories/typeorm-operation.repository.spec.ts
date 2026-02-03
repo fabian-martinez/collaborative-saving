@@ -580,8 +580,8 @@ describe('TypeOrmOperationRepository', () => {
       const repositoryWithoutLedger = new TypeOrmOperationRepository(
         typeOrmRepo as any,
         {
-           execute: jest.fn(),
-           getActiveQueryRunner: jest.fn().mockReturnValue(null),
+          execute: jest.fn(),
+          getActiveQueryRunner: jest.fn().mockReturnValue(null),
         } as any,
       );
       const domain = Operation.create({

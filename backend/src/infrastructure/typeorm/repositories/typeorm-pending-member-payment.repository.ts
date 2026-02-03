@@ -121,9 +121,7 @@ export class TypeOrmPendingMemberPaymentRepository implements PendingMemberPayme
       }
       return PendingMemberPaymentMapper.toDomain(updated);
     } else {
-      const saved = await repo.save(
-        persistence as PendingMemberPaymentEntity,
-      );
+      const saved = await repo.save(persistence as PendingMemberPaymentEntity);
       return PendingMemberPaymentMapper.toDomain(saved);
     }
   }
@@ -135,9 +133,7 @@ export class TypeOrmPendingMemberPaymentRepository implements PendingMemberPayme
     const persistences = payments.map((p) =>
       PendingMemberPaymentMapper.toPersistence(p),
     );
-    const saved = await repo.save(
-      persistences as PendingMemberPaymentEntity[],
-    );
+    const saved = await repo.save(persistences as PendingMemberPaymentEntity[]);
     return saved.map((e) => PendingMemberPaymentMapper.toDomain(e));
   }
 

@@ -5,6 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
+  Index,
 } from 'typeorm';
 import { Operation } from './operation.entity';
 import { Loan } from './loan.entity';
@@ -20,6 +21,11 @@ export class LedgerEntry {
   @Column({ type: 'uuid', name: 'operation_id' })
   operationId: string;
 
+  /**
+   * Indexed for faster grouping, summing, and filtering by account type.
+   * This optimizes financial aggregations and summary queries.
+   */
+  @Index()
   @Column({ type: 'text', name: 'account_type' })
   accountType: string;
 
@@ -29,6 +35,11 @@ export class LedgerEntry {
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
+  /**
+   * Indexed for faster sorting and range filtering by date.
+   * Optimizes pagination and historical reports.
+   */
+  @Index()
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 

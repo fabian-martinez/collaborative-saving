@@ -1,26 +1,13 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  Inject,
-  ForbiddenException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { MemberRole } from '@domain/enums/member-role.enum';
 import { ROLES_KEY } from '../decorators/roles.decorator';
-import { MEMBER_REPOSITORY } from '@domain/constants/injection-tokens';
-import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
+import { MemberRole } from '../../../../domain/enums/member-role.enum';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(
-    private reflector: Reflector,
-    @Inject(MEMBER_REPOSITORY)
-    private memberRepository: MemberRepository,
-  ) {}
+  constructor(private reflector: Reflector) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  canActivate(context: ExecutionContext): boolean {
     const requiredRoles = this.reflector.getAllAndOverride<MemberRole[]>(
       ROLES_KEY,
       [context.getHandler(), context.getClass()],
@@ -28,33 +15,16 @@ export class RolesGuard implements CanActivate {
     if (!requiredRoles) {
       return true;
     }
-    const request = context.switchToHttp().getRequest();
-    const user = request.user;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const { user } = context.switchToHttp().getRequest();
 
-    if (!user) {
-      throw new UnauthorizedException('User not authenticated');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const memberRole = user?.role;
+
+    if (!memberRole) {
+      return false;
     }
 
-    if (!user.email) {
-      // If authenticating via phone or other method without email, we need another way to link.
-      // For now, assuming email link.
-      throw new ForbiddenException('User email required for role verification');
-    }
-
-    const member = await this.memberRepository.findByEmail(user.email);
-    if (!member) {
-      throw new ForbiddenException('User is not a registered member');
-    }
-
-    if (!member.isActive()) {
-      throw new ForbiddenException('Member is not active');
-    }
-
-    const hasRole = requiredRoles.some((role) => member.role === role);
-    if (!hasRole) {
-      throw new ForbiddenException('Insufficient permissions');
-    }
-
-    return true;
+    return requiredRoles.some((role) => role === memberRole);
   }
 }
