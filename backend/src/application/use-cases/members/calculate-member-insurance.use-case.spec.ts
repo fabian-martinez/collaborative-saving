@@ -55,9 +55,8 @@ describe('CalculateMemberInsuranceUseCase', () => {
       id: params.id,
       name: 'Type A',
       value: params.value,
-      monthly_contribution: 0,
-      is_guaranteed: false,
-      guaranteed_yield: null,
+      monthlyContribution: 0,
+      stockTypeId: '1',
     });
   }
 

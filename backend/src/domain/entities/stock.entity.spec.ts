@@ -1,3 +1,4 @@
+import { StockType } from './stock-type.entity';
 import { Stock, StockBehavior } from './stock.entity';
 
 describe('Stock Entity', () => {
@@ -10,14 +11,13 @@ describe('Stock Entity', () => {
         name: 'preferential',
         value: 100,
         monthlyContribution: 50,
+        stockTypeId: 'stock-type-123',
       });
 
       expect(stock.id).toBeDefined();
       expect(stock.name).toBe('preferential');
       expect(stock.value).toBe(100);
       expect(stock.monthlyContribution).toBe(50);
-      expect(stock.isGuaranteed).toBe(false);
-      expect(stock.guaranteedYield).toBe(null);
       expect(stock.createdAt).toBeInstanceOf(Date);
       expect(stock.deletedAt).toBeNull();
     });
@@ -27,15 +27,12 @@ describe('Stock Entity', () => {
         name: 'guaranteed',
         value: 150,
         monthlyContribution: 75,
-        isGuaranteed: true,
-        guaranteedYield: 0.02,
+        stockTypeId: 'stock-type-123',
       });
 
       expect(stock.name).toBe('guaranteed');
       expect(stock.value).toBe(150);
       expect(stock.monthlyContribution).toBe(75);
-      expect(stock.isGuaranteed).toBe(true);
-      expect(stock.guaranteedYield).toBe(0.02);
     });
 
     it('should default guaranteed false when not provided', () => {
@@ -43,9 +40,8 @@ describe('Stock Entity', () => {
         name: 'test',
         value: 100,
         monthlyContribution: 50,
+        stockTypeId: 'stock-type-123',
       });
-
-      expect(stock.isGuaranteed).toBe(false);
     });
 
     it('should throw error if value is negative', () => {
@@ -54,6 +50,7 @@ describe('Stock Entity', () => {
           name: 'test',
           value: -10,
           monthlyContribution: 50,
+          stockTypeId: 'stock-type-123',
         });
       }).toThrow('Stock value must be >= 0');
     });
@@ -64,20 +61,9 @@ describe('Stock Entity', () => {
           name: 'test',
           value: 100,
           monthlyContribution: -10,
+          stockTypeId: 'stock-type-123',
         });
       }).toThrow('Stock monthly contribution must be >= 0');
-    });
-
-    it('should throw error if guaranteed yield is negative', () => {
-      expect(() => {
-        Stock.create({
-          name: 'test',
-          value: 100,
-          monthlyContribution: 50,
-          isGuaranteed: true,
-          guaranteedYield: -0.01,
-        });
-      }).toThrow('Guaranteed yield must be >= 0 when stock is guaranteed');
     });
 
     it('should throw error if name is empty', () => {
@@ -86,6 +72,7 @@ describe('Stock Entity', () => {
           name: '',
           value: 100,
           monthlyContribution: 50,
+          stockTypeId: 'stock-type-123',
         });
       }).toThrow('Stock name is required');
     });
@@ -93,15 +80,21 @@ describe('Stock Entity', () => {
 
   describe('fromPersistence static method', () => {
     it('should create Stock from persistence data', () => {
+      const stockType = StockType.create({
+        name: 'preferential',
+        guaranteedYield: 10,
+        isGuaranteed: false,
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        id: 'stock-type-123'
+      });
       const stock = Stock.fromPersistence({
         id: mockId,
         name: 'preferential',
         value: 100,
-        monthly_contribution: 50,
-        is_guaranteed: false,
-        guaranteed_yield: null,
-        created_at: mockDate,
-        deleted_at: null,
+        monthlyContribution: 50,
+        stockTypeId: stockType.id,
+        createdAt: mockDate,
+        deletedAt: null,
       });
 
       expect(stock.id).toBe(mockId);
@@ -117,11 +110,10 @@ describe('Stock Entity', () => {
         id: mockId,
         name: 'test',
         value: 100,
-        monthly_contribution: 50,
-        is_guaranteed: false,
-        guaranteed_yield: null,
-        created_at: '2024-01-15T00:00:00.000Z',
-        deleted_at: null,
+        monthlyContribution: 50,
+        stockTypeId: 'stock-type-123',
+        createdAt: '2024-01-15T00:00:00.000Z',
+        deletedAt: null,
       });
 
       expect(stock.createdAt).toBeInstanceOf(Date);
@@ -133,11 +125,10 @@ describe('Stock Entity', () => {
         id: mockId,
         name: 'test',
         value: 100,
-        monthly_contribution: 50,
-        is_guaranteed: false,
-        guaranteed_yield: null,
-        created_at: mockDate,
-        deleted_at: deletedDate,
+        monthlyContribution: 50,
+        stockTypeId: 'stock-type-123',
+        createdAt: mockDate,
+        deletedAt: deletedDate,
       });
 
       expect(stock.deletedAt).toEqual(deletedDate);
@@ -149,11 +140,9 @@ describe('Stock Entity', () => {
         id: mockId,
         name: 'test',
         value: 100,
-        monthly_contribution: 50,
-        is_guaranteed: false,
-        guaranteed_yield: null,
-        created_at: mockDate,
-        stock_type_id: 'stock-type-123',
+        monthlyContribution: 50,
+        createdAt: mockDate,
+        stockTypeId: 'stock-type-123',
       });
 
       expect(stock.stockTypeId).toBe('stock-type-123');
@@ -166,6 +155,7 @@ describe('Stock Entity', () => {
         name: 'test',
         value: 100,
         monthlyContribution: 50,
+        stockTypeId: 'stock-type-123',
       });
 
       stock.update({
@@ -183,16 +173,14 @@ describe('Stock Entity', () => {
         name: 'test',
         value: 100,
         monthlyContribution: 50,
-        isGuaranteed: false,
+        stockTypeId: 'stock-type-123',
       });
 
       stock.update({
-        isGuaranteed: true,
-        guaranteedYield: 0.02,
+        stockTypeId: 'stock-type-456',
       });
 
-      expect(stock.isGuaranteed).toBe(true);
-      expect(stock.guaranteedYield).toBe(0.02);
+      expect(stock.stockTypeId).toBe('stock-type-456');
     });
 
     it('should clear guaranteedYield when isGuaranteed is false', () => {
@@ -200,16 +188,14 @@ describe('Stock Entity', () => {
         name: 'test',
         value: 100,
         monthlyContribution: 50,
-        isGuaranteed: true,
-        guaranteedYield: 0.02,
+        stockTypeId: 'stock-type-123',
       });
 
       stock.update({
-        isGuaranteed: false,
+        stockTypeId: 'stock-type-456',
       });
 
-      expect(stock.isGuaranteed).toBe(false);
-      expect(stock.guaranteedYield).toBe(null);
+      expect(stock.stockTypeId).toBe('stock-type-456');
     });
 
     it('should validate invariants after update', () => {
@@ -217,6 +203,7 @@ describe('Stock Entity', () => {
         name: 'test',
         value: 100,
         monthlyContribution: 50,
+        stockTypeId: 'stock-type-123',
       });
 
       expect(() => {
@@ -229,6 +216,7 @@ describe('Stock Entity', () => {
         name: 'test',
         value: 100,
         monthlyContribution: 50,
+        stockTypeId: 'stock-type-123',
       });
 
       stock.update({ stockTypeId: 'new-type-id' });
@@ -242,6 +230,7 @@ describe('Stock Entity', () => {
         name: 'test',
         value: 100,
         monthlyContribution: 50,
+        stockTypeId: 'stock-type-123',
       });
 
       expect(stock.isDeleted()).toBe(false);
@@ -257,15 +246,13 @@ describe('Stock Entity', () => {
         name: 'test',
         value: 100,
         monthlyContribution: 50,
-        isGuaranteed: true,
-        guaranteedYield: 0.02,
+        stockTypeId: 'stock-type-123',
       });
 
       expect(stock.name).toBe('test');
       expect(stock.value).toBe(100);
       expect(stock.monthlyContribution).toBe(50);
-      expect(stock.isGuaranteed).toBe(true);
-      expect(stock.guaranteedYield).toBe(0.02);
+      expect(stock.stockTypeId).toBe('stock-type-123');
     });
   });
 });

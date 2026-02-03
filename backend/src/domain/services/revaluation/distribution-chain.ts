@@ -1,6 +1,7 @@
 import { Stock } from '@domain/entities/stock.entity';
 import { StockSubscription } from '@domain/entities/stock-subscription.entity';
 import { LedgerEntry } from '@domain/entities/ledger-entry.entity';
+import { StockType } from '@domain/entities/stock-type.entity';
 
 export interface DistributionContext {
   totalInterest: number;
@@ -9,6 +10,7 @@ export interface DistributionContext {
   totalRequiredGuaranteedGrowth: number;
   interestByStock: Record<string, number>; // Mapping of pre-allocated interest for specific stocks
   stocks: Stock[];
+  stockTypes: StockType[];
   subscriptions: StockSubscription[];
   ledgerEntries: LedgerEntry[];
 }

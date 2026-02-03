@@ -166,17 +166,22 @@ export class AssetRevaluationDomainService {
       totalInterest,
       stocks,
       subscriptions,
+      stockTypeMap,
     );
 
     // Construir contexto para la cadena de distribución
-    const guaranteedStocks = stocks.filter((s) => s.isGuaranteed);
+    const guaranteedStocks = stocks.filter((s) => {
+      const stockType =  s.stockTypeId ? stockTypeMap.get(s.stockTypeId) : null;
+      return stockType?.isGuaranteed ?? false;
+    });
     let totalRequiredGuaranteedGrowth = 0;
     for (const stock of guaranteedStocks) {
       const totalShares = subscriptions
         .filter((sub) => sub.stockId === stock.id && sub.isActive())
         .reduce((sum, sub) => sum + sub.quantity, 0);
       if (totalShares === 0) continue;
-      const requiredGrowthPerShare = stock.value * (stock.guaranteedYield || 0);
+      const stockType = stock.stockTypeId ? stockTypeMap.get(stock.stockTypeId) : null;
+      const requiredGrowthPerShare = stock.value * (stockType?.guaranteedYield || 0);
       totalRequiredGuaranteedGrowth += requiredGrowthPerShare * totalShares;
     }
 
@@ -187,6 +192,7 @@ export class AssetRevaluationDomainService {
       totalRequiredGuaranteedGrowth,
       interestByStock,
       stocks,
+      stockTypes,
       subscriptions,
       ledgerEntries,
     };
@@ -240,6 +246,7 @@ export class AssetRevaluationDomainService {
         : null;
       const isDividendYield =
         stockType?.behavior === StockBehavior.DIVIDEND_YIELD;
+      const isGuaranteed = stockType?.isGuaranteed ?? false;
       const assigned = assignedInterest[stock.id] || 0;
       const growthFromInterest = isDividendYield
         ? 0
@@ -255,7 +262,7 @@ export class AssetRevaluationDomainService {
       return {
         stockId: stock.id,
         name: stock.name,
-        isGuaranteed: stock.isGuaranteed,
+        isGuaranteed: isGuaranteed,
         totalShares,
         previousValue: stock.value,
         growthFromContributions,
@@ -307,6 +314,7 @@ export class AssetRevaluationDomainService {
     totalInterest: number,
     stocks: Stock[],
     subscriptions: StockSubscription[],
+    stockTypeMap: Map<string, any>,
   ): void {
     // Validar que hay acciones disponibles
     if (stocks.length === 0) {
@@ -325,9 +333,13 @@ export class AssetRevaluationDomainService {
     }
 
     // Validar acciones garantizadas
-      const guaranteedStocks = stocks.filter((s) => s.isGuaranteed);
+      const guaranteedStocks = stocks.filter((s) => {
+        const stockType = s.stockTypeId ? stockTypeMap.get(s.stockTypeId) : null;
+        return stockType?.isGuaranteed ?? false;
+      });
       for (const stock of guaranteedStocks) {
-        if (!stock.guaranteedYield || stock.guaranteedYield <= 0) {
+        const stockType = stock.stockTypeId ? stockTypeMap.get(stock.stockTypeId) : null;
+        if (!stockType?.guaranteedYield || stockType.guaranteedYield <= 0) {
           throw new InvalidRequestError(
             `Guaranteed stock ${stock.name} must have a positive guaranteed yield.`,
           );
@@ -400,10 +412,12 @@ export class AssetRevaluationDomainService {
       const dividendsGenerated =
         totalShares > 0 ? totalDividends / totalShares : 0;
 
+      const stockType = stock.stockTypeId ? stockTypeMap.get(stock.stockTypeId) : null;
+
       details.push({
         stockId: history.stockId,
         name: stock.name,
-        isGuaranteed: stock.isGuaranteed,
+        isGuaranteed: stockType?.isGuaranteed ?? false,
         totalShares,
         previousValue: history.previousValue,
         growthFromContributions: history.growthFromContributions,

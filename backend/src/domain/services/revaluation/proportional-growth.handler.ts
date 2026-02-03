@@ -14,7 +14,11 @@ export class ProportionalGrowthHandler implements DistributionHandler {
     remaining: number;
     updatedResult: DistributionResult;
   } {
-    const regularStocks = context.stocks.filter((s) => !s.isGuaranteed);
+    const stockTypes = context.stockTypes;
+    const regularStocks = context.stocks.filter((s) => {
+      const stockType = stockTypes.find((st) => st.id === s.stockTypeId);
+      return !stockType?.isGuaranteed;
+    });
     if (regularStocks.length === 0 || available <= 0) {
       return {
         assigned: 0,

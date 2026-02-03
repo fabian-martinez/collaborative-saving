@@ -22,6 +22,8 @@ describe('CreateStockTypeUseCase', () => {
     const command: CreateStockTypeCommand = {
       name: 'Test Stock Type',
       behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: false,
+      guaranteedYield: null,
     };
 
     const savedStockType = StockType.create({

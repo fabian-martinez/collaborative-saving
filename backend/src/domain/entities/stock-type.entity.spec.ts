@@ -9,7 +9,13 @@ describe('StockType Entity', () => {
       behavior: StockBehavior.CAPITAL_APPRECIATION,
     };
 
-    const stockType = StockType.create(data);
+    const stockType = StockType.create({
+      id: data.id,
+      name: data.name,
+      behavior: data.behavior,
+      guaranteedYield: null,
+      isGuaranteed: false,
+    });
 
     expect(stockType.id).toBe(data.id);
     expect(stockType.name).toBe(data.name);
@@ -21,6 +27,8 @@ describe('StockType Entity', () => {
       id: 'uuid-1',
       name: 'Bono',
       behavior: StockBehavior.CAPITAL_APPRECIATION,
+      guaranteedYield: null,
+      isGuaranteed: false,
     });
 
     expect(stockType).toBeInstanceOf(StockType);

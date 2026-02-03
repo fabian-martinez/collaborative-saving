@@ -26,7 +26,7 @@ export class Stock {
     name: 'monthly_contribution',
     default: 0,
   })
-  monthly_contribution: number;
+  monthlyContribution: number;
 
   @Column({ type: 'uuid', name: 'stock_type_id', nullable: true })
   stockTypeId: string | null;
@@ -36,5 +36,5 @@ export class Stock {
   stockType: StockType | null;
 
   @DeleteDateColumn({ name: 'deleted_at' })
-  deleted_at: Date | null;
+  deletedAt: Date | null;
 }

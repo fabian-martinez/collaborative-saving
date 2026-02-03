@@ -97,9 +97,8 @@ describe('GetMemberStockSubscriptionsQueryHandler', () => {
         id: stockId,
         name: 'Acción A',
         value: 100000,
-        monthly_contribution: 50000,
-        is_guaranteed: true,
-        guaranteed_yield: 0.05,
+        monthlyContribution: 50000,
+        stockTypeId: '1',
       });
 
       const activeSubscription = StockSubscription.create({
@@ -140,9 +139,8 @@ describe('GetMemberStockSubscriptionsQueryHandler', () => {
         id: stockId,
         name: 'Acción A',
         value: 100000,
-        monthly_contribution: 50000,
-        is_guaranteed: true,
-        guaranteed_yield: 0.05,
+        monthlyContribution: 50000,
+        stockTypeId: '1',
       });
 
       const activeSubscription = StockSubscription.create({
@@ -193,9 +191,8 @@ describe('GetMemberStockSubscriptionsQueryHandler', () => {
         id: stockId,
         name: 'Acción A',
         value: 100000,
-        monthly_contribution: 50000,
-        is_guaranteed: true,
-        guaranteed_yield: 0.05,
+        monthlyContribution: 50000,
+        stockTypeId: '1',
       });
 
       const stockSubscription = StockSubscription.create({
@@ -236,9 +233,8 @@ describe('GetMemberStockSubscriptionsQueryHandler', () => {
         id: stockId,
         name: 'Acción A',
         value: 100000,
-        monthly_contribution: 50000,
-        is_guaranteed: true,
-        guaranteed_yield: 0.05,
+        monthlyContribution: 50000,
+        stockTypeId: '1',
       });
 
       const loanId = '990e8400-e29b-41d4-a716-446655440004';
@@ -281,18 +277,16 @@ describe('GetMemberStockSubscriptionsQueryHandler', () => {
         id: stockId,
         name: 'Acción A',
         value: 100000,
-        monthly_contribution: 50000,
-        is_guaranteed: true,
-        guaranteed_yield: 0.05,
+        monthlyContribution: 50000,
+        stockTypeId: '1',
       });
 
       const stock2 = Stock.fromPersistence({
         id: stockId2,
         name: 'Acción B',
         value: 150000,
-        monthly_contribution: 60000,
-        is_guaranteed: false,
-        guaranteed_yield: null,
+        monthlyContribution: 60000,
+        stockTypeId: '2',
       });
 
       const subscription1 = StockSubscription.create({
@@ -364,9 +358,8 @@ describe('GetMemberStockSubscriptionsQueryHandler', () => {
         id: stockId,
         name: 'Acción A',
         value: 100000,
-        monthly_contribution: 50000,
-        is_guaranteed: true,
-        guaranteed_yield: 0.05,
+        monthlyContribution: 50000,
+        stockTypeId: '1',
       });
 
       const loanId = '990e8400-e29b-41d4-a716-446655440004';

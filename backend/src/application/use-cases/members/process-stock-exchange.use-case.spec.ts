@@ -53,11 +53,13 @@ describe('ProcessStockExchangeUseCase', () => {
     name: 'Grande',
     value: 1000000,
     monthlyContribution: 50000,
+    stockTypeId: '1',
   });
   const destinationStock = Stock.create({
     name: 'Super',
     value: 800000,
     monthlyContribution: 40000,
+    stockTypeId: '1',
   });
   let originSubscription: StockSubscription;
 

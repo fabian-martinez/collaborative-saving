@@ -24,6 +24,7 @@ import {
 } from '@domain/constants/account-types';
 import { LedgerEntryDto } from '@application/dto/accounting/record-operation.dto';
 import { CreateLoanResponseDto } from '@application/dto/loans/create-loan-response.dto';
+import { StockType } from '@domain/entities/stock-type.entity';
 
 describe('PurchaseStockUseCase', () => {
   let useCase: PurchaseStockUseCase;
@@ -55,12 +56,18 @@ describe('PurchaseStockUseCase', () => {
     date: new Date('2024-01-15'),
     notes: 'Test meeting',
   });
+  const mockStockType = StockType.create({
+    id: 'stock-type-id-1',
+    name: 'Acción A',
+    isGuaranteed: true,
+    guaranteedYield: 0.05,
+    behavior: StockBehavior.CAPITAL_APPRECIATION,
+  }); 
   const mockStock = Stock.create({
     name: 'Acción A',
     value: 100000,
     monthlyContribution: 50000,
-    isGuaranteed: true,
-    guaranteedYield: 0.05,
+    stockTypeId: mockStockType.id,
   });
 
   beforeEach(() => {

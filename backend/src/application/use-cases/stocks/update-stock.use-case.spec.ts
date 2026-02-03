@@ -3,10 +3,13 @@ import { StockRepository } from '@domain/ports/repositories/stock-repository.por
 import { Stock, StockBehavior } from '@domain/entities/stock.entity';
 import { StockNotFoundException } from '@application/exceptions/stock-not-found.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
+import { StockTypeRepository } from '@domain/ports/repositories/stock-type-repository.port';
+import { StockType } from '@domain/entities/stock-type.entity';
 
 describe('UpdateStockUseCase', () => {
   let useCase: UpdateStockUseCase;
   let stockRepository: jest.Mocked<StockRepository>;
+  let stockTypeRepository: jest.Mocked<StockTypeRepository>;
   let findByIdSpy: jest.SpyInstance;
   let findByNameSpy: jest.SpyInstance;
   let saveSpy: jest.SpyInstance;
@@ -21,20 +24,32 @@ describe('UpdateStockUseCase', () => {
       findGuaranteed: jest.fn(),
     } as unknown as jest.Mocked<StockRepository>;
 
+    stockTypeRepository = {
+      findById: jest.fn(),
+    } as unknown as jest.Mocked<StockTypeRepository>;
+
     // Create spies to avoid 'this' scoping issues
     findByIdSpy = jest.spyOn(stockRepository, 'findById');
     findByNameSpy = jest.spyOn(stockRepository, 'findByName');
     saveSpy = jest.spyOn(stockRepository, 'save');
 
-    useCase = new UpdateStockUseCase(stockRepository);
+    useCase = new UpdateStockUseCase(stockRepository, stockTypeRepository);
   });
 
   it('should update a stock successfully', async () => {
     const stockId = '550e8400-e29b-41d4-a716-446655440000';
+    const stockType = StockType.create({
+      id: '1',
+      name: 'preferential',
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: false,
+      guaranteedYield: null
+    });
     const existingStock = Stock.create({
       name: 'preferential',
       value: 100,
       monthlyContribution: 50,
+      stockTypeId: stockType.id,
     });
 
     const updateDto = {
@@ -43,6 +58,7 @@ describe('UpdateStockUseCase', () => {
     };
 
     stockRepository.findById.mockResolvedValue(existingStock);
+    stockTypeRepository.findById.mockResolvedValue(stockType);
     // Simulate updated stock by updating existing and cloning
     existingStock.update({ value: 150, monthlyContribution: 75 });
     stockRepository.save.mockResolvedValue(existingStock);
@@ -75,6 +91,7 @@ describe('UpdateStockUseCase', () => {
       name: 'preferential',
       value: 100,
       monthlyContribution: 50,
+      stockTypeId: '1',
     });
     deletedStock.markAsDeleted();
 
@@ -96,12 +113,14 @@ describe('UpdateStockUseCase', () => {
       name: 'preferential',
       value: 100,
       monthlyContribution: 50,
+      stockTypeId: '1',
     });
 
     const otherStock = Stock.create({
       name: 'new-name',
       value: 200,
       monthlyContribution: 100,
+      stockTypeId: '1',
     });
 
     stockRepository.findById.mockResolvedValue(existingStock);
@@ -120,13 +139,22 @@ describe('UpdateStockUseCase', () => {
 
   it('should allow updating name to same value', async () => {
     const stockId = '550e8400-e29b-41d4-a716-446655440000';
+    const stockType = StockType.create({
+      id: '1',
+      name: 'preferential',
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: false,
+      guaranteedYield: null
+    });
     const existingStock = Stock.create({
       name: 'preferential',
       value: 100,
       monthlyContribution: 50,
+      stockTypeId: stockType.id,
     });
 
     stockRepository.findById.mockResolvedValue(existingStock);
+    stockTypeRepository.findById.mockResolvedValue(stockType);
     stockRepository.save.mockResolvedValue(existingStock);
 
     const result = await useCase.execute(stockId, {
@@ -138,15 +166,52 @@ describe('UpdateStockUseCase', () => {
     expect(saveSpy).toHaveBeenCalled();
   });
 
-  it('should update stock basics correctly', async () => {
+  it('should update stock type correctly', async () => {
     const stockId = '550e8400-e29b-41d4-a716-446655440000';
+    const stockType = StockType.create({
+      id: '1',
+      name: 'preferential',
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: false,
+      guaranteedYield: null
+    });
     const existingStock = Stock.create({
       name: 'test',
       value: 100,
       monthlyContribution: 50,
+      stockTypeId: stockType.id,
     });
 
     stockRepository.findById.mockResolvedValue(existingStock);
+    stockTypeRepository.findById.mockResolvedValue(stockType);
+    stockRepository.save.mockResolvedValue(existingStock);
+
+    const result = await useCase.execute(stockId, {
+      stockTypeId: stockType.id,
+    });
+
+    expect(result).toBeDefined();
+    expect(saveSpy).toHaveBeenCalled();
+  });
+
+  it('should update stock basics correctly', async () => {
+    const stockId = '550e8400-e29b-41d4-a716-446655440000';
+    const stockType = StockType.create({
+      id: '1',
+      name: 'preferential',
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: false,
+      guaranteedYield: null
+    });
+    const existingStock = Stock.create({
+      name: 'test',
+      value: 100,
+      monthlyContribution: 50,
+      stockTypeId: stockType.id,
+    });
+
+    stockRepository.findById.mockResolvedValue(existingStock);
+    stockTypeRepository.findById.mockResolvedValue(stockType);
     existingStock.update({ value: 120 });
     stockRepository.save.mockResolvedValue(existingStock);
 
@@ -155,5 +220,34 @@ describe('UpdateStockUseCase', () => {
     });
 
     expect(result.value).toBe(120);
+  });
+
+  it('should throw InvalidRequestError if stock type does not exist', async () => {
+    const stockId = '550e8400-e29b-41d4-a716-446655440000';
+    const stockType = StockType.create({
+      id: '1',
+      name: 'preferential',
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: false,
+      guaranteedYield: null
+    });
+    const existingStock = Stock.create({
+      name: 'test',
+      value: 100,
+      monthlyContribution: 50,
+      stockTypeId: stockType.id,
+    });
+
+    stockRepository.findById.mockResolvedValue(existingStock);
+    stockTypeRepository.findById.mockResolvedValue(null);
+
+    await expect(useCase.execute(stockId, { value: 120 })).rejects.toThrow(
+      InvalidRequestError,
+    );
+    await expect(useCase.execute(stockId, { value: 120 })).rejects.toThrow(
+      `Stock type with ID ${stockType.id} not found`,
+    );
+
+    expect(saveSpy).not.toHaveBeenCalled();
   });
 });

@@ -9,7 +9,7 @@ describe('StockMapper', () => {
         id: '550e8400-e29b-41d4-a716-446655440000',
         name: 'preferential',
         value: 100,
-        monthly_contribution: 50,
+        monthlyContribution: 50,
         stockTypeId: 'type-id-123',
         stockType: {
           id: 'type-id-123',
@@ -23,13 +23,12 @@ describe('StockMapper', () => {
 
       const domain = StockMapper.toDomain(entity as StockEntity);
 
+      console.log('Domain:::',domain);
       expect(domain).toBeInstanceOf(Stock);
       expect(domain.id).toBe(entity.id);
       expect(domain.name).toBe(entity.name);
       expect(domain.value).toBe(100);
       expect(domain.monthlyContribution).toBe(50);
-      expect(domain.isGuaranteed).toBe(false);
-      expect(domain.guaranteedYield).toBeNull();
       expect(domain.stockTypeId).toBe('type-id-123');
     });
 
@@ -38,7 +37,7 @@ describe('StockMapper', () => {
         id: '550e8400-e29b-41d4-a716-446655440000',
         name: 'guaranteed',
         value: 150,
-        monthly_contribution: 75,
+        monthlyContribution: 75,
         stockTypeId: 'type-id-456',
         stockType: {
           id: 'type-id-456',
@@ -52,8 +51,6 @@ describe('StockMapper', () => {
 
       const domain = StockMapper.toDomain(entity as StockEntity);
 
-      expect(domain.isGuaranteed).toBe(true);
-      expect(domain.guaranteedYield).toBe(0.02);
       expect(domain.stockTypeId).toBe('type-id-456');
     });
 
@@ -63,7 +60,7 @@ describe('StockMapper', () => {
         id: '550e8400-e29b-41d4-a716-446655440000',
         name: 'test',
         value: 100,
-        monthly_contribution: 50,
+        monthlyContribution: 50,
         stockTypeId: 'type-id-789',
         stockType: {
           id: 'type-id-789',
@@ -72,7 +69,7 @@ describe('StockMapper', () => {
           guaranteedYield: null,
           behavior: StockBehavior.CAPITAL_APPRECIATION,
         } as any,
-        deleted_at: deletedDate,
+        deletedAt: deletedDate,
       } as any;
 
       const domain = StockMapper.toDomain(entity as StockEntity);
@@ -89,15 +86,15 @@ describe('StockMapper', () => {
         name: 'preferential',
         value: 100,
         monthlyContribution: 50,
+        stockTypeId: 'type-id-123',
       });
-      domain.update({ stockTypeId: 'type-id-123' });
 
       const persistence = StockMapper.toPersistence(domain);
 
       expect(persistence.id).toBe(domain.id);
       expect(persistence.name).toBe(domain.name);
       expect(persistence.value).toBe(domain.value);
-      expect(persistence.monthly_contribution).toBe(domain.monthlyContribution);
+      expect(persistence.monthlyContribution).toBe(domain.monthlyContribution);
       expect(persistence.stockTypeId).toBe(domain.stockTypeId);
     });
 
@@ -106,13 +103,13 @@ describe('StockMapper', () => {
         name: 'test',
         value: 100,
         monthlyContribution: 50,
+        stockTypeId: 'type-id-456',
       });
-      domain.update({ stockTypeId: 'type-id-456' });
       domain.markAsDeleted();
 
       const persistence = StockMapper.toPersistence(domain);
 
-      expect(persistence.deleted_at).toEqual(domain.deletedAt);
+      expect(persistence.deletedAt).toEqual(domain.deletedAt);
       expect(persistence.stockTypeId).toBe(domain.stockTypeId);
     });
 
@@ -121,10 +118,8 @@ describe('StockMapper', () => {
         name: 'guaranteed',
         value: 150,
         monthlyContribution: 75,
-        isGuaranteed: true,
-        guaranteedYield: 0.02,
+        stockTypeId: 'type-id-789',
       });
-      domain.update({ stockTypeId: 'type-id-789' });
 
       const persistence = StockMapper.toPersistence(domain);
 

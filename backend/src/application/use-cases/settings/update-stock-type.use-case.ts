@@ -7,6 +7,8 @@ export interface UpdateStockTypeCommand {
   id: string;
   name?: string;
   behavior?: StockBehavior;
+  guaranteedYield?: number;
+  isGuaranteed?: boolean;
 }
 
 export class UpdateStockTypeUseCase {
@@ -22,6 +24,8 @@ export class UpdateStockTypeUseCase {
       id: existing.id,
       name: command.name ?? existing.name,
       behavior: command.behavior ?? existing.behavior,
+      guaranteedYield: command.guaranteedYield ?? existing.guaranteedYield,
+      isGuaranteed: command.isGuaranteed ?? existing.isGuaranteed,
     });
 
     return this.stockTypeRepo.save(updated);

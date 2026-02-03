@@ -166,9 +166,8 @@ describe('GetMemberPurchasesQueryHandler', () => {
         id: stockId,
         name: 'Acción A',
         value: 100000,
-        monthly_contribution: 50000,
-        is_guaranteed: true,
-        guaranteed_yield: 0.05,
+        monthlyContribution: 50000,
+        stockTypeId: '1',
       });
 
       const stockSubscription = StockSubscription.create({
@@ -238,9 +237,8 @@ describe('GetMemberPurchasesQueryHandler', () => {
         id: stockId,
         name: 'Acción A',
         value: 100000,
-        monthly_contribution: 50000,
-        is_guaranteed: true,
-        guaranteed_yield: 0.05,
+        monthlyContribution: 50000,
+        stockTypeId: '1',
       });
 
       const loan = Loan.create({
@@ -330,9 +328,8 @@ describe('GetMemberPurchasesQueryHandler', () => {
         id: stockId,
         name: 'Acción A',
         value: 100000,
-        monthly_contribution: 50000,
-        is_guaranteed: true,
-        guaranteed_yield: 0.05,
+        monthlyContribution: 50000,
+        stockTypeId: '1',
       });
 
       const stockSubscription = StockSubscription.create({

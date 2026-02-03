@@ -151,9 +151,8 @@ describe('GetMemberStockLoanPaymentsQueryHandler', () => {
         id: stockId,
         name: 'Acción Corriente',
         value: 300000,
-        monthly_contribution: 15000,
-        is_guaranteed: true,
-        guaranteed_yield: 0.05,
+        monthlyContribution: 15000,
+        stockTypeId: '1',
       });
 
       const subscription = StockSubscription.create({

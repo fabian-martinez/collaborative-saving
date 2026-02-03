@@ -12,6 +12,7 @@ import { StockResponseDto } from '@application/dto/stocks/stock-response.dto';
 import { StockResponseHttpDto } from '../dto/stock-response-http.dto';
 import { UpdateStockHttpDto } from '../dto/update-stock-http.dto';
 import { UpdateStockDto } from '@application/dto/stocks/update-stock.dto';
+import { StockTypeResponseDto } from '@application/dto/stock-type/stock-type-response.dto';
 
 describe('StocksV2Controller', () => {
   let controller: StocksV2Controller;
@@ -27,14 +28,21 @@ describe('StocksV2Controller', () => {
   let updateStockUseCaseExecuteSpy: jest.SpyInstance;
   let deleteStockUseCaseExecuteSpy: jest.SpyInstance;
 
+  const stockType: StockTypeResponseDto = {
+    id: '550e8400-e29b-41d4-a716-446655440000',
+    name: 'preferential',
+    behavior: StockBehavior.CAPITAL_APPRECIATION,
+    isGuaranteed: false,
+    guaranteedYield: null,
+  };
+
   const mockStockResponse: StockResponseDto = {
     id: '550e8400-e29b-41d4-a716-446655440000',
     name: 'preferential',
     value: 100,
     monthlyContribution: 50,
-    isGuaranteed: false,
-    guaranteedYield: null,
     createdAt: new Date('2024-01-15'),
+    stockType,
   };
 
   const mockStockResponseHttpDto: StockResponseHttpDto = {
@@ -112,9 +120,8 @@ describe('StocksV2Controller', () => {
           name: 'guaranteed',
           value: 150,
           monthlyContribution: 75,
-          isGuaranteed: false,
-          guaranteedYield: null,
           createdAt: new Date('2024-01-15'),
+          stockType,
         },
       ];
       const stocksHttpDto: StockResponseHttpDto[] = [
@@ -125,8 +132,6 @@ describe('StocksV2Controller', () => {
           name: 'guaranteed',
           value: 150,
           monthly_contribution: 75,
-          is_guaranteed: false,
-          guaranteed_yield: null,
           created_at: new Date('2024-01-15'),
         },
       ];
@@ -232,8 +237,11 @@ describe('StocksV2Controller', () => {
         name: 'guaranteed',
         value: 150,
         monthlyContribution: 75,
-        isGuaranteed: true,
-        guaranteedYield: 0.02,
+        stockType: {
+          ...stockType,
+          isGuaranteed: true,
+          guaranteedYield: 0.02,
+        },
       };
       const fullResponseHttpDto: StockResponseHttpDto = {
         ...mockStockResponseHttpDto,
@@ -308,8 +316,11 @@ describe('StocksV2Controller', () => {
         ...mockStockResponse,
         value: 150,
         monthlyContribution: 75,
-        isGuaranteed: false,
-        guaranteedYield: null,
+        stockType: {
+          ...stockType,
+          isGuaranteed: false,
+          guaranteedYield: null,
+        },
       };
       const updatedResponseHttpDto: StockResponseHttpDto = {
         ...mockStockResponseHttpDto,
@@ -353,8 +364,11 @@ describe('StocksV2Controller', () => {
       const updatedResponse: StockResponseDto = {
         ...mockStockResponse,
         ...updateDto,
-        isGuaranteed: true,
-        guaranteedYield: 0.03,
+        stockType: {
+          ...stockType,
+          isGuaranteed: true,
+          guaranteedYield: 0.03,
+        },
       };
       const updatedResponseHttpDto: StockResponseHttpDto = {
         ...mockStockResponseHttpDto,

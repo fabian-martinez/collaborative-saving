@@ -1,11 +1,15 @@
 import { UpdateStockDto } from '@application/dto/stocks/update-stock.dto';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
+import { StockTypeRepository } from '@domain/ports/repositories/stock-type-repository.port';
 import { StockResponseDto } from '@application/dto/stocks/stock-response.dto';
 import { StockNotFoundException } from '@application/exceptions/stock-not-found.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 
 export class UpdateStockUseCase {
-  constructor(private readonly stockRepository: StockRepository) {}
+  constructor(
+    private readonly stockRepository: StockRepository,
+    private readonly stockTypeRepository: StockTypeRepository,
+  ) {}
 
   async execute(
     stockId: string,
@@ -31,12 +35,26 @@ export class UpdateStockUseCase {
       }
     }
 
+    if (!stock.stockTypeId) {
+      throw new InvalidRequestError(
+        `Stock with ID ${stockId} does not have a stock type assigned`,
+      );
+    }
+
+    const stockType = await this.stockTypeRepository.findById(
+      stock.stockTypeId,
+    );
+
+    if (!stockType) {
+      throw new InvalidRequestError(
+        `Stock type with ID ${stock.stockTypeId} not found`,
+      );
+    }
+
     stock.update({
       name: dto.name,
       value: dto.value,
       monthlyContribution: dto.monthlyContribution,
-      isGuaranteed: dto.isGuaranteed,
-      guaranteedYield: dto.guaranteedYield,
       stockTypeId: dto.stockTypeId,
     });
 
@@ -47,9 +65,8 @@ export class UpdateStockUseCase {
       name: saved.name,
       value: saved.value,
       monthlyContribution: saved.monthlyContribution,
-      isGuaranteed: saved.isGuaranteed,
-      guaranteedYield: saved.guaranteedYield,
       createdAt: saved.createdAt,
+      stockType: stockType,
     };
   }
 }

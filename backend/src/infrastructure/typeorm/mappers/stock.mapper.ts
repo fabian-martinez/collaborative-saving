@@ -8,16 +8,12 @@ export class StockMapper {
         id: persistence.id,
         name: persistence.name,
         value: Number(persistence.value),
-        monthly_contribution: Number(persistence.monthly_contribution),
-        is_guaranteed: persistence.stockType?.isGuaranteed ?? false,
-        guaranteed_yield: persistence.stockType?.guaranteedYield
-          ? Number(persistence.stockType.guaranteedYield)
-          : null,
-        stock_type_id: persistence.stockTypeId,
-        created_at:
+        monthlyContribution: Number(persistence.monthlyContribution),
+        stockTypeId: persistence.stockTypeId,
+        createdAt:
           (persistence as unknown as { created_at?: Date | string })
             .created_at || new Date(),
-        deleted_at: persistence.deleted_at,
+        deletedAt: persistence.deletedAt,
       });
     } catch (error) {
       throw new Error(
@@ -31,13 +27,13 @@ export class StockMapper {
       id: domain.id,
       name: domain.name,
       value: domain.value,
-      monthly_contribution: domain.monthlyContribution,
+      monthlyContribution: domain.monthlyContribution,
       stockTypeId: domain.stockTypeId,
     };
 
     // Handle deleted_at - solo incluir si está marcado como eliminado
     if (domain.deletedAt) {
-      (result as { deleted_at?: Date | null }).deleted_at = domain.deletedAt;
+      (result as { deletedAt?: Date | null }).deletedAt = domain.deletedAt;
     }
 
     return result;

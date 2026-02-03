@@ -284,8 +284,8 @@ export class StocksV2Controller {
       name: stock.name,
       value: stock.value,
       monthly_contribution: stock.monthlyContribution,
-      is_guaranteed: stock.isGuaranteed,
-      guaranteed_yield: stock.guaranteedYield,
+      is_guaranteed: stock.stockType.isGuaranteed,
+      guaranteed_yield: stock.stockType.guaranteedYield,
       created_at: stock.createdAt,
     };
   }

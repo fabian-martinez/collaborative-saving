@@ -14,7 +14,10 @@ export class GuaranteedGrowthHandler implements DistributionHandler {
     remaining: number;
     updatedResult: DistributionResult;
   } {
-    const guaranteedStocks = context.stocks.filter((s) => s.isGuaranteed);
+    const guaranteedStocks = context.stocks.filter((s) => {
+      const stockType = context.stockTypes.find((st) => st.id === s.stockTypeId);
+      return stockType?.isGuaranteed;
+    });
     if (guaranteedStocks.length === 0 || available <= 0) {
       return {
         assigned: 0,
@@ -31,8 +34,9 @@ export class GuaranteedGrowthHandler implements DistributionHandler {
         .filter((sub) => sub.stockId === stock.id && sub.isActive())
         .reduce((sum, sub) => sum + sub.quantity, 0);
       if (totalShares === 0) continue;
+      const guaranteedYield = context.stockTypes.find((st) => st.id === stock.stockTypeId)?.guaranteedYield;
       const requiredGrowth =
-        stock.value * (stock.guaranteedYield || 0) * totalShares;
+        stock.value * (guaranteedYield || 0) * totalShares;
       requiredByStock[stock.id] = requiredGrowth;
       totalRequired += requiredGrowth;
     }

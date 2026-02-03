@@ -10,12 +10,16 @@ describe('StockTypeMapper', () => {
     id: mockId,
     name: 'Bono',
     behavior: StockBehavior.CAPITAL_APPRECIATION,
+    isGuaranteed: false,
+    guaranteedYield: null,
   } as StockTypeEntity;
 
   const mockDomain = StockType.create({
     id: mockId,
     name: 'Bono',
     behavior: StockBehavior.CAPITAL_APPRECIATION,
+    isGuaranteed: false,
+    guaranteedYield: null,
   });
 
   it('should map persistence entity to domain entity', () => {
@@ -25,6 +29,8 @@ describe('StockTypeMapper', () => {
     expect(result.id).toBe(mockId);
     expect(result.name).toBe('Bono');
     expect(result.behavior).toBe(StockBehavior.CAPITAL_APPRECIATION);
+    expect(result.isGuaranteed).toBe(false);
+    expect(result.guaranteedYield).toBe(null);
   });
 
   it('should map domain entity to persistence entity', () => {
@@ -33,5 +39,7 @@ describe('StockTypeMapper', () => {
     expect(result.id).toBe(mockId);
     expect(result.name).toBe('Bono');
     expect(result.behavior).toBe(StockBehavior.CAPITAL_APPRECIATION);
+    expect(result.isGuaranteed).toBe(false);
+    expect(result.guaranteedYield).toBe(null);
   });
 });

@@ -35,6 +35,7 @@ describe('ProcessStockTransferUseCase', () => {
     name: 'Acción Mediana',
     value: 500000,
     monthlyContribution: 25000,
+    stockTypeId: 'type-id-123',
   });
   const fromSubscription = StockSubscription.create({
     memberId: fromMember.id,

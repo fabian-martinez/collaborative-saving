@@ -1,6 +1,7 @@
 import { GuaranteedGrowthHandler } from './guaranteed-growth.handler';
 import { DistributionContext, DistributionResult } from './distribution-chain';
-import { Stock } from '@domain/entities/stock.entity';
+import { Stock, StockBehavior } from '@domain/entities/stock.entity';
+import { StockType } from '@domain/entities/stock-type.entity';
 import { StockSubscription } from '@domain/entities/stock-subscription.entity';
 
 describe('GuaranteedGrowthHandler', () => {
@@ -19,12 +20,28 @@ describe('GuaranteedGrowthHandler', () => {
       interestAvailableForDistribution: 1000,
       totalRequiredGuaranteedGrowth: 0,
       interestByStock: {},
+      stockTypes: [
+        StockType.create({
+          id: 'regular',
+          name: 'Regular',
+          behavior: StockBehavior.CAPITAL_APPRECIATION,
+          guaranteedYield: null,
+          isGuaranteed: false,
+        }),
+        StockType.create({
+          id: 'guaranteed',
+          name: 'Guaranteed',
+          behavior: StockBehavior.DIVIDEND_YIELD,
+          guaranteedYield: 0.05,
+          isGuaranteed: true,
+        }),
+      ],
       stocks: [
         Stock.create({
           name: 'regular',
           value: 100,
           monthlyContribution: 10,
-          isGuaranteed: false,
+          stockTypeId: 'regular',
         }),
       ],
       subscriptions: [],
@@ -47,12 +64,18 @@ describe('GuaranteedGrowthHandler', () => {
   it('should return 0 assigned when available is 0', () => {
     // ARRANGE
     const available = 0;
+    const stockType = StockType.create({
+      id: 'guaranteed',
+      name: 'Guaranteed',
+      behavior: StockBehavior.DIVIDEND_YIELD,
+      guaranteedYield: 0.05,
+      isGuaranteed: true,
+    });
     const guaranteedStock = Stock.create({
       name: 'guaranteed',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: true,
-      guaranteedYield: 0.05,
+      stockTypeId: 'guaranteed',
     });
     const context: DistributionContext = {
       totalInterest: 0,
@@ -60,6 +83,7 @@ describe('GuaranteedGrowthHandler', () => {
       interestAvailableForDistribution: 0,
       totalRequiredGuaranteedGrowth: 50,
       interestByStock: {},
+      stockTypes: [stockType],
       stocks: [guaranteedStock],
       subscriptions: [
         StockSubscription.create({
@@ -86,19 +110,31 @@ describe('GuaranteedGrowthHandler', () => {
   it('should assign interests proportionally to guaranteed stocks', () => {
     // ARRANGE
     const available = 1000;
+    const stockType1 = StockType.create({
+      id: '1',
+      name: 'Guaranteed',
+      behavior: StockBehavior.DIVIDEND_YIELD,
+      guaranteedYield: 0.05,
+      isGuaranteed: true,
+    });
+    const stockType2 = StockType.create({
+        id: '2',
+      name: 'Guaranteed',
+      behavior: StockBehavior.DIVIDEND_YIELD,
+      guaranteedYield: 0.03,
+      isGuaranteed: true,
+    });
     const guaranteedStock1 = Stock.create({
       name: 'guaranteed-1',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: true,
-      guaranteedYield: 0.05, // 5%
+      stockTypeId: '1',
     });
     const guaranteedStock2 = Stock.create({
       name: 'guaranteed-2',
       value: 200,
       monthlyContribution: 20,
-      isGuaranteed: true,
-      guaranteedYield: 0.03, // 3%
+      stockTypeId: '2',
     });
 
     // Stock 1: 100 * 0.05 * 10 = 50 required
@@ -114,6 +150,7 @@ describe('GuaranteedGrowthHandler', () => {
         [guaranteedStock1.id]: 500,
         [guaranteedStock2.id]: 500,
       },
+      stockTypes: [stockType1, stockType2],
       stocks: [guaranteedStock1, guaranteedStock2],
       subscriptions: [
         StockSubscription.create({
@@ -147,12 +184,18 @@ describe('GuaranteedGrowthHandler', () => {
   it('should use agile/priority interest as limit when less than required', () => {
     // ARRANGE
     const available = 1000;
+    const stockType = StockType.create({
+      id: 'guaranteed',
+      name: 'Guaranteed',
+      behavior: StockBehavior.DIVIDEND_YIELD,
+      guaranteedYield: 0.05,
+      isGuaranteed: true,
+    });
     const guaranteedStock = Stock.create({
       name: 'guaranteed',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: true,
-      guaranteedYield: 0.05, // 5%
+      stockTypeId: 'guaranteed',
     });
 
     // Required: 100 * 0.05 * 10 = 50
@@ -164,6 +207,7 @@ describe('GuaranteedGrowthHandler', () => {
       totalRequiredGuaranteedGrowth: 50,
       interestByStock: { [guaranteedStock.id]: 30 }, // Less than required
       stocks: [guaranteedStock],
+      stockTypes: [stockType],
       subscriptions: [
         StockSubscription.create({
           memberId: 'member-1',
@@ -190,12 +234,18 @@ describe('GuaranteedGrowthHandler', () => {
   it('should calculate required based on value * yield * shares', () => {
     // ARRANGE
     const available = 1000;
+    const stockType = StockType.create({
+      id: 'guaranteed',
+      name: 'Guaranteed',
+      behavior: StockBehavior.DIVIDEND_YIELD,
+      guaranteedYield: 0.04,
+      isGuaranteed: true,
+    });
     const guaranteedStock = Stock.create({
       name: 'guaranteed',
       value: 150,
       monthlyContribution: 15,
-      isGuaranteed: true,
-      guaranteedYield: 0.04, // 4%
+      stockTypeId: 'guaranteed',
     });
 
     // Required: 150 * 0.04 * 20 = 120
@@ -206,6 +256,7 @@ describe('GuaranteedGrowthHandler', () => {
       totalRequiredGuaranteedGrowth: 120,
       interestByStock: { [guaranteedStock.id]: 200 }, // More than required
       stocks: [guaranteedStock],
+      stockTypes: [stockType],
       subscriptions: [
         StockSubscription.create({
           memberId: 'member-1',
@@ -232,19 +283,31 @@ describe('GuaranteedGrowthHandler', () => {
   it('should handle multiple guaranteed stocks with proportional distribution when limited', () => {
     // ARRANGE
     const available = 1000;
+    const stockType1 = StockType.create({
+      id: 'guaranteed-1',
+      name: 'Guaranteed 1',
+      behavior: StockBehavior.DIVIDEND_YIELD,
+      guaranteedYield: 0.05,
+      isGuaranteed: true,
+    });
+    const stockType2 = StockType.create({
+      id: 'guaranteed-2',
+      name: 'Guaranteed 2',
+      behavior: StockBehavior.DIVIDEND_YIELD,
+      guaranteedYield: 0.03,
+      isGuaranteed: true,
+    });
     const guaranteedStock1 = Stock.create({
       name: 'guaranteed-1',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: true,
-      guaranteedYield: 0.05, // 5%
+      stockTypeId: 'guaranteed-1',
     });
     const guaranteedStock2 = Stock.create({
       name: 'guaranteed-2',
       value: 200,
       monthlyContribution: 20,
-      isGuaranteed: true,
-      guaranteedYield: 0.03, // 3%
+      stockTypeId: 'guaranteed-2',
     });
 
     // Stock 1: 100 * 0.05 * 10 = 50 required
@@ -263,6 +326,7 @@ describe('GuaranteedGrowthHandler', () => {
         [guaranteedStock2.id]: 15,
       }, // Less than required
       stocks: [guaranteedStock1, guaranteedStock2],
+      stockTypes: [stockType1, stockType2],
       subscriptions: [
         StockSubscription.create({
           memberId: 'member-1',

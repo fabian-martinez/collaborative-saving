@@ -39,6 +39,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
     name: 'Bono',
     value: 100,
     monthlyContribution: 50,
+    stockTypeId: 'stock-type-id-1',
   });
 
   beforeEach(() => {
@@ -228,6 +229,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
         name: 'Bono',
         value: 0,
         monthlyContribution: 50,
+        stockTypeId: 'stock-type-id-1',
       });
 
       const item: DisbursementPlanItemDto = {
@@ -548,6 +550,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
         name: 'Acción',
         value: 1000,
         monthlyContribution: 100,
+        stockTypeId: 'stock-type-id-1',
       });
 
       const mockSubscription = StockSubscription.create({
@@ -635,6 +638,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
         name: 'Acción',
         value: 1000,
         monthlyContribution: 100,
+        stockTypeId: 'stock-type-id-1',
       });
 
       const mockSubscription = StockSubscription.create({

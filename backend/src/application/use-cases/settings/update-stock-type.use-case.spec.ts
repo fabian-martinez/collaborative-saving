@@ -24,12 +24,16 @@ describe('UpdateStockTypeUseCase', () => {
       id: 'stock-1',
       name: 'Original Name',
       behavior: StockBehavior.CAPITAL_APPRECIATION,
+      guaranteedYield: null,
+      isGuaranteed: false,
     });
 
     const command: UpdateStockTypeCommand = {
       id: 'stock-1',
       name: 'Updated Name',
       behavior: StockBehavior.DIVIDEND_YIELD,
+      guaranteedYield: 0.02,
+      isGuaranteed: true,
     };
 
     stockTypeRepository.findById.mockResolvedValue(existingStockType);
@@ -43,10 +47,14 @@ describe('UpdateStockTypeUseCase', () => {
         id: 'stock-1',
         name: 'Updated Name',
         behavior: StockBehavior.DIVIDEND_YIELD,
+        guaranteedYield: 0.02,
+        isGuaranteed: true,
       })
     );
     expect(result.name).toBe('Updated Name');
     expect(result.behavior).toBe(StockBehavior.DIVIDEND_YIELD);
+    expect(result.guaranteedYield).toBe(0.02);
+    expect(result.isGuaranteed).toBe(true);
   });
 
   it('should throw NotFoundException if stock type does not exist', async () => {
@@ -55,6 +63,9 @@ describe('UpdateStockTypeUseCase', () => {
     const command: UpdateStockTypeCommand = {
       id: 'non-existent',
       name: 'Updated Name',
+      behavior: StockBehavior.DIVIDEND_YIELD,
+      guaranteedYield: 0.02,
+      isGuaranteed: true,
     };
 
     await expect(useCase.execute(command)).rejects.toThrow(NotFoundException);

@@ -6,6 +6,8 @@ import { StockTypeRepository } from '@domain/ports/repositories/stock-type-repos
 export interface CreateStockTypeCommand {
   name: string;
   behavior: StockBehavior;
+  isGuaranteed: boolean;
+  guaranteedYield: number | null;
 }
 
 export class CreateStockTypeUseCase {
@@ -16,6 +18,8 @@ export class CreateStockTypeUseCase {
       id: randomUUID(),
       name: command.name,
       behavior: command.behavior,
+      isGuaranteed: command.isGuaranteed,
+      guaranteedYield: command.guaranteedYield,
     });
     return this.stockTypeRepo.save(stockType);
   }

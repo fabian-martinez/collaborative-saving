@@ -24,6 +24,7 @@ import {
 } from '../constants/account-types';
 import { NotFoundError } from '../errors/not-found.error';
 import { InvalidRequestError } from '../errors/invalid-request.error';
+import { StockType } from '@domain/entities/stock-type.entity';
 
 describe('AssetRevaluationDomainService', () => {
   let service: AssetRevaluationDomainService;
@@ -157,11 +158,19 @@ describe('AssetRevaluationDomainService', () => {
         date: new Date('2024-01-15'),
       });
 
+      const stockType = StockType.create({
+        id: 'regular',
+        name: 'regular',
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        isGuaranteed: false,
+        guaranteedYield: null,
+      });
+
       const regularStock = Stock.create({
         name: 'regular',
         value: 100,
         monthlyContribution: 10,
-        isGuaranteed: false,
+        stockTypeId: stockType.id,
       });
 
       const subscription = StockSubscription.create({
@@ -222,12 +231,19 @@ describe('AssetRevaluationDomainService', () => {
         date: new Date('2024-01-15'),
       });
 
+      const stockType = StockType.create({
+        id: 'guaranteed',
+        name: 'guaranteed',
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        isGuaranteed: true,
+        guaranteedYield: 0.05,
+      });
+
       const guaranteedStock = Stock.create({
         name: 'guaranteed',
         value: 100,
         monthlyContribution: 10,
-        isGuaranteed: true,
-        guaranteedYield: 0.05, // 5%
+        stockTypeId: stockType.id,
       });
 
       const subscription = StockSubscription.create({
@@ -266,6 +282,7 @@ describe('AssetRevaluationDomainService', () => {
       ]);
       stockRepository.findAll.mockResolvedValue([guaranteedStock]);
       stockSubscriptionRepository.findByStock.mockResolvedValue([subscription]);
+      stockTypeRepository.findAll.mockResolvedValue([stockType]);
       loanRepository.findByIds.mockResolvedValue([loan]);
 
       // ACT
@@ -294,7 +311,6 @@ describe('AssetRevaluationDomainService', () => {
         name: 'dividend',
         value: 100,
         monthlyContribution: 10,
-        isGuaranteed: false,
         stockTypeId: dividendStockType.id,
       });
 
@@ -370,11 +386,19 @@ describe('AssetRevaluationDomainService', () => {
         term: 12,
       });
 
+      const stockType = StockType.create({
+        id: 'regular',
+        name: 'regular',
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        isGuaranteed: false,
+        guaranteedYield: null,
+      });
+
       const stock = Stock.create({
         name: 'regular',
         value: 100,
         monthlyContribution: 10,
-        isGuaranteed: false,
+        stockTypeId: stockType.id
       });
 
       const subscription = StockSubscription.create({
@@ -442,12 +466,19 @@ describe('AssetRevaluationDomainService', () => {
       const meeting = Meeting.create({
         date: new Date('2024-01-15'),
       });
+      const stockType = StockType.create({
+        id: 'regular',
+        name: 'regular',
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        isGuaranteed: false,
+        guaranteedYield: null,
+      });
 
       const stock = Stock.create({
         name: 'regular',
         value: 100,
         monthlyContribution: 10,
-        isGuaranteed: false,
+        stockTypeId: stockType.id
       });
 
       const subscription = StockSubscription.create({
@@ -522,18 +553,26 @@ describe('AssetRevaluationDomainService', () => {
         date: new Date('2024-01-15'),
       });
 
+      const stockType = StockType.create({
+        id: 'regular',
+        name: 'regular',
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        isGuaranteed: false,
+        guaranteedYield: null,
+      });
+
       const stockA = Stock.create({
         name: 'Acción Z',
         value: 100,
         monthlyContribution: 10,
-        isGuaranteed: false,
+        stockTypeId: stockType.id
       });
 
       const stockB = Stock.create({
         name: 'Acción A',
         value: 100,
         monthlyContribution: 10,
-        isGuaranteed: false,
+        stockTypeId: stockType.id
       });
 
       const subscriptionA = StockSubscription.create({
@@ -582,6 +621,7 @@ describe('AssetRevaluationDomainService', () => {
           totalInterest,
           stocks,
           subscriptions,
+          new Map(),
         ),
       ).toThrow(InvalidRequestError);
       expect(() =>
@@ -590,6 +630,7 @@ describe('AssetRevaluationDomainService', () => {
           totalInterest,
           stocks,
           subscriptions,
+          new Map(),
         ),
       ).toThrow('No stocks available for revaluation.');
     });
@@ -597,11 +638,18 @@ describe('AssetRevaluationDomainService', () => {
     it('should throw error when no active subscriptions found', () => {
       // ARRANGE
       const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+      const stockType = StockType.create({
+        id: 'regular',
+        name: 'regular',
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        isGuaranteed: false,
+        guaranteedYield: null,
+      });
       const stock = Stock.create({
         name: 'regular',
         value: 100,
         monthlyContribution: 10,
-        isGuaranteed: false,
+        stockTypeId: stockType.id
       });
       const inactiveSubscription = StockSubscription.create({
         memberId: 'member-1',
@@ -618,6 +666,7 @@ describe('AssetRevaluationDomainService', () => {
           totalInterest,
           [stock],
           [inactiveSubscription],
+          new Map([[stockType.id, stockType]]),
         ),
       ).toThrow(InvalidRequestError);
       expect(() =>
@@ -626,6 +675,7 @@ describe('AssetRevaluationDomainService', () => {
           totalInterest,
           [stock],
           [inactiveSubscription],
+          new Map([[stockType.id, stockType]]),
         ),
       ).toThrow('No active stock subscriptions found.');
     });
@@ -633,11 +683,18 @@ describe('AssetRevaluationDomainService', () => {
     it('should throw error when total interest is negative', () => {
       // ARRANGE
       const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+        const stockType = StockType.create({
+        id: 'regular',
+        name: 'regular',
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        isGuaranteed: false,
+        guaranteedYield: null,
+      });
       const stock = Stock.create({
         name: 'regular',
         value: 100,
         monthlyContribution: 10,
-        isGuaranteed: false,
+        stockTypeId: stockType.id
       });
       const subscription = StockSubscription.create({
         memberId: 'member-1',
@@ -653,6 +710,7 @@ describe('AssetRevaluationDomainService', () => {
           totalInterest,
           [stock],
           [subscription],
+          new Map([[stockType.id, stockType]]),
         ),
       ).toThrow(InvalidRequestError);
       expect(() =>
@@ -661,6 +719,7 @@ describe('AssetRevaluationDomainService', () => {
           totalInterest,
           [stock],
           [subscription],
+          new Map([[stockType.id, stockType]]),
         ),
       ).toThrow('Total interest cannot be negative.');
     });
@@ -668,12 +727,18 @@ describe('AssetRevaluationDomainService', () => {
     it('should throw error when guaranteed stock has no positive yield', () => {
       // ARRANGE
       const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+      const stockType = StockType.create({
+        id: 'guaranteed',
+        name: 'guaranteed',
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        isGuaranteed: true,
+        guaranteedYield: null,
+      });
       const guaranteedStock = Stock.create({
         name: 'guaranteed',
         value: 100,
         monthlyContribution: 10,
-        isGuaranteed: true,
-        guaranteedYield: null, // No yield
+        stockTypeId: stockType.id
       });
       const subscription = StockSubscription.create({
         memberId: 'member-1',
@@ -689,6 +754,7 @@ describe('AssetRevaluationDomainService', () => {
           totalInterest,
           [guaranteedStock],
           [subscription],
+          new Map([[stockType.id, stockType]]),
         ),
       ).toThrow(InvalidRequestError);
       expect(() =>
@@ -697,6 +763,7 @@ describe('AssetRevaluationDomainService', () => {
           totalInterest,
           [guaranteedStock],
           [subscription],
+          new Map([[stockType.id, stockType]]),
         ),
       ).toThrow('must have a positive guaranteed yield');
     });
@@ -704,11 +771,18 @@ describe('AssetRevaluationDomainService', () => {
     it('should validate correctly when context is valid', () => {
       // ARRANGE
       const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+      const stockType = StockType.create({
+        id: 'regular',
+        name: 'regular',
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        isGuaranteed: false,
+        guaranteedYield: null,
+      });
       const stock = Stock.create({
         name: 'regular',
         value: 100,
         monthlyContribution: 10,
-        isGuaranteed: false,
+        stockTypeId: stockType.id
       });
       const subscription = StockSubscription.create({
         memberId: 'member-1',
@@ -724,6 +798,7 @@ describe('AssetRevaluationDomainService', () => {
           totalInterest,
           [stock],
           [subscription],
+          new Map([[stockType.id, stockType]]),
         ),
       ).not.toThrow();
     });
@@ -734,12 +809,19 @@ describe('AssetRevaluationDomainService', () => {
       // ARRANGE
       const operationId = 'operation-1';
       const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+      const stockType = StockType.create({
+        id: 'regular',
+        name: 'regular',
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        isGuaranteed: false,
+        guaranteedYield: null,
+      });
 
       const stock = Stock.create({
         name: 'regular',
         value: 100,
         monthlyContribution: 10,
-        isGuaranteed: false,
+        stockTypeId: stockType.id
       });
 
       const subscription = StockSubscription.create({
@@ -812,12 +894,19 @@ describe('AssetRevaluationDomainService', () => {
       // ARRANGE
       const operationId = 'operation-1';
       const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+      const stockType = StockType.create({
+        id: 'dividend',
+        name: 'dividend',
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        isGuaranteed: false,
+        guaranteedYield: null,
+      });
 
       const dividendStock = Stock.create({
         name: 'dividend',
         value: 100,
         monthlyContribution: 10,
-        isGuaranteed: false,
+        stockTypeId: stockType.id
       });
 
       const subscription = StockSubscription.create({
@@ -866,20 +955,33 @@ describe('AssetRevaluationDomainService', () => {
       // ARRANGE
       const operationId = 'operation-1';
       const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+      const stockTypeNotGuaranteed = StockType.create({
+        id: 'regular',
+        name: 'regular',
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        isGuaranteed: false,
+        guaranteedYield: null,
+      });
+      const stockTypeGuaranteed = StockType.create({
+        id: 'bono',
+        name: 'bono',
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        isGuaranteed: true,
+        guaranteedYield: 0.05,
+      });
 
       const stock1 = Stock.create({
         name: 'Acción A',
         value: 100,
         monthlyContribution: 10,
-        isGuaranteed: false,
+        stockTypeId: stockTypeNotGuaranteed.id
       });
 
       const stock2 = Stock.create({
         name: 'Acción B',
         value: 200,
         monthlyContribution: 20,
-        isGuaranteed: true,
-        guaranteedYield: 0.05,
+        stockTypeId: stockTypeGuaranteed.id
       });
 
       const subscription1 = StockSubscription.create({
@@ -946,11 +1048,19 @@ describe('AssetRevaluationDomainService', () => {
       const operationId = 'operation-1';
       const meetingId = '550e8400-e29b-41d4-a716-446655440000';
 
+      const stockType = StockType.create({
+        id: 'regular',
+        name: 'regular',
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        isGuaranteed: false,
+        guaranteedYield: null,
+      });
+
       const stock = Stock.create({
         name: 'regular',
         value: 100,
         monthlyContribution: 10,
-        isGuaranteed: false,
+        stockTypeId: stockType.id,
       });
 
       const subscription = StockSubscription.create({

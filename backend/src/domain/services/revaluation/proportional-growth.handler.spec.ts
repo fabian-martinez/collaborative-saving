@@ -2,6 +2,7 @@ import { ProportionalGrowthHandler } from './proportional-growth.handler';
 import { DistributionContext, DistributionResult } from './distribution-chain';
 import { Stock, StockBehavior } from '@domain/entities/stock.entity';
 import { StockSubscription } from '@domain/entities/stock-subscription.entity';
+import { StockType } from '@domain/entities/stock-type.entity';
 
 describe('ProportionalGrowthHandler', () => {
   let handler: ProportionalGrowthHandler;
@@ -13,12 +14,18 @@ describe('ProportionalGrowthHandler', () => {
   it('should return 0 assigned when no regular stocks', () => {
     // ARRANGE
     const available = 1000;
+    const stockType = StockType.create({
+      id: 'stock-type-1',
+      name: 'guaranteed',
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: true,
+      guaranteedYield: 0.05,
+    }); 
     const guaranteedStock = Stock.create({
       name: 'guaranteed',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: true,
-      guaranteedYield: 0.05,
+      stockTypeId: stockType.id,
     });
     const context: DistributionContext = {
       totalInterest: 1000,
@@ -27,6 +34,7 @@ describe('ProportionalGrowthHandler', () => {
       totalRequiredGuaranteedGrowth: 50,
       interestByStock: {},
       stocks: [guaranteedStock],
+      stockTypes: [stockType],
       subscriptions: [],
       ledgerEntries: [],
     };
@@ -47,11 +55,18 @@ describe('ProportionalGrowthHandler', () => {
   it('should return 0 assigned when available is 0', () => {
     // ARRANGE
     const available = 0;
+    const stockType = StockType.create({
+      id: 'stock-type-1',
+      name: 'regular',
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: false,
+      guaranteedYield: null,
+    });
     const regularStock = Stock.create({
       name: 'regular',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: false,
+      stockTypeId: stockType.id,
     });
     const context: DistributionContext = {
       totalInterest: 0,
@@ -60,6 +75,7 @@ describe('ProportionalGrowthHandler', () => {
       totalRequiredGuaranteedGrowth: 0,
       interestByStock: {},
       stocks: [regularStock],
+      stockTypes: [stockType],
       subscriptions: [
         StockSubscription.create({
           memberId: 'member-1',
@@ -85,17 +101,24 @@ describe('ProportionalGrowthHandler', () => {
   it('should assign proportionally based on base value (value * shares)', () => {
     // ARRANGE
     const available = 1000;
+    const stockType = StockType.create({
+      id: 'stock-type-1',
+      name: 'regular',
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: false,
+      guaranteedYield: null,
+    });
     const regularStock1 = Stock.create({
       name: 'regular-1',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: false,
+      stockTypeId: stockType.id,
     });
     const regularStock2 = Stock.create({
       name: 'regular-2',
       value: 200,
       monthlyContribution: 20,
-      isGuaranteed: false,
+      stockTypeId: stockType.id,
     });
 
     // Stock 1: 100 * 10 = 1000 base value
@@ -110,6 +133,7 @@ describe('ProportionalGrowthHandler', () => {
       totalRequiredGuaranteedGrowth: 0,
       interestByStock: {},
       stocks: [regularStock1, regularStock2],
+      stockTypes: [stockType],
       subscriptions: [
         StockSubscription.create({
           memberId: 'member-1',
@@ -142,24 +166,37 @@ describe('ProportionalGrowthHandler', () => {
   it('should include all non-guaranteed stocks', () => {
     // ARRANGE
     const available = 1000;
+    const stockType = StockType.create({
+      id: 'stock-type-1',
+      name: 'regular',
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: false,
+      guaranteedYield: null,
+    });
+    const guaranteedStockType = StockType.create({
+      id: 'stock-type-2',
+      name: 'guaranteed',
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: true,
+      guaranteedYield: 0.05,
+    });
     const guaranteedStock = Stock.create({
       name: 'guaranteed',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: true,
-      guaranteedYield: 0.05,
+      stockTypeId: guaranteedStockType.id,
     });
     const regularStock1 = Stock.create({
       name: 'regular-1',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: false,
+      stockTypeId: stockType.id,
     });
     const regularStock2 = Stock.create({
       name: 'regular-2',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: false,
+      stockTypeId: stockType.id,
     });
 
     // Only regular stocks should be included
@@ -173,6 +210,7 @@ describe('ProportionalGrowthHandler', () => {
       interestAvailableForDistribution: 1000,
       totalRequiredGuaranteedGrowth: 50,
       interestByStock: {},
+      stockTypes: [stockType, guaranteedStockType],
       stocks: [guaranteedStock, regularStock1, regularStock2],
       subscriptions: [
         StockSubscription.create({
@@ -207,17 +245,24 @@ describe('ProportionalGrowthHandler', () => {
   it('should handle stocks with zero total shares', () => {
     // ARRANGE
     const available = 1000;
+    const stockType = StockType.create({
+      id: 'stock-type-1',
+      name: 'regular',
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: false,
+      guaranteedYield: null,
+    });
     const regularStock1 = Stock.create({
       name: 'regular-1',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: false,
+      stockTypeId: stockType.id,
     });
     const regularStock2 = Stock.create({
       name: 'regular-2',
       value: 200,
       monthlyContribution: 20,
-      isGuaranteed: false,
+      stockTypeId: stockType.id,
     });
 
     // Stock 1: 100 * 10 = 1000
@@ -230,6 +275,7 @@ describe('ProportionalGrowthHandler', () => {
       interestAvailableForDistribution: 1000,
       totalRequiredGuaranteedGrowth: 0,
       interestByStock: {},
+      stockTypes: [stockType],
       stocks: [regularStock1, regularStock2],
       subscriptions: [
         StockSubscription.create({
@@ -259,11 +305,18 @@ describe('ProportionalGrowthHandler', () => {
   it('should update partial result correctly', () => {
     // ARRANGE
     const available = 500;
+    const stockType = StockType.create({
+      id: 'stock-type-1',
+      name: 'regular',
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: false,
+      guaranteedYield: null,
+    });
     const regularStock = Stock.create({
       name: 'regular',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: false,
+      stockTypeId: stockType.id,
     });
 
     const context: DistributionContext = {
@@ -272,6 +325,7 @@ describe('ProportionalGrowthHandler', () => {
       interestAvailableForDistribution: 1000,
       totalRequiredGuaranteedGrowth: 0,
       interestByStock: {},
+      stockTypes: [stockType],
       stocks: [regularStock],
       subscriptions: [
         StockSubscription.create({

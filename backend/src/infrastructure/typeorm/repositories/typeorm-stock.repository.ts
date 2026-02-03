@@ -15,7 +15,7 @@ export class TypeOrmStockRepository implements StockRepository {
 
   async findById(id: string): Promise<StockDomain | null> {
     const entity = await this.repo.findOne({
-      where: { id, deleted_at: IsNull() },
+      where: { id, deletedAt: IsNull() },
       relations: ['stockType'],
     });
     return entity ? StockMapper.toDomain(entity) : null;
@@ -23,7 +23,7 @@ export class TypeOrmStockRepository implements StockRepository {
 
   async findByName(name: string): Promise<StockDomain | null> {
     const entity = await this.repo.findOne({
-      where: { name, deleted_at: IsNull() },
+      where: { name, deletedAt: IsNull() },
       relations: ['stockType'],
     });
     return entity ? StockMapper.toDomain(entity) : null;
@@ -31,7 +31,7 @@ export class TypeOrmStockRepository implements StockRepository {
 
   async findAll(): Promise<StockDomain[]> {
     const entities = await this.repo.find({
-      where: { deleted_at: IsNull() },
+      where: { deletedAt: IsNull() },
       relations: ['stockType'],
     });
     return entities.map((e) => StockMapper.toDomain(e));
@@ -81,7 +81,7 @@ export class TypeOrmStockRepository implements StockRepository {
         stockType: {
           isGuaranteed: true,
         },
-        deleted_at: IsNull(),
+        deletedAt: IsNull(),
       },
     });
     return stocks.map((stock) => StockMapper.toDomain(stock));

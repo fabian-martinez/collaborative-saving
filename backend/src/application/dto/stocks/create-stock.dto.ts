@@ -6,5 +6,5 @@ export class CreateStockDto {
   monthlyContribution: number;
   isGuaranteed?: boolean;
   guaranteedYield?: number | null;
-  stockTypeId?: string | null;
+  stockTypeId?: string;
 }

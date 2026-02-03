@@ -8,6 +8,8 @@ export class StockTypeMapper {
       id: persistence.id,
       name: persistence.name,
       behavior: persistence.behavior as StockBehavior,
+      isGuaranteed: persistence.isGuaranteed,
+      guaranteedYield: persistence.guaranteedYield,
     });
   }
 
@@ -16,6 +18,8 @@ export class StockTypeMapper {
       id: domain.id,
       name: domain.name,
       behavior: domain.behavior as any,
+      isGuaranteed: domain.isGuaranteed,
+      guaranteedYield: domain.guaranteedYield,
     };
   }
 }

@@ -20,8 +20,20 @@ describe('GetStockTypesQueryHandler', () => {
 
   it('should return all stock types from repository', async () => {
     const stockTypes: StockType[] = [
-      StockType.create({ id: '1', name: 'Stock 1', behavior: StockBehavior.CAPITAL_APPRECIATION }),
-      StockType.create({ id: '2', name: 'Stock 2', behavior: StockBehavior.DIVIDEND_YIELD }),
+      StockType.create({ 
+        id: '1',
+        name: 'Stock 1', 
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        guaranteedYield: 0.02,
+        isGuaranteed: true,
+      }),
+      StockType.create({ 
+        id: '2',
+        name: 'Stock 2', 
+        behavior: StockBehavior.DIVIDEND_YIELD,
+        guaranteedYield: null,
+        isGuaranteed: false,
+      }),
     ];
 
     stockTypeRepository.findAll.mockResolvedValue(stockTypes);

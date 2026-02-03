@@ -9,4 +9,10 @@ export class StockTypeResponseHttpDto {
 
   @ApiProperty({ example: 'CAPITAL_APPRECIATION', enum: ['CAPITAL_APPRECIATION', 'DIVIDEND_YIELD'] })
   behavior: string;
+
+  @ApiProperty({ example: true })
+  isGuaranteed: boolean;
+
+  @ApiProperty({ example: 0.1 })
+  guaranteedYield: number | null;
 }

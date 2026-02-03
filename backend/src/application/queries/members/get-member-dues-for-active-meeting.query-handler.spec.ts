@@ -186,11 +186,13 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
         name: 'Type A',
         value: 10000,
         monthlyContribution: 2000,
+        stockTypeId: '1',
       });
       const stock2 = Stock.create({
         name: 'Type B',
         value: 15000,
         monthlyContribution: 3000,
+        stockTypeId: '1',
       });
 
       findActiveSpy.mockResolvedValue(activeMeeting);
@@ -308,6 +310,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
         name: 'Type A',
         value: 10000,
         monthlyContribution: 2000,
+        stockTypeId: '1',
       });
 
       findActiveSpy.mockResolvedValue(null); // No hay reunión activa
@@ -501,6 +504,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
         name: 'Type A',
         value: 10000,
         monthlyContribution: 0, // Sin contribución mensual
+        stockTypeId: '1',
       });
 
       findActiveSpy.mockResolvedValue(activeMeeting);

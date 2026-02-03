@@ -1,11 +1,10 @@
-import { StockBehavior } from '@domain/entities/stock.entity';
+import { StockTypeResponseDto } from '../stock-type/stock-type-response.dto';
 
 export class StockResponseDto {
   id: string;
   name: string;
   value: number;
   monthlyContribution: number;
-  isGuaranteed: boolean;
-  guaranteedYield: number | null;
   createdAt: Date;
+  stockType: StockTypeResponseDto;
 }

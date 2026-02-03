@@ -19,6 +19,7 @@ import { OperationType } from '@domain/enums/operation-type.enum';
 import { Stock, StockBehavior } from '@domain/entities/stock.entity';
 import { StockSubscription } from '@domain/entities/stock-subscription.entity';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
+import { StockType } from '@domain/entities/stock-type.entity';
 
 describe('RecordRevaluationUseCase', () => {
   let useCase: RecordRevaluationUseCase;
@@ -242,11 +243,19 @@ describe('RecordRevaluationUseCase', () => {
       date: new Date('2024-01-15'),
     });
 
+    const stockType = StockType.create({
+      id: 'stock-type-1',
+      name: 'regular',
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: false,
+      guaranteedYield: null,
+    });
+
     const regularStock = Stock.create({
       name: 'regular',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: false,
+      stockTypeId: stockType.id,
     });
 
     const mockCalculationResult = {
@@ -308,11 +317,19 @@ describe('RecordRevaluationUseCase', () => {
       date: new Date('2024-01-15'),
     });
 
+    const stockType = StockType.create({
+      id: 'stock-type-1',
+      name: 'regular',
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: false,
+      guaranteedYield: null,
+    });
+
     const stock = Stock.create({
       name: 'regular',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: false,
+      stockTypeId: stockType.id,
     });
 
     const mockCalculationResult = {
@@ -387,11 +404,19 @@ describe('RecordRevaluationUseCase', () => {
       date: new Date('2024-01-15'),
     });
 
+    const stockType = StockType.create({
+      id: 'stock-type-1',
+      name: 'regular',
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: false,
+      guaranteedYield: null,
+    });
+
     const stock = Stock.create({
       name: 'regular',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: false,
+      stockTypeId: stockType.id,
     });
 
     const mockCalculationResult = {
@@ -467,11 +492,19 @@ describe('RecordRevaluationUseCase', () => {
       date: new Date('2024-01-15'),
     });
 
+    const stockType = StockType.create({
+      id: 'stock-type-1',
+      name: 'regular',
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: false,
+      guaranteedYield: null,
+    });
+
     const stock = Stock.create({
       name: 'regular',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: false,
+      stockTypeId: stockType.id,
     });
 
     const mockCalculationResult = {
@@ -547,11 +580,19 @@ describe('RecordRevaluationUseCase', () => {
       date: new Date('2024-01-15'),
     });
 
+    const stockType = StockType.create({
+      id: 'stock-type-1',
+      name: 'regular',
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: false,
+      guaranteedYield: null,
+    });
+
     const stock = Stock.create({
       name: 'regular',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: false,
+      stockTypeId: stockType.id,
     });
 
     const mockCalculationResult = {
@@ -618,11 +659,19 @@ describe('RecordRevaluationUseCase', () => {
       date: new Date('2024-01-15'),
     });
 
+    const stockType = StockType.create({
+      id: 'stock-type-1',
+      name: 'dividend',
+      behavior: StockBehavior.DIVIDEND_YIELD,
+      isGuaranteed: false,
+      guaranteedYield: null,
+    });
+
     const dividendStock = Stock.create({
       name: 'dividend',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: false,
+      stockTypeId: stockType.id,
     });
 
     const subscription1 = StockSubscription.create({
@@ -703,12 +752,19 @@ describe('RecordRevaluationUseCase', () => {
       date: new Date('2024-01-15'),
     });
 
+    const stockType = StockType.create({
+      id: 'stock-type-1',
+      name: 'guaranteed',
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: true,
+      guaranteedYield: 0.05,
+    });
+
     const guaranteedStock = Stock.create({
       name: 'guaranteed',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: true,
-      guaranteedYield: 0.05,
+      stockTypeId: stockType.id,
     });
 
     const mockCalculationResult = {
@@ -766,11 +822,19 @@ describe('RecordRevaluationUseCase', () => {
       date: new Date('2024-01-15'),
     });
 
+    const stockType = StockType.create({
+      id: 'stock-type-1',
+      name: 'regular',
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: false,
+      guaranteedYield: null,
+    });
+
     const regularStock = Stock.create({
       name: 'regular',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: false,
+      stockTypeId: stockType.id,
     });
 
     const mockCalculationResult = {
@@ -829,11 +893,19 @@ describe('RecordRevaluationUseCase', () => {
       date: new Date('2024-01-15'),
     });
 
+    const stockType = StockType.create({
+      id: 'stock-type-1',
+      name: 'regular',
+      behavior: StockBehavior.CAPITAL_APPRECIATION,
+      isGuaranteed: false,
+      guaranteedYield: null,
+    });
+
     const stock = Stock.create({
       name: 'regular',
       value: 100,
       monthlyContribution: 10,
-      isGuaranteed: false,
+      stockTypeId: stockType.id,
     });
 
     const mockCalculationResult = {

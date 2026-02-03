@@ -39,6 +39,7 @@ describe('DeleteStockUseCase', () => {
       name: 'Acción A',
       value: 100000,
       monthlyContribution: 50000,
+      stockTypeId: 'type-id-123',
     });
     
     stockRepository.findById.mockResolvedValue(stock);
@@ -69,6 +70,7 @@ describe('DeleteStockUseCase', () => {
       name: 'Acción A',
       value: 100000,
       monthlyContribution: 50000,
+      stockTypeId: 'type-id-123',
     });
     stock.markAsDeleted();
     

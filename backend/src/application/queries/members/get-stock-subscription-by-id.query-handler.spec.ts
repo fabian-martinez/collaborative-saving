@@ -168,9 +168,8 @@ describe('GetStockSubscriptionByIdQueryHandler', () => {
         id: stockId,
         name: 'Acción A',
         value: 100000,
-        monthly_contribution: 50000,
-        is_guaranteed: true,
-        guaranteed_yield: 0.05,
+        monthlyContribution: 50000,
+        stockTypeId: '1',
       });
 
       const subscription = StockSubscription.create({
@@ -210,9 +209,8 @@ describe('GetStockSubscriptionByIdQueryHandler', () => {
         id: stockId,
         name: 'Acción A',
         value: 100000,
-        monthly_contribution: 50000,
-        is_guaranteed: true,
-        guaranteed_yield: 0.05,
+        monthlyContribution: 50000,
+        stockTypeId: '1',
       });
 
       const subscription = StockSubscription.create({
@@ -253,9 +251,8 @@ describe('GetStockSubscriptionByIdQueryHandler', () => {
         id: stockId,
         name: 'Acción A',
         value: 100000,
-        monthly_contribution: 50000,
-        is_guaranteed: true,
-        guaranteed_yield: 0.05,
+        monthlyContribution: 50000,
+        stockTypeId: '1',
       });
 
       const loanId = '990e8400-e29b-41d4-a716-446655440004';

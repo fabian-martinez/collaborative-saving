@@ -126,9 +126,8 @@ describe('GetMemberStockTransfersQueryHandler', () => {
         id: stockId,
         name: 'Acción Mediana',
         value: 500000,
-        monthly_contribution: 25000,
-        is_guaranteed: true,
-        guaranteed_yield: 0.05,
+        monthlyContribution: 25000,
+        stockTypeId: '1'
       });
 
       const fromSubscription = StockSubscription.create({
