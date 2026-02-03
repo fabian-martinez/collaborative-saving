@@ -12,12 +12,16 @@ import { TypeOrmStockRepository } from '../../../typeorm/repositories/typeorm-st
 import { TypeOrmStockTypeRepository } from '../../../typeorm/repositories/typeorm-stock-type.repository';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { StockTypeRepository } from '@domain/ports/repositories/stock-type-repository.port';
+import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-subscription-repository.port';
+import { TypeOrmStockSubscriptionRepository } from '../../../typeorm/repositories/typeorm-stock-subscription.repository';
+import { StockSubscription } from '@infrastructure/typeorm/entities/stock-subscription.entity';
 
 export const STOCK_REPOSITORY = Symbol('StockRepository');
 export const STOCK_TYPE_REPOSITORY = Symbol('StockTypeRepository');
+export const STOCK_SUBSCRIPTION_REPOSITORY = Symbol('StockSubscriptionRepository');
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Stock, StockType])],
+  imports: [TypeOrmModule.forFeature([Stock, StockType, StockSubscription])],
   controllers: [StocksV2Controller],
   providers: [
     // Repository implementations
@@ -28,6 +32,10 @@ export const STOCK_TYPE_REPOSITORY = Symbol('StockTypeRepository');
     {
       provide: STOCK_TYPE_REPOSITORY,
       useClass: TypeOrmStockTypeRepository,
+    },
+    {
+      provide: STOCK_SUBSCRIPTION_REPOSITORY,
+      useClass: TypeOrmStockSubscriptionRepository,
     },
     // Query handlers
     {
@@ -57,8 +65,11 @@ export const STOCK_TYPE_REPOSITORY = Symbol('StockTypeRepository');
     },
     {
       provide: DeleteStockUseCase,
-      useFactory: (stockRepo: StockRepository) => new DeleteStockUseCase(stockRepo),
-      inject: [STOCK_REPOSITORY],
+      useFactory: (
+        stockRepo: StockRepository,
+        stockSubscriptionRepo: StockSubscriptionRepository,
+      ) => new DeleteStockUseCase(stockRepo, stockSubscriptionRepo),
+      inject: [STOCK_REPOSITORY, STOCK_SUBSCRIPTION_REPOSITORY],
     },
     TypeOrmStockRepository,
     TypeOrmStockTypeRepository,
