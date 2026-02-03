@@ -75,7 +75,7 @@ export interface MemberPayment {
 export interface MemberPurchase {
   stock_subscription_id: string
   stock_id: string
-  stock_type: string
+  stock_name: string
   quantity: number
   unit_value: number
   total_value: number
@@ -158,11 +158,11 @@ export interface StockExchangeResponse {
   date: string | Date
   description: string
   from_stock_id: string
-  from_stock_type: string
+  from_stock_name: string
   from_quantity: number
   from_value: number
   to_stock_id: string
-  to_stock_type: string
+  to_stock_name: string
   to_quantity: number
   to_value: number
   difference: number
@@ -178,14 +178,16 @@ export interface StockTransferResponse {
   meeting_id: string
   date: string | Date
   description: string
-  transfer_subscription_id: string
-  transfer_stock_id: string
-  transfer_stock_type: string
-  transfer_quantity: number
-  transfer_value: number
+  from_subscription_id: string
+  to_subscription_id: string
+  stock_id: string
+  stock_name: string
+  quantity: number
+  value: number
   from_member_id: string
+  from_member_name: string
   to_member_id: string
-  notes?: string
+  to_member_name: string
 }
 
 export interface StockLoanPaymentResponse {
@@ -193,13 +195,16 @@ export interface StockLoanPaymentResponse {
   meeting_id: string
   date: string | Date
   description: string
-  loan_id: string
-  payment_subscription_id: string
-  payment_stock_id: string
-  payment_stock_type: string
-  payment_quantity: number
+  subscription_id: string
+  stock_id: string
+  stock_name: string
+  quantity: number
   payment_value: number
-  notes?: string
+  loan_id: string
+  loan_type: string
+  previous_balance: number
+  new_balance: number
+  transaction_detail_id: string
 }
 
 export interface Loan {
@@ -267,7 +272,7 @@ export interface GetPaymentScheduleQuery {
 export interface StockSubscription {
   id: string
   stock_id: string
-  stock_type: string
+  stock_name: string
   quantity: number
   purchase_date: string | Date
   status: string
@@ -458,7 +463,7 @@ export const membersApi = {
       return {
         id: subscriptionId,
         stock_id: 'mock-stock-id',
-        stock_type: 'Acción A',
+        stock_name: 'Acción A',
         quantity: 0,
         purchase_date: new Date(),
         status: 'inactive',

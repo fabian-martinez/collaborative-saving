@@ -209,7 +209,7 @@ describe('GetMemberStockTransfersQueryHandler', () => {
         operationId: operation.id,
         meetingId,
         stockId,
-        stockType: stock.name,
+        stockName: stock.name,
         quantity: 2,
         value: 1000000,
         fromMemberId,

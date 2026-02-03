@@ -9,7 +9,7 @@ export class StockTransferResponseDto {
   date: Date | string;
   description: string;
   stockId: string;
-  stockType: string;
+  stockName: string;
   quantity: number;
   value: number;
   fromMemberId: string;

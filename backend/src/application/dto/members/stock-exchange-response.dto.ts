@@ -9,11 +9,11 @@ export class StockExchangeResponseDto {
   date: Date | string;
   description: string;
   fromStockId: string;
-  fromStockType: string;
+  fromStockName: string;
   fromQuantity: number;
   fromValue: number;
   toStockId: string;
-  toStockType: string;
+  toStockName: string;
   toQuantity: number;
   toValue: number;
   difference: number;

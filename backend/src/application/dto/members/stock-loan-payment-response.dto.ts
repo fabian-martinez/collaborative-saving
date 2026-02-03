@@ -9,7 +9,7 @@ export class StockLoanPaymentResponseDto {
   date: Date | string;
   description: string;
   stockId: string;
-  stockType: string;
+  stockName: string;
   quantity: number;
   paymentValue: number;
   loanId: string;

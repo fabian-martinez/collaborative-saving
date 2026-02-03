@@ -235,7 +235,7 @@ describe('GetMemberStockLoanPaymentsQueryHandler', () => {
         operationId: operation.id,
         meetingId,
         stockId,
-        stockType: stock.name,
+        stockName: stock.name,
         quantity: 2,
         paymentValue: 600000,
         loanId: loan.id,

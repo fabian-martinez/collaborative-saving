@@ -22,7 +22,7 @@ export class StockLoanPaymentResponseHttpDto {
   stock_id: string;
 
   @ApiProperty()
-  stock_type: string;
+  stock_name: string;
 
   @ApiProperty()
   quantity: number;

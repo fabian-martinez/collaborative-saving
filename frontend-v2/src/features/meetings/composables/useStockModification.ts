@@ -69,7 +69,7 @@ export function useStockModification() {
 
   // Receipts
   const transferReceipt = ref<{
-    stockType: string
+    stockName: string
     quantity: number
     unitValue: number
     totalValue: number
@@ -79,7 +79,7 @@ export function useStockModification() {
     to_member_id: string
   } | null>(null)
   const loanPaymentReceipt = ref<{
-    stockType: string
+    stockName: string
     quantity: number
     unitValue: number
     totalValue: number
@@ -91,11 +91,11 @@ export function useStockModification() {
     loan_id: string
   } | null>(null)
   const modificationReceipt = ref<{
-    fromStockType: string
+    fromStockName: string
     fromQuantity: number
     fromUnitValue: number
     fromValue: number
-    toStockType: string
+    toStockName: string
     toQuantity: number
     toUnitValue: number
     toValue: number

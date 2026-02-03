@@ -6,7 +6,7 @@
 export class MemberPurchaseResponseDto {
   stockSubscriptionId: string;
   stockId: string;
-  stockType: string;
+  stockName: string;
   quantity: number;
   unitValue: number;
   totalValue: number;

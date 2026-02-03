@@ -417,7 +417,7 @@ const memberStocksForWithdrawal = computed<MemberStockForWithdrawal[]>(() => {
       const stock = stocks.value.find(s => s.id === sub.stock_id)
       return {
         stockId: sub.stock_id,
-        stockType: sub.stock_type || stock?.type || 'Acción',
+        stockName: sub.stock_name || stock?.name || 'Acción',
         quantity: Number(sub.quantity),
         currentValue: stock?.value || 0
       }
@@ -630,7 +630,7 @@ function handleWithdrawalSave(withdrawalData: any) {
       member_id: selectedMember.value.id,
       type: 'withdrawal',
       amount: proportionalAmount,
-      notes: `Retiro de ${withdrawal.quantity} acciones ${stock?.stockType || ''}. Pendiente: ${formatCurrency(pendingAmount)}`,
+      notes: `Retiro de ${withdrawal.quantity} acciones ${stock?.stockName || ''}. Pendiente: ${formatCurrency(pendingAmount)}`,
       disbursement_stock_request: {
         stock_id: withdrawal.stockId,
         stock_withdrawal_quantity: withdrawal.quantity

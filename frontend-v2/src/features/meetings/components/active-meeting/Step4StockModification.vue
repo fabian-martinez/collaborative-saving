@@ -57,7 +57,7 @@
                   <div class="grid grid-cols-2 gap-4">
                     <div>
                       <h4 class="font-medium text-error">Entregar:</h4>
-                      <p class="text-lg">{{ stockModification.modificationReceipt.value.fromStockType }}</p>
+                      <p class="text-lg">{{ stockModification.modificationReceipt.value.fromStockName }}</p>
                       <p class="text-sm text-base-content/70">
                         {{ stockModification.modificationReceipt.value.fromQuantity }} uds. x $
                         <CopyOnDblClickNumber :value="stockModification.modificationReceipt.value.fromUnitValue" />
@@ -66,7 +66,7 @@
                     </div>
                     <div>
                       <h4 class="font-medium text-success">Recibir:</h4>
-                      <p class="text-lg">{{ stockModification.modificationReceipt.value.toStockType }}</p>
+                      <p class="text-lg">{{ stockModification.modificationReceipt.value.toStockName }}</p>
                       <p class="text-sm text-base-content/70">
                         {{ stockModification.modificationReceipt.value.toQuantity }} uds. x $
                         <CopyOnDblClickNumber :value="stockModification.modificationReceipt.value.toUnitValue" />
@@ -119,7 +119,7 @@
                   <h3 class="font-semibold mb-2">Detalle de la transferencia</h3>
                   <div class="flex items-baseline">
                     <div class="flex-shrink-0">
-                      <p class="font-semibold text-xl">{{ stockModification.transferReceipt.value.stockType }}</p>
+                      <p class="font-semibold text-xl">{{ stockModification.transferReceipt.value.stockName }}</p>
                       <p class="text-sm text-base-content/70">
                         {{ stockModification.transferReceipt.value.quantity }} uds. x $
                         <CopyOnDblClickNumber :value="stockModification.transferReceipt.value.unitValue" />
@@ -162,7 +162,7 @@
                   <h3 class="font-semibold mb-2">Detalle del pago</h3>
                   <div class="flex items-baseline">
                     <div class="flex-shrink-0">
-                      <p class="font-semibold text-xl">{{ stockModification.loanPaymentReceipt.value.stockType }}</p>
+                      <p class="font-semibold text-xl">{{ stockModification.loanPaymentReceipt.value.stockName }}</p>
                       <p class="text-sm text-base-content/70">
                         {{ stockModification.loanPaymentReceipt.value.quantity }} uds. x $
                         <CopyOnDblClickNumber :value="stockModification.loanPaymentReceipt.value.unitValue" />
@@ -336,7 +336,7 @@
                 :key="sub.id" 
                 :value="sub.id"
               >
-                {{ sub.stock?.type || 'Acción' }} - {{ sub.quantity }} unidades disponibles
+                {{ sub.stock?.name || 'Acción' }} - {{ sub.quantity }} unidades disponibles
               </option>
             </select>
           </div>
@@ -412,7 +412,7 @@
                 :key="sub.id" 
                 :value="sub.id"
               >
-                {{ sub.stock?.type || 'Acción' }} - {{ sub.quantity }} unidades disponibles
+                {{ sub.stock?.name || 'Acción' }} - {{ sub.quantity }} unidades disponibles
               </option>
             </select>
           </div>
@@ -492,7 +492,7 @@
                       :key="sub.id" 
                       :value="sub.id"
                     >
-                      {{ sub.stock?.type || 'Acción' }} - {{ sub.quantity }} disponibles
+                      {{ sub.stock?.name || 'Acción' }} - {{ sub.quantity }} disponibles
                     </option>
                   </select>
                 </div>
@@ -536,7 +536,7 @@
                   >
                     <option value="">Seleccione una acción</option>
                     <option v-for="stock in stockModification.availableStocks.value" :key="stock.id" :value="stock.id">
-                      {{ stock.type }} - ${{ stock.value.toLocaleString() }} c/u
+                      {{ stock.name }} - ${{ stock.value.toLocaleString() }} c/u
                     </option>
                   </select>
                 </div>
@@ -853,7 +853,7 @@ function prepareTransferReceipt() {
   const totalValue = quantity * unitValue
   
   stockModification.transferReceipt.value = {
-    stockType: subscription.stock?.type || 'Acción',
+    stockName: subscription.stock?.name || 'Acción',
     quantity,
     unitValue,
     totalValue,
@@ -880,7 +880,7 @@ function prepareLoanPaymentReceipt() {
   const newBalance = loan.outstanding_balance - totalValue
   
   stockModification.loanPaymentReceipt.value = {
-    stockType: subscription.stock?.type || 'Acción',
+    stockName: subscription.stock?.name || 'Acción',
     quantity,
     unitValue,
     totalValue,
@@ -929,11 +929,11 @@ function prepareModificationReceipt() {
   }
   
   stockModification.modificationReceipt.value = {
-    fromStockType: fromSub.stock?.type || 'Acción',
+    fromStockName: fromSub.stock?.name || 'Acción',
     fromQuantity,
     fromUnitValue,
     fromValue,
-    toStockType: toStock.type,
+    toStockName: toStock.name,
     toQuantity,
     toUnitValue,
     toValue,

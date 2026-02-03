@@ -15,7 +15,7 @@
             </thead>
             <tbody>
               <tr v-for="(stock, idx) in memberStocks || []" :key="`${stock.stockId}-${idx}`">
-                <td>{{ stock.stockType }}</td>
+                <td>{{ stock.stockName }}</td>
                 <td>{{ stock.quantity }}</td>
                 <td>{{ formatCurrency(stock.currentValue) }}</td>
                 <td>
@@ -31,7 +31,7 @@
           <div class="bg-base-200 p-3 rounded">
             <ul class="text-sm space-y-1">
               <li v-for="(item, idx) in withdrawalSummary" :key="`${item.stockId}-${idx}`">
-                {{ item.stockType }}: {{ item.quantity }} x {{ formatCurrency(item.currentValue) }} = <span class="font-mono font-semibold">{{ formatCurrency(item.total) }}</span>
+                {{ item.stockName }}: {{ item.quantity }} x {{ formatCurrency(item.currentValue) }} = <span class="font-mono font-semibold">{{ formatCurrency(item.total) }}</span>
               </li>
             </ul>
           </div>
@@ -92,7 +92,7 @@ import type { Member } from '@/api/members.api'
 // Defines structure for props (Derived from Subscription + Stock Value)
 export interface MemberStockForWithdrawal {
   stockId: string;
-  stockType: string;
+  stockName: string;
   quantity: number;
   currentValue: number;
 }
@@ -178,7 +178,7 @@ const withdrawalSummary = computed(() => {
       const stock = findStockById(w.stockId)
       return {
         stockId: w.stockId,
-        stockType: stock?.stockType || '',
+        stockName: stock?.stockName || '',
         quantity: w.quantity,
         currentValue: stock?.currentValue || 0,
         total: w.quantity * (stock?.currentValue || 0)
@@ -194,7 +194,7 @@ function saveWithdrawal() {
       const stock = findStockById(w.stockId)
       return {
         stockId: w.stockId,
-        stockType: stock?.stockType || '',
+        stockName: stock?.stockName || '',
         quantity: w.quantity,
         currentValue: stock?.currentValue || 0
       }

@@ -214,7 +214,7 @@ describe('GetMemberStockSubscriptionsQueryHandler', () => {
       expect(result[0]).toEqual({
         id: stockSubscription.id,
         stockId,
-        stockType: stock.name,
+        stockName: stock.name,
         quantity: 2,
         purchaseDate: stockSubscription.purchaseDate,
         status: StockSubscriptionStatus.ACTIVE,
@@ -258,7 +258,7 @@ describe('GetMemberStockSubscriptionsQueryHandler', () => {
       expect(result[0]).toEqual({
         id: stockSubscription.id,
         stockId,
-        stockType: stock.name,
+        stockName: stock.name,
         quantity: 2,
         purchaseDate: stockSubscription.purchaseDate,
         status: StockSubscriptionStatus.ACTIVE,
@@ -318,8 +318,8 @@ describe('GetMemberStockSubscriptionsQueryHandler', () => {
       // Most recent first (subscription2 is from 2024-02-20)
       expect(result[0].id).toBe(subscription2.id);
       expect(result[1].id).toBe(subscription1.id);
-      expect(result[0].stockType).toBe('Acción B');
-      expect(result[1].stockType).toBe('Acción A');
+      expect(result[0].stockName).toBe('Acción B');
+      expect(result[1].stockName).toBe('Acción A');
     });
 
     it('should skip subscriptions when stock not found', async () => {

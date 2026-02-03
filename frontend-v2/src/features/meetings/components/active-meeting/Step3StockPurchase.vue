@@ -344,7 +344,7 @@ function getMemberColor(memberId: string): string {
 
 function stockName(id: string) {
   const s = stocks.value.find(s => s.id === id)
-  return s ? s.type : '-'
+  return s ? s.name : '-'
 }
 
 function hasPendingPurchase(memberId: string) {
@@ -375,7 +375,7 @@ async function convertPurchasesToOperations(purchases: MemberPurchase[]): Promis
           member_id: operation.member_id || selectedMember.value?.id || '',
           meeting_id: operation.meeting_id,
           type: operation.type,
-          description: operation.description || `Compra de ${purchase.stock_type} - ${purchase.quantity} uds`,
+          description: operation.description || `Compra de ${purchase.stock_name} - ${purchase.quantity} uds`,
           date: operation.date,
           total_amount: purchase.total_value,
           ledger_entries: operation.entries || []
@@ -387,7 +387,7 @@ async function convertPurchasesToOperations(purchases: MemberPurchase[]): Promis
           member_id: selectedMember.value?.id || '',
           meeting_id: purchase.meeting_id,
           type: 'STOCK_PURCHASE',
-          description: `Compra de ${purchase.stock_type} - ${purchase.quantity} uds`,
+          description: `Compra de ${purchase.stock_name} - ${purchase.quantity} uds`,
           date: purchase.purchase_date,
           total_amount: purchase.total_value,
           ledger_entries: []

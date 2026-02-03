@@ -19,10 +19,10 @@ export class MemberPurchaseResponseHttpDto {
   stock_id: string;
 
   @ApiProperty({
-    description: 'The type of stock',
+    description: 'The name of the stock',
     example: 'Acción A',
   })
-  stock_type: string;
+  stock_name: string;
 
   @ApiProperty({
     description: 'The quantity of stocks purchased',

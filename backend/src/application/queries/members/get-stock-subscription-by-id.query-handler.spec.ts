@@ -190,7 +190,7 @@ describe('GetStockSubscriptionByIdQueryHandler', () => {
       expect(result).toEqual({
         id: subscription.id,
         stockId,
-        stockType: stock.name,
+        stockName: stock.name,
         quantity: 2,
         purchaseDate: subscription.purchaseDate,
         status: StockSubscriptionStatus.ACTIVE,
@@ -232,7 +232,7 @@ describe('GetStockSubscriptionByIdQueryHandler', () => {
       expect(result).toEqual({
         id: subscription.id,
         stockId,
-        stockType: stock.name,
+        stockName: stock.name,
         quantity: 0,
         purchaseDate: subscription.purchaseDate,
         status: StockSubscriptionStatus.INACTIVE,
@@ -275,7 +275,7 @@ describe('GetStockSubscriptionByIdQueryHandler', () => {
       expect(result).toEqual({
         id: subscription.id,
         stockId,
-        stockType: stock.name,
+        stockName: stock.name,
         quantity: 2,
         purchaseDate: subscription.purchaseDate,
         status: StockSubscriptionStatus.ACTIVE,

@@ -22,7 +22,7 @@ export class StockExchangeResponseHttpDto {
   from_stock_id: string;
 
   @ApiProperty()
-  from_stock_type: string;
+  from_stock_name: string;
 
   @ApiProperty()
   from_quantity: number;
@@ -34,7 +34,7 @@ export class StockExchangeResponseHttpDto {
   to_stock_id: string;
 
   @ApiProperty()
-  to_stock_type: string;
+  to_stock_name: string;
 
   @ApiProperty()
   to_quantity: number;

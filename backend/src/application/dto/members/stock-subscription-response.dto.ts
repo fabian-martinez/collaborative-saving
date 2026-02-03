@@ -6,7 +6,7 @@
 export class StockSubscriptionResponseDto {
   id: string;
   stockId: string;
-  stockType: string;
+  stockName: string;
   quantity: number;
   purchaseDate: Date | string;
   status: string;

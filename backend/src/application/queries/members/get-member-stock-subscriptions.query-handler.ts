@@ -67,7 +67,7 @@ export class GetMemberStockSubscriptionsQueryHandler {
       const subscriptionDto: StockSubscriptionResponseDto = {
         id: subscription.id,
         stockId: subscription.stockId,
-        stockType: stock.name,
+        stockName: stock.name,
         quantity: subscription.quantity,
         purchaseDate: subscription.purchaseDate,
         status: subscription.status,

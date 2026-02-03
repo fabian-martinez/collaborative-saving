@@ -215,7 +215,7 @@ describe('GetMemberPurchasesQueryHandler', () => {
       expect(result[0]).toEqual({
         stockSubscriptionId: stockSubscription.id,
         stockId,
-        stockType: stock.name,
+        stockName: stock.name,
         quantity: 2,
         unitValue: 100000,
         totalValue: 200000,
@@ -301,7 +301,7 @@ describe('GetMemberPurchasesQueryHandler', () => {
       expect(result[0]).toEqual({
         stockSubscriptionId: stockSubscription.id,
         stockId,
-        stockType: stock.name,
+        stockName: stock.name,
         quantity: 2,
         unitValue: 100000,
         totalValue: 200000,

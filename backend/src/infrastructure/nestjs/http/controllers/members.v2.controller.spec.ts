@@ -1097,7 +1097,7 @@ describe('MembersV2Controller', () => {
       {
         stockSubscriptionId: '880e8400-e29b-41d4-a716-446655440003',
         stockId: '770e8400-e29b-41d4-a716-446655440002',
-        stockType: 'Acción A',
+        stockName: 'Acción A',
         quantity: 2,
         unitValue: 100000,
         totalValue: 200000,
@@ -1109,7 +1109,7 @@ describe('MembersV2Controller', () => {
       {
         stockSubscriptionId: 'aa0e8400-e29b-41d4-a716-446655440006',
         stockId: 'bb0e8400-e29b-41d4-a716-446655440007',
-        stockType: 'Acción B',
+        stockName: 'Acción B',
         quantity: 1,
         unitValue: 150000,
         totalValue: 150000,
@@ -1137,7 +1137,7 @@ describe('MembersV2Controller', () => {
       expect(result[0]).toMatchObject({
         stock_subscription_id: mockPurchases[0].stockSubscriptionId,
         stock_id: mockPurchases[0].stockId,
-        stock_type: mockPurchases[0].stockType,
+        stock_name: mockPurchases[0].stockName,
         quantity: mockPurchases[0].quantity,
         unit_value: mockPurchases[0].unitValue,
         total_value: mockPurchases[0].totalValue,
@@ -1202,7 +1202,7 @@ describe('MembersV2Controller', () => {
       {
         id: '880e8400-e29b-41d4-a716-446655440003',
         stockId: '770e8400-e29b-41d4-a716-446655440002',
-        stockType: 'Acción A',
+        stockName: 'Acción A',
         quantity: 2,
         purchaseDate: new Date('2024-01-15'),
         status: 'active',
@@ -1211,7 +1211,7 @@ describe('MembersV2Controller', () => {
       {
         id: 'aa0e8400-e29b-41d4-a716-446655440006',
         stockId: 'bb0e8400-e29b-41d4-a716-446655440007',
-        stockType: 'Acción B',
+        stockName: 'Acción B',
         quantity: 1,
         purchaseDate: new Date('2024-01-20'),
         status: 'active',
@@ -1234,7 +1234,7 @@ describe('MembersV2Controller', () => {
       expect(result[0]).toMatchObject({
         id: mockSubscriptions[0].id,
         stock_id: mockSubscriptions[0].stockId,
-        stock_type: mockSubscriptions[0].stockType,
+        stock_name: mockSubscriptions[0].stockName,
         quantity: mockSubscriptions[0].quantity,
         purchase_date: mockSubscriptions[0].purchaseDate,
         status: mockSubscriptions[0].status,
@@ -1243,7 +1243,7 @@ describe('MembersV2Controller', () => {
       expect(result[1]).toMatchObject({
         id: mockSubscriptions[1].id,
         stock_id: mockSubscriptions[1].stockId,
-        stock_type: mockSubscriptions[1].stockType,
+        stock_name: mockSubscriptions[1].stockName,
         quantity: mockSubscriptions[1].quantity,
         purchase_date: mockSubscriptions[1].purchaseDate,
         status: mockSubscriptions[1].status,
@@ -1314,7 +1314,7 @@ describe('MembersV2Controller', () => {
     const mockSubscription = {
       id: subscriptionId,
       stockId: '880e8400-e29b-41d4-a716-446655440003',
-      stockType: 'Acción A',
+      stockName: 'Acción A',
       quantity: 2,
       purchaseDate: new Date('2024-01-15'),
       status: 'active',
@@ -1338,7 +1338,7 @@ describe('MembersV2Controller', () => {
       expect(result).toMatchObject({
         id: mockSubscription.id,
         stock_id: mockSubscription.stockId,
-        stock_type: mockSubscription.stockType,
+        stock_name: mockSubscription.stockName,
         quantity: mockSubscription.quantity,
         purchase_date: mockSubscription.purchaseDate,
         status: mockSubscription.status,
@@ -1511,11 +1511,11 @@ describe('MembersV2Controller', () => {
         date: new Date('2024-01-15'),
         description: 'Intercambio de acciones',
         fromStockId: 'stock-from-1',
-        fromStockType: 'Acción Grande',
+        fromStockName: 'Acción Grande',
         fromQuantity: 1,
         fromValue: 1000000,
         toStockId: 'stock-to-1',
-        toStockType: 'Acción Super',
+        toStockName: 'Acción Super',
         toQuantity: 1,
         toValue: 800000,
         difference: 200000,
@@ -1540,8 +1540,8 @@ describe('MembersV2Controller', () => {
       expect(result[0]).toMatchObject({
         operation_id: mockExchanges[0].operationId,
         meeting_id: mockExchanges[0].meetingId,
-        from_stock_type: mockExchanges[0].fromStockType,
-        to_stock_type: mockExchanges[0].toStockType,
+        from_stock_name: mockExchanges[0].fromStockName,
+        to_stock_name: mockExchanges[0].toStockName,
         difference: mockExchanges[0].difference,
         pending_payment_id: mockExchanges[0].pendingPaymentId,
       });
@@ -1589,7 +1589,7 @@ describe('MembersV2Controller', () => {
         date: new Date('2024-01-15'),
         description: 'Transferencia de acciones',
         stockId: 'stock-1',
-        stockType: 'Acción Mediana',
+        stockName: 'Acción Mediana',
         quantity: 2,
         value: 1000000,
         fromMemberId: memberId,
@@ -1614,7 +1614,7 @@ describe('MembersV2Controller', () => {
       expect(result[0]).toMatchObject({
         operation_id: mockTransfers[0].operationId,
         meeting_id: mockTransfers[0].meetingId,
-        stock_type: mockTransfers[0].stockType,
+        stock_name: mockTransfers[0].stockName,
         from_member_name: mockTransfers[0].fromMemberName,
         to_member_name: mockTransfers[0].toMemberName,
       });
@@ -1662,7 +1662,7 @@ describe('MembersV2Controller', () => {
         date: new Date('2024-01-15'),
         description: 'Pago de crédito con acciones',
         stockId: 'stock-1',
-        stockType: 'Acción Corriente',
+        stockName: 'Acción Corriente',
         quantity: 2,
         paymentValue: 600000,
         loanId: 'loan-1',
@@ -1687,7 +1687,7 @@ describe('MembersV2Controller', () => {
       expect(result[0]).toMatchObject({
         operation_id: mockPayments[0].operationId,
         meeting_id: mockPayments[0].meetingId,
-        stock_type: mockPayments[0].stockType,
+        stock_name: mockPayments[0].stockName,
         payment_value: mockPayments[0].paymentValue,
         loan_type: mockPayments[0].loanType,
         previous_balance: mockPayments[0].previousBalance,
