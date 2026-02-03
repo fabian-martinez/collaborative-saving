@@ -3,6 +3,7 @@ import {
   Column,
   PrimaryGeneratedColumn,
   DeleteDateColumn,
+  CreateDateColumn,
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
@@ -31,9 +32,12 @@ export class Stock {
   @Column({ type: 'uuid', name: 'stock_type_id', nullable: true })
   stockTypeId: string | null;
 
-  @ManyToOne(() => StockType)
+  @ManyToOne(() => StockType, (stockType) => stockType.stocks)
   @JoinColumn({ name: 'stock_type_id' })
   stockType: StockType | null;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
 
   @DeleteDateColumn({ name: 'deleted_at' })
   deletedAt: Date | null;

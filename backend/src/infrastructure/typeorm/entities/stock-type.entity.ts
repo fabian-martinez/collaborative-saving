@@ -2,8 +2,10 @@ import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
+  OneToMany,
 } from 'typeorm';
 import { StockBehavior } from '../enums/stock-behavior.enum';
+import { Stock } from './stock.entity';
 
 @Entity({ name: 'stock_types' })
 export class StockType {
@@ -30,4 +32,7 @@ export class StockType {
     name: 'guaranteed_yield',
   })
   guaranteedYield: number | null;
+
+  @OneToMany(() => Stock, (stock) => stock.stockType)
+  stocks: Stock[];
 }

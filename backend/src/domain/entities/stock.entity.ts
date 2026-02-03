@@ -22,6 +22,7 @@ export class Stock {
     value: number;
     monthlyContribution: number;
     stockTypeId: string;
+    createdAt?: Date;
   }): Stock {
     const id = randomUUID();
 
@@ -30,7 +31,7 @@ export class Stock {
       data.name,
       data.value,
       data.monthlyContribution,
-      new Date(),
+      data.createdAt || new Date(),
       data.stockTypeId,
       null,
     );
@@ -69,12 +70,14 @@ export class Stock {
     value?: number;
     monthlyContribution?: number;
     stockTypeId?: string | null;
+    createdAt?: Date;
   }): void {
     if (data.name !== undefined) this._name = data.name;
     if (data.value !== undefined) this._value = data.value;
     if (data.monthlyContribution !== undefined)
       this._monthlyContribution = data.monthlyContribution;
     if (data.stockTypeId !== undefined) this._stockTypeId = data.stockTypeId;
+    if (data.createdAt !== undefined) (this as any).createdAt = data.createdAt;
 
     this.validateInvariants();
   }

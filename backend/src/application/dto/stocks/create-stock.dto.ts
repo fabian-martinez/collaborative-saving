@@ -7,4 +7,5 @@ export class CreateStockDto {
   isGuaranteed?: boolean;
   guaranteedYield?: number | null;
   stockTypeId?: string;
+  createdAt?: Date;
 }

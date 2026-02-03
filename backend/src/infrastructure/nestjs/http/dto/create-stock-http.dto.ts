@@ -8,6 +8,7 @@ import {
   IsBoolean,
   IsNotEmpty,
   IsUUID,
+  IsDateString,
 } from 'class-validator';
 import { StockBehavior } from '@domain/entities/stock.entity';
 
@@ -58,8 +59,15 @@ export class CreateStockHttpDto {
   @IsOptional()
   guaranteed_yield?: number | null;
 
-  @ApiProperty({ example: 'uuid', required: false })
-  @IsUUID()
   @IsOptional()
   stockTypeId?: string;
+
+  @ApiProperty({
+    description: 'The creation date of the stock (optional)',
+    example: '2024-01-15T10:30:00Z',
+    required: false,
+  })
+  @IsDateString()
+  @IsOptional()
+  created_at?: string;
 }

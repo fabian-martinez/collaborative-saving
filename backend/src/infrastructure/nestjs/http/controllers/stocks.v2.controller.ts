@@ -175,6 +175,7 @@ export class StocksV2Controller {
         isGuaranteed: dto.is_guaranteed,
         guaranteedYield: dto.guaranteed_yield,
         stockTypeId: dto.stockTypeId,
+        createdAt: dto.created_at ? new Date(dto.created_at) : undefined,
       };
       const result = await this.createStockUseCase.execute(createDto);
       return this.mapStockToHttp(result);
@@ -238,6 +239,7 @@ export class StocksV2Controller {
         isGuaranteed: dto.is_guaranteed,
         guaranteedYield: dto.guaranteed_yield,
         stockTypeId: dto.stockTypeId,
+        createdAt: dto.created_at ? new Date(dto.created_at) : undefined,
       };
       const result = await this.updateStockUseCase.execute(id, updateDto);
       return this.mapStockToHttp(result);

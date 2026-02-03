@@ -10,9 +10,7 @@ export class StockMapper {
         value: Number(persistence.value),
         monthlyContribution: Number(persistence.monthlyContribution),
         stockTypeId: persistence.stockTypeId,
-        createdAt:
-          (persistence as unknown as { created_at?: Date | string })
-            .created_at || new Date(),
+        createdAt: persistence.createdAt || new Date(),
         deletedAt: persistence.deletedAt,
       });
     } catch (error) {

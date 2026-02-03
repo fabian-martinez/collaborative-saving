@@ -31,6 +31,7 @@ export class CreateStockUseCase {
       value: dto.value,
       monthlyContribution: dto.monthlyContribution,
       stockTypeId: stockType.id,
+      createdAt: dto.createdAt,
     });
 
     const saved = await this.stockRepository.save(stock);

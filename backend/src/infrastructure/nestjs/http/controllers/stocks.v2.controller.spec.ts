@@ -219,6 +219,7 @@ describe('StocksV2Controller', () => {
         isGuaranteed: undefined,
         guaranteedYield: undefined,
         stockTypeId: undefined,
+        createdAt: undefined,
       });
       expect(result).toEqual(mockStockResponseHttpDto);
     });
@@ -263,6 +264,7 @@ describe('StocksV2Controller', () => {
         isGuaranteed: true,
         guaranteedYield: 0.02,
         stockTypeId: undefined,
+        createdAt: undefined,
       });
       expect(result).toEqual(fullResponseHttpDto);
     });
@@ -377,6 +379,7 @@ describe('StocksV2Controller', () => {
         monthly_contribution: 100,
         is_guaranteed: true,
         guaranteed_yield: 0.03,
+        created_at: mockStockResponseHttpDto.created_at,
       };
 
       updateStockUseCaseExecuteSpy.mockResolvedValue(updatedResponse);
