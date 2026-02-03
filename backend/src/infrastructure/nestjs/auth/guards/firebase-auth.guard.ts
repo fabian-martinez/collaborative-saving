@@ -3,20 +3,16 @@ import {
   ExecutionContext,
   Injectable,
   UnauthorizedException,
-  Inject,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { FirebaseAdminService } from '../../../services/firebase-admin/firebase-admin.service';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
-import { MEMBER_REPOSITORY } from '@domain/constants/injection-tokens';
+import { GetAuthenticatedUserQuery } from '@application/queries/auth/get-authenticated-user.query';
 
 @Injectable()
 export class FirebaseAuthGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    private firebaseAdminService: FirebaseAdminService,
-    @Inject(MEMBER_REPOSITORY) private memberRepository: MemberRepository,
+    private readonly getAuthenticatedUserQuery: GetAuthenticatedUserQuery,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -37,19 +33,13 @@ export class FirebaseAuthGuard implements CanActivate {
     }
 
     try {
-      const payload = await this.firebaseAdminService.auth.verifyIdToken(token);
-      request['user'] = payload;
-
-      if (payload.email) {
-        const member = await this.memberRepository.findByEmail(payload.email);
-        if (member) {
-          request['user'].role = member.role;
-          request['user'].memberId = member.id;
-        }
+      const user = await this.getAuthenticatedUserQuery.execute(token);
+      if (!user) {
+        throw new UnauthorizedException();
       }
+      request['user'] = user;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[FirebaseAuthGuard] Token verification failed:', message);
+      console.error('[FirebaseAuthGuard] Authentication failed:', error instanceof Error ? error.message : String(error));
       throw new UnauthorizedException();
     }
     return true;

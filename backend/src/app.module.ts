@@ -13,6 +13,7 @@ import { AccountingV2Module } from './infrastructure/nestjs/http/modules/account
 import { EventBusModule } from './infrastructure/services/event-bus/event-bus.module';
 import { TransactionManagerModule } from './infrastructure/services/transaction-manager/transaction-manager.module';
 import { FirebaseAdminModule } from './infrastructure/services/firebase-admin/firebase-admin.module';
+import { AuthModule } from './infrastructure/services/auth/auth.module';
 import { FirebaseAuthGuard } from './infrastructure/nestjs/auth/guards/firebase-auth.guard';
 import { RolesGuard } from './infrastructure/nestjs/auth/guards/roles.guard';
 
@@ -30,6 +31,7 @@ import { RolesGuard } from './infrastructure/nestjs/auth/guards/roles.guard';
     EventBusModule,
     TransactionManagerModule,
     FirebaseAdminModule,
+    AuthModule,
     MembersV2Module,
     StocksV2Module,
     MeetingsV2Module,
