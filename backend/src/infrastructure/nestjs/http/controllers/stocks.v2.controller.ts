@@ -9,6 +9,8 @@ import {
   HttpStatus,
   HttpException,
 } from '@nestjs/common';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { MemberRole } from '@domain/enums/member-role.enum';
 import {
   ApiTags,
   ApiOperation,
@@ -138,6 +140,7 @@ export class StocksV2Controller {
   }
 
   @Post()
+  @Roles(MemberRole.ADMIN)
   @ApiOperation({
     summary: 'Create a new stock',
     description: 'Creates a new stock type with the specified parameters',
@@ -191,6 +194,7 @@ export class StocksV2Controller {
   }
 
   @Patch(':id')
+  @Roles(MemberRole.ADMIN)
   @ApiOperation({
     summary: 'Update a stock',
     description: 'Updates an existing stock with the specified parameters',

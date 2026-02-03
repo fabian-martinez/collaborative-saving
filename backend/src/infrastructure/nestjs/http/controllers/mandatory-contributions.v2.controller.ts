@@ -13,6 +13,8 @@ import {
   ValidationPipe,
   HttpCode,
 } from '@nestjs/common';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { MemberRole } from '@domain/enums/member-role.enum';
 import {
   ApiTags,
   ApiOperation,
@@ -79,6 +81,7 @@ export class MandatoryContributionsV2Controller {
   }
 
   @Post()
+  @Roles(MemberRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Create a new mandatory contribution',
@@ -188,6 +191,7 @@ export class MandatoryContributionsV2Controller {
   }
 
   @Patch(':id')
+  @Roles(MemberRole.ADMIN)
   @ApiOperation({
     summary: 'Update mandatory contribution information',
     description:
@@ -250,6 +254,7 @@ export class MandatoryContributionsV2Controller {
   }
 
   @Delete(':id')
+  @Roles(MemberRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete a mandatory contribution',

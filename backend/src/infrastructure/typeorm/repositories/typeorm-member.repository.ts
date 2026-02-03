@@ -33,6 +33,14 @@ export class TypeOrmMemberRepository implements MemberRepository {
     return MemberMapper.toDomain(m);
   }
 
+  async findByEmail(email: string): Promise<MemberDomain | null> {
+    const m = await this.repo.findOne({
+      where: { email, deletedAt: IsNull() },
+    });
+    if (!m) return null;
+    return MemberMapper.toDomain(m);
+  }
+
   async findActive(): Promise<MemberDomain[]> {
     const members = await this.repo.find({
       where: { deletedAt: IsNull(), status: 'active' },
