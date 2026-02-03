@@ -78,9 +78,7 @@ export class TypeOrmLoanTransactionDetailRepository implements LoanTransactionDe
       }
       return LoanTransactionDetailMapper.toDomain(updated);
     } else {
-      const saved = await repo.save(
-        persistence as LoanTransactionDetailEntity,
-      );
+      const saved = await repo.save(persistence as LoanTransactionDetailEntity);
       return LoanTransactionDetailMapper.toDomain(saved);
     }
   }

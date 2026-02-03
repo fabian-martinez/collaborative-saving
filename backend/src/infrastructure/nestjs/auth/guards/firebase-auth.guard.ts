@@ -26,7 +26,7 @@ export class FirebaseAuthGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<Record<string, any>>();
     const token = this.extractTokenFromHeader(request);
-    
+
     if (!token) {
       console.error('[FirebaseAuthGuard] No token found in request headers');
       throw new UnauthorizedException();
@@ -39,14 +39,21 @@ export class FirebaseAuthGuard implements CanActivate {
       }
       request['user'] = user;
     } catch (error) {
-      console.error('[FirebaseAuthGuard] Authentication failed:', error instanceof Error ? error.message : String(error));
+      console.error(
+        '[FirebaseAuthGuard] Authentication failed:',
+        error instanceof Error ? error.message : String(error),
+      );
       throw new UnauthorizedException();
     }
     return true;
   }
 
-  private extractTokenFromHeader(request: Record<string, any>): string | undefined {
-    const headers = request.headers as Record<string, string | string[] | undefined> | undefined;
+  private extractTokenFromHeader(
+    request: Record<string, any>,
+  ): string | undefined {
+    const headers = request.headers as
+      | Record<string, string | string[] | undefined>
+      | undefined;
     const authorization = headers?.authorization;
     if (!authorization || typeof authorization !== 'string') {
       return undefined;

@@ -340,12 +340,11 @@ describe('MeetingSummaryService', () => {
       ]);
 
       // Mock stock value histories
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const histories = [
         { previousValue: 1000, newValue: 1100 },
         { previousValue: 1000, newValue: 1100 },
-      ] as any;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      ] as any[]; // Using any[] to bypass strict typing for now, but safer than just as any
+
       mockStockValueHistoryRepository.findByOperation.mockResolvedValue(
         histories,
       );
@@ -634,12 +633,11 @@ describe('MeetingSummaryService', () => {
       ]);
 
       // Histories with previousValue = 0
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const histories = [
         { previousValue: 0, newValue: 100 },
         { previousValue: 0, newValue: 200 },
-      ] as any;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      ] as any[];
+
       mockStockValueHistoryRepository.findByOperation.mockResolvedValue(
         histories,
       );
@@ -711,9 +709,8 @@ describe('MeetingSummaryService', () => {
       ]);
 
       // Histories for the most recent revaluation
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const histories = [{ previousValue: 1000, newValue: 1200 }] as any;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      const histories = [{ previousValue: 1000, newValue: 1200 }] as any[];
+
       mockStockValueHistoryRepository.findByOperation.mockResolvedValue(
         histories,
       );
@@ -770,7 +767,7 @@ describe('MeetingSummaryService', () => {
       mockLoanRepository.findAll.mockResolvedValue([]);
 
       // Mock pending payments with different statuses
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
       const pendingPayments = [
         {
           id: 'pending-1',
@@ -792,8 +789,8 @@ describe('MeetingSummaryService', () => {
           meetingId: 'other-meeting-id', // Different meeting, should be excluded
           status: 'pending',
         },
-      ] as any;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      ] as any[];
+
       mockPendingMemberPaymentRepository.findByMeeting.mockResolvedValue(
         pendingPayments,
       );

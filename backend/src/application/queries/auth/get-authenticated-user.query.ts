@@ -19,7 +19,9 @@ export class GetAuthenticatedUserQuery {
       return null;
     }
 
-    const member = await this.memberRepository.findByEmail(externalIdentity.email);
+    const member = await this.memberRepository.findByEmail(
+      externalIdentity.email,
+    );
     if (!member) {
       return null;
     }

@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { IdentityService, ExternalUserIdentity } from '@domain/ports/services/identity.service.port';
+import {
+  IdentityService,
+  ExternalUserIdentity,
+} from '@domain/ports/services/identity.service.port';
 import { FirebaseAdminService } from '../firebase-admin/firebase-admin.service';
 
 @Injectable()
@@ -16,7 +19,10 @@ export class FirebaseIdentityService implements IdentityService {
         email: payload.email,
       };
     } catch (error) {
-      console.error('[FirebaseIdentityService] Token verification failed:', error instanceof Error ? error.message : String(error));
+      console.error(
+        '[FirebaseIdentityService] Token verification failed:',
+        error instanceof Error ? error.message : String(error),
+      );
       return null;
     }
   }

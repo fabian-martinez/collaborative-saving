@@ -7,8 +7,6 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 describe('FirebaseAuthGuard', () => {
   let guard: FirebaseAuthGuard;
-  let reflector: Reflector;
-  let getAuthenticatedUserQuery: GetAuthenticatedUserQuery;
 
   const mockExecutionContext = {
     getHandler: jest.fn(),
@@ -35,8 +33,6 @@ describe('FirebaseAuthGuard', () => {
     }).compile();
 
     guard = module.get<FirebaseAuthGuard>(FirebaseAuthGuard);
-    reflector = module.get<Reflector>(Reflector);
-    getAuthenticatedUserQuery = module.get<GetAuthenticatedUserQuery>(GetAuthenticatedUserQuery);
 
     jest.clearAllMocks();
   });
@@ -51,15 +47,17 @@ describe('FirebaseAuthGuard', () => {
     const result = await guard.canActivate(mockExecutionContext);
 
     expect(result).toBe(true);
-    expect(mockReflector.getAllAndOverride).toHaveBeenCalledWith(IS_PUBLIC_KEY, [
-      mockExecutionContext.getHandler(),
-      mockExecutionContext.getClass(),
-    ]);
+    expect(mockReflector.getAllAndOverride).toHaveBeenCalledWith(
+      IS_PUBLIC_KEY,
+      [mockExecutionContext.getHandler(), mockExecutionContext.getClass()],
+    );
   });
 
   it('should throw UnauthorizedException if no token provided', async () => {
     mockReflector.getAllAndOverride.mockReturnValue(false);
-    (mockExecutionContext.switchToHttp().getRequest as jest.Mock).mockReturnValue({
+    (
+      mockExecutionContext.switchToHttp().getRequest as jest.Mock
+    ).mockReturnValue({
       headers: {},
     });
 
@@ -70,7 +68,9 @@ describe('FirebaseAuthGuard', () => {
 
   it('should throw UnauthorizedException if token is invalid format', async () => {
     mockReflector.getAllAndOverride.mockReturnValue(false);
-    (mockExecutionContext.switchToHttp().getRequest as jest.Mock).mockReturnValue({
+    (
+      mockExecutionContext.switchToHttp().getRequest as jest.Mock
+    ).mockReturnValue({
       headers: { authorization: 'InvalidFormat token' },
     });
 
@@ -81,7 +81,9 @@ describe('FirebaseAuthGuard', () => {
 
   it('should throw UnauthorizedException if query returns null (user not found/invalid)', async () => {
     mockReflector.getAllAndOverride.mockReturnValue(false);
-    (mockExecutionContext.switchToHttp().getRequest as jest.Mock).mockReturnValue({
+    (
+      mockExecutionContext.switchToHttp().getRequest as jest.Mock
+    ).mockReturnValue({
       headers: { authorization: 'Bearer validtoken' },
     });
     mockQuery.execute.mockResolvedValue(null);
@@ -98,7 +100,9 @@ describe('FirebaseAuthGuard', () => {
     const mockRequest = {
       headers: { authorization: 'Bearer validtoken' },
     };
-    (mockExecutionContext.switchToHttp().getRequest as jest.Mock).mockReturnValue(mockRequest);
+    (
+      mockExecutionContext.switchToHttp().getRequest as jest.Mock
+    ).mockReturnValue(mockRequest);
     mockQuery.execute.mockResolvedValue(mockUser);
 
     const result = await guard.canActivate(mockExecutionContext);
