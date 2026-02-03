@@ -1307,7 +1307,7 @@ describe('MembersV2Controller', () => {
     });
   });
 
-  /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
+  /* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
   describe('getStockSubscriptionById', () => {
     const memberId = '550e8400-e29b-41d4-a716-446655440000';
     const subscriptionId = '770e8400-e29b-41d4-a716-446655440002';
@@ -1404,7 +1404,7 @@ describe('MembersV2Controller', () => {
       expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
     });
   });
-  /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
+  /* eslint-enable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 
   describe('getMemberLoans', () => {
     const memberId = '550e8400-e29b-41d4-a716-446655440000';

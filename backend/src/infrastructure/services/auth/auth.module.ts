@@ -17,7 +17,10 @@ import { IdentityService } from '@domain/ports/services/identity.service.port';
     },
     {
       provide: GetAuthenticatedUserQuery,
-      useFactory: (identityService: IdentityService, memberRepository: MemberRepository) => {
+      useFactory: (
+        identityService: IdentityService,
+        memberRepository: MemberRepository,
+      ) => {
         return new GetAuthenticatedUserQuery(identityService, memberRepository);
       },
       inject: [IDENTITY_SERVICE, MEMBER_REPOSITORY],
