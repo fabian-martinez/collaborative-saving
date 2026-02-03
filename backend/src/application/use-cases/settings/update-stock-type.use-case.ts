@@ -7,7 +7,7 @@ export interface UpdateStockTypeCommand {
   id: string;
   name?: string;
   behavior?: StockBehavior;
-  guaranteedYield?: number;
+  guaranteedYield?: number | null;
   isGuaranteed?: boolean;
 }
 

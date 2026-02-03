@@ -29,6 +29,15 @@ export class TypeOrmStockTypeRepository implements StockTypeRepository {
     return StockTypeMapper.toDomain(saved);
   }
 
+  async findByStockId(stockId: string): Promise<StockTypeDomain | null> {
+    const entity = await this.repo
+      .createQueryBuilder('stockType')
+      .innerJoin('stockType.stocks', 'stock')
+      .where('stock.id = :stockId', { stockId })
+      .getOne();
+    return entity ? StockTypeMapper.toDomain(entity) : null;
+  }
+
   async delete(id: string): Promise<void> {
     await this.repo.delete(id);
   }

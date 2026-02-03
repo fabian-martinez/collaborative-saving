@@ -126,6 +126,8 @@ export class SettingsV2Controller {
       id: t.id,
       name: t.name,
       behavior: t.behavior,
+      isGuaranteed: t.isGuaranteed,
+      guaranteedYield: t.guaranteedYield,
     }));
   }
 
@@ -136,11 +138,15 @@ export class SettingsV2Controller {
     const saved = await this.createStockTypeUseCase.execute({
       name: dto.name,
       behavior: dto.behavior,
+      isGuaranteed: dto.isGuaranteed,
+      guaranteedYield: dto.guaranteedYield,
     });
     return {
       id: saved.id,
       name: saved.name,
       behavior: saved.behavior,
+      isGuaranteed: saved.isGuaranteed,
+      guaranteedYield: saved.guaranteedYield,
     };
   }
 
@@ -155,11 +161,15 @@ export class SettingsV2Controller {
       id,
       name: dto.name,
       behavior: dto.behavior,
+      isGuaranteed: dto.isGuaranteed,
+      guaranteedYield: dto.guaranteedYield,
     });
     return {
       id: saved.id,
       name: saved.name,
       behavior: saved.behavior,
+      isGuaranteed: saved.isGuaranteed,
+      guaranteedYield: saved.guaranteedYield,
     };
   }
 

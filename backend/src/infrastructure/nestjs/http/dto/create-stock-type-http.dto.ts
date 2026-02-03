@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsEnum } from 'class-validator';
+import { IsString, IsEnum, IsBoolean, IsNumber, IsOptional } from 'class-validator';
 import { StockBehavior } from '@domain/entities/stock.entity';
 
 export class CreateStockTypeHttpDto {
@@ -10,4 +10,13 @@ export class CreateStockTypeHttpDto {
   @ApiProperty({ example: 'CAPITAL_APPRECIATION', enum: StockBehavior })
   @IsEnum(StockBehavior)
   behavior: StockBehavior;
+
+  @ApiProperty({ example: false })
+  @IsBoolean()
+  isGuaranteed: boolean;
+
+  @ApiProperty({ example: null, required: false })
+  @IsOptional()
+  @IsNumber()
+  guaranteedYield: number | null;
 }
