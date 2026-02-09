@@ -59,13 +59,23 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
     // Handle generic Error instances
     else if (exception instanceof Error) {
-      message = exception.message;
+      // Security: Do not leak internal error details to the client
+      console.error(
+        '[GlobalExceptionFilter] Internal server error:',
+        exception,
+      );
+      message = 'Internal server error';
       // Default to 500 for unknown errors
       status = HttpStatus.INTERNAL_SERVER_ERROR;
     }
     // Handle non-Error exceptions (strings, etc.)
     else {
-      message = String(exception);
+      // Security: Do not leak internal error details to the client
+      console.error(
+        '[GlobalExceptionFilter] Internal server error:',
+        exception,
+      );
+      message = 'Internal server error';
       status = HttpStatus.INTERNAL_SERVER_ERROR;
     }
 
