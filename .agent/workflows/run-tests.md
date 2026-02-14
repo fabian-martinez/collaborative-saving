@@ -31,12 +31,17 @@ Centralized reference for executing tests in the backend project.
 // turbo
 5. Run coverage report: `cd backend && npm run test:cov`
 
+## Watch Mode
+
+// turbo
+6. Run tests in watch mode: `cd backend && npm run test:watch`
+
 ## Lint
 
 // turbo
-6. Run lint: `cd backend && npm run lint`
+7. Run lint: `cd backend && npm run lint`
 
 ## Frontend Build
 
 // turbo
-7. Build frontend (pre-PR check): `cd frontend-v2 && npm run build`
+8. Build frontend (pre-PR check): `cd frontend-v2 && npm run build`

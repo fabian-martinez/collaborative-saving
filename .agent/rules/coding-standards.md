@@ -1,6 +1,6 @@
 # Coding Standards
 
-## Naming
+## Naming Conventions
 
 - **Classes/Interfaces**: PascalCase (e.g., `Member`, `CreateMemberUseCase`)
 - **Variables/Functions**: camelCase (e.g., `memberId`, `findById`)
@@ -20,11 +20,42 @@
 - Factory methods: `static create()` and `static fromPersistence()`
 - Mutation only via methods (e.g., `update()`, `validateInvariants()`)
 
+**Example**:
+```typescript
+export class Member {
+  constructor(
+    public readonly id: string,
+    private _name: string,
+  ) {}
+
+  static create(data: { name: string }): Member {
+    const instance = new Member(randomUUID(), data.name);
+    instance.validateInvariants();
+    return instance;
+  }
+
+  get name(): string { return this._name; }
+}
+```
+
 ## Value Objects
 
 - Immutable (`readonly` property)
 - Validate in constructor (impossible to create invalid instance)
 - Factory method: `static create()`
+
+**Example**:
+```typescript
+export class Email {
+  constructor(public readonly value: string) {
+    if (!value.includes('@')) throw new Error('Invalid email');
+  }
+
+  static create(value: string): Email {
+    return new Email(value);
+  }
+}
+```
 
 ## Mappers
 
@@ -32,6 +63,30 @@
 - `toDomain()`: Wrap in try-catch with descriptive error message
 - `toPersistence()`: Convert `undefined` → `null` explicitly for TypeORM
 - Return `Partial<Entity>` from `toPersistence()`
+
+**Example**:
+```typescript
+export class MemberMapper {
+  static toDomain(entity: MemberEntity): Member {
+    try {
+      return Member.fromPersistence({
+        id: entity.id,
+        name: entity.name,
+      });
+    } catch (error) {
+      throw new Error(`Failed to map Member: ${error.message}`);
+    }
+  }
+
+  static toPersistence(member: Member): Partial<MemberEntity> {
+    return {
+      id: member.id,
+      name: member.name,
+      phone: member.phone ?? null, // undefined → null
+    };
+  }
+}
+```
 
 ## Controllers
 
@@ -54,6 +109,6 @@
 
 ## Code Language
 
-- Code in English
+- Code in **English**
 - Comments can be in Spanish or English
-- Commit messages in English
+- Commit messages in **English**

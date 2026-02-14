@@ -8,21 +8,21 @@ Run this checklist before committing changes to ensure compliance with the proje
 
 ## Architecture Checks
 
-1. **Verify domain isolation**: Ensure no files in `domain/` import from `application/` or `infrastructure/`.
+1. **Verify domain isolation**: Ensure no files in `domain/` import from `application/` or `infrastructure/`
 // turbo
 2. Run: `cd backend && grep -rn "from '.*application\|from '.*infrastructure" src/domain/ --include="*.ts" | grep -v ".spec.ts" | head -20`
 
-3. **Verify Symbol DI**: Ensure all v2 modules use `Symbol()` tokens for dependency injection.
+3. **Verify Symbol DI**: Ensure all v2 modules use `Symbol()` tokens for dependency injection
 // turbo
 4. Run: `cd backend && grep -rn "Symbol(" src/infrastructure/nestjs/http/modules/ --include="*.ts" | head -20`
 
 ## Code Quality Checks
 
-5. **No `any` types**: Verify there are no new `any` usages.
+5. **No `any` types**: Verify there are no new `any` usages
 // turbo
 6. Run: `cd backend && grep -rn ": any" src/ --include="*.ts" | grep -v node_modules | grep -v ".spec.ts" | head -20`
 
-7. **Soft delete filtering**: Ensure all `findOne` / `find` in repositories filter `deletedAt`.
+7. **Soft delete filtering**: Ensure all `findOne` / `find` in repositories filter `deletedAt`
 // turbo
 8. Run: `cd backend && grep -rn "findOne\|\.find(" src/infrastructure/typeorm/repositories/ --include="*.ts" | head -20`
 
@@ -44,4 +44,4 @@ Run this checklist before committing changes to ensure compliance with the proje
     - [ ] Tests follow AAA pattern with complete mocks
     - [ ] Mappers handle nullable → null conversion
 
-12. Format commit message using the `git-commit-formatter` skill.
+12. Format commit message using the `git-commit-formatter` skill

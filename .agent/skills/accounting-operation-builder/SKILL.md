@@ -5,17 +5,23 @@ description: Generates correct accounting operation code using RecordOperationUs
 
 # Accounting Operation Builder
 
-Use this skill when the user asks to "register an accounting operation", "add a financial transaction", or any task that involves creating ledger entries or operations in the system.
+## When to Use
+
+Invoke this skill when the user requests:
+- "Register an accounting operation"
+- "Add a financial transaction"
+- "Record a ledger entry"
+- Any task involving creating operations or ledger entries
 
 ## Context
 
-The project has a **mandatory** transversal system for recording accounting operations documented in:
-- `.cursor/rules/AGENTS.md` (section 8.1)
-- `docs/01-ARQUITECTURA/GUIA_REGISTRO_OPERACIONES.md`
+This project has a **mandatory transversal system** for recording accounting operations:
+- Documented in `.cursor/rules/AGENTS.md` (section 8.1)
+- Detailed guide in `docs/01-ARQUITECTURA/GUIA_REGISTRO_OPERACIONES.md`
 
 ## Critical Rule
 
-> **NEVER** create operations or ledger entries directly with TypeORM.
+> **NEVER** create operations or ledger entries directly with TypeORM.  
 > **ALWAYS** use `RecordOperationUseCase.execute()`.
 
 ### ❌ Anti-Pattern (FORBIDDEN)
@@ -40,10 +46,10 @@ try {
 ```typescript
 const result = await this.recordOperationUseCase.execute({
   memberId: memberId,       // string | null (null for system operations)
-  meetingId: meetingId,      // string
+  meetingId: meetingId,     // string
   type: OperationType.XXX,  // from @common/enums/operation-type.enum
   description: 'Description of the operation',
-  date: new Date(),          // optional, defaults to now
+  date: new Date(),         // optional, defaults to now
   entries: [
     {
       accountType: CASH_ACCOUNT,           // from @common/constants/account-types
@@ -59,9 +65,7 @@ const result = await this.recordOperationUseCase.execute({
 });
 ```
 
-## How to Use
-
-When generating code that involves financial transactions:
+## Step-by-Step Guide
 
 ### Step 1: Identify the Operation Type
 
@@ -75,13 +79,21 @@ Common operation types from `OperationType` enum:
 
 ### Step 2: Define Entries (Debits = Credits)
 
-**Rules:**
-- Positive amounts = Debits
-- Negative amounts = Credits
+**Accounting rules**:
+- Positive amounts = **Debits** (increases assets/expenses)
+- Negative amounts = **Credits** (increases liabilities/income)
 - Sum of all entries MUST equal zero (auto-validated)
 - Minimum 2 entries per operation
 
-### Step 3: Import Constants
+**Example**: Monthly payment of $1000
+```typescript
+entries: [
+  { accountType: CASH_ACCOUNT, amount: 1000, description: 'Cash received' },      // Debit
+  { accountType: STOCK_CAPITAL_ACCOUNT, amount: -1000, description: 'Capital' },  // Credit
+]
+```
+
+### Step 3: Import Required Constants
 
 ```typescript
 import { OperationType } from '@common/enums/operation-type.enum';
@@ -95,6 +107,7 @@ import {
 
 ### Step 4: Inject the Use Case
 
+In your use case constructor:
 ```typescript
 export class YourUseCase {
   constructor(
@@ -102,6 +115,17 @@ export class YourUseCase {
     // ... other dependencies
   ) {}
 }
+```
+
+In the NestJS module:
+```typescript
+@Module({
+  providers: [
+    YourUseCase,
+    RecordOperationUseCase,
+    // ... other providers
+  ],
+})
 ```
 
 ## Entry References
@@ -123,6 +147,7 @@ When a ledger entry affects a specific entity, include the reference:
 
 ```typescript
 import { BusinessRuleError } from '@domain/errors/business-rule.error';
+import { BadRequestException } from '@nestjs/common';
 
 try {
   const result = await this.recordOperationUseCase.execute(dto);
@@ -138,7 +163,52 @@ try {
 
 ## Benefits
 
-- **Automatic balance validation** (debits = credits)
-- **Guaranteed transactionality** (all or nothing)
-- **~1,300 lines of duplicated code eliminated**
-- **Consistent behavior across all services**
+- ✅ **Automatic balance validation** (debits = credits)
+- ✅ **Guaranteed transactionality** (all or nothing)
+- ✅ **~1,300 lines of duplicated code eliminated**
+- ✅ **Consistent behavior across all services**
+- ✅ **Centralized testing** (test once, works everywhere)
+
+## Common Patterns
+
+### Pattern 1: Monthly Payment
+```typescript
+await this.recordOperationUseCase.execute({
+  memberId,
+  meetingId,
+  type: OperationType.MONTHLY_PAYMENT,
+  description: 'Monthly contribution',
+  entries: [
+    { accountType: CASH_ACCOUNT, amount: 1000, description: 'Cash in' },
+    { accountType: STOCK_CAPITAL_ACCOUNT, amount: -1000, description: 'Capital' },
+  ],
+});
+```
+
+### Pattern 2: Loan Disbursement
+```typescript
+await this.recordOperationUseCase.execute({
+  memberId,
+  meetingId,
+  type: OperationType.LOAN_DISBURSEMENT,
+  description: `Loan disbursement`,
+  entries: [
+    { accountType: CASH_ACCOUNT, amount: -5000, description: 'Cash out' },
+    { accountType: LOANS_RECEIVABLE_ACCOUNT, amount: 5000, loanId, description: 'Loan created' },
+  ],
+});
+```
+
+### Pattern 3: Stock Purchase
+```typescript
+await this.recordOperationUseCase.execute({
+  memberId,
+  meetingId,
+  type: OperationType.STOCK_PURCHASE,
+  description: `Purchase of ${quantity} stocks`,
+  entries: [
+    { accountType: CASH_ACCOUNT, amount: -totalAmount, description: 'Payment' },
+    { accountType: STOCK_CAPITAL_ACCOUNT, amount: totalAmount, stockId, description: 'Stock acquired' },
+  ],
+});
+```
