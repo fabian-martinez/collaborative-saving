@@ -2,7 +2,7 @@
 
 ## Hexagonal Architecture
 
-The project follows strict hexagonal architecture. Dependencies ALWAYS point inward:
+This project follows **strict hexagonal architecture**. Dependencies ALWAYS point inward:
 
 ```
 Infrastructure → Application → Domain
@@ -20,15 +20,18 @@ Infrastructure → Application → Domain
 
 ```
 backend/src/
-├── domain/entities/              # Domain entities (create, fromPersistence)
-├── domain/value-objects/         # VOs with validation in constructor
-├── domain/ports/repositories/    # Repository interfaces
-├── domain/ports/services/        # Service interfaces
-├── application/use-cases/{ctx}/  # verb-noun.use-case.ts
-├── application/queries/{ctx}/    # get-{noun}.query-handler.ts
-├── application/dto/{ctx}/        # Application DTOs (camelCase, no decorators)
-├── infrastructure/typeorm/       # Entities, Repositories, Mappers
-└── infrastructure/nestjs/http/   # Controllers, HTTP DTOs, Modules
+├── domain/
+│   ├── entities/              # Domain entities (create, fromPersistence)
+│   ├── value-objects/         # VOs with validation in constructor
+│   ├── ports/repositories/    # Repository interfaces
+│   └── ports/services/        # Service interfaces
+├── application/
+│   ├── use-cases/{ctx}/       # verb-noun.use-case.ts
+│   ├── queries/{ctx}/         # get-{noun}.query-handler.ts
+│   └── dto/{ctx}/             # Application DTOs (camelCase, no decorators)
+└── infrastructure/
+    ├── typeorm/               # Entities, Repositories, Mappers
+    └── nestjs/http/           # Controllers, HTTP DTOs, Modules
 ```
 
 ## Dependency Injection
@@ -37,6 +40,7 @@ Use `Symbol()` tokens in NestJS modules for DI inversion:
 
 ```typescript
 const REPO_SYMBOL = Symbol('XxxRepository');
+
 @Module({
   providers: [
     { provide: REPO_SYMBOL, useClass: TypeOrmXxxRepository },
@@ -57,7 +61,7 @@ const REPO_SYMBOL = Symbol('XxxRepository');
 
 ## Accounting Operations
 
-**MANDATORY**: All accounting operations MUST use `RecordOperationUseCase.execute()`.
+**MANDATORY**: All accounting operations MUST use `RecordOperationUseCase.execute()`.  
 **NEVER** create operations or ledger entries directly with TypeORM.
 
 ## Legacy Code
@@ -67,4 +71,8 @@ const REPO_SYMBOL = Symbol('XxxRepository');
 
 ## Swagger
 
-All new endpoints MUST have Swagger documentation: `@ApiTags`, `@ApiOperation`, `@ApiResponse`, `@ApiProperty` on DTOs.
+All new endpoints MUST have Swagger documentation:
+- `@ApiTags` on controllers
+- `@ApiOperation` on endpoints
+- `@ApiResponse` for status codes
+- `@ApiProperty` / `@ApiPropertyOptional` on DTOs

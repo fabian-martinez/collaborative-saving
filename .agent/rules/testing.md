@@ -7,13 +7,20 @@
 
 ## AAA Pattern (MANDATORY)
 
-Every test MUST follow Arrange-Act-Assert:
+Every test MUST follow **Arrange-Act-Assert**:
 
 ```typescript
 it('should do X when Y', async () => {
-  // ARRANGE - setup data, mocks
-  // ACT - execute code under test
-  // ASSERT - verify results
+  // ARRANGE — Setup data, mocks
+  const dto = { name: 'Test' };
+  repository.save.mockResolvedValue(entity);
+
+  // ACT — Execute code under test
+  const result = await useCase.execute(dto);
+
+  // ASSERT — Verify results
+  expect(saveSpy).toHaveBeenCalledTimes(1);
+  expect(result.name).toBe('Test');
 });
 ```
 
@@ -23,15 +30,32 @@ it('should do X when Y', async () => {
 - Use `as unknown as jest.Mocked<XRepository>` for type safety
 - Clear mocks in `beforeEach`
 
+**Example**:
+```typescript
+let repository: jest.Mocked<MemberRepository>;
+
+beforeEach(() => {
+  repository = {
+    findById: jest.fn(),
+    findAll: jest.fn(),
+    save: jest.fn(),
+    softDelete: jest.fn(),
+  } as unknown as jest.Mocked<MemberRepository>;
+});
+```
+
 ## Spies (MANDATORY for assertions)
 
 Use spies to avoid ESLint `@typescript-eslint/unbound-method` errors:
 
 ```typescript
 let saveSpy: jest.SpyInstance;
+
 beforeEach(() => {
+  repository = { /* mocks */ } as unknown as jest.Mocked<MemberRepository>;
   saveSpy = jest.spyOn(repository, 'save');
 });
+
 // In assertions:
 expect(saveSpy).toHaveBeenCalledTimes(1);
 ```
@@ -48,13 +72,28 @@ expect(saveSpy).toHaveBeenCalledTimes(1);
 
 ## Naming
 
-- Files: `{source-file}.spec.ts`
-- Describe: `describe('ClassName', () => { describe('method', () => { ... }) })`
-- It: `it('should {behavior} when {condition}', ...)`
+- **Files**: `{source-file}.spec.ts`
+- **Describe**: `describe('ClassName', () => { describe('method', () => { ... }) })`
+- **It**: `it('should {behavior} when {condition}', ...)`
 
 ## Commands
 
-- Unit: `cd backend && npm run test:unit`
-- E2E: `cd backend && npm run test:e2e`
-- Coverage: `cd backend && npm run test:cov`
-- Lint: `cd backend && npm run lint`
+```bash
+# Unit tests
+cd backend && npm run test:unit
+
+# E2E tests
+cd backend && npm run test:e2e
+
+# Specific file
+cd backend && npx jest --testPathPattern="create-member.use-case.spec.ts"
+
+# Coverage
+cd backend && npm run test:cov
+
+# Watch mode
+cd backend && npm run test:watch
+
+# Lint
+cd backend && npm run lint
+```
