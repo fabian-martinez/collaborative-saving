@@ -8,9 +8,7 @@ import { Stock as StockDomain } from '@domain/entities/stock.entity';
 describe('TypeOrmStockRepository', () => {
   let repository: TypeOrmStockRepository;
   let typeOrmRepo: jest.Mocked<Repository<StockEntity>>;
-  let findOneSpy: jest.SpyInstance;
   let saveSpy: jest.SpyInstance;
-  let updateSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -34,9 +32,7 @@ describe('TypeOrmStockRepository', () => {
     typeOrmRepo = module.get(getRepositoryToken(StockEntity));
 
     // Create spies to avoid 'this' scoping issues
-    findOneSpy = jest.spyOn(typeOrmRepo, 'findOne');
     saveSpy = jest.spyOn(typeOrmRepo, 'save');
-    updateSpy = jest.spyOn(typeOrmRepo, 'update');
   });
 
   describe('findById', () => {
@@ -226,7 +222,7 @@ describe('TypeOrmStockRepository', () => {
   });
 
   describe('save', () => {
-    it('should insert new stock when not exists', async () => {
+    it('should save stock (insert/update)', async () => {
       // Arrange
       const stock = StockDomain.create({
         type: 'Bono',
@@ -245,96 +241,17 @@ describe('TypeOrmStockRepository', () => {
         deleted_at: null,
       } as StockEntity;
 
-      typeOrmRepo.findOne.mockResolvedValueOnce(null); // Not found
       typeOrmRepo.save.mockResolvedValue(entity);
 
       // Act
       const result = await repository.save(stock);
 
       // Assert
-      expect(findOneSpy).toHaveBeenCalledWith({
-        where: { id: stock.id },
-        withDeleted: true,
-      });
-      expect(saveSpy).toHaveBeenCalled();
-      expect(result).toBeInstanceOf(StockDomain);
-      expect(result.id).toBe(stock.id);
-    });
-
-    it('should update existing stock when exists', async () => {
-      // Arrange
-      const stock = StockDomain.create({
-        type: 'Bono',
-        value: 150,
-        monthlyContribution: 75,
-      });
-
-      const existingEntity: StockEntity = {
-        id: stock.id,
-        type: 'Bono',
-        value: 100,
-        monthly_contribution: 50,
-        is_guaranteed: false,
-        guaranteed_yield: null,
-        behavior: StockBehavior.CAPITAL_APPRECIATION,
-        deleted_at: null,
-      } as StockEntity;
-
-      const updatedEntity: StockEntity = {
-        id: stock.id,
-        type: 'Bono',
-        value: 150,
-        monthly_contribution: 75,
-        is_guaranteed: false,
-        guaranteed_yield: null,
-        behavior: StockBehavior.CAPITAL_APPRECIATION,
-        deleted_at: null,
-      } as StockEntity;
-
-      typeOrmRepo.findOne
-        .mockResolvedValueOnce(existingEntity) // Found existing
-        .mockResolvedValueOnce(updatedEntity); // After update
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
-
-      // Act
-      const result = await repository.save(stock);
-
-      // Assert
-      expect(findOneSpy).toHaveBeenCalledTimes(2);
-      expect(updateSpy).toHaveBeenCalledWith(stock.id, expect.any(Object));
-      expect(result).toBeInstanceOf(StockDomain);
-      expect(result.id).toBe(stock.id);
-      expect(result.value).toBe(150);
-    });
-
-    it('should throw error when stock not found after update', async () => {
-      // Arrange
-      const stock = StockDomain.create({
-        type: 'Bono',
-        value: 100,
-        monthlyContribution: 50,
-      });
-
-      const existingEntity: StockEntity = {
-        id: stock.id,
-        type: 'Bono',
-        value: 100,
-        monthly_contribution: 50,
-        is_guaranteed: false,
-        guaranteed_yield: null,
-        behavior: StockBehavior.CAPITAL_APPRECIATION,
-        deleted_at: null,
-      } as StockEntity;
-
-      typeOrmRepo.findOne
-        .mockResolvedValueOnce(existingEntity) // Found existing
-        .mockResolvedValueOnce(null); // Not found after update
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
-
-      // Act & Assert
-      await expect(repository.save(stock)).rejects.toThrow(
-        'Stock not found after update',
+      expect(saveSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ id: stock.id }),
       );
+      expect(result).toBeInstanceOf(StockDomain);
+      expect(result.id).toBe(stock.id);
     });
   });
 
