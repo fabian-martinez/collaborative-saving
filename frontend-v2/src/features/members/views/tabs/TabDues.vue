@@ -2,9 +2,14 @@
   <div class="py-4 w-full max-w-full min-w-0 overflow-x-hidden">
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0 mb-8">
       <h2 class="text-xl sm:text-2xl font-bold text-base-content mb-0 break-words">Cuotas y Obligaciones</h2>
-      <button class="btn btn-primary" @click="$emit('register-payment')">
-        Registrar Pago
-      </button>
+      <div class="flex gap-2">
+        <button v-if="store.dues.length > 0" class="btn btn-outline btn-secondary" @click="printReceipt.openPrintModal">
+          Imprimir Recibo de Cobro
+        </button>
+        <button class="btn btn-primary" @click="$emit('register-payment')">
+          Registrar Pago
+        </button>
+      </div>
     </div>
 
     <div v-if="store.dues.length === 0" class="text-center py-16 px-8">
@@ -104,6 +109,20 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal de Vista Previa e Impresión -->
+    <PrintReceiptModal
+      :is-open="printReceipt.isPrintModalOpen.value"
+      :member-name="store.member?.name || null"
+      :print-date="formatDate(new Date())"
+      :viewed-operations="viewedOperations"
+      :viewed-total="store.totalPendingDues"
+      title="Recibo de Cobro - Obligaciones"
+      total-label="Total a Cobrar:"
+      modal-id="collection-receipt-print-modal"
+      @close="printReceipt.closePrintModal"
+      @print="printReceipt.printReceipt"
+    />
   </div>
 </template>
 
@@ -111,6 +130,8 @@
 import { computed } from 'vue'
 import { formatCurrency, formatDate } from '@/shared/utils/formatters'
 import type { useMemberDetailStore } from '@/features/members/stores/memberDetail'
+import { usePrintReceipt } from '@/shared/composables/usePrintReceipt'
+import PrintReceiptModal from '@/shared/components/PrintReceiptModal.vue'
 
 const props = defineProps<{
   memberId: string
@@ -132,6 +153,33 @@ const stockFees = computed(() => {
 
 const loanPayments = computed(() => {
   return props.store.dues.filter(due => due.type === 'loan_payment')
+})
+
+// Lógica de Impresión de Recibo
+const printReceipt = usePrintReceipt(
+  computed(() => props.store.member),
+  'collection-receipt-print-modal',
+  'collection-receipt-print-container',
+  'collection-receipt-print'
+)
+
+const viewedOperations = computed(() => {
+  return props.store.dues.map(due => ({
+    id: due.reference_id || due.description,
+    type: due.type.toUpperCase(),
+    description: due.description,
+    total_amount: due.amount,
+    date: due.creation_date,
+    ledger_entries: [
+      {
+        id: `due-${due.reference_id || due.description}`,
+        account_type: due.description,
+        amount: due.amount,
+        description: '',
+        created_at: due.creation_date
+      }
+    ]
+  }))
 })
 </script>
 
