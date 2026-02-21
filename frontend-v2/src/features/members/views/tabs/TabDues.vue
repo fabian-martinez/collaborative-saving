@@ -116,6 +116,19 @@
       </div>
     </div>
 
+    <!-- Modal de Vista Previa e Impresión -->
+    <PrintReceiptModal
+      :is-open="printReceipt.isPrintModalOpen.value"
+      :member-name="store.member?.name || null"
+      :print-date="formatDate(new Date())"
+      :viewed-operations="viewedOperations"
+      :viewed-total="store.totalPendingDues"
+      title="Recibo de Cobro - Obligaciones"
+      total-label="Total a Cobrar:"
+      modal-id="collection-receipt-print-modal"
+      @close="printReceipt.closePrintModal"
+      @print="printReceipt.printReceipt"
+    />
     <!-- Modal para editar datos del crédito -->
     <Modal
       :show="showEditModal"
@@ -186,6 +199,8 @@
 import { ref, computed, reactive } from 'vue'
 import { formatCurrency, formatDate } from '@/shared/utils/formatters'
 import type { useMemberDetailStore } from '@/features/members/stores/memberDetail'
+import { usePrintReceipt } from '@/shared/composables/usePrintReceipt'
+import PrintReceiptModal from '@/shared/components/PrintReceiptModal.vue'
 import { loansApi, type Loan } from '@/api/loans.api'
 import Modal from '@/shared/components/Modal.vue'
 
@@ -218,6 +233,32 @@ const loanPayments = computed(() => {
   return props.store.dues.filter(due => due.type === 'loan_payment')
 })
 
+// Lógica de Impresión de Recibo
+const printReceipt = usePrintReceipt(
+  computed(() => props.store.member),
+  'collection-receipt-print-modal',
+  'collection-receipt-print-container',
+  'collection-receipt-print'
+)
+
+const viewedOperations = computed(() => {
+  return props.store.dues.map(due => ({
+    id: due.reference_id || due.description,
+    type: due.type.toUpperCase(),
+    description: due.description,
+    total_amount: due.amount,
+    date: due.creation_date,
+    ledger_entries: [
+      {
+        id: `due-${due.reference_id || due.description}`,
+        account_type: due.description,
+        amount: due.amount,
+        description: '',
+        created_at: due.creation_date
+      }
+    ]
+  }))
+})
 const openEditModal = (due: any) => {
   const loan = props.store.loans.find(l => l.id === due.reference_id)
   if (loan) {
