@@ -2,9 +2,6 @@
   <div class="py-4 w-full max-w-full min-w-0 overflow-x-hidden">
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0 mb-8">
       <h2 class="text-xl sm:text-2xl font-bold text-base-content mb-0 break-words">Cuotas y Obligaciones</h2>
-      <button class="btn btn-primary" @click="$emit('register-payment')">
-        Registrar Pago
-      </button>
     </div>
 
     <div v-if="store.dues.length === 0" class="text-center py-16 px-8">
@@ -85,7 +82,21 @@
                     </span>
                   </div>
                 </div>
-                <div class="text-base sm:text-lg text-base-content ml-0 sm:ml-4 text-right sm:text-left font-mono font-bold shrink-0 min-w-0 break-words">{{ formatCurrency(due.amount) }}</div>
+                <div class="flex items-center gap-4">
+                  <div class="text-base sm:text-lg text-base-content text-right sm:text-left font-mono font-bold shrink-0 min-w-0 break-words">
+                    {{ formatCurrency(due.amount) }}
+                  </div>
+                  <button
+                    v-if="due.reference_id"
+                    class="btn btn-ghost btn-xs btn-circle"
+                    title="Editar condiciones del crédito"
+                    @click="openEditModal(due)"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -104,13 +115,79 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal para editar datos del crédito -->
+    <Modal
+      :show="showEditModal"
+      title="Editar Condiciones del Crédito"
+      @close="closeEditModal"
+    >
+      <div v-if="selectedLoan" class="space-y-4 py-2">
+        <div class="form-control w-full">
+          <label class="label">
+            <span class="label-text">Tasa de Interés (%)</span>
+          </label>
+          <input
+            v-model.number="editForm.interest_rate"
+            type="number"
+            step="0.01"
+            class="input input-bordered w-full"
+            placeholder="Ej: 1.5"
+          />
+        </div>
+
+        <div class="form-control w-full">
+          <label class="label">
+            <span class="label-text">Cuota Mensual</span>
+          </label>
+          <input
+            v-model.number="editForm.monthly_payment_amount"
+            type="number"
+            class="input input-bordered w-full"
+            placeholder="Ej: 150000"
+          />
+        </div>
+
+        <div class="form-control w-full">
+          <label class="label">
+            <span class="label-text">Plazo (Meses)</span>
+          </label>
+          <input
+            v-model.number="editForm.term"
+            type="number"
+            class="input input-bordered w-full"
+            placeholder="Ej: 12"
+          />
+        </div>
+
+        <div v-if="saveError" class="text-error text-sm mt-2">
+          {{ saveError }}
+        </div>
+      </div>
+
+      <template #footer>
+        <button class="btn btn-ghost" @click="closeEditModal" :disabled="saving">
+          Cancelar
+        </button>
+        <button
+          class="btn btn-primary"
+          @click="saveLoanTerms"
+          :disabled="saving"
+        >
+          <span v-if="saving" class="loading loading-spinner"></span>
+          Guardar Cambios
+        </button>
+      </template>
+    </Modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { formatCurrency, formatDate } from '@/shared/utils/formatters'
 import type { useMemberDetailStore } from '@/features/members/stores/memberDetail'
+import { loansApi, type Loan } from '@/api/loans.api'
+import Modal from '@/shared/components/Modal.vue'
 
 const props = defineProps<{
   memberId: string
@@ -118,9 +195,16 @@ const props = defineProps<{
   meetingId?: string | null
 }>()
 
-defineEmits<{
-  'register-payment': []
-}>()
+const showEditModal = ref(false)
+const saving = ref(false)
+const saveError = ref<string | null>(null)
+const selectedLoan = ref<Loan | null>(null)
+
+const editForm = reactive({
+  interest_rate: 0,
+  monthly_payment_amount: 0,
+  term: 0
+})
 
 const mandatoryContributions = computed(() => {
   return props.store.dues.filter(due => due.type === 'mandatory_contribution')
@@ -133,6 +217,49 @@ const stockFees = computed(() => {
 const loanPayments = computed(() => {
   return props.store.dues.filter(due => due.type === 'loan_payment')
 })
+
+const openEditModal = (due: any) => {
+  const loan = props.store.loans.find(l => l.id === due.reference_id)
+  if (loan) {
+    selectedLoan.value = loan
+    editForm.interest_rate = loan.interest_rate
+    editForm.monthly_payment_amount = loan.monthly_payment_amount
+    editForm.term = loan.term
+    saveError.value = null
+    showEditModal.value = true
+  }
+}
+
+const closeEditModal = () => {
+  showEditModal.value = false
+  selectedLoan.value = null
+  saveError.value = null
+}
+
+const saveLoanTerms = async () => {
+  if (!selectedLoan.value) return
+
+  saving.value = true
+  saveError.value = null
+
+  try {
+    await loansApi.updateLoanTerms(selectedLoan.value.id, {
+      interest_rate: editForm.interest_rate,
+      monthly_payment_amount: editForm.monthly_payment_amount,
+      term: editForm.term
+    })
+
+    // Recargar datos
+    await props.store.fetchLoans(props.memberId)
+    await props.store.fetchDues(props.memberId)
+
+    closeEditModal()
+  } catch (error: any) {
+    saveError.value = error.message || 'Error al actualizar las condiciones del crédito'
+  } finally {
+    saving.value = false
+  }
+}
 </script>
 
 
