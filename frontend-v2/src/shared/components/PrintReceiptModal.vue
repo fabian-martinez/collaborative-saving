@@ -103,3 +103,18 @@ defineEmits<{
 }>()
 </script>
 
+<style scoped>
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+}
+
+.print-only {
+  display: none;
+}
+</style>
+
