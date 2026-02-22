@@ -95,4 +95,21 @@ const getTotal = (op: Operation) => {
   const entry = op.entries.find(e => e.account_type === 'CASH')
   return entry ? entry.amount : 0
 }
+
+const exportData = async () => {
+  const { exportToCSV } = await import('@/shared/utils/export')
+  const { formatDate } = await import('@/shared/utils/formatters')
+  const data = payments.value.map(op => ({
+    Fecha: formatDate(op.date),
+    Socio: getMemberName(op.member_id),
+    Capital: getPrincipal(op),
+    Interés: getInterest(op),
+    Total: getTotal(op)
+  }))
+  exportToCSV(data, `pagos-reunion-${props.operations[0]?.meeting_id.substring(0, 8)}`)
+}
+
+defineExpose({
+  exportData
+})
 </script>
