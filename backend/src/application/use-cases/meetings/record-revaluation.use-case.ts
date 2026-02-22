@@ -197,9 +197,12 @@ export class RecordRevaluationUseCase {
             if (totalShares > 0) {
               // Crear pagos pendientes de dividendos
               for (const sub of activeSubscriptions) {
-                const memberDividend =
+                const memberDividend = roundAndLimit(
                   (sub.quantity / totalShares) *
-                  (detail.dividendsGenerated * detail.totalShares);
+                    (detail.dividendsGenerated * detail.totalShares),
+                  9999999999.99,
+                  2,
+                );
                 if (memberDividend > 0) {
                   const pendingPayment = PendingMemberPayment.create({
                     memberId: sub.memberId,
