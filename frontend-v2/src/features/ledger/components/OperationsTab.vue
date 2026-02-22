@@ -413,6 +413,7 @@ async function exportData() {
         'Reunión': meeting ? `Reunión #${meeting.number}` : '',
         'Fecha Reunión': meeting ? formatDate(meeting.date) : '',
         'Fecha Operación': formatDate(op.date),
+        'Monto': getOperationAmount(op),
         'ID Operación': op.id
       }
     })
