@@ -4,6 +4,7 @@ import {
   ArgumentsHost,
   HttpStatus,
   HttpException,
+  Logger,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { NotFoundError } from '@domain/errors/not-found.error';
@@ -19,6 +20,8 @@ import { InvalidRequestError } from '@domain/errors/invalid-request.error';
  */
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(GlobalExceptionFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -59,13 +62,19 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
     // Handle generic Error instances
     else if (exception instanceof Error) {
-      message = exception.message;
-      // Default to 500 for unknown errors
+      // Log the full error details server-side
+      this.logger.error(
+        `Internal Server Error: ${exception.message}`,
+        exception.stack,
+      );
+      // Mask the error message for the client
+      message = 'Internal server error';
       status = HttpStatus.INTERNAL_SERVER_ERROR;
     }
     // Handle non-Error exceptions (strings, etc.)
     else {
-      message = String(exception);
+      this.logger.error(`Unknown Exception: ${String(exception)}`);
+      message = 'Internal server error';
       status = HttpStatus.INTERNAL_SERVER_ERROR;
     }
 
