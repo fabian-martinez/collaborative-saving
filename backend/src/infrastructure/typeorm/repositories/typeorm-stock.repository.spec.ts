@@ -10,7 +10,6 @@ describe('TypeOrmStockRepository', () => {
   let typeOrmRepo: jest.Mocked<Repository<StockEntity>>;
   let findOneSpy: jest.SpyInstance;
   let saveSpy: jest.SpyInstance;
-  let updateSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -18,6 +17,9 @@ describe('TypeOrmStockRepository', () => {
       find: jest.fn(),
       save: jest.fn(),
       update: jest.fn(),
+      merge: jest.fn((entity: StockEntity, ...partials: Partial<StockEntity>[]) =>
+        Object.assign(entity, ...partials),
+      ),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -36,7 +38,6 @@ describe('TypeOrmStockRepository', () => {
     // Create spies to avoid 'this' scoping issues
     findOneSpy = jest.spyOn(typeOrmRepo, 'findOne');
     saveSpy = jest.spyOn(typeOrmRepo, 'save');
-    updateSpy = jest.spyOn(typeOrmRepo, 'update');
   });
 
   describe('findById', () => {
@@ -291,50 +292,18 @@ describe('TypeOrmStockRepository', () => {
         deleted_at: null,
       } as StockEntity;
 
-      typeOrmRepo.findOne
-        .mockResolvedValueOnce(existingEntity) // Found existing
-        .mockResolvedValueOnce(updatedEntity); // After update
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
+      typeOrmRepo.findOne.mockResolvedValueOnce(existingEntity); // Found existing
+      typeOrmRepo.save.mockResolvedValue(updatedEntity); // Return updated
 
       // Act
       const result = await repository.save(stock);
 
       // Assert
-      expect(findOneSpy).toHaveBeenCalledTimes(2);
-      expect(updateSpy).toHaveBeenCalledWith(stock.id, expect.any(Object));
+      expect(findOneSpy).toHaveBeenCalledTimes(1);
+      expect(saveSpy).toHaveBeenCalledTimes(1);
       expect(result).toBeInstanceOf(StockDomain);
       expect(result.id).toBe(stock.id);
       expect(result.value).toBe(150);
-    });
-
-    it('should throw error when stock not found after update', async () => {
-      // Arrange
-      const stock = StockDomain.create({
-        type: 'Bono',
-        value: 100,
-        monthlyContribution: 50,
-      });
-
-      const existingEntity: StockEntity = {
-        id: stock.id,
-        type: 'Bono',
-        value: 100,
-        monthly_contribution: 50,
-        is_guaranteed: false,
-        guaranteed_yield: null,
-        behavior: StockBehavior.CAPITAL_APPRECIATION,
-        deleted_at: null,
-      } as StockEntity;
-
-      typeOrmRepo.findOne
-        .mockResolvedValueOnce(existingEntity) // Found existing
-        .mockResolvedValueOnce(null); // Not found after update
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
-
-      // Act & Assert
-      await expect(repository.save(stock)).rejects.toThrow(
-        'Stock not found after update',
-      );
     });
   });
 
