@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository, IsNull, In } from 'typeorm';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { Stock as StockDomain } from '@domain/entities/stock.entity';
 import { Stock as StockEntity } from '../entities/stock.entity';
@@ -18,6 +18,16 @@ export class TypeOrmStockRepository implements StockRepository {
       where: { id, deleted_at: IsNull() },
     });
     return entity ? StockMapper.toDomain(entity) : null;
+  }
+
+  async findByIds(ids: string[]): Promise<StockDomain[]> {
+    if (!ids || ids.length === 0) return [];
+
+    const entities = await this.repo.find({
+      where: { id: In(ids), deleted_at: IsNull() },
+    });
+
+    return entities.map((e) => StockMapper.toDomain(e));
   }
 
   async findByType(type: string): Promise<StockDomain | null> {
