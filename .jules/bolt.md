@@ -1,0 +1,3 @@
+## 2025-03-09 - [N+1 Query Optimization with findByIds and Map]
+**Learning:** Found an N+1 query problem where findById was being called inside loops (e.g., in RecordRevaluationUseCase) to fetch related entities sequentially. The TypeORM Repository implementation natively allows efficient batch querying via the In operator, which wasn't fully utilized across all domains.
+**Action:** Implemented a new findByIds port in StockRepository with an early guard (!ids || ids.length === 0). Loaded unique entities before iterating and mapped them into a Map<string, Entity> for O(1) in-memory lookups instead of invoking sequential database hits. This pattern avoids expensive round trips and significantly decreases transaction time for bulk operations.
