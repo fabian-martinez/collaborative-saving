@@ -95,6 +95,77 @@ describe('TypeOrmStockRepository', () => {
     });
   });
 
+  describe('findByIds', () => {
+    it('should return empty array if ids list is empty', async () => {
+      // Act
+      const result = await repository.findByIds([]);
+
+      // Assert
+      expect(result).toEqual([]);
+      expect(typeOrmRepo.find).not.toHaveBeenCalled();
+    });
+
+    it('should return empty array if ids list is null', async () => {
+      // Act
+      const result = await repository.findByIds(null as any);
+
+      // Assert
+      expect(result).toEqual([]);
+      expect(typeOrmRepo.find).not.toHaveBeenCalled();
+    });
+
+    it('should return stocks when found and not deleted', async () => {
+      // Arrange
+      const stockId1 = '111e8400-e29b-41d4-a716-446655440000';
+      const stockId2 = '222e8400-e29b-41d4-a716-446655440000';
+      const ids = [stockId1, stockId2];
+
+      const entity1: StockEntity = {
+        id: stockId1,
+        type: 'Acción 1',
+        value: 100,
+        monthly_contribution: 50,
+        is_guaranteed: false,
+        guaranteed_yield: null,
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        deleted_at: null,
+      } as StockEntity;
+
+      const entity2: StockEntity = {
+        id: stockId2,
+        type: 'Acción 2',
+        value: 200,
+        monthly_contribution: 100,
+        is_guaranteed: false,
+        guaranteed_yield: null,
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        deleted_at: null,
+      } as StockEntity;
+
+      typeOrmRepo.find.mockResolvedValue([entity1, entity2]);
+
+      // Act
+      const result = await repository.findByIds(ids);
+
+      // Assert
+      expect(typeOrmRepo.find).toHaveBeenCalledTimes(1);
+      const findCall = typeOrmRepo.find.mock.calls[0][0];
+      const where = Array.isArray(findCall?.where)
+        ? findCall?.where[0]
+        : findCall?.where;
+
+      expect(where?.id).toHaveProperty('_type', 'in');
+      expect(where?.id).toHaveProperty('_value', ids);
+      expect(where?.deleted_at).toEqual(IsNull());
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toBeInstanceOf(StockDomain);
+      expect(result[0].id).toBe(stockId1);
+      expect(result[1]).toBeInstanceOf(StockDomain);
+      expect(result[1].id).toBe(stockId2);
+    });
+  });
+
   describe('findByType', () => {
     it('should return Stock when found by type and not deleted', async () => {
       // Arrange
