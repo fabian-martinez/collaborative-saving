@@ -18,6 +18,7 @@ describe('TypeOrmStockRepository', () => {
       find: jest.fn(),
       save: jest.fn(),
       update: jest.fn(),
+      merge: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -37,6 +38,107 @@ describe('TypeOrmStockRepository', () => {
     findOneSpy = jest.spyOn(typeOrmRepo, 'findOne');
     saveSpy = jest.spyOn(typeOrmRepo, 'save');
     updateSpy = jest.spyOn(typeOrmRepo, 'update');
+  });
+
+  describe('findByIds', () => {
+    it('should return array of Stocks when found', async () => {
+      const stockId1 = '550e8400-e29b-41d4-a716-446655440001';
+      const stockId2 = '550e8400-e29b-41d4-a716-446655440002';
+      const entity1: StockEntity = {
+        id: stockId1,
+        type: 'Bono',
+        value: 100,
+        monthly_contribution: 50,
+        is_guaranteed: false,
+        guaranteed_yield: null,
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        deleted_at: null,
+      } as StockEntity;
+      const entity2: StockEntity = {
+        id: stockId2,
+        type: 'Acción',
+        value: 200,
+        monthly_contribution: 100,
+        is_guaranteed: false,
+        guaranteed_yield: null,
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        deleted_at: null,
+      } as StockEntity;
+
+      jest.spyOn(typeOrmRepo, 'find').mockResolvedValue([entity1, entity2]);
+
+      const result = await repository.findByIds([stockId1, stockId2]);
+
+      expect(typeOrmRepo.find).toHaveBeenCalledWith({
+        where: { id: expect.any(Object), deleted_at: IsNull() },
+      });
+      expect(result).toHaveLength(2);
+      expect(result[0].id).toBe(stockId1);
+      expect(result[1].id).toBe(stockId2);
+    });
+
+    it('should return empty array if ids is empty', async () => {
+      const result = await repository.findByIds([]);
+      expect(result).toEqual([]);
+      expect(typeOrmRepo.find).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('saveMany', () => {
+    it('should save multiple stocks and merge updates correctly', async () => {
+      const domain1 = StockDomain.create({
+        type: 'Bono',
+        value: 100,
+        monthlyContribution: 50,
+        isGuaranteed: false,
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+      });
+      const domain2 = StockDomain.create({
+        type: 'Acción',
+        value: 200,
+        monthlyContribution: 100,
+        isGuaranteed: false,
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+      });
+
+      const existingEntity: StockEntity = {
+        id: domain1.id,
+        type: 'Bono',
+        value: 50,
+        monthly_contribution: 50,
+        is_guaranteed: false,
+        guaranteed_yield: null,
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        deleted_at: null,
+      } as StockEntity;
+
+      jest.spyOn(typeOrmRepo, 'find').mockResolvedValue([existingEntity]);
+      // Mock merge avoiding undefined objects
+      jest.spyOn(typeOrmRepo, 'merge').mockImplementation((entity: any, ...dto: any[]) => {
+        return Object.assign(entity || {}, ...dto);
+      });
+      jest.spyOn(typeOrmRepo, 'save').mockResolvedValue([
+        { ...existingEntity, value: 100 },
+        { id: domain2.id, type: 'Acción', value: 200, monthly_contribution: 100, is_guaranteed: false, guaranteed_yield: null, behavior: StockBehavior.CAPITAL_APPRECIATION, deleted_at: null } as StockEntity
+      ]);
+
+      const result = await repository.saveMany([domain1, domain2]);
+
+      expect(typeOrmRepo.find).toHaveBeenCalledWith({
+        where: { id: expect.any(Object) },
+        withDeleted: true,
+      });
+      expect(typeOrmRepo.merge).toHaveBeenCalled();
+      expect(typeOrmRepo.save).toHaveBeenCalled();
+      expect(result).toHaveLength(2);
+      expect(result[0].value).toBe(100);
+      expect(result[1].value).toBe(200);
+    });
+
+    it('should return empty array if no stocks to save', async () => {
+      const result = await repository.saveMany([]);
+      expect(result).toEqual([]);
+    });
   });
 
   describe('findById', () => {
