@@ -97,8 +97,14 @@ export class RecordRevaluationUseCase {
       const stockHistories: StockValueHistory[] = [];
       const stockUpdates: Array<{ stockId: string; newValue: number }> = [];
 
+      // Bolt ⚡: Optimización para evitar N+1 queries.
+      // Extraer IDs únicos y buscar todas las acciones en una sola consulta
+      const uniqueStockIds = [...new Set(details.map((d) => d.stockId))];
+      const stocks = await this.stockRepository.findByIds(uniqueStockIds);
+      const stockMap = new Map(stocks.map((s) => [s.id, s]));
+
       for (const detail of details) {
-        const stock = await this.stockRepository.findById(detail.stockId);
+        const stock = stockMap.get(detail.stockId);
         if (!stock) {
           throw new InvalidRequestError(
             `Stock with ID ${detail.stockId} not found`,
@@ -155,12 +161,18 @@ export class RecordRevaluationUseCase {
       await this.stockValueHistoryRepository.saveMany(stockHistories);
 
       // Actualizar valores de acciones
+      const stocksToUpdate = [];
       for (const update of stockUpdates) {
-        const stock = await this.stockRepository.findById(update.stockId);
+        const stock = stockMap.get(update.stockId);
         if (stock) {
           stock.update({ value: update.newValue });
-          await this.stockRepository.save(stock);
+          stocksToUpdate.push(stock);
         }
+      }
+
+      // Bolt ⚡: Guardar todas las acciones actualizadas en batch
+      if (stocksToUpdate.length > 0) {
+        await this.stockRepository.saveMany(stocksToUpdate);
       }
 
       // 3. Crear asientos contables y pagos pendientes de dividendos
@@ -174,7 +186,7 @@ export class RecordRevaluationUseCase {
       const pendingPayments: PendingMemberPayment[] = [];
 
       for (const detail of details) {
-        const stock = await this.stockRepository.findById(detail.stockId);
+        const stock = stockMap.get(detail.stockId);
         if (!stock) continue;
 
         const isDividendYield = stock.behavior === StockBehavior.DIVIDEND_YIELD;
