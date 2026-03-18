@@ -48,6 +48,7 @@
             <PaymentForm
               v-else
               :member-name="selectedMemberValue?.name || ''"
+              :print-date="memberSelection.printDate.value"
               :loading-dues="paymentCollection.loadingDues.value"
               :stock-dues="paymentCollection.stockDues.value"
               :loan-dues="paymentCollection.loanDues.value"
@@ -58,6 +59,7 @@
               :total-interest="paymentCollection.totalInterest.value"
               :is-submitting="paymentCollection.isSubmitting.value"
               @submit="handlePayment"
+              @print="printFormReceipt.printReceipt"
               @edit-payment="paymentCollection.editPayment"
               @delete-payment="paymentCollection.deletePayment"
               @add-fine="paymentCollection.addFine"
@@ -140,6 +142,12 @@ const paymentCollection = usePaymentCollection()
 const memberSelection = useMemberSelection(paymentCollection)
 const printReceipt = usePrintReceipt(
   memberSelection.selectedMember
+)
+const printFormReceipt = usePrintReceipt(
+  memberSelection.selectedMember,
+  'payment-form-receipt',
+  'payment-receipt-print-container',
+  'payment-receipt-print'
 )
 
 // 4. Reactive state
