@@ -4,6 +4,7 @@ import { Repository, IsNull } from 'typeorm';
 import { TypeOrmStockRepository } from './typeorm-stock.repository';
 import { Stock as StockEntity, StockBehavior } from '../entities/stock.entity';
 import { Stock as StockDomain } from '@domain/entities/stock.entity';
+import { In } from 'typeorm';
 
 describe('TypeOrmStockRepository', () => {
   let repository: TypeOrmStockRepository;
@@ -92,6 +93,60 @@ describe('TypeOrmStockRepository', () => {
 
       // Assert
       expect(result).toBeNull();
+    });
+  });
+
+  describe('findByIds', () => {
+    it('should return empty array if ids is empty', async () => {
+      // Act
+      const result = await repository.findByIds([]);
+
+      // Assert
+      expect(result).toEqual([]);
+      expect(typeOrmRepo.find).not.toHaveBeenCalled();
+    });
+
+    it('should return stocks matching provided ids', async () => {
+      // Arrange
+      const stock1 = {
+        id: 'id-1',
+        type: 'Bono',
+        value: 100,
+        monthly_contribution: 50,
+        is_guaranteed: false,
+        guaranteed_yield: null,
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        deleted_at: null,
+      } as StockEntity;
+
+      const stock2 = {
+        id: 'id-2',
+        type: 'Super',
+        value: 200,
+        monthly_contribution: 100,
+        is_guaranteed: false,
+        guaranteed_yield: null,
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        deleted_at: null,
+      } as StockEntity;
+
+      typeOrmRepo.find.mockResolvedValue([stock1, stock2]);
+
+      // Act
+      const result = await repository.findByIds(['id-1', 'id-2']);
+
+      // Assert
+      const findCall = typeOrmRepo.find.mock.calls[0]?.[0];
+      expect(findCall).toBeDefined();
+      const where = Array.isArray(findCall.where)
+        ? findCall.where[0]
+        : findCall.where;
+
+      expect(where?.id).toEqual(In(['id-1', 'id-2']));
+      expect(where?.deleted_at).toEqual(IsNull());
+      expect(result).toHaveLength(2);
+      expect(result[0].id).toBe('id-1');
+      expect(result[1].id).toBe('id-2');
     });
   });
 
