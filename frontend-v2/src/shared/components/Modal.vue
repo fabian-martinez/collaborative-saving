@@ -2,7 +2,7 @@
   <dialog v-if="show" class="modal" :class="{ 'modal-open': show }" @click.self="$emit('close')">
     <div class="modal-box w-full max-w-full min-w-0" @click.stop>
       <form method="dialog">
-        <button @click="$emit('close')" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+        <button aria-label="Cerrar modal" @click="$emit('close')" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
       </form>
       <h3 class="font-bold text-lg mb-4">{{ title }}</h3>
       <div class="w-full max-w-full min-w-0 overflow-x-hidden">

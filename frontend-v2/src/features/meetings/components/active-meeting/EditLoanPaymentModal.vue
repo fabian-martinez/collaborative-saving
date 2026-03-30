@@ -1,7 +1,7 @@
 <template>
   <dialog class="modal" :class="{ 'modal-open': visible }">
     <div class="modal-box">
-      <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="closeModal">✕</button>
+      <button aria-label="Cerrar modal" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="closeModal">✕</button>
       <h3 class="font-bold text-2xl mb-2">Editar Pago de Préstamo</h3>
       <p class="mb-6 text-base-content/70">Ajuste el abono a capital para recalcular el pago total.</p>
 

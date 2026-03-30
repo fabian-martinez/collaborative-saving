@@ -75,7 +75,7 @@
     <!-- Alerta si hay reunión activa al intentar crear -->
     <div v-if="showActiveMeetingAlert" class="alert alert-warning mb-4">
       <span>Ya existe una reunión activa. Debe cerrar la reunión actual antes de crear una nueva.</span>
-      <button @click="showActiveMeetingAlert = false" class="btn btn-sm btn-ghost">✕</button>
+      <button aria-label="Cerrar alerta" @click="showActiveMeetingAlert = false" class="btn btn-sm btn-ghost">✕</button>
     </div>
 
     <!-- Tabla mejorada con más información -->
