@@ -70,25 +70,33 @@ export class RecordMonthlyPaymentsUseCase {
     // At this point, meeting is guaranteed to be non-null
     const activeMeeting = meeting;
 
-    // 3. Validate that member doesn't already have a monthly payment for this meeting
-    const existingPayments = await this.operationRepository.findByMember(
-      dto.memberId,
-      {
-        meetingId: activeMeeting.id,
-        types: [OperationType.MONTHLY_PAYMENT],
-      },
-    );
-
-    if (existingPayments.length > 0) {
-      throw new DuplicateMonthlyPaymentException(
-        dto.memberId,
-        activeMeeting.id,
-      );
-    }
-
     // 4. Validate payments array is not empty
     if (!dto.payments || dto.payments.length === 0) {
       throw new InvalidPaymentException('At least one payment is required');
+    }
+
+    // 4.5. Check if this is an extraordinary payment (only loan payments)
+    const isOnlyLoanPayments = dto.payments.every(
+      (p) => p.type === PaymentType.LOAN_PAYMENT
+    );
+
+    // 3. Validate that member doesn't already have a monthly payment for this meeting
+    // Skip this check if it's an extraordinary payment (only loan payments)
+    if (!isOnlyLoanPayments) {
+      const existingPayments = await this.operationRepository.findByMember(
+        dto.memberId,
+        {
+          meetingId: activeMeeting.id,
+          types: [OperationType.MONTHLY_PAYMENT],
+        },
+      );
+
+      if (existingPayments.length > 0) {
+        throw new DuplicateMonthlyPaymentException(
+          dto.memberId,
+          activeMeeting.id,
+        );
+      }
     }
 
     // 5. Validate all amounts are positive

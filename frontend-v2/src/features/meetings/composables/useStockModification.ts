@@ -54,9 +54,11 @@ export function useStockModification() {
   const showTransferModal = ref(false)
   const showLoanPaymentModal = ref(false)
   const showModificationModal = ref(false)
+  const showCashLoanPaymentModal = ref(false)
   const showTransferReceipt = ref(false)
   const showLoanPaymentReceipt = ref(false)
   const showModificationReceipt = ref(false)
+  const showCashLoanPaymentReceipt = ref(false)
 
   // Selected operation for detail view
   const selectedOperation = ref<Operation | null>(null)
@@ -66,6 +68,10 @@ export function useStockModification() {
   const transferForm = ref<StockModificationForm>({})
   const loanPaymentForm = ref<StockModificationForm>({})
   const modificationForm = ref<StockModificationForm>({})
+  const cashLoanPaymentForm = ref<{
+    loanId?: string
+    amount?: number
+  }>({})
 
   // Receipts
   const transferReceipt = ref<{
@@ -107,6 +113,15 @@ export function useStockModification() {
     to_quantity: number
     difference_handling?: 'cash' | 'credit'
     target_loan_id?: string
+  } | null>(null)
+  const cashLoanPaymentReceipt = ref<{
+    loanType: string
+    currentBalance: number
+    paymentAmount: number
+    newBalance: number
+    loan_id: string
+    quantity: number
+    amount: number
   } | null>(null)
 
   // Computed
@@ -238,6 +253,33 @@ export function useStockModification() {
     }
   }
 
+  async function processCashLoanPayment(memberId: string, data: { loanId: string; amount: number; notes?: string }): Promise<void> {
+    isProcessing.value = true
+    error.value = null
+
+    try {
+      if (!store.meetingId) throw new Error('No hay una reunión activa')
+
+      await membersApi.recordExtraordinaryLoanPayment(memberId, {
+        loanId: data.loanId,
+        amount: data.amount,
+        meetingId: store.meetingId,
+        notes: data.notes || `Abono extraordinario a capital préstamo en efectivo`
+      })
+
+      // Realizar una recarga completa de todos los datos necesarios
+      await Promise.all([
+        loadRegisteredOperations(),
+        loadMemberData(memberId)
+      ])
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Error al procesar abono en efectivo'
+      throw e
+    } finally {
+      isProcessing.value = false
+    }
+  }
+
   function openTransferModal() {
     showTransferModal.value = true
     transferForm.value = {}
@@ -268,6 +310,16 @@ export function useStockModification() {
     modificationForm.value = {}
   }
 
+  function openCashLoanPaymentModal() {
+    showCashLoanPaymentModal.value = true
+    cashLoanPaymentForm.value = {}
+  }
+
+  function closeCashLoanPaymentModal() {
+    showCashLoanPaymentModal.value = false
+    cashLoanPaymentForm.value = {}
+  }
+
   function reset() {
     registeredOperations.value = []
     memberSubscriptions.value = []
@@ -291,19 +343,23 @@ export function useStockModification() {
     showTransferModal,
     showLoanPaymentModal,
     showModificationModal,
+    showCashLoanPaymentModal,
     showTransferReceipt,
     showLoanPaymentReceipt,
     showModificationReceipt,
+    showCashLoanPaymentReceipt,
     
     // Forms
     transferForm,
     loanPaymentForm,
     modificationForm,
+    cashLoanPaymentForm,
     
     // Receipts
     transferReceipt,
     loanPaymentReceipt,
     modificationReceipt,
+    cashLoanPaymentReceipt,
     
     // Selected operation
     selectedOperation,
@@ -327,6 +383,9 @@ export function useStockModification() {
     closeLoanPaymentModal,
     openModificationModal,
     closeModificationModal,
+    openCashLoanPaymentModal,
+    closeCashLoanPaymentModal,
+    processCashLoanPayment,
     reset
   }
 }

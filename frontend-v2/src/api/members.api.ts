@@ -122,6 +122,23 @@ export interface RecordMonthlyPaymentsResponse {
   total_amount: number
 }
 
+export interface RecordExtraordinaryLoanPaymentRequest {
+  loanId: string;
+  amount: number;
+  meetingId: string;
+  notes?: string;
+}
+
+export interface RecordExtraordinaryLoanPaymentResponse {
+  loanId: string;
+  operationId: string;
+  interestPaid: number;
+  principalPaid: number;
+  newOutstandingBalance: number;
+  loanStatus: string;
+  transactionDetailIds: string[];
+}
+
 export interface StockExchangeRequest {
   from_subscription_id: string
   from_quantity: number
@@ -323,6 +340,20 @@ export const membersApi = {
     }
     const response = await apiClient.get<MemberDue[]>(`/v2/members/${memberId}/dues`)
     return response.data
+  },
+
+  async recordExtraordinaryLoanPayment(
+    memberId: string,
+    data: RecordExtraordinaryLoanPaymentRequest
+  ): Promise<RecordExtraordinaryLoanPaymentResponse> {
+    if (USE_MOCKS) {
+      return mockApi.recordExtraordinaryLoanPayment(memberId, data)
+    }
+    const response = await apiClient.post<RecordExtraordinaryLoanPaymentResponse>(
+      `/v2/members/${memberId}/extraordinary-loan-payment`,
+      data
+    );
+    return response.data;
   },
 
   // Insurance
