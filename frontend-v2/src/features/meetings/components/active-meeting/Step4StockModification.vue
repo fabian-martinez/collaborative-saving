@@ -223,6 +223,66 @@
               </div>
             </div>
 
+            <!-- Vista de recibo para pago de crédito con efectivo -->
+            <div v-else-if="stockModification.showCashLoanPaymentReceipt.value" class="bg-base-100 p-8 rounded-2xl shadow-lg">
+              <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Abono a Crédito con Efectivo</h2>
+                <button class="btn btn-outline btn-sm" @click="cancelCashLoanPayment">Cancelar</button>
+              </div>
+              
+              <div class="space-y-4" v-if="stockModification.cashLoanPaymentReceipt.value">
+                <div class="bg-base-200 p-4 rounded-lg">
+                  <h3 class="font-semibold mb-2">Detalle del pago</h3>
+                  <div class="flex items-baseline">
+                    <div class="flex-shrink-0">
+                      <p class="font-semibold text-xl">Efectivo</p>
+                      <p class="text-sm text-base-content/70">Crédito: {{ stockModification.cashLoanPaymentReceipt.value.loanType }}</p>
+                    </div>
+                    <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
+                    <div class="flex-shrink-0">
+                      <p class="w-36 text-right font-mono text-2xl whitespace-nowrap"><CopyOnDblClickNumber :value="stockModification.cashLoanPaymentReceipt.value.paymentAmount" /></p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="bg-base-200 p-4 rounded-lg">
+                  <h3 class="font-semibold mb-2">Impacto en el crédito</h3>
+                  <div class="space-y-2">
+                    <div class="flex justify-between">
+                      <span>Saldo actual:</span>
+                      <span class="font-mono"><CopyOnDblClickNumber :value="stockModification.cashLoanPaymentReceipt.value.currentBalance" /></span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span>Abono:</span>
+                      <span class="font-mono text-success">-<CopyOnDblClickNumber :value="stockModification.cashLoanPaymentReceipt.value.paymentAmount" /></span>
+                    </div>
+                    <div class="border-t border-base-300/50 pt-2">
+                      <div class="flex justify-between font-bold">
+                        <span>Nuevo saldo:</span>
+                        <span class="font-mono" :class="stockModification.cashLoanPaymentReceipt.value.newBalance > 0 ? 'text-warning' : 'text-success'">
+                          <CopyOnDblClickNumber :value="stockModification.cashLoanPaymentReceipt.value.newBalance" />
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="flex items-baseline text-2xl font-bold">
+                  <span class="flex-shrink-0">Total aplicado:</span>
+                  <div class="flex-grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
+                  <span class="flex-shrink-0 text-primary font-mono"><CopyOnDblClickNumber :value="stockModification.cashLoanPaymentReceipt.value.paymentAmount" /></span>
+                </div>
+              </div>
+              
+              <div class="text-right mt-6">
+                <button class="btn btn-success btn-lg" @click="confirmCashLoanPayment" :disabled="stockModification.isProcessing.value">
+                  <span v-if="stockModification.isProcessing.value" class="loading loading-spinner loading-xs mr-2"></span>
+                  <span v-if="!stockModification.isProcessing.value">Confirmar Abono</span>
+                  <span v-else>Procesando...</span>
+                </button>
+              </div>
+            </div>
+
             <!-- Panel principal de operaciones -->
             <div v-else>
               <!-- Toggle para ver operaciones registradas -->
@@ -268,7 +328,7 @@
                     <span>Este socio tiene {{ stockModification.memberSubscriptions.value.length }} tipo(s) de acciones disponibles para modificar.</span>
                   </div>
 
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <button class="btn btn-primary btn-lg gap-2 px-6" @click="stockModification.openTransferModal()">
                       <ArrowRight class="w-6 h-6" />
                       <span>Transferir Acciones</span>
@@ -276,7 +336,12 @@
 
                     <button class="btn btn-secondary btn-lg gap-2 px-6" @click="stockModification.openLoanPaymentModal()">
                       <Wallet class="w-6 h-6" />
-                      <span>Pagar Crédito</span>
+                      <span>Pagar Crédito (Acciones)</span>
+                    </button>
+                    
+                    <button class="btn btn-accent btn-lg gap-2 px-6 shadow-md shadow-accent/20" @click="stockModification.openCashLoanPaymentModal()">
+                      <Wallet class="w-6 h-6" />
+                      <span>Abono Efectivo Crédito</span>
                     </button>
 
                     <button class="btn btn-info btn-lg gap-2 px-6" @click="stockModification.openModificationModal()">
@@ -464,6 +529,59 @@
       </div>
       <form method="dialog" class="modal-backdrop">
         <button @click.prevent="stockModification.closeLoanPaymentModal()">Cerrar</button>
+      </form>
+    </dialog>
+
+    <!-- Modal de Pago de Crédito con Efectivo -->
+    <dialog v-if="stockModification.showCashLoanPaymentModal.value" class="modal modal-open">
+      <div class="modal-box max-w-2xl">
+        <h3 class="font-bold text-lg mb-4">Abonar a Crédito con Efectivo</h3>
+        
+        <div class="space-y-4">
+          <!-- Selección del crédito -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Seleccionar crédito a abonar</span>
+            </label>
+            <select 
+              v-model="stockModification.cashLoanPaymentForm.value.loanId" 
+              class="select select-bordered w-full"
+            >
+              <option value="">Seleccione un crédito</option>
+              <option v-for="loan in stockModification.memberLoans.value" :key="loan.id" :value="loan.id">
+                {{ loan.loan_type }} - Saldo: ${{ loan.outstanding_balance.toLocaleString() }}
+              </option>
+            </select>
+          </div>
+          
+          <!-- Cantidad a usar -->
+          <div v-if="stockModification.cashLoanPaymentForm.value.loanId" class="form-control">
+            <label class="label">
+              <span class="label-text">Monto a abonar ($)</span>
+            </label>
+            <input 
+              type="number" 
+              v-model.number="stockModification.cashLoanPaymentForm.value.amount" 
+              class="input input-bordered w-full"
+              :max="selectedLoanForCashPayment?.outstanding_balance || 0"
+              min="1"
+            >
+          </div>
+        </div>
+        
+        <div class="modal-action">
+          <button class="btn btn-outline" @click="stockModification.closeCashLoanPaymentModal()">Cancelar</button>
+          <button 
+            class="btn btn-primary" 
+            @click="prepareCashLoanPaymentReceipt"
+            :disabled="!isCashLoanPaymentFormValid"
+          >
+            Preparar Pago
+          </button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button @click.prevent="stockModification.closeCashLoanPaymentModal()">Cerrar</button>
       </form>
     </dialog>
 
@@ -790,6 +908,18 @@ const isModificationFormValid = computed(() => {
   return true
 })
 
+const isCashLoanPaymentFormValid = computed(() => {
+  return !!(
+    stockModification.cashLoanPaymentForm.value.loanId &&
+    stockModification.cashLoanPaymentForm.value.amount &&
+    stockModification.cashLoanPaymentForm.value.amount > 0
+  )
+})
+
+const selectedLoanForCashPayment = computed(() => {
+  return stockModification.memberLoans.value.find(l => l.id === stockModification.cashLoanPaymentForm.value.loanId)
+})
+
 // 6. Methods
 async function handleSelectMember(member: Member) {
   await memberSelection.selectMember(member)
@@ -897,6 +1027,28 @@ function prepareLoanPaymentReceipt() {
   stockModification.showLoanPaymentReceipt.value = true
 }
 
+function prepareCashLoanPaymentReceipt() {
+  const loan = stockModification.memberLoans.value.find(l => l.id === stockModification.cashLoanPaymentForm.value.loanId)
+  
+  if (!loan) return
+  
+  const paymentAmount = stockModification.cashLoanPaymentForm.value.amount || 0
+  const newBalance = loan.outstanding_balance - paymentAmount
+  
+  stockModification.cashLoanPaymentReceipt.value = {
+    loanType: loan.loan_type,
+    currentBalance: loan.outstanding_balance,
+    paymentAmount,
+    newBalance,
+    loan_id: loan.id,
+    amount: paymentAmount,
+    quantity: 0
+  }
+  
+  stockModification.closeCashLoanPaymentModal()
+  stockModification.showCashLoanPaymentReceipt.value = true
+}
+
 function prepareModificationReceipt() {
   const fromSub = selectedFromSubscription.value
   const toStock = selectedToStock.value
@@ -962,6 +1114,11 @@ function cancelLoanPayment() {
   stockModification.loanPaymentReceipt.value = null
 }
 
+function cancelCashLoanPayment() {
+  stockModification.showCashLoanPaymentReceipt.value = false
+  stockModification.cashLoanPaymentReceipt.value = null
+}
+
 function cancelModification() {
   stockModification.showModificationReceipt.value = false
   stockModification.modificationReceipt.value = null
@@ -1019,6 +1176,32 @@ async function confirmLoanPayment() {
     alert('Pago de crédito procesado exitosamente')
   } catch (e) {
     alert('Error al procesar el pago de crédito')
+    console.error(e)
+  }
+}
+
+async function confirmCashLoanPayment() {
+  if (!selectedMemberValue.value || !store.meetingId) return
+
+  try {
+    if (!stockModification.cashLoanPaymentReceipt.value) {
+      alert('Error: No hay datos de pago de crédito para confirmar')
+      return
+    }
+
+    const data = {
+      loanId: stockModification.cashLoanPaymentReceipt.value.loan_id,
+      amount: stockModification.cashLoanPaymentReceipt.value.amount
+    }
+    
+    await stockModification.processCashLoanPayment(selectedMemberValue.value.id, data)
+    await stockModification.loadMemberData(selectedMemberValue.value.id)
+    await loadMemberOperations()
+    stockModification.showCashLoanPaymentReceipt.value = false
+    stockModification.cashLoanPaymentReceipt.value = null
+    alert('Abono procesado exitosamente')
+  } catch (e) {
+    alert('Error al procesar el abono a crédito')
     console.error(e)
   }
 }
