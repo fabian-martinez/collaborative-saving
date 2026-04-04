@@ -13,19 +13,38 @@
       </div>
     </div>
     <form method="dialog" class="modal-backdrop" @click="$emit('close')">
-      <button>close</button>
+      <button aria-label="Cerrar modal">Cerrar</button>
     </form>
   </dialog>
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { watch, onUnmounted } from 'vue'
+
+const props = defineProps<{
   show: boolean
   title: string
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   close: []
 }>()
-</script>
 
+const handleKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && props.show) {
+    emit('close')
+  }
+}
+
+watch(() => props.show, (val: boolean) => {
+  if (val) {
+    window.addEventListener('keydown', handleKeydown)
+  } else {
+    window.removeEventListener('keydown', handleKeydown)
+  }
+}, { immediate: true })
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
+</script>
