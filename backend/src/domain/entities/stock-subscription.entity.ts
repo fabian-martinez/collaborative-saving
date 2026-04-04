@@ -76,6 +76,13 @@ export class StockSubscription {
       ) {
         this._status = StockSubscriptionStatus.INACTIVE;
       }
+      // Si quantity > 0 y estaba inactive, activar automáticamente
+      else if (
+        this._quantity > 0 &&
+        this._status === StockSubscriptionStatus.INACTIVE
+      ) {
+        this._status = StockSubscriptionStatus.ACTIVE;
+      }
     }
     if (data.status !== undefined) this._status = data.status;
     if (data.financingLoanId !== undefined) {

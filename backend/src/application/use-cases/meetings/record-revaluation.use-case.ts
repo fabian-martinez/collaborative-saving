@@ -97,8 +97,13 @@ export class RecordRevaluationUseCase {
       const stockHistories: StockValueHistory[] = [];
       const stockUpdates: Array<{ stockId: string; newValue: number }> = [];
 
+      // ⚡ Bolt: Cache stocks for O(1) lookups instead of N+1 database queries
+      const uniqueStockIds = Array.from(new Set(details.map((d) => d.stockId)));
+      const stocks = await this.stockRepository.findByIds(uniqueStockIds);
+      const stockMap = new Map(stocks.map((s) => [s.id, s]));
+
       for (const detail of details) {
-        const stock = await this.stockRepository.findById(detail.stockId);
+        const stock = stockMap.get(detail.stockId);
         if (!stock) {
           throw new InvalidRequestError(
             `Stock with ID ${detail.stockId} not found`,
@@ -156,7 +161,7 @@ export class RecordRevaluationUseCase {
 
       // Actualizar valores de acciones
       for (const update of stockUpdates) {
-        const stock = await this.stockRepository.findById(update.stockId);
+        const stock = stockMap.get(update.stockId);
         if (stock) {
           stock.update({ value: update.newValue });
           await this.stockRepository.save(stock);
@@ -174,7 +179,7 @@ export class RecordRevaluationUseCase {
       const pendingPayments: PendingMemberPayment[] = [];
 
       for (const detail of details) {
-        const stock = await this.stockRepository.findById(detail.stockId);
+        const stock = stockMap.get(detail.stockId);
         if (!stock) continue;
 
         const isDividendYield = stock.behavior === StockBehavior.DIVIDEND_YIELD;
@@ -197,9 +202,12 @@ export class RecordRevaluationUseCase {
             if (totalShares > 0) {
               // Crear pagos pendientes de dividendos
               for (const sub of activeSubscriptions) {
-                const memberDividend =
+                const memberDividend = roundAndLimit(
                   (sub.quantity / totalShares) *
-                  (detail.dividendsGenerated * detail.totalShares);
+                    (detail.dividendsGenerated * detail.totalShares),
+                  9999999999.99,
+                  2,
+                );
                 if (memberDividend > 0) {
                   const pendingPayment = PendingMemberPayment.create({
                     memberId: sub.memberId,
