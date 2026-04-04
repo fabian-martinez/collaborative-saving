@@ -11,3 +11,7 @@
 
 **Learning:** When an action is blocked by a rule (e.g., "only one active meeting"), keeping the button enabled and showing an alert on click provides better feedback than a silent disabled state.
 **Action:** Use disabled states only for technical constraints (loading, empty input) and alerts for business logic constraints.
+
+## 2024-05-24 - Modal Interaction
+**Learning:** Modals must support `Escape` key to close. Using `watch` on the visibility prop is a reliable pattern for managing global event listeners in conditionally rendered components.
+**Action:** Ensure all modals have `aria-label` on close buttons and respond to `Escape` key.
