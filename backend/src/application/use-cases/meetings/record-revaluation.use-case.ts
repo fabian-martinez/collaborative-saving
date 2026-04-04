@@ -98,9 +98,9 @@ export class RecordRevaluationUseCase {
       const stockUpdates: Array<{ stockId: string; newValue: number }> = [];
 
       // ⚡ Bolt: Cache stocks for O(1) lookups instead of N+1 database queries
-      const uniqueStockIds = Array.from(new Set(details.map(d => d.stockId)));
+      const uniqueStockIds = Array.from(new Set(details.map((d) => d.stockId)));
       const stocks = await this.stockRepository.findByIds(uniqueStockIds);
-      const stockMap = new Map(stocks.map(s => [s.id, s]));
+      const stockMap = new Map(stocks.map((s) => [s.id, s]));
 
       for (const detail of details) {
         const stock = stockMap.get(detail.stockId);
