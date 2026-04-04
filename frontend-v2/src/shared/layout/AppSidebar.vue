@@ -93,7 +93,7 @@ async function handleLogout() {
         @click="toggleCollapse"
         class="btn btn-ghost btn-sm lg:block max-lg:hidden text-white hover:bg-blue-800 p-1"
         :class="{ 'ml-auto': !isCollapsed }"
-        :aria-label="isCollapsed ? 'Expandir menú lateral' : 'Colapsar menú lateral'"
+        aria-label="Colapsar menú lateral"
       >
         <NavArrowLeft
           class="w-5 h-5 transition-transform duration-300"
