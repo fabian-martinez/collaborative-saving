@@ -7,7 +7,14 @@ import { GlobalExceptionFilter } from './infrastructure/nestjs/http/filters/glob
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.enableCors();
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim())
+    : ['http://localhost:5173', 'http://localhost:3000'];
+
+  app.enableCors({
+    origin: allowedOrigins,
+    credentials: true,
+  });
 
   // Register global exception filter to map domain errors to HTTP responses
   app.useGlobalFilters(new GlobalExceptionFilter());
