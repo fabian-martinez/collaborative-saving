@@ -73,6 +73,7 @@ describe('RecordRevaluationUseCase', () => {
 
     stockRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByType: jest.fn(),
       findAll: jest.fn(),
       findActive: jest.fn(),
@@ -284,6 +285,7 @@ describe('RecordRevaluationUseCase', () => {
     );
     operationRepository.save.mockResolvedValue(savedOperation);
     stockRepository.findById.mockResolvedValue(regularStock);
+    stockRepository.findByIds.mockResolvedValue([regularStock]);
     stockValueHistoryRepository.saveMany.mockResolvedValue([]);
     stockRepository.save.mockResolvedValue(regularStock);
     ledgerEntryRepository.saveMany.mockResolvedValue([]);
@@ -354,6 +356,7 @@ describe('RecordRevaluationUseCase', () => {
       return Promise.resolve(savedOperation);
     });
     stockRepository.findById.mockResolvedValue(stock);
+    stockRepository.findByIds.mockResolvedValue([stock]);
     stockValueHistoryRepository.saveMany.mockResolvedValue([]);
     stockRepository.save.mockResolvedValue(stock);
     // The use case will create balanced ledger entries based on the calculation result
@@ -429,6 +432,7 @@ describe('RecordRevaluationUseCase', () => {
     );
     operationRepository.save.mockResolvedValue(savedOperation);
     stockRepository.findById.mockResolvedValue(stock);
+    stockRepository.findByIds.mockResolvedValue([stock]);
     stockValueHistoryRepository.saveMany.mockImplementation((histories) => {
       expect(histories).toHaveLength(1);
       expect(histories[0].stockId).toBe(stock.id);
@@ -513,6 +517,7 @@ describe('RecordRevaluationUseCase', () => {
     // 2. For value update (line 152)
     // 3. For ledger entries creation (line 170)
     stockRepository.findById.mockResolvedValue(stock);
+    stockRepository.findByIds.mockResolvedValue([stock]);
     stockValueHistoryRepository.saveMany.mockResolvedValue([]);
     stockRepository.save.mockImplementation((s) => {
       expect(s.value).toBe(108);
@@ -589,6 +594,7 @@ describe('RecordRevaluationUseCase', () => {
     );
     operationRepository.save.mockResolvedValue(savedOperation);
     stockRepository.findById.mockResolvedValue(stock);
+    stockRepository.findByIds.mockResolvedValue([stock]);
     stockValueHistoryRepository.saveMany.mockResolvedValue([]);
     stockRepository.save.mockResolvedValue(stock);
     ledgerEntryRepository.saveMany.mockImplementation((entries) => {
@@ -674,6 +680,7 @@ describe('RecordRevaluationUseCase', () => {
     );
     operationRepository.save.mockResolvedValue(savedOperation);
     stockRepository.findById.mockResolvedValue(dividendStock);
+    stockRepository.findByIds.mockResolvedValue([dividendStock]);
     stockValueHistoryRepository.saveMany.mockResolvedValue([]);
     stockRepository.save.mockResolvedValue(dividendStock);
     stockSubscriptionRepository.findByStock.mockResolvedValue([
@@ -747,6 +754,7 @@ describe('RecordRevaluationUseCase', () => {
     );
     operationRepository.save.mockResolvedValue(savedOperation);
     stockRepository.findById.mockResolvedValue(guaranteedStock);
+    stockRepository.findByIds.mockResolvedValue([guaranteedStock]);
     stockValueHistoryRepository.saveMany.mockResolvedValue([]);
     stockRepository.save.mockResolvedValue(guaranteedStock);
     ledgerEntryRepository.saveMany.mockResolvedValue([]);
@@ -809,6 +817,7 @@ describe('RecordRevaluationUseCase', () => {
     );
     operationRepository.save.mockResolvedValue(savedOperation);
     stockRepository.findById.mockResolvedValue(regularStock);
+    stockRepository.findByIds.mockResolvedValue([regularStock]);
     stockValueHistoryRepository.saveMany.mockResolvedValue([]);
     stockRepository.save.mockResolvedValue(regularStock);
     ledgerEntryRepository.saveMany.mockResolvedValue([]);
@@ -872,6 +881,7 @@ describe('RecordRevaluationUseCase', () => {
     );
     operationRepository.save.mockResolvedValue(savedOperation);
     stockRepository.findById.mockResolvedValue(stock);
+    stockRepository.findByIds.mockResolvedValue([stock]);
     stockValueHistoryRepository.saveMany.mockResolvedValue([]);
     stockRepository.save.mockResolvedValue(stock);
     ledgerEntryRepository.saveMany.mockResolvedValue([]);
