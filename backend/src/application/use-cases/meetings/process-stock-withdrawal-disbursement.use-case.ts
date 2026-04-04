@@ -25,6 +25,7 @@ import { BusinessRuleError } from '@domain/errors/business-rule.error';
 import { NotFoundError } from '@domain/errors/not-found.error';
 import { StockNotFoundException } from '@application/exceptions/stock-not-found.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
+import { roundAndLimit } from '@domain/utils/round-and-limit.util';
 
 /**
  * Process Stock Withdrawal Disbursement Use Case
@@ -140,7 +141,11 @@ export class ProcessStockWithdrawalDisbursementUseCase {
     }
 
     // 6. Calcular saldo pendiente basado en pendingPayment.amount, no item.amount
-    const remainingAmount = pendingPayment.amount - maxDisbursable;
+    const remainingAmount = roundAndLimit(
+      pendingPayment.amount - maxDisbursable,
+      9999999999.99,
+      2,
+    );
 
     if (remainingAmount > 0) {
       // Hay saldo pendiente: marcar el existente como PAID y crear nuevo por faltante
@@ -299,7 +304,11 @@ export class ProcessStockWithdrawalDisbursementUseCase {
     }
 
     // 8. Calcular saldo pendiente y crear PendingMemberPayment si es necesario
-    const remainingAmount = requestedAmount - maxDisbursable;
+    const remainingAmount = roundAndLimit(
+      requestedAmount - maxDisbursable,
+      9999999999.99,
+      2,
+    );
 
     if (remainingAmount > 0) {
       // Crear nuevo PendingMemberPayment por saldo pendiente
