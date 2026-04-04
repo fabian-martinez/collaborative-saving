@@ -5,14 +5,14 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { FirebaseAdminService } from '../../../services/firebase-admin/firebase-admin.service';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { GetAuthenticatedUserQuery } from '@application/queries/auth/get-authenticated-user.query';
 
 @Injectable()
 export class FirebaseAuthGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    private firebaseAdminService: FirebaseAdminService,
+    private readonly getAuthenticatedUserQuery: GetAuthenticatedUserQuery,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -26,25 +26,34 @@ export class FirebaseAuthGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<Record<string, any>>();
     const token = this.extractTokenFromHeader(request);
-    
+
     if (!token) {
       console.error('[FirebaseAuthGuard] No token found in request headers');
       throw new UnauthorizedException();
     }
 
     try {
-      const payload = await this.firebaseAdminService.auth.verifyIdToken(token);
-      request['user'] = payload;
+      const user = await this.getAuthenticatedUserQuery.execute(token);
+      if (!user) {
+        throw new UnauthorizedException();
+      }
+      request['user'] = user;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[FirebaseAuthGuard] Token verification failed:', message);
+      console.error(
+        '[FirebaseAuthGuard] Authentication failed:',
+        error instanceof Error ? error.message : String(error),
+      );
       throw new UnauthorizedException();
     }
     return true;
   }
 
-  private extractTokenFromHeader(request: Record<string, any>): string | undefined {
-    const headers = request.headers as Record<string, string | string[] | undefined> | undefined;
+  private extractTokenFromHeader(
+    request: Record<string, any>,
+  ): string | undefined {
+    const headers = request.headers as
+      | Record<string, string | string[] | undefined>
+      | undefined;
     const authorization = headers?.authorization;
     if (!authorization || typeof authorization !== 'string') {
       return undefined;

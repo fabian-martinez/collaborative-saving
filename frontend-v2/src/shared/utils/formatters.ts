@@ -2,6 +2,42 @@
  * Utilidades para formateo de datos
  */
 
+// Cache formatters to avoid expensive re-instantiation
+const currencyFormatter = new Intl.NumberFormat('es-CO', {
+  style: 'currency',
+  currency: 'COP',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0
+})
+
+const numberFormatters = new Map<number, Intl.NumberFormat>()
+
+function getNumberFormatter(decimals: number): Intl.NumberFormat {
+  let formatter = numberFormatters.get(decimals)
+  if (!formatter) {
+    formatter = new Intl.NumberFormat('es-CO', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    })
+    numberFormatters.set(decimals, formatter)
+  }
+  return formatter
+}
+
+const dateFormatter = new Intl.DateTimeFormat('es-CO', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit'
+})
+
+const dateTimeFormatter = new Intl.DateTimeFormat('es-CO', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit'
+})
+
 export function formatCurrency(amount: number | string | null | undefined): string {
   // Handle null, undefined, or invalid values
   if (amount == null || amount === undefined || amount === '') {
@@ -16,19 +52,11 @@ export function formatCurrency(amount: number | string | null | undefined): stri
     return '$ 0'
   }
   
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(numAmount)
+  return currencyFormatter.format(numAmount)
 }
 
 export function formatNumber(value: number, decimals: number = 2): string {
-  return new Intl.NumberFormat('es-CO', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals
-  }).format(value)
+  return getNumberFormatter(decimals).format(value)
 }
 
 export function formatPercentage(value: number, decimals: number = 2): string {
@@ -49,11 +77,7 @@ export function formatDate(date: string | Date | null | undefined): string {
   }
   
   try {
-    return new Intl.DateTimeFormat('es-CO', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }).format(d)
+    return dateFormatter.format(d)
   } catch (error) {
     return 'N/A'
   }
@@ -102,13 +126,7 @@ export function formatDateTime(date: string | Date | null | undefined): string {
   }
   
   try {
-    return new Intl.DateTimeFormat('es-CO', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(d)
+    return dateTimeFormatter.format(d)
   } catch (error) {
     return 'N/A'
   }
@@ -175,4 +193,3 @@ export function parseMoneyInput(value: string): number {
   const parsed = parseFloat(cleaned);
   return isNaN(parsed) ? 0 : parsed;
 }
-

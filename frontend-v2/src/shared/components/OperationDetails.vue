@@ -7,11 +7,11 @@
     >
       <!-- Título: account_type mapeado a español -->
       <div class="flex justify-between items-baseline mb-2">
-        <span class="text-base-content/90 font-bold text-lg md:text-xl">
+        <span class="text-base-content/90 font-bold text-xl md:text-2xl">
           {{ getAccountName(entry.account_type || '') || entry.account_type || 'Sin nombre' }}
         </span>
         <span 
-          class="font-mono font-bold text-lg md:text-xl lg:text-2xl ml-2"
+          class="font-mono font-bold text-xl md:text-2xl lg:text-3xl ml-2"
           :class="{
             'text-error': Number(entry.amount) < 0,
             'text-info': Number(entry.amount) > 0 && entry.account_type !== 'CASH',

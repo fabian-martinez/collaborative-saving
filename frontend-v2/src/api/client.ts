@@ -2,6 +2,7 @@ import axios, { type AxiosInstance, type AxiosError, type InternalAxiosRequestCo
 import { ApiException } from './types'
 import type { ApiError } from './types'
 import { useAuthStore } from '@/features/auth/stores/authStore'
+import { useToast } from '@/shared/composables/useToast'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
@@ -82,6 +83,9 @@ apiClient.interceptors.response.use(
       if (error.response.status === 401) {
         const authStore = useAuthStore()
         authStore.logout()
+      } else if (error.response.status === 403) {
+        const { error: showError } = useToast()
+        showError(apiError.message || 'No tienes permisos para realizar esta acción.')
       }
       
       return Promise.reject(apiError)

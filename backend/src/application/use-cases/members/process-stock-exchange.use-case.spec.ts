@@ -292,7 +292,7 @@ describe('ProcessStockExchangeUseCase', () => {
   it('ejecuta la lógica dentro de una transacción', async () => {
     const dto = { ...createBaseDto(), toStockId: originStock.id };
     const transactionSpy = jest.spyOn(transactionManager, 'execute');
-    
+
     await useCase.execute(dto);
 
     expect(transactionSpy).toHaveBeenCalled();
@@ -301,8 +301,8 @@ describe('ProcessStockExchangeUseCase', () => {
   it('registra el detalle de la transacción del préstamo al crear un crédito', async () => {
     const dto: StockExchangeDto = {
       ...createBaseDto(),
-      fromQuantity: 1, 
-      toQuantity: 2, 
+      fromQuantity: 1,
+      toQuantity: 2,
       differenceHandling: 'credit',
       targetLoanId: 'new_action_loan',
     };

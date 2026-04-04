@@ -17,6 +17,7 @@
       </main>
     </div>
   </div>
+  <ToastContainer />
 </template>
 
 <script setup lang="ts">
@@ -26,6 +27,7 @@ import AppSidebar from '@/shared/layout/AppSidebar.vue'
 import AppHeader from '@/shared/layout/AppHeader.vue'
 import { useSidebar } from '@/shared/composables/useSidebar'
 import { useMeetingsStore } from '@/features/meetings/stores/meetings'
+import ToastContainer from '@/shared/components/ToastContainer.vue'
 
 const route = useRoute()
 const { isCollapsed } = useSidebar()
