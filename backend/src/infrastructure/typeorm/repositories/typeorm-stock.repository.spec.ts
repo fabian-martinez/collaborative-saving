@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository, IsNull, In } from 'typeorm';
 import { TypeOrmStockRepository } from './typeorm-stock.repository';
 import { Stock as StockEntity, StockBehavior } from '../entities/stock.entity';
 import { Stock as StockDomain } from '@domain/entities/stock.entity';
@@ -9,6 +9,7 @@ describe('TypeOrmStockRepository', () => {
   let repository: TypeOrmStockRepository;
   let typeOrmRepo: jest.Mocked<Repository<StockEntity>>;
   let saveSpy: jest.SpyInstance;
+  let findSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -33,6 +34,7 @@ describe('TypeOrmStockRepository', () => {
 
     // Create spies to avoid 'this' scoping issues
     saveSpy = jest.spyOn(typeOrmRepo, 'save');
+    findSpy = jest.spyOn(typeOrmRepo, 'find');
   });
 
   describe('findById', () => {
@@ -88,6 +90,62 @@ describe('TypeOrmStockRepository', () => {
 
       // Assert
       expect(result).toBeNull();
+    });
+  });
+
+  describe('findByIds', () => {
+    it('should return empty array when ids array is empty', async () => {
+      const result = await repository.findByIds([]);
+      expect(result).toEqual([]);
+      expect(findSpy).not.toHaveBeenCalled();
+    });
+
+    it('should return array of stocks for given ids', async () => {
+      // Arrange
+      const stockIds = ['stock-1', 'stock-2'];
+      const entities: StockEntity[] = [
+        {
+          id: 'stock-1',
+          type: 'Bono',
+          value: 100,
+          monthly_contribution: 50,
+          is_guaranteed: false,
+          guaranteed_yield: null,
+          behavior: StockBehavior.CAPITAL_APPRECIATION,
+          deleted_at: null,
+        } as StockEntity,
+        {
+          id: 'stock-2',
+          type: 'Super',
+          value: 200,
+          monthly_contribution: 100,
+          is_guaranteed: false,
+          guaranteed_yield: null,
+          behavior: StockBehavior.CAPITAL_APPRECIATION,
+          deleted_at: null,
+        } as StockEntity,
+      ];
+
+      typeOrmRepo.find.mockResolvedValue(entities);
+
+      // Act
+      const result = await repository.findByIds(stockIds);
+
+      // Assert
+      const findCall = typeOrmRepo.find.mock.calls[0]?.[0];
+      expect(findCall).toBeDefined();
+      if (!findCall) {
+        throw new Error('findCall is undefined');
+      }
+      const where = Array.isArray(findCall.where)
+        ? findCall.where[0]
+        : findCall.where;
+      expect(where?.id).toEqual(In(stockIds));
+      expect(where?.deleted_at).toEqual(IsNull());
+      expect(result).toHaveLength(2);
+      expect(result[0]).toBeInstanceOf(StockDomain);
+      expect(result[0].id).toBe('stock-1');
+      expect(result[1].id).toBe('stock-2');
     });
   });
 
