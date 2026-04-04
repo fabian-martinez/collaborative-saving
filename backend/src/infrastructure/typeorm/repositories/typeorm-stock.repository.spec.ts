@@ -9,6 +9,7 @@ describe('TypeOrmStockRepository', () => {
   let repository: TypeOrmStockRepository;
   let typeOrmRepo: jest.Mocked<Repository<StockEntity>>;
   let saveSpy: jest.SpyInstance;
+  let findSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -33,6 +34,7 @@ describe('TypeOrmStockRepository', () => {
 
     // Create spies to avoid 'this' scoping issues
     saveSpy = jest.spyOn(typeOrmRepo, 'save');
+    findSpy = jest.spyOn(typeOrmRepo, 'find');
   });
 
   describe('findById', () => {
@@ -95,7 +97,7 @@ describe('TypeOrmStockRepository', () => {
     it('should return empty array when ids array is empty', async () => {
       const result = await repository.findByIds([]);
       expect(result).toEqual([]);
-      expect(typeOrmRepo.find).not.toHaveBeenCalled();
+      expect(findSpy).not.toHaveBeenCalled();
     });
 
     it('should return array of stocks for given ids', async () => {
