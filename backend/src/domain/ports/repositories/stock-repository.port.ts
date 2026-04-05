@@ -8,6 +8,6 @@ export interface StockRepository {
   findActive(): Promise<Stock[]>;
   save(stock: Stock): Promise<Stock>;
   saveMany(stocks: Stock[]): Promise<Stock[]>;
-  findByIds(ids: string[]): Promise<Stock[]>;
+
   findGuaranteed(): Promise<Stock[]>;
 }
