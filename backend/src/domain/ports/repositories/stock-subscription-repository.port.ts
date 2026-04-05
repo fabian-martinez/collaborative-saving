@@ -6,6 +6,10 @@ export interface StockSubscriptionRepository {
     memberId: string,
     stockId: string,
   ): Promise<StockSubscription | null>;
+  findAllByMemberAndStock(
+    memberId: string,
+    stockId: string,
+  ): Promise<StockSubscription[]>;
   findByMember(memberId: string): Promise<StockSubscription[]>;
   findActiveByMember(memberId: string): Promise<StockSubscription[]>;
   findFreeOfFinancing(memberId: string): Promise<StockSubscription[]>;
