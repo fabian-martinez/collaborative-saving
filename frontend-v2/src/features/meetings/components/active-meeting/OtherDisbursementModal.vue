@@ -1,7 +1,7 @@
 <template>
   <dialog class="modal" :class="{ 'modal-open': show }">
     <div class="modal-box">
-      <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="$emit('cancel')">✕</button>
+      <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="$emit('cancel')" aria-label="Cerrar modal">✕</button>
       <h3 class="font-bold text-2xl mb-2">{{ title }}</h3>
       <p class="mb-6 text-base-content/70">{{ subtitle }}</p>
 

@@ -62,19 +62,20 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
     // Handle generic Error instances
     else if (exception instanceof Error) {
-      // Log the full error details server-side
       this.logger.error(
-        `Internal Server Error: ${exception.message}`,
+        `Unhandled error: ${exception.message}`,
         exception.stack,
       );
-      // Mask the error message for the client
-      message = 'Internal server error';
+      message = 'Internal server error'; // Don't expose internal details
+      // Default to 500 for unknown errors
       status = HttpStatus.INTERNAL_SERVER_ERROR;
     }
     // Handle non-Error exceptions (strings, etc.)
     else {
-      this.logger.error(`Unknown Exception: ${String(exception)}`);
-      message = 'Internal server error';
+      this.logger.error(
+        `Unhandled exception of unknown type: ${String(exception)}`,
+      );
+      message = 'Internal server error'; // Don't expose internal details
       status = HttpStatus.INTERNAL_SERVER_ERROR;
     }
 
