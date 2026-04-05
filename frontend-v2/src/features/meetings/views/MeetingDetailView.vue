@@ -4,12 +4,18 @@
     <ErrorMessage :error="error || summaryError" />
 
     <div v-if="meeting && !loading">
-      <!-- Header -->
-      <MeetingHeader
-        :meeting="meeting"
-        :meeting-number="summaryComposable.meetingNumber.value || 0"
-      />
-
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <MeetingHeader
+          :meeting="meeting"
+          :meeting-number="summaryComposable.meetingNumber.value || 0"
+        />
+        <div class="flex gap-2 self-start md:self-center">
+          <button @click="handleExport" class="btn btn-outline gap-2">
+            <Download class="w-5 h-5" />
+            Exportar
+          </button>
+        </div>
+      </div>
       <!-- Tabs de Navegación -->
       <MeetingTabs
         :active-tab="activeTab"
@@ -44,36 +50,42 @@
 
       <MeetingContributions
         v-if="activeTab === 'contributions'"
+        ref="contributionsTabRef"
         :operations="summaryComposable.operations.value"
         :members="membersStore.members"
       />
 
       <MeetingPayments
         v-if="activeTab === 'payments'"
+        ref="paymentsTabRef"
         :operations="summaryComposable.operations.value"
         :members="membersStore.members"
       />
 
       <MeetingLoans
         v-if="activeTab === 'loans'"
+        ref="loansTabRef"
         :operations="summaryComposable.operations.value"
         :members="membersStore.members"
       />
 
       <MeetingStocks
         v-if="activeTab === 'stocks'"
+        ref="stocksTabRef"
         :operations="summaryComposable.operations.value"
         :members="membersStore.members"
       />
 
       <MeetingEntries
         v-if="activeTab === 'entries'"
+        ref="entriesTabRef"
         :operations="summaryComposable.operations.value"
         :members="membersStore.members"
       />
 
       <MeetingBalanceSummary
         v-if="activeTab === 'balance_summary'"
+        ref="balanceSummaryTabRef"
         :operations="summaryComposable.operations.value"
         :members="membersStore.members"
       />
@@ -94,9 +106,11 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { Download } from 'iconoir-vue/regular'
 import { meetingsApi, type Meeting } from '@/api/meetings.api'
 import { useMeetingSummary } from '../composables/useMeetingSummary'
 import { useMembersStore } from '@/features/members/stores/members'
+
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import ErrorMessage from '@/shared/components/ErrorMessage.vue'
 import MeetingHeader from '../components/closed-meeting/MeetingHeader.vue'
@@ -113,6 +127,7 @@ import MeetingLoans from '../components/closed-meeting/MeetingLoans.vue'
 import MeetingStocks from '../components/closed-meeting/MeetingStocks.vue'
 import MeetingEntries from '../components/closed-meeting/MeetingEntries.vue'
 import MeetingBalanceSummary from '../components/closed-meeting/MeetingBalanceSummary.vue'
+import type { ComponentPublicInstance } from 'vue'
 
 const route = useRoute()
 const meeting = ref<Meeting | null>(null)
@@ -142,6 +157,50 @@ const openReceiptModal = (memberId: string, memberName?: string) => {
   selectedMemberId.value = memberId
   selectedMemberName.value = memberName || null
   showReceiptModal.value = true
+}
+
+// Refs para las pestañas
+const contributionsTabRef = ref<ComponentPublicInstance & { exportData?: () => void }>()
+const paymentsTabRef = ref<ComponentPublicInstance & { exportData?: () => void }>()
+const loansTabRef = ref<ComponentPublicInstance & { exportData?: () => void }>()
+const stocksTabRef = ref<ComponentPublicInstance & { exportData?: () => void }>()
+const entriesTabRef = ref<ComponentPublicInstance & { exportData?: () => void }>()
+const balanceSummaryTabRef = ref<ComponentPublicInstance & { exportData?: () => void }>()
+
+async function handleExport() {
+  if (activeTab.value === 'summary') {
+    const s = summaryComposable.summary.value
+    if (!s) return
+    
+    const exportData = [
+      { Concepto: 'Total Recaudado', Valor: s.totalCollected },
+      { Concepto: 'Total Desembolsado', Valor: s.totalDisbursed },
+      { Concepto: 'Valor Acción', Valor: s.shareValue },
+      { Concepto: 'Participantes', Valor: s.participants },
+      { Concepto: 'Aportes Mensuales', Valor: s.collections.memberContributions.amount },
+      { Concepto: 'Pagos de Préstamos', Valor: s.collections.loanPayments.amount },
+      { Concepto: 'Intereses', Valor: s.collections.interestCollected },
+      { Concepto: 'Multas', Valor: s.collections.feesCollected },
+      { Concepto: 'Nuevos Préstamos', Valor: s.disbursements.newLoans.amount },
+      { Concepto: 'Liquidaciones', Valor: s.disbursements.stockLiquidations.amount }
+    ]
+    
+    const { exportToCSV } = await import('@/shared/utils/export')
+    const { formatDate } = await import('@/shared/utils/formatters')
+    exportToCSV(exportData, `resumen-reunion-${meeting.value?.id.substring(0, 8)}-${formatDate(new Date())}`)
+  } else if (activeTab.value === 'contributions' && contributionsTabRef.value?.exportData) {
+    contributionsTabRef.value.exportData()
+  } else if (activeTab.value === 'payments' && paymentsTabRef.value?.exportData) {
+    paymentsTabRef.value.exportData()
+  } else if (activeTab.value === 'loans' && loansTabRef.value?.exportData) {
+    loansTabRef.value.exportData()
+  } else if (activeTab.value === 'stocks' && stocksTabRef.value?.exportData) {
+    stocksTabRef.value.exportData()
+  } else if (activeTab.value === 'entries' && entriesTabRef.value?.exportData) {
+    entriesTabRef.value.exportData()
+  } else if (activeTab.value === 'balance_summary' && balanceSummaryTabRef.value?.exportData) {
+    balanceSummaryTabRef.value.exportData()
+  }
 }
 
 onMounted(async () => {
