@@ -10,6 +10,7 @@ describe('TypeOrmStockRepository', () => {
   let typeOrmRepo: jest.Mocked<Repository<StockEntity>>;
   let saveSpy: jest.SpyInstance;
   let findSpy: jest.SpyInstance;
+  let findOneSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -17,6 +18,15 @@ describe('TypeOrmStockRepository', () => {
       find: jest.fn(),
       save: jest.fn(),
       update: jest.fn(),
+      merge: jest.fn(
+        (
+          entity: StockEntity,
+          ...partials: Partial<StockEntity>[]
+        ): StockEntity => {
+          Object.assign(entity, ...partials);
+          return entity;
+        },
+      ),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -35,6 +45,7 @@ describe('TypeOrmStockRepository', () => {
     // Create spies to avoid 'this' scoping issues
     saveSpy = jest.spyOn(typeOrmRepo, 'save');
     findSpy = jest.spyOn(typeOrmRepo, 'find');
+    findOneSpy = jest.spyOn(typeOrmRepo, 'findOne');
   });
 
   describe('findById', () => {
@@ -305,11 +316,57 @@ describe('TypeOrmStockRepository', () => {
       const result = await repository.save(stock);
 
       // Assert
-      expect(saveSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ id: stock.id }),
-      );
+      expect(findOneSpy).toHaveBeenCalledWith({
+        where: { id: stock.id },
+        withDeleted: true,
+      });
+      expect(saveSpy).toHaveBeenCalled();
       expect(result).toBeInstanceOf(StockDomain);
       expect(result.id).toBe(stock.id);
+    });
+
+    it('should update existing stock when exists', async () => {
+      // Arrange
+      const stock = StockDomain.create({
+        type: 'Bono',
+        value: 150,
+        monthlyContribution: 75,
+      });
+
+      const existingEntity: StockEntity = {
+        id: stock.id,
+        type: 'Bono',
+        value: 100,
+        monthly_contribution: 50,
+        is_guaranteed: false,
+        guaranteed_yield: null,
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        deleted_at: null,
+      } as StockEntity;
+
+      const updatedEntity: StockEntity = {
+        id: stock.id,
+        type: 'Bono',
+        value: 150,
+        monthly_contribution: 75,
+        is_guaranteed: false,
+        guaranteed_yield: null,
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        deleted_at: null,
+      } as StockEntity;
+
+      typeOrmRepo.findOne.mockResolvedValueOnce(existingEntity); // Found existing
+      typeOrmRepo.save.mockResolvedValue(updatedEntity); // Return updated
+
+      // Act
+      const result = await repository.save(stock);
+
+      // Assert
+      expect(findOneSpy).toHaveBeenCalledTimes(1);
+      expect(saveSpy).toHaveBeenCalledTimes(1);
+      expect(result).toBeInstanceOf(StockDomain);
+      expect(result.id).toBe(stock.id);
+      expect(result.value).toBe(150);
     });
   });
 

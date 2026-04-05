@@ -50,8 +50,27 @@ export class TypeOrmStockRepository implements StockRepository {
 
   async save(stock: StockDomain): Promise<StockDomain> {
     const persistence = StockMapper.toPersistence(stock);
-    const saved = await this.repo.save(persistence as StockEntity);
-    return StockMapper.toDomain(saved);
+
+    // Check if stock exists in DB
+    const existing = await this.repo.findOne({
+      where: { id: stock.id },
+      withDeleted: true,
+    });
+
+    if (existing) {
+      // Update existing stock
+      // Optimization: merge changes and save to avoid extra DB roundtrip (update + findOne)
+      const updatedEntity = this.repo.merge(
+        existing,
+        persistence as StockEntity,
+      );
+      const saved = await this.repo.save(updatedEntity);
+      return StockMapper.toDomain(saved);
+    } else {
+      // Insert new stock
+      const saved = await this.repo.save(persistence as StockEntity);
+      return StockMapper.toDomain(saved);
+    }
   }
 
   async findGuaranteed(): Promise<StockDomain[]> {
