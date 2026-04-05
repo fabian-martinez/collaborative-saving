@@ -7,8 +7,7 @@ import { GlobalExceptionFilter } from './infrastructure/nestjs/http/filters/glob
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Configure CORS securely
-  // Read allowed origins from environment or default to common local development ports
+  // Configure explicitly bounded CORS using the ALLOWED_ORIGINS environment variable
   const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',')
     : [
@@ -19,7 +18,7 @@ async function bootstrap() {
 
   app.enableCors({
     origin: allowedOrigins,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
 
@@ -29,6 +28,7 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
+      forbidNonWhitelisted: true,
       transform: true,
     }),
   );
