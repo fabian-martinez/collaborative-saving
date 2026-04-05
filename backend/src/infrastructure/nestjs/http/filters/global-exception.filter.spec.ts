@@ -1,4 +1,4 @@
-import { ArgumentsHost, HttpStatus, HttpException } from '@nestjs/common';
+import { ArgumentsHost, HttpStatus } from '@nestjs/common';
 import { GlobalExceptionFilter } from './global-exception.filter';
 import { Response, Request } from 'express';
 import { NotFoundError } from '@domain/errors/not-found.error';
@@ -44,10 +44,12 @@ describe('GlobalExceptionFilter', () => {
     // This assertion expects the fix to be implemented.
     // Before the fix, this test will fail because it will be called with 'Sensitive database info'.
     expect(mockStatus).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
-    expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({
-      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      message: 'Internal server error',
-    }));
+    expect(mockJson).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Internal server error',
+      }),
+    );
   });
 
   it('should pass through domain errors like NotFoundError', () => {
@@ -55,9 +57,11 @@ describe('GlobalExceptionFilter', () => {
     filter.catch(error, mockArgumentsHost as ArgumentsHost);
 
     expect(mockStatus).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
-    expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({
-      statusCode: HttpStatus.NOT_FOUND,
-      message: 'User with ID 123 not found',
-    }));
+    expect(mockJson).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'User with ID 123 not found',
+      }),
+    );
   });
 });
