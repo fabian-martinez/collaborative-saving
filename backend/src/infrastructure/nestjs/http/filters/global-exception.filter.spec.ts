@@ -1,42 +1,66 @@
-import { HttpStatus } from '@nestjs/common';
+import { ArgumentsHost, HttpStatus } from '@nestjs/common';
 import { GlobalExceptionFilter } from './global-exception.filter';
+import { Response, Request } from 'express';
+import { NotFoundError } from '@domain/errors/not-found.error';
 
 describe('GlobalExceptionFilter', () => {
   let filter: GlobalExceptionFilter;
+  let mockResponse: Partial<Response>;
+  let mockRequest: Partial<Request>;
+  let mockArgumentsHost: Partial<ArgumentsHost>;
+  let mockStatus: jest.Mock;
+  let mockJson: jest.Mock;
+  let mockGetResponse: jest.Mock;
+  let mockGetRequest: jest.Mock;
+  let mockSwitchToHttp: jest.Mock;
 
   beforeEach(() => {
     filter = new GlobalExceptionFilter();
-  });
-
-  it('should catch generic Error and return 500 with a generic message', () => {
-    const mockJson = jest.fn();
-    const mockStatus = jest.fn().mockReturnValue({ json: mockJson });
-    const mockGetResponse = jest.fn().mockReturnValue({
+    mockStatus = jest.fn().mockReturnThis();
+    mockJson = jest.fn().mockReturnThis();
+    mockResponse = {
       status: mockStatus,
-    });
-    const mockGetRequest = jest.fn().mockReturnValue({
+      json: mockJson,
+    } as unknown as Response;
+    mockRequest = {
       url: '/test-url',
-    });
-    const mockHttpArgumentsHost = jest.fn().mockReturnValue({
+    } as unknown as Request;
+
+    mockGetResponse = jest.fn().mockReturnValue(mockResponse);
+    mockGetRequest = jest.fn().mockReturnValue(mockRequest);
+    mockSwitchToHttp = jest.fn().mockReturnValue({
       getResponse: mockGetResponse,
       getRequest: mockGetRequest,
     });
-    const mockArgumentsHost = {
-      switchToHttp: mockHttpArgumentsHost,
+    mockArgumentsHost = {
+      switchToHttp: mockSwitchToHttp,
     };
+  });
 
-    const exception = new Error('Sensitive database error details');
+  it('should sanitize generic Error messages', () => {
+    const error = new Error('Sensitive database info');
+    filter.catch(error, mockArgumentsHost as ArgumentsHost);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    filter.catch(exception, mockArgumentsHost as any);
-
+    // This assertion expects the fix to be implemented.
+    // Before the fix, this test will fail because it will be called with 'Sensitive database info'.
     expect(mockStatus).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
-
-    // Check for the fix: expecting generic "Internal server error" message
     expect(mockJson).toHaveBeenCalledWith(
       expect.objectContaining({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'Internal server error',
+      }),
+    );
+  });
+
+  it('should pass through domain errors like NotFoundError', () => {
+    const error = new NotFoundError('User', '123');
+    filter.catch(error, mockArgumentsHost as ArgumentsHost);
+
+    expect(mockStatus).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+    expect(mockJson).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'User with ID 123 not found',
       }),
     );
   });
