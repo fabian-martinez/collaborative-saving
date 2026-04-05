@@ -97,9 +97,8 @@ export class RecordRevaluationUseCase {
       const stockHistories: StockValueHistory[] = [];
       const stockUpdates: Array<{ stockId: string; newValue: number }> = [];
 
-      // Bolt ⚡: Optimización para evitar N+1 queries.
-      // Extraer IDs únicos y buscar todas las acciones en una sola consulta
-      const uniqueStockIds = [...new Set(details.map((d) => d.stockId))];
+      // ⚡ Bolt: Cache stocks for O(1) lookups instead of N+1 database queries
+      const uniqueStockIds = Array.from(new Set(details.map((d) => d.stockId)));
       const stocks = await this.stockRepository.findByIds(uniqueStockIds);
       const stockMap = new Map(stocks.map((s) => [s.id, s]));
 
