@@ -86,11 +86,23 @@ const getTypeClass = (type: string) => {
 
 const getAmount = (op: Operation) => {
   if (!op.entries) return 0
-  // Try to find EQUITY_SHARES or similar account?
-  // Or just use CASH impact.
-  // For Purchase: Cash matches value.
-  // For Withdrawal: Cash matches value.
   const entry = op.entries.find(e => e.account_type === 'CASH')
   return entry ? Math.abs(entry.amount) : 0
 }
+
+const exportData = async () => {
+  const { exportToCSV } = await import('@/shared/utils/export')
+  const { formatDate } = await import('@/shared/utils/formatters')
+  const data = stockOperations.value.map(op => ({
+    Fecha: formatDate(op.date),
+    Socio: getMemberName(op.member_id),
+    Tipo: formatType(op.type),
+    Monto: getAmount(op)
+  }))
+  exportToCSV(data, `acciones-reunion-${props.operations[0]?.meeting_id.substring(0, 8)}`)
+}
+
+defineExpose({
+  exportData
+})
 </script>

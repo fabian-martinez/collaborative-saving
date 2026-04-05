@@ -14,6 +14,7 @@ import {
 } from '@domain/constants/account-types';
 import { BusinessRuleError } from '@domain/errors/business-rule.error';
 import { NotFoundError } from '@domain/errors/not-found.error';
+import { roundAndLimit } from '@domain/utils/round-and-limit.util';
 
 /**
  * Process Dividend Disbursement Use Case
@@ -104,21 +105,27 @@ export class ProcessDividendDisbursementUseCase {
       await this.pendingMemberPaymentRepository.save(pendingPayment);
     } else {
       // Dividendo parcial: marcar original como PAID y crear nuevo por faltante
-      const remainingAmount = pendingPayment.amount - maxDisbursable;
+      const remainingAmount = roundAndLimit(
+        pendingPayment.amount - maxDisbursable,
+        9999999999.99,
+        2,
+      );
 
       pendingPayment.markAsPaid();
       await this.pendingMemberPaymentRepository.save(pendingPayment);
 
       // Crear nuevo PendingMemberPayment por faltante
-      const newPendingPayment = PendingMemberPayment.create({
-        memberId: item.memberId,
-        meetingId,
-        type: PendingMemberPaymentType.DIVIDEND,
-        amount: remainingAmount,
-        notes: `Saldo pendiente de dividendo - ${item.notes || ''}`.trim(),
-      });
-      newPendingPayment.approve(); // Aprobar automáticamente
-      await this.pendingMemberPaymentRepository.save(newPendingPayment);
+      if (remainingAmount > 0) {
+        const newPendingPayment = PendingMemberPayment.create({
+          memberId: item.memberId,
+          meetingId,
+          type: PendingMemberPaymentType.DIVIDEND,
+          amount: remainingAmount,
+          notes: `Saldo pendiente de dividendo - ${item.notes || ''}`.trim(),
+        });
+        newPendingPayment.approve(); // Aprobar automáticamente
+        await this.pendingMemberPaymentRepository.save(newPendingPayment);
+      }
     }
   }
 
