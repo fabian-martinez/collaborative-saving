@@ -608,5 +608,6 @@ const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
     TypeOrmLedgerEntryRepository,
     TypeOrmTransactionManager,
   ],
+  exports: [MEMBER_REPOSITORY],
 })
 export class MembersV2Module {}

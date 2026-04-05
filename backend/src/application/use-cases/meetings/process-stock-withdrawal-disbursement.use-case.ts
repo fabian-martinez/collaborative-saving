@@ -25,6 +25,7 @@ import { BusinessRuleError } from '@domain/errors/business-rule.error';
 import { NotFoundError } from '@domain/errors/not-found.error';
 import { StockNotFoundException } from '@application/exceptions/stock-not-found.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
+import { roundAndLimit } from '@domain/utils/round-and-limit.util';
 
 /**
  * Process Stock Withdrawal Disbursement Use Case
@@ -140,7 +141,11 @@ export class ProcessStockWithdrawalDisbursementUseCase {
     }
 
     // 6. Calcular saldo pendiente basado en pendingPayment.amount, no item.amount
-    const remainingAmount = pendingPayment.amount - maxDisbursable;
+    const remainingAmount = roundAndLimit(
+      pendingPayment.amount - maxDisbursable,
+      9999999999.99,
+      2,
+    );
 
     if (remainingAmount > 0) {
       // Hay saldo pendiente: marcar el existente como PAID y crear nuevo por faltante
@@ -200,12 +205,11 @@ export class ProcessStockWithdrawalDisbursementUseCase {
       ) / CALCULATION_CONSTANTS.FLOATING_POINT_PRECISION;
 
     // 1. Obtener suscripciones del socio para este stock
-    const allSubscriptions = await this.stockSubscriptionRepository.findByStock(
-      stock.id,
-    );
-    const memberSubscriptions = allSubscriptions.filter(
-      (sub) => sub.memberId === item.memberId,
-    );
+    const memberSubscriptions =
+      await this.stockSubscriptionRepository.findAllByMemberAndStock(
+        item.memberId,
+        stock.id,
+      );
 
     // Si hay un stockSubscriptionId específico en el item, solo verificar que existe y pertenece al miembro
     // (es solo una referencia, no restringe el retiro a esa suscripción específica)
@@ -299,7 +303,11 @@ export class ProcessStockWithdrawalDisbursementUseCase {
     }
 
     // 8. Calcular saldo pendiente y crear PendingMemberPayment si es necesario
-    const remainingAmount = requestedAmount - maxDisbursable;
+    const remainingAmount = roundAndLimit(
+      requestedAmount - maxDisbursable,
+      9999999999.99,
+      2,
+    );
 
     if (remainingAmount > 0) {
       // Crear nuevo PendingMemberPayment por saldo pendiente
