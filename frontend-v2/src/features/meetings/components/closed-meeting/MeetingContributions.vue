@@ -73,9 +73,22 @@ const getAmount = (op: Operation) => {
     if (entry.account_type === 'CASH' && entry.amount > 0) {
       return sum + entry.amount
     }
-    // Handle older structure or if backend sends total in different way?
-    // Usually MONTHLY_PAYMENT has a positive CASH entry.
     return sum
   }, 0)
 }
+
+const exportData = async () => {
+  const { exportToCSV } = await import('@/shared/utils/export')
+  const { formatDate } = await import('@/shared/utils/formatters')
+  const data = contributions.value.map(op => ({
+    Fecha: formatDate(op.date),
+    Socio: getMemberName(op.member_id),
+    Monto: getAmount(op)
+  }))
+  exportToCSV(data, `aportes-reunion-${props.operations[0]?.meeting_id.substring(0, 8)}`)
+}
+
+defineExpose({
+  exportData
+})
 </script>
