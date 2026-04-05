@@ -26,7 +26,6 @@ export class TypeOrmStockRepository implements StockRepository {
     const entities = await this.repo.find({
       where: { id: In(ids), deleted_at: IsNull() },
     });
-
     return entities.map((e) => StockMapper.toDomain(e));
   }
 
