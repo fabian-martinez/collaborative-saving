@@ -16,8 +16,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Roles } from '../../auth/decorators/roles.decorator';
-import { MemberRole } from '@domain/enums/member-role.enum';
+
 import {
   ApiTags,
   ApiOperation,
