@@ -1,4 +1,16 @@
-## 2024-05-18 - [Restrict CORS Configuration and Sanitize Global Error Responses]
-**Vulnerability:** The application was using `app.enableCors()` without any arguments in `main.ts`, which defaults to allowing all origins (i.e. `Access-Control-Allow-Origin: *`). Furthermore, the `GlobalExceptionFilter` was leaking potential application internals by passing the original stringified `exception.message` or `String(exception)` for unhandled Generic Errors and Unknown Exceptions directly to the client.
-**Learning:** Security misconfigurations such as an overly permissive CORS setup expose the API to Cross-Site Request Forgery (CSRF) and unwanted access from malicious origins. Additionally, reflecting unhandled server exceptions back to the client could reveal valuable operational details and stack traces (information leakage). Both issues represent typical high-priority gaps in API defenses.
-**Prevention:** Always bound CORS logic with explicitly defined allowed origins dynamically populated via environment variables (`ALLOWED_ORIGINS`). For global exception handling, adopt a "Fail Securely" methodology: log the full error details locally for developer debuggability, but return a sanitized, generic generic "Internal server error" message to clients for unrecognized or non-domain errors.
+## 2026-03-02 - NestJS Overly Permissive CORS Configuration
+**Vulnerability:** The NestJS `main.ts` entry point used `app.enableCors()` with no arguments, which defaults to allowing requests from any origin (`Access-Control-Allow-Origin: *`). This is an overly permissive configuration that opens the API to unauthorized cross-origin requests.
+**Learning:** Default configuration for CORS in NestJS exposes the application to unnecessary security risks, particularly when cookies or authentication headers are involved. It should always be explicitly bounded.
+**Prevention:** Always restrict CORS origins using a predefined list or an environment variable (`process.env.ALLOWED_ORIGINS`). Configure `methods` and `credentials` appropriately instead of relying on defaults.
+## 2024-05-22 - [Missing RBAC Architecture]
+**Vulnerability:** Core write operations were completely unprotected by role checks, relying only on authentication.
+**Learning:** Symbols used for Dependency Injection (like `MEMBER_REPOSITORY`) were encapsulated within modules, making them inaccessible to Guards which need them for authorization checks.
+**Prevention:** Always define DI tokens in shared constants files to ensure they can be injected into Guards, Interceptors, and other global enhancers.
+## 2026-02-01 - Missing Role-Based Access Control
+**Vulnerability:** Core write operations in `MembersV2Controller` were accessible to any authenticated user, lacking role verification.
+**Learning:** RBAC was documented but completely missing in the codebase. Authentication guards (`FirebaseAuthGuard`) were present but insufficient for authorization.
+**Prevention:** Always verify that `@UseGuards(RolesGuard)` is applied and functional, not just assume it based on documentation.
+## 2024-03-30 - Fix Information Leakage in Exception Filter
+**Vulnerability:** The NestJS `GlobalExceptionFilter` was leaking internal stack traces and application details by returning the original error messages of generic unhandled exceptions (like `Error` objects or strings) directly to the client in HTTP responses instead of sanitizing them.
+**Learning:** Default exception handlers often fallback to passing `error.message` to clients for debugging, which exposes internals when unhandled exceptions occur in production, violating the "Fail securely" principle and aiding reconnaissance.
+**Prevention:** Generic/unhandled errors must always be mapped to a generic message like "Internal server error" for external HTTP responses, while their details (e.g., stack traces, original messages) must be securely logged server-side to prevent data leakage while maintaining observability.

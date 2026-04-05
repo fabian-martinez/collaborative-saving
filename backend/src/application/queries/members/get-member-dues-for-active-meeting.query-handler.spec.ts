@@ -84,6 +84,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       findById: jest.fn(),
       findByLoan: jest.fn(),
       findByLoanAndMeeting: jest.fn(),
+      findByLoansAndMeeting: jest.fn(),
       save: jest.fn(),
       saveMany: jest.fn(),
     } as unknown as jest.Mocked<LoanTransactionDetailRepository>;
@@ -111,7 +112,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
     );
     findByLoanAndMeetingSpy = jest.spyOn(
       loanTransactionDetailRepository,
-      'findByLoanAndMeeting',
+      'findByLoansAndMeeting',
     );
     findByIdStockSpy = jest.spyOn(stockRepository, 'findById');
 
@@ -572,7 +573,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       );
       expect(loanDues).toHaveLength(0);
       expect(findByLoanAndMeetingSpy).toHaveBeenCalledWith(
-        activeLoans[0].id,
+        [activeLoans[0].id],
         meetingId,
       );
     });
@@ -721,9 +722,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       findAllMandatorySpy.mockResolvedValue([]);
       findActiveByMemberSpy.mockResolvedValue([]);
       findActiveByMemberLoanSpy.mockResolvedValue(activeLoans);
-      findByLoanAndMeetingSpy
-        .mockResolvedValueOnce([]) // Primer préstamo sin pago
-        .mockResolvedValueOnce([]); // Segundo préstamo sin pago
+      findByLoanAndMeetingSpy.mockResolvedValue([]);
 
       // ACT
       const result: MemberDueResponseDto[] =

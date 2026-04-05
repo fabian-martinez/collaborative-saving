@@ -80,6 +80,7 @@ export class ExecuteDisbursementPlanUseCase {
 
       // 4. Trackear efectivo desembolsado acumulado
       let disbursedTotal = 0;
+      let currentAvailableCash = initialAvailableCash;
       const processedItems: Array<{
         memberId: string;
         type: DisbursementType;
@@ -100,9 +101,11 @@ export class ExecuteDisbursementPlanUseCase {
         const disbursedAmount = await this.processDisbursementItem(
           item,
           dto.meetingId,
+          currentAvailableCash,
         );
 
         disbursedTotal += disbursedAmount;
+        currentAvailableCash -= disbursedAmount;
         processedItems.push({
           memberId: item.memberId,
           type: item.type,
@@ -139,10 +142,8 @@ export class ExecuteDisbursementPlanUseCase {
   private async processDisbursementItem(
     item: DisbursementPlanItemDto,
     meetingId: string,
+    currentAvailableCash: number,
   ): Promise<number> {
-    // Calcular efectivo disponible actual (puede haber cambiado durante ejecución)
-    const currentAvailableCash = await this.calculateAvailableCash(meetingId);
-
     switch (item.type) {
       case DisbursementType.LOAN:
         // ProcessLoanDisbursementUseCase maneja su propio límite de efectivo
