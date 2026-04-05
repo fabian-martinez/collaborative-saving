@@ -1430,18 +1430,18 @@ describe('MeetingsV2Controller', () => {
       );
 
       // ACT
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+
       const result = await controller.getDetailedSummary(meetingId);
 
       // ASSERT
       expect(getDetailedMeetingSummaryQueryExecuteSpy).toHaveBeenCalledWith(
         meetingId,
       );
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
       expect(result.meeting.id).toBe(meetingId);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
       expect(result.summary.total_collected).toBe(150000.0);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
       expect(result.collections.member_contributions.count).toBe(10);
     });
 
@@ -1451,7 +1451,7 @@ describe('MeetingsV2Controller', () => {
       getDetailedMeetingSummaryQueryExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+
       await expect(controller.getDetailedSummary(meetingId)).rejects.toThrow(
         HttpException,
       );

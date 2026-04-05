@@ -25,6 +25,7 @@ import {
   CASH_ACCOUNT,
   MEMBER_EQUITY_ACCOUNT,
 } from '@domain/constants/account-types';
+import { roundAndLimit } from '@domain/utils/round-and-limit.util';
 
 /**
  * Create Loan Use Case
@@ -157,15 +158,22 @@ export class CreateLoanUseCase {
 
     // 9. Create PendingMemberPayment if disbursement is partial
     if (disbursedAmount < dto.approvedAmount) {
-      const pendingAmount = dto.approvedAmount - disbursedAmount;
-      const pendingPayment = PendingMemberPayment.create({
-        memberId: dto.memberId,
-        meetingId: dto.meetingId,
-        type: PendingMemberPaymentType.LOAN,
-        amount: pendingAmount,
-        loanId: savedLoan.id,
-      });
-      await this.pendingMemberPaymentRepository.save(pendingPayment);
+      const pendingAmount = roundAndLimit(
+        dto.approvedAmount - disbursedAmount,
+        9999999999.99,
+        2,
+      );
+
+      if (pendingAmount > 0) {
+        const pendingPayment = PendingMemberPayment.create({
+          memberId: dto.memberId,
+          meetingId: dto.meetingId,
+          type: PendingMemberPaymentType.LOAN,
+          amount: pendingAmount,
+          loanId: savedLoan.id,
+        });
+        await this.pendingMemberPaymentRepository.save(pendingPayment);
+      }
     }
 
     // 10. Return response

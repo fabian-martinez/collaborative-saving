@@ -11,6 +11,8 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { MemberRole } from '@domain/enums/member-role.enum';
 import {
   ApiTags,
   ApiOperation,
@@ -105,6 +107,7 @@ export class LoansV2Controller {
   }
 
   @Patch(':id/terms')
+  @Roles(MemberRole.ADMIN)
   @ApiOperation({
     summary: 'Update loan terms (Administrative)',
     description:

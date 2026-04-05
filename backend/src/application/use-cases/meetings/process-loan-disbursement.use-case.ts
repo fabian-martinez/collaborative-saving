@@ -27,6 +27,7 @@ import { NotFoundError } from '@domain/errors/not-found.error';
 import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
+import { roundAndLimit } from '@domain/utils/round-and-limit.util';
 
 /**
  * Process Loan Disbursement Use Case
@@ -265,10 +266,13 @@ export class ProcessLoanDisbursementUseCase {
 
         // Crear nuevo PendingMemberPayment por saldo pendiente
         // Usar el remainingLoanAmount si el préstamo aún tiene saldo pendiente
-        const newPendingAmount =
+        const newPendingAmount = roundAndLimit(
           remainingLoanAmount > 0
             ? Math.min(remainingPendingAmount, remainingLoanAmount)
-            : remainingPendingAmount;
+            : remainingPendingAmount,
+          9999999999.99,
+          2,
+        );
 
         if (newPendingAmount > 0) {
           const newPendingPayment = PendingMemberPayment.create({
@@ -287,12 +291,17 @@ export class ProcessLoanDisbursementUseCase {
         await this.pendingMemberPaymentRepository.save(pendingPayment);
 
         // Si aún hay monto pendiente en el préstamo, crear un nuevo pending payment
-        if (remainingLoanAmount > 0) {
+        const roundedRemainingLoanAmount = roundAndLimit(
+          remainingLoanAmount,
+          9999999999.99,
+          2,
+        );
+        if (roundedRemainingLoanAmount > 0) {
           const newPendingPayment = PendingMemberPayment.create({
             memberId: item.memberId,
             meetingId,
             type: PendingMemberPaymentType.LOAN,
-            amount: remainingLoanAmount,
+            amount: roundedRemainingLoanAmount,
             loanId: loan.id,
             notes: `Saldo pendiente de préstamo - ${item.notes || ''}`.trim(),
           });

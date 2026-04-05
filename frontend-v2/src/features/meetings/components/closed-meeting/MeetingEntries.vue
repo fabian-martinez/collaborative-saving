@@ -99,4 +99,21 @@ const getMemberName = (id: string | null) => {
   const member = props.members.find(m => m.id === id)
   return member ? member.name : id
 }
+
+const exportData = async () => {
+  const { exportToCSV } = await import('@/shared/utils/export')
+  const data = entries.value.map(entry => ({
+    Fecha: formatDate(entry.date),
+    Cuenta: entry.account_type,
+    Descripción: entry.description,
+    Socio: getMemberName(entry.member_id),
+    Débito: entry.amount > 0 ? entry.amount : 0,
+    Crédito: entry.amount < 0 ? Math.abs(entry.amount) : 0
+  }))
+  exportToCSV(data, `asientos-reunion-${props.operations[0]?.meeting_id.substring(0, 8)}`)
+}
+
+defineExpose({
+  exportData
+})
 </script>

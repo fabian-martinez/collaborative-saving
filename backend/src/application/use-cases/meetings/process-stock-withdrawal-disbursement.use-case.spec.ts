@@ -56,6 +56,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       findByMember: jest.fn(),
       findByStock: jest.fn(),
       findByMemberAndStock: jest.fn(),
+      findAllByMemberAndStock: jest.fn(),
       save: jest.fn(),
       saveMany: jest.fn(),
       delete: jest.fn(),
@@ -117,7 +118,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(mockStock);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([
+      stockSubscriptionRepository.findAllByMemberAndStock.mockResolvedValue([
         mockSubscription,
       ]);
       stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
@@ -159,6 +160,10 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
         stockSubscriptionRepository,
         'findByStock',
       );
+      const findAllByMemberAndStockSpy = jest.spyOn(
+        stockSubscriptionRepository,
+        'findAllByMemberAndStock',
+      );
       const hasEnoughQtySpy = jest.spyOn(
         stockWithdrawalCalculator,
         'hasEnoughWithdrawableQuantity',
@@ -174,7 +179,11 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       const executeOpSpy = jest.spyOn(recordOperationUseCase, 'execute');
 
       expect(findStockByIdSpy).toHaveBeenCalledWith(mockStockId);
-      expect(findByStockSpy).toHaveBeenCalledWith(mockStock.id);
+      expect(findByStockSpy).not.toHaveBeenCalled();
+      expect(findAllByMemberAndStockSpy).toHaveBeenCalledWith(
+        mockMemberId,
+        mockStock.id,
+      );
       expect(hasEnoughQtySpy).toHaveBeenCalled();
       expect(calcWithdrawalSpy).toHaveBeenCalled();
       expect(saveManySubsSpy).toHaveBeenCalled();
@@ -269,7 +278,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(mockStock);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([
+      stockSubscriptionRepository.findAllByMemberAndStock.mockResolvedValue([
         mockSubscription,
       ]);
       stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
@@ -307,7 +316,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(mockStock);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([
+      stockSubscriptionRepository.findAllByMemberAndStock.mockResolvedValue([
         mockSubscription,
       ]);
       stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
@@ -380,7 +389,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(mockStock);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([
+      stockSubscriptionRepository.findAllByMemberAndStock.mockResolvedValue([
         mockSubscription,
       ]);
       stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
@@ -445,7 +454,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(mockStock);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([
+      stockSubscriptionRepository.findAllByMemberAndStock.mockResolvedValue([
         mockSubscription,
       ]);
       stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
@@ -567,7 +576,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(stockValue1000);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([
+      stockSubscriptionRepository.findAllByMemberAndStock.mockResolvedValue([
         mockSubscription,
       ]);
       stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
@@ -654,7 +663,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(stockValue1000);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([
+      stockSubscriptionRepository.findAllByMemberAndStock.mockResolvedValue([
         mockSubscription,
       ]);
       stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
@@ -771,7 +780,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(mockStock);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([
+      stockSubscriptionRepository.findAllByMemberAndStock.mockResolvedValue([
         mockSubscription,
       ]);
       stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
@@ -839,7 +848,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(mockStock);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([
+      stockSubscriptionRepository.findAllByMemberAndStock.mockResolvedValue([
         mockSubscription,
       ]);
       stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
@@ -899,7 +908,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(mockStock);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([
+      stockSubscriptionRepository.findAllByMemberAndStock.mockResolvedValue([
         mockSubscription,
       ]);
       stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
@@ -971,7 +980,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(mockStock);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([
+      stockSubscriptionRepository.findAllByMemberAndStock.mockResolvedValue([
         mockSubscription,
       ]);
       stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
@@ -1013,7 +1022,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       };
 
       stockRepository.findById.mockResolvedValue(mockStock);
-      stockSubscriptionRepository.findByStock.mockResolvedValue([
+      stockSubscriptionRepository.findAllByMemberAndStock.mockResolvedValue([
         mockSubscription,
       ]);
       stockWithdrawalCalculator.hasEnoughWithdrawableQuantity.mockReturnValue(
