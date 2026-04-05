@@ -2,7 +2,6 @@
 import { ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
-import ErrorMessage from '@/shared/components/ErrorMessage.vue';
 
 const email = ref('');
 const password = ref('');
@@ -70,12 +69,9 @@ async function handleLogin() {
             />
           </div>
 
-          <ErrorMessage
-            v-if="error"
-            :error="error"
-            title="Login Failed"
-            class="mt-4"
-          />
+          <div v-if="error" class="alert alert-error mt-4 text-sm py-2">
+            <span>{{ error }}</span>
+          </div>
 
           <div class="card-actions justify-end mt-6">
             <button

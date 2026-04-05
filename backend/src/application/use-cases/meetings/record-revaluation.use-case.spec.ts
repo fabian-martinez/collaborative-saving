@@ -284,7 +284,6 @@ describe('RecordRevaluationUseCase', () => {
       mockCalculationResult,
     );
     operationRepository.save.mockResolvedValue(savedOperation);
-    stockRepository.findById.mockResolvedValue(regularStock);
     stockRepository.findByIds.mockResolvedValue([regularStock]);
     stockValueHistoryRepository.saveMany.mockResolvedValue([]);
     stockRepository.save.mockResolvedValue(regularStock);
@@ -355,7 +354,6 @@ describe('RecordRevaluationUseCase', () => {
       expect(op.meetingId).toBe(meetingId);
       return Promise.resolve(savedOperation);
     });
-    stockRepository.findById.mockResolvedValue(stock);
     stockRepository.findByIds.mockResolvedValue([stock]);
     stockValueHistoryRepository.saveMany.mockResolvedValue([]);
     stockRepository.save.mockResolvedValue(stock);
@@ -431,7 +429,6 @@ describe('RecordRevaluationUseCase', () => {
       mockCalculationResult,
     );
     operationRepository.save.mockResolvedValue(savedOperation);
-    stockRepository.findById.mockResolvedValue(stock);
     stockRepository.findByIds.mockResolvedValue([stock]);
     stockValueHistoryRepository.saveMany.mockImplementation((histories) => {
       expect(histories).toHaveLength(1);
@@ -516,7 +513,6 @@ describe('RecordRevaluationUseCase', () => {
     // 1. For history creation (line 101)
     // 2. For value update (line 152)
     // 3. For ledger entries creation (line 170)
-    stockRepository.findById.mockResolvedValue(stock);
     stockRepository.findByIds.mockResolvedValue([stock]);
     stockValueHistoryRepository.saveMany.mockResolvedValue([]);
     stockRepository.save.mockImplementation((s) => {
@@ -593,7 +589,6 @@ describe('RecordRevaluationUseCase', () => {
       mockCalculationResult,
     );
     operationRepository.save.mockResolvedValue(savedOperation);
-    stockRepository.findById.mockResolvedValue(stock);
     stockRepository.findByIds.mockResolvedValue([stock]);
     stockValueHistoryRepository.saveMany.mockResolvedValue([]);
     stockRepository.save.mockResolvedValue(stock);
@@ -679,7 +674,6 @@ describe('RecordRevaluationUseCase', () => {
       mockCalculationResult,
     );
     operationRepository.save.mockResolvedValue(savedOperation);
-    stockRepository.findById.mockResolvedValue(dividendStock);
     stockRepository.findByIds.mockResolvedValue([dividendStock]);
     stockValueHistoryRepository.saveMany.mockResolvedValue([]);
     stockRepository.save.mockResolvedValue(dividendStock);
@@ -753,7 +747,6 @@ describe('RecordRevaluationUseCase', () => {
       mockCalculationResult,
     );
     operationRepository.save.mockResolvedValue(savedOperation);
-    stockRepository.findById.mockResolvedValue(guaranteedStock);
     stockRepository.findByIds.mockResolvedValue([guaranteedStock]);
     stockValueHistoryRepository.saveMany.mockResolvedValue([]);
     stockRepository.save.mockResolvedValue(guaranteedStock);
@@ -816,7 +809,6 @@ describe('RecordRevaluationUseCase', () => {
       mockCalculationResult,
     );
     operationRepository.save.mockResolvedValue(savedOperation);
-    stockRepository.findById.mockResolvedValue(regularStock);
     stockRepository.findByIds.mockResolvedValue([regularStock]);
     stockValueHistoryRepository.saveMany.mockResolvedValue([]);
     stockRepository.save.mockResolvedValue(regularStock);
@@ -880,7 +872,6 @@ describe('RecordRevaluationUseCase', () => {
       mockCalculationResult,
     );
     operationRepository.save.mockResolvedValue(savedOperation);
-    stockRepository.findById.mockResolvedValue(stock);
     stockRepository.findByIds.mockResolvedValue([stock]);
     stockValueHistoryRepository.saveMany.mockResolvedValue([]);
     stockRepository.save.mockResolvedValue(stock);

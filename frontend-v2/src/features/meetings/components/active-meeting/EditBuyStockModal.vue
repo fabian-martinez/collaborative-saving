@@ -1,7 +1,7 @@
 <template>
   <dialog v-if="visible" class="modal" :class="{ 'modal-open': visible }">
     <div class="modal-box">
-      <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="$emit('cancel')" aria-label="Cerrar modal">✕</button>
+      <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="$emit('cancel')">✕</button>
       <h3 class="font-bold text-2xl mb-2 text-center">{{ isEditing ? 'Editar compra de acción' : 'Agregar compra de acción' }}</h3>
       <p class="mb-6 text-base-content/70 text-center">
         {{ isEditing ? 'Modifica los datos de la compra de acción seleccionada.' : 'Completa los datos para registrar una nueva compra de acción.' }}

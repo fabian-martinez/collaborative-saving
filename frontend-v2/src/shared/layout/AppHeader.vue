@@ -31,7 +31,6 @@ const formattedMeetingDate = computed(() => {
       <button
         @click="toggleMobile"
         class="btn btn-ghost btn-circle lg:hidden"
-        aria-label="Abrir menú"
       >
         <Menu class="w-6 h-6" />
       </button>
@@ -55,7 +54,7 @@ const formattedMeetingDate = computed(() => {
       <div class="flex items-center gap-4">
         <!-- Notifications -->
         <div class="relative">
-          <button class="btn btn-ghost btn-circle" aria-label="Notificaciones">
+          <button class="btn btn-ghost btn-circle">
             <Bell class="w-6 h-6" />
             <span
               v-if="notifications > 0"

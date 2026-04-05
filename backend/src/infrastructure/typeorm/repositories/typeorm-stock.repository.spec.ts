@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, IsNull, In } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { TypeOrmStockRepository } from './typeorm-stock.repository';
 import { Stock as StockEntity, StockBehavior } from '../entities/stock.entity';
 import { Stock as StockDomain } from '@domain/entities/stock.entity';
@@ -9,9 +9,9 @@ import { In } from 'typeorm';
 describe('TypeOrmStockRepository', () => {
   let repository: TypeOrmStockRepository;
   let typeOrmRepo: jest.Mocked<Repository<StockEntity>>;
-  let saveSpy: jest.SpyInstance;
-  let findSpy: jest.SpyInstance;
   let findOneSpy: jest.SpyInstance;
+  let saveSpy: jest.SpyInstance;
+  let updateSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -19,15 +19,6 @@ describe('TypeOrmStockRepository', () => {
       find: jest.fn(),
       save: jest.fn(),
       update: jest.fn(),
-      merge: jest.fn(
-        (
-          entity: StockEntity,
-          ...partials: Partial<StockEntity>[]
-        ): StockEntity => {
-          Object.assign(entity, ...partials);
-          return entity;
-        },
-      ),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -44,9 +35,9 @@ describe('TypeOrmStockRepository', () => {
     typeOrmRepo = module.get(getRepositoryToken(StockEntity));
 
     // Create spies to avoid 'this' scoping issues
-    saveSpy = jest.spyOn(typeOrmRepo, 'save');
-    findSpy = jest.spyOn(typeOrmRepo, 'find');
     findOneSpy = jest.spyOn(typeOrmRepo, 'findOne');
+    saveSpy = jest.spyOn(typeOrmRepo, 'save');
+    updateSpy = jest.spyOn(typeOrmRepo, 'update');
   });
 
   describe('findById', () => {
@@ -106,58 +97,56 @@ describe('TypeOrmStockRepository', () => {
   });
 
   describe('findByIds', () => {
-    it('should return empty array when ids array is empty', async () => {
+    it('should return empty array if ids is empty', async () => {
+      // Act
       const result = await repository.findByIds([]);
+
+      // Assert
       expect(result).toEqual([]);
-      expect(findSpy).not.toHaveBeenCalled();
+      expect(typeOrmRepo.find).not.toHaveBeenCalled();
     });
 
-    it('should return array of stocks for given ids', async () => {
+    it('should return stocks matching provided ids', async () => {
       // Arrange
-      const stockIds = ['stock-1', 'stock-2'];
-      const entities: StockEntity[] = [
-        {
-          id: 'stock-1',
-          type: 'Bono',
-          value: 100,
-          monthly_contribution: 50,
-          is_guaranteed: false,
-          guaranteed_yield: null,
-          behavior: StockBehavior.CAPITAL_APPRECIATION,
-          deleted_at: null,
-        } as StockEntity,
-        {
-          id: 'stock-2',
-          type: 'Super',
-          value: 200,
-          monthly_contribution: 100,
-          is_guaranteed: false,
-          guaranteed_yield: null,
-          behavior: StockBehavior.CAPITAL_APPRECIATION,
-          deleted_at: null,
-        } as StockEntity,
-      ];
+      const stock1 = {
+        id: 'id-1',
+        type: 'Bono',
+        value: 100,
+        monthly_contribution: 50,
+        is_guaranteed: false,
+        guaranteed_yield: null,
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        deleted_at: null,
+      } as StockEntity;
 
-      typeOrmRepo.find.mockResolvedValue(entities);
+      const stock2 = {
+        id: 'id-2',
+        type: 'Super',
+        value: 200,
+        monthly_contribution: 100,
+        is_guaranteed: false,
+        guaranteed_yield: null,
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        deleted_at: null,
+      } as StockEntity;
+
+      typeOrmRepo.find.mockResolvedValue([stock1, stock2]);
 
       // Act
-      const result = await repository.findByIds(stockIds);
+      const result = await repository.findByIds(['id-1', 'id-2']);
 
       // Assert
       const findCall = typeOrmRepo.find.mock.calls[0]?.[0];
       expect(findCall).toBeDefined();
-      if (!findCall) {
-        throw new Error('findCall is undefined');
-      }
       const where = Array.isArray(findCall.where)
         ? findCall.where[0]
         : findCall.where;
-      expect(where?.id).toEqual(In(stockIds));
+
+      expect(where?.id).toEqual(In(['id-1', 'id-2']));
       expect(where?.deleted_at).toEqual(IsNull());
       expect(result).toHaveLength(2);
-      expect(result[0]).toBeInstanceOf(StockDomain);
-      expect(result[0].id).toBe('stock-1');
-      expect(result[1].id).toBe('stock-2');
+      expect(result[0].id).toBe('id-1');
+      expect(result[1].id).toBe('id-2');
     });
   });
 
@@ -292,7 +281,7 @@ describe('TypeOrmStockRepository', () => {
   });
 
   describe('save', () => {
-    it('should save stock (insert/update)', async () => {
+    it('should insert new stock when not exists', async () => {
       // Arrange
       const stock = StockDomain.create({
         type: 'Bono',
@@ -311,6 +300,7 @@ describe('TypeOrmStockRepository', () => {
         deleted_at: null,
       } as StockEntity;
 
+      typeOrmRepo.findOne.mockResolvedValueOnce(null); // Not found
       typeOrmRepo.save.mockResolvedValue(entity);
 
       // Act
@@ -356,18 +346,50 @@ describe('TypeOrmStockRepository', () => {
         deleted_at: null,
       } as StockEntity;
 
-      typeOrmRepo.findOne.mockResolvedValueOnce(existingEntity); // Found existing
-      typeOrmRepo.save.mockResolvedValue(updatedEntity); // Return updated
+      typeOrmRepo.findOne
+        .mockResolvedValueOnce(existingEntity) // Found existing
+        .mockResolvedValueOnce(updatedEntity); // After update
+      typeOrmRepo.update.mockResolvedValue(undefined as any);
 
       // Act
       const result = await repository.save(stock);
 
       // Assert
-      expect(findOneSpy).toHaveBeenCalledTimes(1);
-      expect(saveSpy).toHaveBeenCalledTimes(1);
+      expect(findOneSpy).toHaveBeenCalledTimes(2);
+      expect(updateSpy).toHaveBeenCalledWith(stock.id, expect.any(Object));
       expect(result).toBeInstanceOf(StockDomain);
       expect(result.id).toBe(stock.id);
       expect(result.value).toBe(150);
+    });
+
+    it('should throw error when stock not found after update', async () => {
+      // Arrange
+      const stock = StockDomain.create({
+        type: 'Bono',
+        value: 100,
+        monthlyContribution: 50,
+      });
+
+      const existingEntity: StockEntity = {
+        id: stock.id,
+        type: 'Bono',
+        value: 100,
+        monthly_contribution: 50,
+        is_guaranteed: false,
+        guaranteed_yield: null,
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        deleted_at: null,
+      } as StockEntity;
+
+      typeOrmRepo.findOne
+        .mockResolvedValueOnce(existingEntity) // Found existing
+        .mockResolvedValueOnce(null); // Not found after update
+      typeOrmRepo.update.mockResolvedValue(undefined as any);
+
+      // Act & Assert
+      await expect(repository.save(stock)).rejects.toThrow(
+        'Stock not found after update',
+      );
     });
   });
 

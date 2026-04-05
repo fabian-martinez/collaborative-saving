@@ -1,7 +1,7 @@
 <template>
   <dialog class="modal" :class="{ 'modal-open': show }">
     <div class="modal-box max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-      <button aria-label="Cerrar modal"
+      <button
         class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
         @click="$emit('close')"
       >
