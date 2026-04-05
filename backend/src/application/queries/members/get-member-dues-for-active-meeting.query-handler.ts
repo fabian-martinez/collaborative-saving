@@ -118,18 +118,25 @@ export class GetMemberDuesForActiveMeetingQueryHandler {
       return activeLoans;
     }
 
+    if (activeLoans.length === 0) {
+      return [];
+    }
+
     const unpaidLoans: Loan[] = [];
 
+    const loanIds = activeLoans.map((l) => l.id);
+    const transactions =
+      await this.loanTransactionDetailRepository.findByLoansAndMeeting(
+        loanIds,
+        meetingId,
+      );
+
     for (const loan of activeLoans) {
-      // Obtener todas las transacciones del préstamo en la reunión activa
-      const transactions =
-        await this.loanTransactionDetailRepository.findByLoanAndMeeting(
-          loan.id,
-          meetingId,
-        );
+      // Filtrar transacciones para este préstamo específico
+      const loanTransactions = transactions.filter((t) => t.loanId === loan.id);
 
       // Verificar si hay algún pago de interés en estas transacciones
-      const hasInterestPayment = transactions.some(
+      const hasInterestPayment = loanTransactions.some(
         (transaction) =>
           transaction.transactionType ===
           String(LoanTransactionType.INTEREST_PAYMENT),

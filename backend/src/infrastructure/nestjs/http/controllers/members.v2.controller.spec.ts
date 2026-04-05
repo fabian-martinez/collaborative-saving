@@ -37,6 +37,7 @@ import { StockOperationResponseDto } from '@application/dto/members/stock-operat
 import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
 import { LoanResponseDto } from '@application/dto/loans/loan-response.dto';
 import { LoanStatus } from '@domain/entities/loan.entity';
+import { MEMBER_REPOSITORY } from '@domain/constants/injection-tokens';
 
 describe('MembersV2Controller', () => {
   let controller: MembersV2Controller;
@@ -224,6 +225,12 @@ describe('MembersV2Controller', () => {
           provide: ProcessStockLoanPaymentUseCase,
           useValue: {
             execute: jest.fn(),
+          },
+        },
+        {
+          provide: MEMBER_REPOSITORY,
+          useValue: {
+            findByEmail: jest.fn(),
           },
         },
       ],
@@ -1307,7 +1314,7 @@ describe('MembersV2Controller', () => {
     });
   });
 
-  /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
+  /* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
   describe('getStockSubscriptionById', () => {
     const memberId = '550e8400-e29b-41d4-a716-446655440000';
     const subscriptionId = '770e8400-e29b-41d4-a716-446655440002';
@@ -1404,7 +1411,7 @@ describe('MembersV2Controller', () => {
       expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
     });
   });
-  /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
+  /* eslint-enable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 
   describe('getMemberLoans', () => {
     const memberId = '550e8400-e29b-41d4-a716-446655440000';

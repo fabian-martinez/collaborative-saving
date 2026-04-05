@@ -207,14 +207,14 @@ import { useActiveMeetingStore } from '../../stores/activeMeeting'
 import { meetingsApi, type Operation } from '@/api/meetings.api'
 import { operationsApi } from '@/api/operations.api'
 import { formatDate } from '@/shared/utils/formatters'
-import { usePrintReceipt } from '../../composables/usePrintReceipt'
+import { usePrintReceipt } from '@/shared/composables/usePrintReceipt'
 import EditBuyStockModal from './EditBuyStockModal.vue'
 import OperationDetails from '@/shared/components/OperationDetails.vue'
 import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
 import PurchaseSummary from './collection/PurchaseSummary.vue'
 import MemberList from './collection/MemberList.vue'
 import PaymentReceiptView from './collection/PaymentReceiptView.vue'
-import PrintReceiptModal from './collection/PrintReceiptModal.vue'
+import PrintReceiptModal from '@/shared/components/PrintReceiptModal.vue'
 
 const emit = defineEmits<{
   completed: []

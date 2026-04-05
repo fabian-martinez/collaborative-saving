@@ -6,5 +6,6 @@
  */
 export enum MemberRole {
   MEMBER = 'member',
+  ADMIN = 'admin',
   // Puedes agregar más roles aquí si es necesario
 }

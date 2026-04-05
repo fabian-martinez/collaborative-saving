@@ -61,24 +61,25 @@
             </li>
           </ul>
         </div>
-        <button @click="createMeeting" class="btn btn-primary">
-          <CalendarPlus class="w-5 h-5 mr-2" />
-          Nueva Reunión
+        <button @click="createMeeting" class="btn btn-primary" :disabled="isCreating">
+          <span v-if="isCreating" class="loading loading-spinner loading-sm mr-2"></span>
+          <CalendarPlus v-else class="w-5 h-5 mr-2" />
+          {{ isCreating ? 'Creando...' : 'Nueva Reunión' }}
         </button>
       </div>
     </div>
 
-    <LoadingSpinner :loading="store.loading" />
+    <LoadingSpinner :loading="store.loading && !isCreating" />
     <ErrorMessage :error="store.error" />
 
     <!-- Alerta si hay reunión activa al intentar crear -->
     <div v-if="showActiveMeetingAlert" class="alert alert-warning mb-4">
       <span>Ya existe una reunión activa. Debe cerrar la reunión actual antes de crear una nueva.</span>
-      <button @click="showActiveMeetingAlert = false" class="btn btn-sm btn-ghost">✕</button>
+      <button @click="showActiveMeetingAlert = false" class="btn btn-sm btn-ghost" aria-label="Cerrar alerta">✕</button>
     </div>
 
     <!-- Tabla mejorada con más información -->
-    <div v-if="!store.loading && !store.error" class="card bg-base-100 shadow">
+    <div v-if="(!store.loading || isCreating) && !store.error" class="card bg-base-100 shadow">
       <div class="card-body p-0">
         <!-- Vista Desktop: Tabla completa -->
         <div class="hidden md:block">
@@ -134,6 +135,7 @@
                 @click="viewMeeting((item as unknown as Meeting).id)"
                 class="btn btn-sm btn-ghost"
                 title="Ver detalles"
+                aria-label="Ver detalles"
               >
                 <Eye class="w-4 h-4" />
               </button>
@@ -242,6 +244,7 @@ const sortDirection = ref<'asc' | 'desc'>('desc')
 const showActiveMeetingAlert = ref(false)
 const expandedMeetingId = ref<string | null>(null)
 const showSearchDropdown = ref(false)
+const isCreating = ref(false)
 
 // Búsqueda usando useSearchableList
 const meetingsRef = computed(() => store.meetings)
@@ -351,10 +354,13 @@ async function createMeeting(): Promise<void> {
   }
 
   try {
+    isCreating.value = true
     await store.createMeeting({ date: new Date().toISOString() })
     router.push('/meetings/active')
   } catch (e) {
     console.error('Error creating meeting', e)
+  } finally {
+    isCreating.value = false
   }
 }
 

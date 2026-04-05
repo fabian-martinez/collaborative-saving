@@ -74,6 +74,48 @@ describe('TypeOrmMemberRepository', () => {
     });
   });
 
+  describe('findByEmail', () => {
+    it('should return Member when found', async () => {
+      const email = 'test@example.com';
+      const entity: MemberEntity = {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        name: 'Test Member',
+        email: email,
+        role: 'member',
+        status: 'active',
+        registrationDate: new Date('2024-01-15'),
+        createdAt: new Date('2024-01-15'),
+        deletedAt: null as unknown as Date,
+        identificationNumber: null as unknown as string,
+        address: null as unknown as string,
+        phone: null as unknown as string,
+        beneficiary: null as unknown as string,
+      };
+
+      typeOrmRepo.findOne.mockResolvedValue(entity);
+
+      const result = await repository.findByEmail(email);
+
+      const findOneCall = typeOrmRepo.findOne.mock.calls[0][0];
+      const where = Array.isArray(findOneCall.where)
+        ? findOneCall.where[0]
+        : findOneCall.where;
+      expect(where?.email).toBe(email);
+      expect(where?.deletedAt).toEqual(IsNull());
+      expect(result).toBeInstanceOf(MemberDomain);
+      expect(result?.email).toBe(email);
+    });
+
+    it('should return null when not found', async () => {
+      const email = 'test@example.com';
+      typeOrmRepo.findOne.mockResolvedValue(null);
+
+      const result = await repository.findByEmail(email);
+
+      expect(result).toBeNull();
+    });
+  });
+
   describe('findActive', () => {
     it('should return array of active members', async () => {
       const entities: MemberEntity[] = [

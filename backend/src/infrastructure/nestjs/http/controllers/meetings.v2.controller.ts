@@ -11,6 +11,8 @@ import {
   HttpException,
   Logger,
 } from '@nestjs/common';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { MemberRole } from '@domain/enums/member-role.enum';
 import {
   ApiTags,
   ApiOperation,
@@ -88,6 +90,7 @@ export class MeetingsV2Controller {
   ) {}
 
   @Post()
+  @Roles(MemberRole.ADMIN)
   @ApiOperation({
     summary: 'Open a new meeting',
     description:
@@ -137,6 +140,7 @@ export class MeetingsV2Controller {
   }
 
   @Patch(':id/close')
+  @Roles(MemberRole.ADMIN)
   @ApiOperation({
     summary: 'Close a meeting',
     description:
@@ -745,6 +749,7 @@ export class MeetingsV2Controller {
   }
 
   @Patch(':id/revaluation/confirm')
+  @Roles(MemberRole.ADMIN)
   @ApiOperation({
     summary: 'Confirm and execute revaluation',
     description:
@@ -872,6 +877,7 @@ export class MeetingsV2Controller {
   }
 
   @Post(':id/disbursement-plan')
+  @Roles(MemberRole.ADMIN)
   @ApiOperation({
     summary: 'Execute disbursement plan',
     description:

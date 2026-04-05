@@ -231,7 +231,7 @@ export class ProcessStockExchangeUseCase {
           operationId: operationResult.operationId,
         });
         await this.loanTransactionDetailRepository.save(transactionDetail);
-        
+
         // Update details with operationId
         loanDetails.operationId = operationResult.operationId;
       }

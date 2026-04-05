@@ -3,7 +3,7 @@
     <div class="card-body">
       <div class="flex justify-between items-center mb-4">
         <h2 class="card-title text-xl">Resumen de Saldos por Socio</h2>
-        <button @click="downloadCSV" class="btn btn-sm btn-outline gap-2">
+        <button @click="exportData" class="btn btn-sm btn-outline gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
           </svg>
@@ -254,43 +254,28 @@ const movementColumns = [
   { key: 'outflow', label: 'Salida' },
 ]
 
-const downloadCSV = () => {
-  // CSV Headers
-  const headers = ['Socio', 'Efectivo Positivo', 'Efectivo Negativo', 'Diferencia']
+const exportData = async () => {
+  const { exportToCSV } = await import('@/shared/utils/export')
   
-  // CSV Rows
-  const rows = summaryData.value.map(item => [
-    item.memberName,
-    item.positive.toString(),
-    item.negative.toString(),
-    item.difference.toString()
-  ])
+  const data = summaryData.value.map(item => ({
+    Socio: item.memberName,
+    'Efectivo Positivo': item.positive,
+    'Efectivo Negativo': item.negative,
+    'Diferencia': item.difference
+  }))
   
-  // Add totals row
-  rows.push([
-    'TOTALES',
-    totals.value.positive.toString(),
-    totals.value.negative.toString(),
-    totals.value.difference.toString()
-  ])
+  // Agregar totales
+  data.push({
+    Socio: 'TOTALES',
+    'Efectivo Positivo': totals.value.positive,
+    'Efectivo Negativo': totals.value.negative,
+    'Diferencia': totals.value.difference
+  })
   
-  // Build CSV content
-  const csvContent = [
-    headers.join(','),
-    ...rows.map(row => row.join(','))
-  ].join('\n')
-  
-  // Create blob and download
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-  const link = document.createElement('a')
-  const url = URL.createObjectURL(blob)
-  
-  link.setAttribute('href', url)
-  link.setAttribute('download', `balance_socios_${new Date().toISOString().split('T')[0]}.csv`)
-  link.style.visibility = 'hidden'
-  
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  exportToCSV(data, `balance-socios-reunion-${props.operations[0]?.meeting_id.substring(0, 8)}`)
 }
+
+defineExpose({
+  exportData
+})
 </script>
