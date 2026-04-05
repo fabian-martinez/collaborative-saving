@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, In } from 'typeorm';
+import { Repository, IsNull, In, DeepPartial } from 'typeorm';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { Stock as StockDomain } from '@domain/entities/stock.entity';
 import { Stock as StockEntity } from '../entities/stock.entity';
@@ -48,17 +48,6 @@ export class TypeOrmStockRepository implements StockRepository {
     return this.findAll();
   }
 
-  async findByIds(ids: string[]): Promise<StockDomain[]> {
-    if (!ids || ids.length === 0) return [];
-
-    // TypeORM requires In() array from "typeorm" to be imported, let's see if it's imported
-    // if not we will fix it in the next step
-    const entities = await this.repo.find({
-      where: { id: In(ids), deleted_at: IsNull() },
-    });
-    return entities.map((e) => StockMapper.toDomain(e));
-  }
-
   async saveMany(stocks: StockDomain[]): Promise<StockDomain[]> {
     if (!stocks || stocks.length === 0) return [];
 
@@ -74,9 +63,12 @@ export class TypeOrmStockRepository implements StockRepository {
     const existingMap = new Map(existingEntities.map((e) => [e.id, e]));
 
     const entitiesToSave = persistences.map((persistence) => {
-      const existing = existingMap.get(persistence.id);
+      const existing = existingMap.get(persistence.id!);
       if (existing) {
-        return this.repo.merge(existing, persistence as any);
+        return this.repo.merge(
+          existing,
+          persistence as DeepPartial<StockEntity>,
+        );
       }
       return persistence as StockEntity;
     });

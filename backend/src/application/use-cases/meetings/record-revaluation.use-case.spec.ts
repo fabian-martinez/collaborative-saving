@@ -36,7 +36,7 @@ describe('RecordRevaluationUseCase', () => {
   let transactionManagerExecuteSpy: jest.SpyInstance;
   let operationSaveSpy: jest.SpyInstance;
   let stockValueHistorySaveManySpy: jest.SpyInstance;
-  let stockSaveSpy: jest.SpyInstance;
+  let stockSaveManySpy: jest.SpyInstance;
   let ledgerEntrySaveManySpy: jest.SpyInstance;
   let pendingPaymentSaveManySpy: jest.SpyInstance;
   let calculateRevaluationDataSpy: jest.SpyInstance;
@@ -79,7 +79,6 @@ describe('RecordRevaluationUseCase', () => {
       findActive: jest.fn(),
       save: jest.fn(),
       saveMany: jest.fn(),
-      findByIds: jest.fn().mockResolvedValue([]),
       findGuaranteed: jest.fn(),
     } as unknown as jest.Mocked<StockRepository>;
 
@@ -142,7 +141,7 @@ describe('RecordRevaluationUseCase', () => {
       stockValueHistoryRepository,
       'saveMany',
     );
-    stockSaveSpy = jest.spyOn(stockRepository, 'save');
+    stockSaveManySpy = jest.spyOn(stockRepository, 'saveMany');
     ledgerEntrySaveManySpy = jest.spyOn(ledgerEntryRepository, 'saveMany');
     pendingPaymentSaveManySpy = jest.spyOn(
       pendingMemberPaymentRepository,
@@ -301,7 +300,7 @@ describe('RecordRevaluationUseCase', () => {
     expect(result.operationId).toBe(savedOperation.id);
     expect(operationSaveSpy).toHaveBeenCalled();
     expect(stockValueHistorySaveManySpy).toHaveBeenCalled();
-    expect(stockRepository.saveMany).toHaveBeenCalled();
+    expect(stockSaveManySpy).toHaveBeenCalled();
     expect(ledgerEntrySaveManySpy).toHaveBeenCalled();
   });
 
@@ -545,7 +544,7 @@ describe('RecordRevaluationUseCase', () => {
     await useCase.execute(dto);
 
     // ASSERT
-    expect(stockRepository.saveMany).toHaveBeenCalled();
+    expect(stockSaveManySpy).toHaveBeenCalled();
   });
 
   it('should create balanced ledger entries', async () => {
@@ -771,7 +770,7 @@ describe('RecordRevaluationUseCase', () => {
 
     // ASSERT
     expect(result.status).toBe('executed');
-    expect(stockRepository.saveMany).toHaveBeenCalled();
+    expect(stockSaveManySpy).toHaveBeenCalled();
   });
 
   it('should handle regular stocks correctly', async () => {

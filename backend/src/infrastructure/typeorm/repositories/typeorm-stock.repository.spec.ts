@@ -11,6 +11,7 @@ describe('TypeOrmStockRepository', () => {
   let saveSpy: jest.SpyInstance;
   let findSpy: jest.SpyInstance;
   let findOneSpy: jest.SpyInstance;
+  let mergeSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -46,6 +47,7 @@ describe('TypeOrmStockRepository', () => {
     saveSpy = jest.spyOn(typeOrmRepo, 'save');
     findSpy = jest.spyOn(typeOrmRepo, 'find');
     findOneSpy = jest.spyOn(typeOrmRepo, 'findOne');
+    mergeSpy = jest.spyOn(typeOrmRepo, 'merge');
   });
 
   describe('findByIds', () => {
@@ -73,12 +75,12 @@ describe('TypeOrmStockRepository', () => {
         deleted_at: null,
       } as StockEntity;
 
-      jest.spyOn(typeOrmRepo, 'find').mockResolvedValue([entity1, entity2]);
+      findSpy.mockResolvedValue([entity1, entity2]);
 
       const result = await repository.findByIds([stockId1, stockId2]);
 
-      expect(typeOrmRepo.find).toHaveBeenCalledWith({
-        where: { id: expect.any(Object), deleted_at: IsNull() },
+      expect(findSpy).toHaveBeenCalledWith({
+        where: { id: In([stockId1, stockId2]), deleted_at: IsNull() },
       });
       expect(result).toHaveLength(2);
       expect(result[0].id).toBe(stockId1);
@@ -86,9 +88,9 @@ describe('TypeOrmStockRepository', () => {
     });
 
     it('should return empty array if ids is empty', async () => {
-      const result = await repository.findByIds([]);
+      const result = await repository.findByIds([] as string[]);
       expect(result).toEqual([]);
-      expect(typeOrmRepo.find).not.toHaveBeenCalled();
+      expect(findSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -120,31 +122,48 @@ describe('TypeOrmStockRepository', () => {
         deleted_at: null,
       } as StockEntity;
 
-      jest.spyOn(typeOrmRepo, 'find').mockResolvedValue([existingEntity]);
+      findSpy.mockResolvedValue([existingEntity]);
       // Mock merge avoiding undefined objects
-      jest.spyOn(typeOrmRepo, 'merge').mockImplementation((entity: any, ...dto: any[]) => {
-        return Object.assign(entity || {}, ...dto);
-      });
-      jest.spyOn(typeOrmRepo, 'save').mockResolvedValue([
-        { ...existingEntity, value: 100 },
-        { id: domain2.id, type: 'Acción', value: 200, monthly_contribution: 100, is_guaranteed: false, guaranteed_yield: null, behavior: StockBehavior.CAPITAL_APPRECIATION, deleted_at: null } as StockEntity
+      mergeSpy.mockImplementation(
+        (entity: StockEntity, ...dto: Partial<StockEntity>[]): StockEntity => {
+          return Object.assign(
+            entity || ({} as StockEntity),
+            ...dto,
+          ) as StockEntity;
+        },
+      );
+      saveSpy.mockResolvedValue([
+        { ...existingEntity, value: 100 } as StockEntity,
+        {
+          id: domain2.id,
+          type: 'Acción',
+          value: 200,
+          monthly_contribution: 100,
+          is_guaranteed: false,
+          guaranteed_yield: null,
+          behavior: StockBehavior.CAPITAL_APPRECIATION,
+          deleted_at: null,
+        } as StockEntity,
+      ] as StockEntity[]);
+
+      const result: StockDomain[] = await repository.saveMany([
+        domain1,
+        domain2,
       ]);
 
-      const result = await repository.saveMany([domain1, domain2]);
-
-      expect(typeOrmRepo.find).toHaveBeenCalledWith({
-        where: { id: expect.any(Object) },
+      expect(findSpy).toHaveBeenCalledWith({
+        where: { id: In([domain1.id, domain2.id]) },
         withDeleted: true,
       });
-      expect(typeOrmRepo.merge).toHaveBeenCalled();
-      expect(typeOrmRepo.save).toHaveBeenCalled();
+      expect(mergeSpy).toHaveBeenCalled();
+      expect(saveSpy).toHaveBeenCalled();
       expect(result).toHaveLength(2);
       expect(result[0].value).toBe(100);
       expect(result[1].value).toBe(200);
     });
 
     it('should return empty array if no stocks to save', async () => {
-      const result = await repository.saveMany([]);
+      const result = await repository.saveMany([] as StockDomain[]);
       expect(result).toEqual([]);
     });
   });
@@ -207,7 +226,7 @@ describe('TypeOrmStockRepository', () => {
 
   describe('findByIds', () => {
     it('should return empty array when ids array is empty', async () => {
-      const result = await repository.findByIds([]);
+      const result = await repository.findByIds([] as string[]);
       expect(result).toEqual([]);
       expect(findSpy).not.toHaveBeenCalled();
     });
