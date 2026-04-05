@@ -20,6 +20,16 @@ export class TypeOrmStockRepository implements StockRepository {
     return entity ? StockMapper.toDomain(entity) : null;
   }
 
+  async findByIds(ids: string[]): Promise<StockDomain[]> {
+    if (!ids || ids.length === 0) return [];
+
+    const entities = await this.repo.find({
+      where: { id: In(ids), deleted_at: IsNull() },
+    });
+
+    return entities.map((e) => StockMapper.toDomain(e));
+  }
+
   async findByType(type: string): Promise<StockDomain | null> {
     const entity = await this.repo.findOne({
       where: { type, deleted_at: IsNull() },
@@ -86,15 +96,13 @@ export class TypeOrmStockRepository implements StockRepository {
 
     if (existing) {
       // Update existing stock
-      await this.repo.update(stock.id, persistence);
-      const updated = await this.repo.findOne({
-        where: { id: stock.id },
-        withDeleted: true,
-      });
-      if (!updated) {
-        throw new Error('Stock not found after update');
-      }
-      return StockMapper.toDomain(updated);
+      // Optimization: merge changes and save to avoid extra DB roundtrip (update + findOne)
+      const updatedEntity = this.repo.merge(
+        existing,
+        persistence as StockEntity,
+      );
+      const saved = await this.repo.save(updatedEntity);
+      return StockMapper.toDomain(saved);
     } else {
       // Insert new stock
       const saved = await this.repo.save(persistence as StockEntity);
