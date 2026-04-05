@@ -16,9 +16,6 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { RolesGuard } from '../../auth/guards/roles.guard';
-import { Roles } from '../../auth/decorators/roles.decorator';
-import { MemberRole } from '@domain/enums/member-role.enum';
 import {
   ApiTags,
   ApiOperation,
@@ -97,9 +94,13 @@ import { StockSubscriptionResponseDto } from '@application/dto/members/stock-sub
 import { PaymentItemDto } from '@application/dto/members/payment-item.dto';
 import { LoanResponseHttpDto } from '../dto/loan-response-http.dto';
 import { LoanResponseDto } from '@application/dto/loans/loan-response.dto';
+import { RolesGuard } from '@infrastructure/nestjs/auth/guards/roles.guard';
+import { Roles } from '@infrastructure/nestjs/auth/decorators/roles.decorator';
+import { MemberRole } from '@domain/enums/member-role.enum';
 
 @ApiTags('Members V2')
 @Controller('v2/members')
+@UseGuards(RolesGuard)
 export class MembersV2Controller {
   constructor(
     private readonly getMembersQuery: GetMembersQueryHandler,
