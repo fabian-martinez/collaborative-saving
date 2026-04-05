@@ -26,10 +26,12 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const { user } = context.switchToHttp().getRequest();
+    const { user } = context
+      .switchToHttp()
+      .getRequest<{ user?: { email?: string } }>();
     // FirebaseAuthGuard puts the decoded token in request['user']
     // The decoded token has an 'email' property
-    if (!user || !user.email) {
+    if (!user || typeof user.email !== 'string') {
       console.warn('RolesGuard: No user or email in request');
       return false;
     }
@@ -42,7 +44,9 @@ export class RolesGuard implements CanActivate {
 
     const hasRole = requiredRoles.includes(member.role as MemberRole);
     if (!hasRole) {
-       console.warn(`RolesGuard: User ${user.email} with role ${member.role} does not have required roles ${requiredRoles}`);
+      console.warn(
+        `RolesGuard: User ${user.email} with role ${member.role} does not have required roles ${requiredRoles.join(', ')}`,
+      );
     }
     return hasRole;
   }
