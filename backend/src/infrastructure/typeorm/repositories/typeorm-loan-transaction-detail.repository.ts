@@ -59,6 +59,28 @@ export class TypeOrmLoanTransactionDetailRepository implements LoanTransactionDe
     return entities.map((e) => LoanTransactionDetailMapper.toDomain(e));
   }
 
+  async findByLoansAndMeeting(
+    loanIds: string[],
+    meetingId: string,
+  ): Promise<LoanTransactionDetailDomain[]> {
+    if (!loanIds.length) {
+      return [];
+    }
+    // Join with operations table to filter by meetingId and multiple loanIds
+    const repo = this.getRepository();
+    const entities = await repo
+      .createQueryBuilder('loan_transaction_detail')
+      .innerJoin(
+        'operations',
+        'operation',
+        'operation.id = loan_transaction_detail.operation_id AND operation.meeting_id = :meetingId',
+        { meetingId },
+      )
+      .where('loan_transaction_detail.loan_id IN (:...loanIds)', { loanIds })
+      .getMany();
+    return entities.map((e) => LoanTransactionDetailMapper.toDomain(e));
+  }
+
   async save(
     transaction: LoanTransactionDetailDomain,
   ): Promise<LoanTransactionDetailDomain> {
