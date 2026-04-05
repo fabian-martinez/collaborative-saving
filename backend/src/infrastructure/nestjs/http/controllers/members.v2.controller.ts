@@ -16,7 +16,6 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-
 import {
   ApiTags,
   ApiOperation,
@@ -208,6 +207,8 @@ export class MembersV2Controller {
   @ApiBadRequestResponse({
     description: 'Invalid request data (e.g., invalid email format)',
   })
+  @UseGuards(RolesGuard)
+  @Roles(MemberRole.ADMIN)
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async create(
     @Body() body: CreateMemberHttpDto,
@@ -364,6 +365,8 @@ export class MembersV2Controller {
   @ApiNotFoundResponse({
     description: 'Member not found or deleted',
   })
+  @UseGuards(RolesGuard)
+  @Roles(MemberRole.ADMIN)
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -407,6 +410,8 @@ export class MembersV2Controller {
   @ApiNotFoundResponse({
     description: 'Member not found or already deleted',
   })
+  @UseGuards(RolesGuard)
+  @Roles(MemberRole.ADMIN)
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     try {
       await this.deleteMemberUseCase.execute({ memberId: id });
@@ -784,6 +789,8 @@ export class MembersV2Controller {
   @ApiInternalServerErrorResponse({
     description: 'Internal server error',
   })
+  @UseGuards(RolesGuard)
+  @Roles(MemberRole.ADMIN)
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async recordMonthlyPayments(
     @Param('id', ParseUUIDPipe) id: string,
@@ -846,6 +853,8 @@ export class MembersV2Controller {
   @ApiInternalServerErrorResponse({
     description: 'Internal server error',
   })
+  @UseGuards(RolesGuard)
+  @Roles(MemberRole.ADMIN)
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async purchaseStock(
     @Param('id', ParseUUIDPipe) id: string,
@@ -968,6 +977,8 @@ export class MembersV2Controller {
     description: 'No se encontró el socio, la suscripción o la reunión',
   })
   @ApiInternalServerErrorResponse({ description: 'Error interno del servidor' })
+  @UseGuards(RolesGuard)
+  @Roles(MemberRole.ADMIN)
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async exchangeStocks(
     @Param('id', ParseUUIDPipe) id: string,
@@ -1069,6 +1080,8 @@ export class MembersV2Controller {
     description: 'No se encontró el socio, la suscripción o la reunión',
   })
   @ApiInternalServerErrorResponse({ description: 'Error interno del servidor' })
+  @UseGuards(RolesGuard)
+  @Roles(MemberRole.ADMIN)
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async transferStocks(
     @Param('id', ParseUUIDPipe) id: string,
@@ -1168,6 +1181,8 @@ export class MembersV2Controller {
       'No se encontró el socio, la suscripción, el préstamo o la reunión',
   })
   @ApiInternalServerErrorResponse({ description: 'Error interno del servidor' })
+  @UseGuards(RolesGuard)
+  @Roles(MemberRole.ADMIN)
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async payLoanWithStocks(
     @Param('id', ParseUUIDPipe) id: string,
