@@ -10,6 +10,7 @@ describe('TypeOrmStockRepository', () => {
   let typeOrmRepo: jest.Mocked<Repository<StockEntity>>;
   let saveSpy: jest.SpyInstance;
   let findSpy: jest.SpyInstance;
+  let findOneSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -17,8 +18,14 @@ describe('TypeOrmStockRepository', () => {
       find: jest.fn(),
       save: jest.fn(),
       update: jest.fn(),
-      merge: jest.fn((entity: StockEntity, ...partials: Partial<StockEntity>[]) =>
-        Object.assign(entity, ...partials),
+      merge: jest.fn(
+        (
+          entity: StockEntity,
+          ...partials: Partial<StockEntity>[]
+        ): StockEntity => {
+          Object.assign(entity, ...partials);
+          return entity;
+        },
       ),
     };
 
@@ -38,6 +45,7 @@ describe('TypeOrmStockRepository', () => {
     // Create spies to avoid 'this' scoping issues
     saveSpy = jest.spyOn(typeOrmRepo, 'save');
     findSpy = jest.spyOn(typeOrmRepo, 'find');
+    findOneSpy = jest.spyOn(typeOrmRepo, 'findOne');
   });
 
   describe('findById', () => {
