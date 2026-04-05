@@ -7,6 +7,10 @@ export interface LoanTransactionDetailRepository {
     loanId: string,
     meetingId: string,
   ): Promise<LoanTransactionDetail[]>;
+  findByLoansAndMeeting(
+    loanIds: string[],
+    meetingId: string,
+  ): Promise<LoanTransactionDetail[]>;
   save(transaction: LoanTransactionDetail): Promise<LoanTransactionDetail>;
   saveMany(
     transactions: LoanTransactionDetail[],

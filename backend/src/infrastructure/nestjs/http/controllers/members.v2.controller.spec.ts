@@ -37,6 +37,7 @@ import { StockOperationResponseDto } from '@application/dto/members/stock-operat
 import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
 import { LoanResponseDto } from '@application/dto/loans/loan-response.dto';
 import { LoanStatus } from '@domain/entities/loan.entity';
+import { MEMBER_REPOSITORY } from '@domain/constants/injection-tokens';
 
 describe('MembersV2Controller', () => {
   let controller: MembersV2Controller;
@@ -224,6 +225,12 @@ describe('MembersV2Controller', () => {
           provide: ProcessStockLoanPaymentUseCase,
           useValue: {
             execute: jest.fn(),
+          },
+        },
+        {
+          provide: MEMBER_REPOSITORY,
+          useValue: {
+            findByEmail: jest.fn(),
           },
         },
       ],
