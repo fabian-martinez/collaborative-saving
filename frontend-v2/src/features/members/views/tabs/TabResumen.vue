@@ -135,7 +135,7 @@ const activeSubscriptions = computed(() => {
 })
 
 const recentPayments = computed(() => {
-  return props.store.payments
+  return [...props.store.payments]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5)
 })

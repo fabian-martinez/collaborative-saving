@@ -17,6 +17,7 @@ import { CreateMemberUseCase } from '@application/use-cases/members/create-membe
 import { UpdateMemberUseCase } from '@application/use-cases/members/update-member.use-case';
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
 import { RecordMonthlyPaymentsUseCase } from '@application/use-cases/members/record-monthly-payments.use-case';
+import { RecordLoanPaymentUseCase } from '@application/use-cases/loans/record-loan-payment.use-case';
 import { MemberResponseDto } from '@application/dto/members/member-response.dto';
 import { RecordMonthlyPaymentsResponseDto } from '@application/dto/members/record-monthly-payments-response.dto';
 import { PaymentType } from '@application/dto/members/payment-item.dto';
@@ -60,6 +61,7 @@ describe('MembersV2Controller', () => {
   let processStockExchangeUseCase: jest.Mocked<ProcessStockExchangeUseCase>;
   let processStockTransferUseCase: jest.Mocked<ProcessStockTransferUseCase>;
   let processStockLoanPaymentUseCase: jest.Mocked<ProcessStockLoanPaymentUseCase>;
+  let recordLoanPaymentUseCase: jest.Mocked<RecordLoanPaymentUseCase>;
 
   // Spies for execute methods to avoid 'this' scoping issues
   let getMembersQueryExecuteSpy: jest.SpyInstance;
@@ -80,6 +82,7 @@ describe('MembersV2Controller', () => {
   let processStockExchangeUseCaseExecuteSpy: jest.SpyInstance;
   let processStockTransferUseCaseExecuteSpy: jest.SpyInstance;
   let processStockLoanPaymentUseCaseExecuteSpy: jest.SpyInstance;
+  let recordLoanPaymentUseCaseExecuteSpy: jest.SpyInstance;
 
   const mockMemberResponse: MemberResponseDto = {
     id: '550e8400-e29b-41d4-a716-446655440000',
@@ -226,6 +229,12 @@ describe('MembersV2Controller', () => {
             execute: jest.fn(),
           },
         },
+        {
+          provide: RecordLoanPaymentUseCase,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -263,6 +272,7 @@ describe('MembersV2Controller', () => {
     processStockExchangeUseCase = module.get(ProcessStockExchangeUseCase);
     processStockTransferUseCase = module.get(ProcessStockTransferUseCase);
     processStockLoanPaymentUseCase = module.get(ProcessStockLoanPaymentUseCase);
+    recordLoanPaymentUseCase = module.get(RecordLoanPaymentUseCase);
 
     // Create spies to avoid 'this' scoping issues
     getMembersQueryExecuteSpy = jest.spyOn(getMembersQuery, 'execute');
@@ -295,6 +305,10 @@ describe('MembersV2Controller', () => {
     );
     processStockLoanPaymentUseCaseExecuteSpy = jest.spyOn(
       processStockLoanPaymentUseCase,
+      'execute',
+    );
+    recordLoanPaymentUseCaseExecuteSpy = jest.spyOn(
+      recordLoanPaymentUseCase,
       'execute',
     );
     getMemberPurchasesQueryExecuteSpy = jest.spyOn(
@@ -1724,6 +1738,96 @@ describe('MembersV2Controller', () => {
         .getStockLoanPayments(memberId, {})
         .catch((e: unknown) => e)) as HttpException;
       expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
+    });
+  });
+
+  describe('recordExtraordinaryLoanPayment', () => {
+    const memberId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+    const loanId = 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+    const meetingId = 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+    const validDto = {
+      loanId,
+      meetingId,
+      amount: 100000,
+      notes: 'Extra payment',
+    };
+
+    const mockResponse = {
+      loanId,
+      operationId: 'op-123',
+      interestPaid: 0,
+      principalPaid: 100000,
+      newOutstandingBalance: 500000,
+      loanStatus: 'active',
+      transactionDetailIds: ['td-1'],
+    };
+
+    it('should record extraordinary payment successfully', async () => {
+      recordLoanPaymentUseCaseExecuteSpy.mockResolvedValue(mockResponse);
+
+      const result = await controller.recordExtraordinaryLoanPayment(
+        memberId,
+        validDto,
+      );
+
+      expect(recordLoanPaymentUseCaseExecuteSpy).toHaveBeenCalledWith({
+        loanId: validDto.loanId,
+        meetingId: validDto.meetingId,
+        totalPaymentAmount: validDto.amount,
+        forcedPrincipalAmount: validDto.amount,
+        forcedInterestAmount: 0,
+        notes: validDto.notes,
+      });
+
+      expect(result).toEqual({
+        ...mockResponse,
+        memberId,
+      });
+    });
+
+    it('should use default notes when not provided', async () => {
+      const dtoWithoutNotes = { ...validDto, notes: undefined };
+      recordLoanPaymentUseCaseExecuteSpy.mockResolvedValue(mockResponse);
+
+      await controller.recordExtraordinaryLoanPayment(
+        memberId,
+        dtoWithoutNotes,
+      );
+
+      expect(recordLoanPaymentUseCaseExecuteSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          notes: 'Abono extraordinario a capital prestamo',
+        }),
+      );
+    });
+
+    it('should throw HttpException when use case fails', async () => {
+      recordLoanPaymentUseCaseExecuteSpy.mockRejectedValue(
+        new Error('Payment failed'),
+      );
+
+      await expect(
+        controller.recordExtraordinaryLoanPayment(memberId, validDto),
+      ).rejects.toThrow(HttpException);
+
+      const error = (await controller
+        .recordExtraordinaryLoanPayment(memberId, validDto)
+        .catch((e: unknown) => e)) as HttpException;
+      expect(error.getStatus()).toBe(HttpStatus.BAD_REQUEST);
+      expect(error.getResponse()).toBe('Payment failed');
+    });
+
+    it('should handle non-Error exceptions', async () => {
+      recordLoanPaymentUseCaseExecuteSpy.mockRejectedValue('Fatal error');
+
+      await expect(
+        controller.recordExtraordinaryLoanPayment(memberId, validDto),
+      ).rejects.toThrow(HttpException);
+
+      const error = (await controller
+        .recordExtraordinaryLoanPayment(memberId, validDto)
+        .catch((e: unknown) => e)) as HttpException;
+      expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
     });
   });
 });
