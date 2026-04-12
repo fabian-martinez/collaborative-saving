@@ -47,11 +47,15 @@ export class CalculateMemberInsuranceUseCase {
     );
     const stockValueMap = new Map<string, number>();
 
-    for (const stockId of stockIds) {
-      if (!stockValueMap.has(stockId)) {
-        const stock = await this.stockRepository.findById(stockId);
+    if (stockIds.length > 0) {
+      const stocks = await Promise.all(
+        stockIds.map((id) => this.stockRepository.findById(id)),
+      );
+
+      stocks.forEach((stock, index) => {
+        const stockId = stockIds[index];
         stockValueMap.set(stockId, stock ? stock.value : 0);
-      }
+      });
     }
 
     const totalSavings = subscriptions.reduce((sum, subscription) => {
