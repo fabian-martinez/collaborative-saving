@@ -34,6 +34,7 @@ const menuSections = [
     items: [
       { name: 'Reuniones', to: '/meetings', icon: Calendar },
       { name: 'Préstamos', to: '/loans', icon: Bank },
+      { name: 'Pagos Pendientes', to: '/pending-payments', icon: Book },
       { name: 'Libro Contable', to: '/ledger', icon: Book },
     ],
   },
