@@ -280,6 +280,19 @@ export const mockApi = {
     }
   },
 
+  async recordExtraordinaryLoanPayment(memberId: string, data: any): Promise<any> {
+    await delay()
+    return {
+      loanId: data.loanId,
+      operationId: 'op-extraordinary-payment',
+      interestPaid: 0,
+      principalPaid: data.amount,
+      newOutstandingBalance: 1000000 - data.amount,
+      loanStatus: 'active',
+      transactionDetailIds: ['detail1'],
+    }
+  },
+
   async getMemberPayments(memberId: string): Promise<MemberPayment[]> {
     await delay()
     return [

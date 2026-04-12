@@ -4,11 +4,14 @@
       <span class="loading loading-spinner loading-lg"></span>
     </div>
 
-    <div v-else class="bg-base-100 p-4 md:p-6 rounded-2xl shadow-lg font-sans">
+    <div v-else id="payment-form-receipt" class="bg-base-100 p-4 md:p-6 rounded-2xl shadow-lg font-sans">
       <div class="text-center mb-4 md:mb-6">
         <h2 class="text-xl md:text-2xl font-bold">Recibo de Pago</h2>
         <p class="text-base md:text-lg text-base-content/80 wrap-break-word">
           {{ memberName }}
+        </p>
+        <p class="text-sm text-center text-base-content/70 print-only">
+          {{ printDate }}
         </p>
       </div>
 
@@ -75,7 +78,7 @@
                 <button
                   type="button"
                   @click="$emit('edit-payment', due.originalIndex)"
-                  class="btn btn-ghost btn-xs"
+                  class="btn btn-ghost btn-xs no-print"
                 >
                   Editar
                 </button>
@@ -129,7 +132,7 @@
             <button
               type="button"
               @click="$emit('add-fine')"
-              class="btn btn-sm btn-outline btn-accent"
+              class="btn btn-sm btn-outline btn-accent no-print"
             >
               + Otro pago
             </button>
@@ -154,14 +157,14 @@
                     <button
                       type="button"
                       @click="$emit('edit-payment', due.originalIndex)"
-                      class="btn btn-ghost btn-xs"
+                      class="btn btn-ghost btn-xs no-print"
                     >
                       Editar
                     </button>
                     <button
                       type="button"
                       @click="$emit('delete-payment', due.originalIndex)"
-                      class="btn btn-ghost btn-xs text-error"
+                      class="btn btn-ghost btn-xs text-error no-print"
                     >
                       Borrar
                     </button>
@@ -172,14 +175,14 @@
                     <button
                       type="button"
                       @click="$emit('edit-payment', due.originalIndex)"
-                      class="btn btn-ghost btn-xs p-1"
+                      class="btn btn-ghost btn-xs p-1 no-print"
                     >
                       ✏️
                     </button>
                     <button
                       type="button"
                       @click="$emit('delete-payment', due.originalIndex)"
-                      class="btn btn-ghost btn-xs text-error p-1"
+                      class="btn btn-ghost btn-xs text-error p-1 no-print"
                     >
                       🗑️
                     </button>
@@ -209,7 +212,7 @@
             <button
               type="button"
               @click="$emit('add-novelty')"
-              class="btn btn-sm btn-outline btn-error"
+              class="btn btn-sm btn-outline btn-error no-print"
             >
               + Novedad
             </button>
@@ -244,7 +247,7 @@
                 <button
                   type="button"
                   @click="$emit('delete-novelty', idx)"
-                  class="btn btn-ghost btn-xs text-error"
+                  class="btn btn-ghost btn-xs text-error no-print"
                 >
                   Borrar
                 </button>
@@ -301,7 +304,19 @@
           </div>
         </div>
 
-        <div class="mt-8 flex justify-end">
+        <div class="mt-8 flex justify-end gap-4 no-print">
+          <button
+            type="button"
+            class="btn btn-outline btn-lg"
+            @click="$emit('print')"
+            :disabled="payments.length === 0"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            Imprimir Recibo
+          </button>
+
           <button
             type="submit"
             class="btn btn-success btn-lg"
@@ -324,6 +339,7 @@ import type { Payment } from '../../../composables/usePaymentCollection'
 // Props
 const props = defineProps<{
   memberName: string
+  printDate: string
   loadingDues: boolean
   stockDues: Array<MemberDue & { originalIndex: number }>
   loanDues: Array<MemberDue & { originalIndex: number }>
@@ -338,6 +354,7 @@ const props = defineProps<{
 // Emits
 defineEmits<{
   submit: []
+  print: []
   'edit-payment': [index: number]
   'delete-payment': [index: number]
   'add-fine': []

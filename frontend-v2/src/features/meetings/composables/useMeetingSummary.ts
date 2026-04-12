@@ -114,7 +114,7 @@ export function useMeetingSummary() {
 
     // Valor Acción: Usar el valor cargado desde stocks o revaluación
     // Se actualizará cuando se llame a loadShareValue()
-    let shareValue = shareValueRef.value
+    const shareValue = shareValueRef.value
     
     // Si aún no hay valor, intentar obtenerlo desde stocks (sincrónico)
     if (shareValue === 0) {

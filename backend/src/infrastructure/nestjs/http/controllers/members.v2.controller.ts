@@ -28,6 +28,8 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { UpdateMemberUseCase } from '@application/use-cases/members/update-member.use-case';
+import { RecordLoanPaymentUseCase } from '@application/use-cases/loans/record-loan-payment.use-case';
+import { RecordExtraordinaryLoanPaymentHttpDto } from '../dto/record-extraordinary-loan-payment-http.dto';
 import { DeleteMemberUseCase } from '@application/use-cases/members/delete-member.use-case';
 import { CreateMemberUseCase } from '@application/use-cases/members/create-member.use-case';
 import { MemberResponseDto } from '@application/dto/members/member-response.dto';
@@ -124,6 +126,7 @@ export class MembersV2Controller {
     private readonly processStockExchangeUseCase: ProcessStockExchangeUseCase,
     private readonly processStockTransferUseCase: ProcessStockTransferUseCase,
     private readonly processStockLoanPaymentUseCase: ProcessStockLoanPaymentUseCase,
+    private readonly recordLoanPaymentUseCase: RecordLoanPaymentUseCase,
   ) {}
 
   @Get()
@@ -216,6 +219,61 @@ export class MembersV2Controller {
     try {
       const result = await this.createMemberUseCase.execute(body);
       return this.mapMemberToHttp(result);
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        console.error(e.message);
+        throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+      } else {
+        console.error(String(e));
+        throw new HttpException(
+          'Internal server error',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+    }
+  }
+
+  @Post(':id/extraordinary-loan-payment')
+  @Roles(MemberRole.ADMIN)
+  @ApiOperation({
+    summary: 'Record an extraordinary loan payment (principal payment)',
+    description:
+      'Records a cash payment directly to the loan principal without throwing duplicate monthly payment errors.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The UUID of the member',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiBody({
+    type: RecordExtraordinaryLoanPaymentHttpDto,
+    description: 'Extraordinary payment data',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Extraordinary payment recorded successfully',
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid request data',
+  })
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  async recordExtraordinaryLoanPayment(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: RecordExtraordinaryLoanPaymentHttpDto,
+  ) {
+    try {
+      const result = await this.recordLoanPaymentUseCase.execute({
+        loanId: body.loanId,
+        meetingId: body.meetingId,
+        totalPaymentAmount: body.amount,
+        forcedPrincipalAmount: body.amount,
+        forcedInterestAmount: 0,
+        notes: body.notes || `Abono extraordinario a capital prestamo`,
+      });
+      return {
+        ...result,
+        memberId: id,
+      };
     } catch (e: unknown) {
       if (e instanceof Error) {
         console.error(e.message);
