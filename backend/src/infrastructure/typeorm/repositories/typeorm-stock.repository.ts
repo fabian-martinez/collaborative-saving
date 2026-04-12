@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, In } from 'typeorm';
+import { Repository, IsNull, In, DeepPartial } from 'typeorm';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { Stock as StockDomain } from '@domain/entities/stock.entity';
 import { Stock as StockEntity } from '../entities/stock.entity';
@@ -26,7 +26,6 @@ export class TypeOrmStockRepository implements StockRepository {
     const entities = await this.repo.find({
       where: { id: In(ids), deleted_at: IsNull() },
     });
-
     return entities.map((e) => StockMapper.toDomain(e));
   }
 
@@ -46,6 +45,35 @@ export class TypeOrmStockRepository implements StockRepository {
 
   async findActive(): Promise<StockDomain[]> {
     return this.findAll();
+  }
+
+  async saveMany(stocks: StockDomain[]): Promise<StockDomain[]> {
+    if (!stocks || stocks.length === 0) return [];
+
+    const persistences = stocks.map((s) => StockMapper.toPersistence(s));
+    const ids = stocks.map((s) => s.id);
+
+    // Fetch existing entities to merge updates
+    const existingEntities = await this.repo.find({
+      where: { id: In(ids) },
+      withDeleted: true,
+    });
+
+    const existingMap = new Map(existingEntities.map((e) => [e.id, e]));
+
+    const entitiesToSave = persistences.map((persistence) => {
+      const existing = existingMap.get(persistence.id!);
+      if (existing) {
+        return this.repo.merge(
+          existing,
+          persistence as DeepPartial<StockEntity>,
+        );
+      }
+      return persistence as StockEntity;
+    });
+
+    const saved = await this.repo.save(entitiesToSave);
+    return saved.map((e) => StockMapper.toDomain(e));
   }
 
   async save(stock: StockDomain): Promise<StockDomain> {
