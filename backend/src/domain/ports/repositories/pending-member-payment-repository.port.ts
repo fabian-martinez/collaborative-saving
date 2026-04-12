@@ -6,7 +6,14 @@ export interface PendingMemberPaymentRepository {
   findByMeeting(meetingId: string): Promise<PendingMemberPayment[]>;
   findPendingByMeeting(meetingId: string): Promise<PendingMemberPayment[]>;
   findByReference(referenceMeetingId: string): Promise<PendingMemberPayment[]>;
+  findWithFilters(filters: {
+    status?: string;
+    memberId?: string;
+    meetingId?: string;
+    type?: string;
+  }): Promise<PendingMemberPayment[]>;
   save(payment: PendingMemberPayment): Promise<PendingMemberPayment>;
   saveMany(payments: PendingMemberPayment[]): Promise<PendingMemberPayment[]>;
   calculateRemainingAmount(paymentId: string): Promise<number>;
+  delete(id: string): Promise<void>;
 }

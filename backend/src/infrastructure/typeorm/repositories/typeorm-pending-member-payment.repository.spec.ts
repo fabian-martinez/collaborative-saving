@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, UpdateResult } from 'typeorm';
 import { TypeOrmPendingMemberPaymentRepository } from './typeorm-pending-member-payment.repository';
 import { PendingMemberPayment as PendingMemberPaymentEntity } from '../entities/pending-member-payment.entity';
 import {
@@ -171,7 +171,11 @@ describe('TypeOrmPendingMemberPaymentRepository', () => {
       typeOrmRepo.findOne
         .mockResolvedValueOnce(existingEntity as PendingMemberPaymentEntity)
         .mockResolvedValueOnce(updatedEntity as PendingMemberPaymentEntity);
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
+      typeOrmRepo.update.mockResolvedValue({
+        raw: [],
+        generatedMaps: [],
+        affected: 1,
+      } as UpdateResult);
 
       const result = await repository.save(domain);
       expect(updateSpy).toHaveBeenCalledWith(domain.id, expect.any(Object));
@@ -205,7 +209,11 @@ describe('TypeOrmPendingMemberPaymentRepository', () => {
       typeOrmRepo.findOne
         .mockResolvedValueOnce(existingEntity as PendingMemberPaymentEntity)
         .mockResolvedValueOnce(null);
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
+      typeOrmRepo.update.mockResolvedValue({
+        raw: [],
+        generatedMaps: [],
+        affected: 1,
+      } as UpdateResult);
 
       await expect(repository.save(domain)).rejects.toThrow(
         'PendingMemberPayment not found after update',
