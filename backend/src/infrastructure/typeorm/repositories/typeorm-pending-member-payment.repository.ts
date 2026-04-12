@@ -150,4 +150,43 @@ export class TypeOrmPendingMemberPaymentRepository implements PendingMemberPayme
     // Note: This method may require LedgerEntryRepository for full implementation
     return payment.amount;
   }
+
+  async findWithFilters(filters: {
+    status?: string;
+    memberId?: string;
+    meetingId?: string;
+    type?: string;
+  }): Promise<PendingMemberPaymentDomain[]> {
+    const repo = this.getRepository();
+    const query = repo.createQueryBuilder('payment');
+
+    if (filters.status) {
+      query.andWhere('payment.status = :status', { status: filters.status });
+    }
+    if (filters.memberId) {
+      query.andWhere('payment.memberId = :memberId', {
+        memberId: filters.memberId,
+      });
+    }
+    if (filters.meetingId) {
+      query.andWhere('payment.meetingId = :meetingId', {
+        meetingId: filters.meetingId,
+      });
+    }
+    if (filters.type) {
+      query.andWhere('payment.type = :type', { type: filters.type });
+    }
+
+    // Join member to get the name optionally, though for now we return domain entities
+    // We can just return standard domain
+    query.orderBy('payment.createdAt', 'DESC');
+
+    const entities = await query.getMany();
+    return entities.map((e) => PendingMemberPaymentMapper.toDomain(e));
+  }
+
+  async delete(id: string): Promise<void> {
+    const repo = this.getRepository();
+    await repo.delete(id);
+  }
 }

@@ -10,6 +10,7 @@ import { MeetingsV2Module } from './infrastructure/nestjs/http/modules/meetings-
 import { MandatoryContributionsV2Module } from './infrastructure/nestjs/http/modules/mandatory-contributions-v2.module';
 import { LoansV2Module } from './infrastructure/nestjs/http/modules/loans-v2.module';
 import { AccountingV2Module } from './infrastructure/nestjs/http/modules/accounting-v2.module';
+import { PendingPaymentsV2Module } from './infrastructure/nestjs/http/modules/pending-payments-v2.module';
 import { EventBusModule } from './infrastructure/services/event-bus/event-bus.module';
 import { TransactionManagerModule } from './infrastructure/services/transaction-manager/transaction-manager.module';
 import { FirebaseAdminModule } from './infrastructure/services/firebase-admin/firebase-admin.module';
@@ -45,6 +46,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
     MandatoryContributionsV2Module,
     LoansV2Module,
     AccountingV2Module,
+    PendingPaymentsV2Module,
   ],
   controllers: [AppController],
   providers: [
