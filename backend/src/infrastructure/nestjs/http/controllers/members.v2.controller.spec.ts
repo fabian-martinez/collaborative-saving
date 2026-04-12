@@ -234,6 +234,9 @@ describe('MembersV2Controller', () => {
           provide: RecordLoanPaymentUseCase,
           useValue: {
             execute: jest.fn(),
+          },
+        },
+        {
           provide: MEMBER_REPOSITORY,
           useValue: {
             findByEmail: jest.fn(),
