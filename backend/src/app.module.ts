@@ -10,15 +10,23 @@ import { MeetingsV2Module } from './infrastructure/nestjs/http/modules/meetings-
 import { MandatoryContributionsV2Module } from './infrastructure/nestjs/http/modules/mandatory-contributions-v2.module';
 import { LoansV2Module } from './infrastructure/nestjs/http/modules/loans-v2.module';
 import { AccountingV2Module } from './infrastructure/nestjs/http/modules/accounting-v2.module';
+import { PendingPaymentsV2Module } from './infrastructure/nestjs/http/modules/pending-payments-v2.module';
 import { EventBusModule } from './infrastructure/services/event-bus/event-bus.module';
 import { TransactionManagerModule } from './infrastructure/services/transaction-manager/transaction-manager.module';
 import { FirebaseAdminModule } from './infrastructure/services/firebase-admin/firebase-admin.module';
 import { AuthModule } from './infrastructure/services/auth/auth.module';
 import { FirebaseAuthGuard } from './infrastructure/nestjs/auth/guards/firebase-auth.guard';
 import { RolesGuard } from './infrastructure/nestjs/auth/guards/roles.guard';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -38,10 +46,15 @@ import { RolesGuard } from './infrastructure/nestjs/auth/guards/roles.guard';
     MandatoryContributionsV2Module,
     LoansV2Module,
     AccountingV2Module,
+    PendingPaymentsV2Module,
   ],
   controllers: [AppController],
   providers: [
     AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: FirebaseAuthGuard,

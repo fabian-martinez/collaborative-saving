@@ -15,7 +15,7 @@ import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-r
 import { StockValueHistory } from '@domain/entities/stock-value-history.entity';
 import { PendingMemberPayment } from '@domain/entities/pending-member-payment.entity';
 import { PendingMemberPaymentType } from '@domain/entities/pending-member-payment.entity';
-import { StockBehavior } from '@domain/entities/stock.entity';
+import { Stock, StockBehavior } from '@domain/entities/stock.entity';
 import {
   INVESTMENT_IN_STOCKS_ACCOUNT,
   REVALUATION_SURPLUS_ACCOUNT,
@@ -97,8 +97,13 @@ export class RecordRevaluationUseCase {
       const stockHistories: StockValueHistory[] = [];
       const stockUpdates: Array<{ stockId: string; newValue: number }> = [];
 
+      // ⚡ Bolt: Cache stocks for O(1) lookups instead of N+1 database queries
+      const uniqueStockIds = Array.from(new Set(details.map((d) => d.stockId)));
+      const stocks = await this.stockRepository.findByIds(uniqueStockIds);
+      const stockMap = new Map(stocks.map((s) => [s.id, s]));
+
       for (const detail of details) {
-        const stock = await this.stockRepository.findById(detail.stockId);
+        const stock = stockMap.get(detail.stockId);
         if (!stock) {
           throw new InvalidRequestError(
             `Stock with ID ${detail.stockId} not found`,
@@ -155,12 +160,18 @@ export class RecordRevaluationUseCase {
       await this.stockValueHistoryRepository.saveMany(stockHistories);
 
       // Actualizar valores de acciones
+      const stocksToUpdate: Stock[] = [];
       for (const update of stockUpdates) {
-        const stock = await this.stockRepository.findById(update.stockId);
+        const stock = stockMap.get(update.stockId);
         if (stock) {
           stock.update({ value: update.newValue });
-          await this.stockRepository.save(stock);
+          stocksToUpdate.push(stock);
         }
+      }
+
+      // Bolt ⚡: Guardar todas las acciones actualizadas en batch
+      if (stocksToUpdate.length > 0) {
+        await this.stockRepository.saveMany(stocksToUpdate);
       }
 
       // 3. Crear asientos contables y pagos pendientes de dividendos
@@ -174,7 +185,7 @@ export class RecordRevaluationUseCase {
       const pendingPayments: PendingMemberPayment[] = [];
 
       for (const detail of details) {
-        const stock = await this.stockRepository.findById(detail.stockId);
+        const stock = stockMap.get(detail.stockId);
         if (!stock) continue;
 
         const isDividendYield = stock.behavior === StockBehavior.DIVIDEND_YIELD;
