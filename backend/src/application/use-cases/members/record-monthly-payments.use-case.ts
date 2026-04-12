@@ -77,7 +77,7 @@ export class RecordMonthlyPaymentsUseCase {
 
     // 4.5. Check if this is an extraordinary payment (only loan payments)
     const isOnlyLoanPayments = dto.payments.every(
-      (p) => p.type === PaymentType.LOAN_PAYMENT
+      (p) => p.type === PaymentType.LOAN_PAYMENT,
     );
 
     // 3. Validate that member doesn't already have a monthly payment for this meeting

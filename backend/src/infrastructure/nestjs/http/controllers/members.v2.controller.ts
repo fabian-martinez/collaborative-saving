@@ -232,7 +232,8 @@ export class MembersV2Controller {
   @Roles(MemberRole.ADMIN)
   @ApiOperation({
     summary: 'Record an extraordinary loan payment (principal payment)',
-    description: 'Records a cash payment directly to the loan principal without throwing duplicate monthly payment errors.',
+    description:
+      'Records a cash payment directly to the loan principal without throwing duplicate monthly payment errors.',
   })
   @ApiParam({
     name: 'id',
