@@ -16,9 +16,16 @@ import { FirebaseAdminModule } from './infrastructure/services/firebase-admin/fi
 import { AuthModule } from './infrastructure/services/auth/auth.module';
 import { FirebaseAuthGuard } from './infrastructure/nestjs/auth/guards/firebase-auth.guard';
 import { RolesGuard } from './infrastructure/nestjs/auth/guards/roles.guard';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -42,6 +49,10 @@ import { RolesGuard } from './infrastructure/nestjs/auth/guards/roles.guard';
   controllers: [AppController],
   providers: [
     AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: FirebaseAuthGuard,
