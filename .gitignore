@@ -150,7 +150,6 @@ seed_poblacion.sql
 seed_poblacion.sql
 docs/.DS_Store
 .DS_Store
-supabase/backup_**-*-*.sql
-supabase/backup_**-*.sql
+supabase/*.sql
 backend/.env.test
 backend/secrets/
