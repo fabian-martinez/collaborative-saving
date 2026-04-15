@@ -75,7 +75,7 @@ import OperationDetails from '@/shared/components/OperationDetails.vue'
 import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
 
 // Props with defaults
-const props = withDefaults(defineProps<{
+withDefaults(defineProps<{
   memberName: string
   printDate: string
   viewedOperations: any[]

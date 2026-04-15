@@ -191,7 +191,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useMemberDetailStore } from '../stores/memberDetail'
 import { useActiveMeetingStore } from '@/features/meetings/stores/activeMeeting'
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
@@ -210,7 +210,7 @@ import TabHistory from './tabs/TabHistory.vue'
 import { formatDate, formatCurrency } from '@/shared/utils/formatters'
 
 const route = useRoute()
-const router = useRouter()
+// // const router = _useRouter()
 const store = useMemberDetailStore()
 const activeMeetingStore = useActiveMeetingStore()
 
@@ -295,12 +295,12 @@ function handleViewSubscription(subscriptionId: string) {
   selectedSubscriptionId.value = subscriptionId
 }
 
-function handleViewLoan(loanId: string) {
+function handleViewLoan(_loanId: string) {
   activeTab.value = 'loans'
   // Scroll to loan
 }
 
-function handlePayLoan(loanId: string) {
+function handlePayLoan(_loanId: string) {
   activeTab.value = 'dues'
   showRegisterPaymentModal.value = true
 }
@@ -325,7 +325,7 @@ function handleUseForPayment(subscription: any) {
 }
 
 // Cargar datos cuando cambia el tab activo (lazy loading)
-watch(activeTab, (newTab, oldTab) => {
+watch(activeTab, (newTab, _oldTab) => {
   const id = memberId.value
   if (!id || !store.member) return
 

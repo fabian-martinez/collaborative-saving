@@ -790,7 +790,7 @@ import PrintReceiptModal from '@/shared/components/PrintReceiptModal.vue'
 import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
 
 // 2. Props y emits
-const emit = defineEmits<{
+defineEmits<{
   completed: []
 }>()
 
