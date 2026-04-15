@@ -1,0 +1,3 @@
+## 2024-04-13 - [Dynamic ARIA labels for stateful toggle buttons]
+**Learning:** Toggleable icon-only buttons (like menu collapsers) in this app require their `aria-label` and `title` to dynamically reflect their current state (e.g., "Expand" vs "Collapse") rather than just a generic action ("Toggle menu") to be truly accessible. Adding `aria-expanded` is also crucial for screen readers to understand the state of the collapsible region they control.
+**Action:** When adding or updating icon-only toggle buttons, always dynamically bind `:aria-label`, `:title`, and `:aria-expanded` based on the reactive state of the component they toggle.

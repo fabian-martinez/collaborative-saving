@@ -2,7 +2,10 @@ import { mount } from '@vue/test-utils'
 import AppHeader from '../src/shared/layout/AppHeader.vue'
 import AppSidebar from '../src/shared/layout/AppSidebar.vue'
 import { createPinia } from 'pinia'
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createMemoryHistory } from 'vue-router'
+/**
+ * @vitest-environment jsdom
+ */
 import { test, expect, vi } from 'vitest'
 
 // Mock firebase config
@@ -11,11 +14,11 @@ vi.mock('@/shared/firebase/config', () => ({
 }))
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createMemoryHistory(),
   routes: [{ path: '/', component: { template: '<div></div>' } }],
 })
 
-test('AppHeader has aria-labels on icon buttons', () => {
+test('AppHeader has dynamic aria-labels on toggle buttons', () => {
   const pinia = createPinia()
   const wrapper = mount(AppHeader, {
     global: {
@@ -23,6 +26,7 @@ test('AppHeader has aria-labels on icon buttons', () => {
     }
   })
 
+  // The aria-label is dynamic based on isMobileOpen (default false -> Abrir menú)
   const hamburger = wrapper.find('[aria-label="Abrir menú"]')
   expect(hamburger.exists()).toBe(true)
 
@@ -30,7 +34,7 @@ test('AppHeader has aria-labels on icon buttons', () => {
   expect(notification.exists()).toBe(true)
 })
 
-test('AppSidebar has aria-labels on toggle button', () => {
+test('AppSidebar has dynamic aria-labels on toggle button', () => {
   const pinia = createPinia()
   const wrapper = mount(AppSidebar, {
     global: {
@@ -38,6 +42,7 @@ test('AppSidebar has aria-labels on toggle button', () => {
     }
   })
 
-  const toggle = wrapper.find('[aria-label="Colapsar menú lateral"], [aria-label="Expandir menú lateral"]')
+  // The aria-label is dynamic based on isCollapsed (default false -> Colapsar menú lateral)
+  const toggle = wrapper.find('[aria-label="Colapsar menú lateral"]')
   expect(toggle.exists()).toBe(true)
 })
