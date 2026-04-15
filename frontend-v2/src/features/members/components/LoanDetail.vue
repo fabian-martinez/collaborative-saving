@@ -112,7 +112,7 @@ watch(() => props.expanded, (newValue) => {
   isExpanded.value = newValue
 })
 
-const emit = defineEmits<{
+defineEmits<{
   pay: [loan: Loan]
   'pay-with-stock': [loan: Loan]
   'view-schedule': [loan: Loan]

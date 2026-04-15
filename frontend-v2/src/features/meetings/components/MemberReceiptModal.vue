@@ -194,7 +194,7 @@ const props = defineProps<{
   meetingNumber?: number
 }>()
 
-const emit = defineEmits<{
+defineEmits<{
   close: []
 }>()
 

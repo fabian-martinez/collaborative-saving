@@ -5,8 +5,7 @@ import {
   Bank, 
   Wallet, 
   UserCircle,
-  ArrowRight,
-  ArrowLeft
+  /* ArrowLeft */
 } from 'iconoir-vue/regular'
 
 const props = defineProps<{

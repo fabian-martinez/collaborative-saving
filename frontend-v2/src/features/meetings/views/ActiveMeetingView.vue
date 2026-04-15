@@ -67,9 +67,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { NavArrowLeft, CheckCircle } from 'iconoir-vue/regular'
+import { NavArrowLeft } from 'iconoir-vue/regular'
 import { useActiveMeetingStore } from '../stores/activeMeeting'
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import ErrorMessage from '@/shared/components/ErrorMessage.vue'
