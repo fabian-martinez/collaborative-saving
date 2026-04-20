@@ -11,6 +11,7 @@
           @click="toggleSticky"
           :title="isSticky ? 'Desfijar' : 'Fijar'"
           :aria-label="isSticky ? 'Desfijar resumen' : 'Fijar resumen'"
+          :aria-pressed="isSticky"
         >
           <Pin v-if="isSticky" class="w-5 h-5 text-primary" />
           <PinSlash v-else class="w-5 h-5 text-base-content/50" />
