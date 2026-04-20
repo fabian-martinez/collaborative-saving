@@ -4,6 +4,7 @@
       <button
         class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
         @click="$emit('close')"
+        aria-label="Cerrar modal"
       >
         ✕
       </button>

@@ -3,6 +3,7 @@
     <button
       :class="['expandable-header', { 'expanded': isExpanded }]"
       @click="toggle"
+      :aria-expanded="isExpanded"
     >
       <slot name="header">
         <span class="expandable-title">{{ title }}</span>
