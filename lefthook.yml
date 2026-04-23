@@ -1,0 +1,20 @@
+# Lefthook configuration
+# Refer to https://github.com/evilmartians/lefthook/blob/master/docs/full_guide.md for more info
+
+pre-commit:
+  parallel: true
+  commands:
+    backend-lint:
+      root: "backend/"
+      glob: "*.{ts,js,json}"
+      run: npm run lint
+    frontend-lint:
+      root: "frontend-v2/"
+      glob: "*.{ts,vue,js,json}"
+      run: npm run lint
+
+pre-push:
+  commands:
+    backend-tests:
+      root: "backend/"
+      run: npm run test:ci
