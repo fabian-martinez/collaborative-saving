@@ -15,13 +15,16 @@ describe('GetMonthlyMovementsQueryHandler', () => {
       findActive: jest.fn(),
       save: jest.fn(),
       findLatestClosed: jest.fn(),
-    } as any;
+    } as unknown as jest.Mocked<MeetingRepository>;
 
     meetingSummaryService = {
       calculateSummary: jest.fn(),
-    } as any;
+    } as unknown as jest.Mocked<MeetingSummaryService>;
 
-    handler = new GetMonthlyMovementsQueryHandler(meetingRepository, meetingSummaryService);
+    handler = new GetMonthlyMovementsQueryHandler(
+      meetingRepository,
+      meetingSummaryService,
+    );
   });
 
   it('should return monthly movements for the last 6 closed meetings in chronological order', async () => {
@@ -36,14 +39,16 @@ describe('GetMonthlyMovementsQueryHandler', () => {
     ];
 
     // Repository returns newest first
-    meetingRepository.findAll.mockResolvedValue([...mockMeetings].reverse() as Meeting[]);
+    meetingRepository.findAll.mockResolvedValue(
+      [...mockMeetings].reverse() as Meeting[],
+    );
 
-    meetingSummaryService.calculateSummary.mockImplementation(async (id) => {
+    meetingSummaryService.calculateSummary.mockImplementation((id) => {
       const index = parseInt(id);
-      return {
+      return Promise.resolve({
         totalCollected: index * 1000,
         totalDisbursed: index * 500,
-      };
+      });
     });
 
     const result = await handler.execute();
