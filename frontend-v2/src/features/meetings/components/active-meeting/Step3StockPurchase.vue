@@ -216,7 +216,7 @@ import MemberList from './collection/MemberList.vue'
 import PaymentReceiptView from './collection/PaymentReceiptView.vue'
 import PrintReceiptModal from '@/shared/components/PrintReceiptModal.vue'
 
-const emit = defineEmits<{
+defineEmits<{
   completed: []
 }>()
 

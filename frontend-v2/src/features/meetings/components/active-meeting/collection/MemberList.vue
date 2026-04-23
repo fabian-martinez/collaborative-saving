@@ -99,7 +99,7 @@ const isSelected = (memberId: string): boolean => {
 }
 
 // Emits
-const emit = defineEmits<{
+defineEmits<{
   'select-member': [member: Member]
 }>()
 </script>

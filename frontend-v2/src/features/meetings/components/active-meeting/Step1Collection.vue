@@ -132,7 +132,7 @@ import NoveltyModal from './NoveltyModal.vue'
 import './Step1Collection.print.css'
 
 // 2. Props y emits
-const emit = defineEmits<{
+defineEmits<{
   completed: []
 }>()
 

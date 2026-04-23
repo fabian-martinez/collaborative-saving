@@ -65,7 +65,7 @@
     <Modal :show="showEditModal" title="Editar Miembro" @close="showEditModal = false">
       <MemberForm
         v-if="memberToEdit"
-        :initial-data="memberToEdit"
+        :initial-data="{ ...memberToEdit, role: memberToEdit.role as 'member' | 'admin' | 'treasurer' }"
         @submit="handleEdit"
         @cancel="showEditModal = false"
       />

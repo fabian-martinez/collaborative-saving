@@ -61,7 +61,7 @@ const props = defineProps<{
   store: ReturnType<typeof useMemberDetailStore>
 }>()
 
-const emit = defineEmits<{
+defineEmits<{
   'view-subscription': [subscriptionId: string]
 }>()
 
