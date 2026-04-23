@@ -1,5 +1,6 @@
 import { Operation } from './operation.entity';
 import { OperationType } from '../enums/operation-type.enum';
+import { LedgerEntry } from './ledger-entry.entity';
 
 describe('Operation Entity', () => {
   const mockId = '550e8400-e29b-41d4-a716-446655440000';
@@ -227,7 +228,6 @@ describe('Operation Entity', () => {
 
   describe('balance validation', () => {
     let operation: Operation;
-    const operationId = 'op-123';
 
     beforeEach(() => {
       operation = Operation.create({
@@ -242,7 +242,7 @@ describe('Operation Entity', () => {
           id: '1',
           amount: 100,
           operationId: operation.id,
-          accountType: 'CASH' as any,
+          accountType: 'CASH',
           createdAt: new Date(),
           validateInvariants: () => {},
           isDebit: () => true,
@@ -252,15 +252,15 @@ describe('Operation Entity', () => {
           id: '2',
           amount: -100,
           operationId: operation.id,
-          accountType: 'LOANS_RECEIVABLE' as any,
+          accountType: 'LOANS_RECEIVABLE',
           createdAt: new Date(),
           validateInvariants: () => {},
           isDebit: () => false,
           isCredit: () => true,
         },
-      ];
+      ] as unknown as LedgerEntry[];
 
-      expect(() => operation.setEntries(entries as any)).not.toThrow();
+      expect(() => operation.setEntries(entries)).not.toThrow();
       expect(operation.entries).toHaveLength(2);
     });
 
@@ -270,7 +270,7 @@ describe('Operation Entity', () => {
           id: '1',
           amount: 100,
           operationId: operation.id,
-          accountType: 'CASH' as any,
+          accountType: 'CASH',
           createdAt: new Date(),
           validateInvariants: () => {},
           isDebit: () => true,
@@ -280,15 +280,15 @@ describe('Operation Entity', () => {
           id: '2',
           amount: -50,
           operationId: operation.id,
-          accountType: 'LOANS_RECEIVABLE' as any,
+          accountType: 'LOANS_RECEIVABLE',
           createdAt: new Date(),
           validateInvariants: () => {},
           isDebit: () => false,
           isCredit: () => true,
         },
-      ];
+      ] as unknown as LedgerEntry[];
 
-      expect(() => operation.setEntries(entries as any)).toThrow(
+      expect(() => operation.setEntries(entries)).toThrow(
         'Operation is not balanced',
       );
     });
@@ -299,15 +299,15 @@ describe('Operation Entity', () => {
           id: '1',
           amount: 100,
           operationId: operation.id,
-          accountType: 'CASH' as any,
+          accountType: 'CASH',
           createdAt: new Date(),
           validateInvariants: () => {},
           isDebit: () => true,
           isCredit: () => false,
         },
-      ];
+      ] as unknown as LedgerEntry[];
 
-      expect(() => operation.setEntries(entries as any)).toThrow(
+      expect(() => operation.setEntries(entries)).toThrow(
         'Operation must have at least 2 ledger entries',
       );
     });
@@ -318,7 +318,7 @@ describe('Operation Entity', () => {
           id: '1',
           amount: 100,
           operationId: operation.id,
-          accountType: 'CASH' as any,
+          accountType: 'CASH',
           createdAt: new Date(),
           validateInvariants: () => {},
           isDebit: () => true,
@@ -328,7 +328,7 @@ describe('Operation Entity', () => {
           id: '2',
           amount: 0,
           operationId: operation.id,
-          accountType: 'LOANS_RECEIVABLE' as any,
+          accountType: 'LOANS_RECEIVABLE',
           createdAt: new Date(),
           validateInvariants: () => {},
           isDebit: () => false,
@@ -338,15 +338,15 @@ describe('Operation Entity', () => {
           id: '3',
           amount: -100,
           operationId: operation.id,
-          accountType: 'OTHER' as any,
+          accountType: 'OTHER',
           createdAt: new Date(),
           validateInvariants: () => {},
           isDebit: () => false,
           isCredit: () => true,
         },
-      ];
+      ] as unknown as LedgerEntry[];
 
-      expect(() => operation.setEntries(entries as any)).toThrow(
+      expect(() => operation.setEntries(entries)).toThrow(
         'Ledger entry amount cannot be zero',
       );
     });
