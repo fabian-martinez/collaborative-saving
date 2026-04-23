@@ -78,7 +78,10 @@ export class ExecuteDisbursementPlanUseCase {
         );
       }
 
-      // 4. Trackear efectivo desembolsado acumulado
+      // 4. ORDENAR ítems según prioridad del ADR-0006
+      const sortedPlan = await this.sortPlanByPriority(dto.plan, dto.meetingId);
+
+      // 5. Trackear efectivo desembolsado acumulado
       let disbursedTotal = 0;
       let currentAvailableCash = initialAvailableCash;
       const processedItems: Array<{
@@ -88,8 +91,8 @@ export class ExecuteDisbursementPlanUseCase {
         disbursedAmount: number;
       }> = [];
 
-      // 5. Procesar cada item según tipo
-      for (const item of dto.plan) {
+      // 6. Procesar cada item según tipo
+      for (const item of sortedPlan) {
         // Validar monto > 0
         if (item.amount <= 0) {
           throw new InvalidRequestError(
@@ -129,6 +132,93 @@ export class ExecuteDisbursementPlanUseCase {
         totalRequested,
       };
     });
+  }
+
+  /**
+   * Ordena el plan de desembolsos según las prioridades del ADR-0006
+   */
+  private async sortPlanByPriority(
+    plan: DisbursementPlanItemDto[],
+    meetingId: string,
+  ): Promise<DisbursementPlanItemDto[]> {
+    // 1. Obtener todos los pagos pendientes necesarios para determinar prioridad
+    const paymentIds = plan
+      .map((item) => item.pendingMemberPaymentId)
+      .filter((id): id is string => !!id);
+
+    const paymentsMap = new Map<string, PendingMemberPayment>();
+    for (const id of paymentIds) {
+      const payment = await this.pendingMemberPaymentRepository.findById(id);
+      if (payment) {
+        paymentsMap.set(id, payment);
+      }
+    }
+
+    // 2. Ordenar ítems usando el helper de prioridad
+    return [...plan].sort((a, b) => {
+      const priorityA = this.getPriority(a, meetingId, paymentsMap.get(a.pendingMemberPaymentId || ''));
+      const priorityB = this.getPriority(b, meetingId, paymentsMap.get(b.pendingMemberPaymentId || ''));
+      
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+      
+      // Si tienen la misma prioridad, mantener orden original (estable) o por monto
+      return 0;
+    });
+  }
+
+  /**
+   * Calcula la prioridad de un ítem según ADR-0006
+   * 1: Deuda Antigua con Socios (Retiros/Dividendos de reuniones anteriores)
+   * 2: Deuda Antigua de Préstamos (Desembolsos de préstamos anteriores)
+   * 3: Dividendos del Período Actual
+   * 4: Préstamos Nuevos
+   * 5: Retiros de Acciones Nuevos
+   * 6: Otros
+   */
+  private getPriority(
+    item: DisbursementPlanItemDto,
+    meetingId: string,
+    payment?: PendingMemberPayment,
+  ): number {
+    // Prioridad 4: Préstamos Nuevos
+    if (item.newLoanRequest) {
+      return 4;
+    }
+
+    // Prioridad 5: Retiros de Acciones Nuevos (sin pago pendiente previo)
+    if (item.disbursementStockRequest && !item.pendingMemberPaymentId) {
+      return 5;
+    }
+
+    // Si tiene un pago pendiente asociado
+    if (payment) {
+      // Prioridad 2: Deuda Antigua de Préstamos
+      if (payment.type === PendingMemberPaymentType.LOAN) {
+        return 2;
+      }
+
+      // Prioridad 3: Dividendos del Período Actual
+      if (
+        payment.type === PendingMemberPaymentType.DIVIDEND &&
+        (payment.referenceMeetingId === meetingId || payment.meetingId === meetingId)
+      ) {
+        return 3;
+      }
+
+      // Prioridad 1: Deuda Antigua con Socios (Retiros o dividendos de reuniones anteriores)
+      // Cualquier otro pago pendiente que no sea préstamo o dividendo actual cae aquí
+      return 1;
+    }
+
+    // Prioridad 2 Fallback: Desembolsos de préstamos antiguos (si vienen sin pendingMemberPaymentId)
+    if (item.type === DisbursementType.LOAN && !item.newLoanRequest) {
+      return 2;
+    }
+
+    // Prioridad 6: Otros desembolsos
+    return 6;
   }
 
   private async calculateAvailableCash(meetingId: string): Promise<number> {
