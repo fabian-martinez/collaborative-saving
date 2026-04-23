@@ -244,7 +244,7 @@ export const mockApi = {
     mockMembers.splice(index, 1)
   },
 
-  async getMemberDues(memberId: string): Promise<MemberDue[]> {
+  async getMemberDues(_memberId: string): Promise<MemberDue[]> {
     await delay()
     return [
       {
@@ -267,12 +267,12 @@ export const mockApi = {
     ]
   },
 
-  async getMemberInsurance(memberId: string): Promise<{ insurance_amount: number }> {
+  async getMemberInsurance(_memberId: string): Promise<{ insurance_amount: number }> {
     await delay()
     return { insurance_amount: 5000 }
   },
 
-  async recordMonthlyPayment(memberId: string, data: any): Promise<any> {
+  async recordMonthlyPayment(_memberId: string, data: any): Promise<any> {
     await delay()
     return {
       operation_id: 'op-new',
@@ -280,7 +280,7 @@ export const mockApi = {
     }
   },
 
-  async recordExtraordinaryLoanPayment(memberId: string, data: any): Promise<any> {
+  async recordExtraordinaryLoanPayment(_memberId: string, data: any): Promise<any> {
     await delay()
     return {
       loanId: data.loanId,
@@ -293,7 +293,7 @@ export const mockApi = {
     }
   },
 
-  async getMemberPayments(memberId: string): Promise<MemberPayment[]> {
+  async getMemberPayments(_memberId: string): Promise<MemberPayment[]> {
     await delay()
     return [
       {
@@ -311,7 +311,7 @@ export const mockApi = {
     ]
   },
 
-  async getMemberPurchases(memberId: string): Promise<MemberPurchase[]> {
+  async getMemberPurchases(_memberId: string): Promise<MemberPurchase[]> {
     await delay()
     return [
       {
@@ -329,7 +329,7 @@ export const mockApi = {
     ]
   },
 
-  async createStockPurchase(memberId: string, data: any): Promise<any> {
+  async createStockPurchase(_memberId: string, data: any): Promise<any> {
     await delay()
     return {
       operation_id: 'op-new-purchase',
@@ -338,12 +338,12 @@ export const mockApi = {
     }
   },
 
-  async getMemberExchanges(memberId: string): Promise<any[]> {
+  async getMemberExchanges(_memberId: string): Promise<any[]> {
     await delay()
     return []
   },
 
-  async getMemberStockSubscriptions(memberId: string): Promise<any[]> {
+  async getMemberStockSubscriptions(_memberId: string): Promise<any[]> {
     await delay()
     return [
       {
@@ -367,32 +367,32 @@ export const mockApi = {
     ]
   },
 
-  async getMemberTransfers(memberId: string): Promise<any[]> {
+  async getMemberTransfers(_memberId: string): Promise<any[]> {
     await delay()
     return []
   },
 
-  async getMemberStockLoanPayments(memberId: string): Promise<any[]> {
+  async getMemberStockLoanPayments(_memberId: string): Promise<any[]> {
     await delay()
     return []
   },
 
-  async processStockExchange(memberId: string, data: any): Promise<any> {
+  async processStockExchange(_memberId: string, _data: any): Promise<any> {
     await delay()
     return { operation_id: 'op-exchange', message: 'Exchange processed' }
   },
 
-  async processStockTransfer(memberId: string, data: any): Promise<any> {
+  async processStockTransfer(_memberId: string, _data: any): Promise<any> {
     await delay()
     return { operation_id: 'op-transfer', message: 'Transfer processed' }
   },
 
-  async processStockLoanPayment(memberId: string, data: any): Promise<any> {
+  async processStockLoanPayment(_memberId: string, _data: any): Promise<any> {
     await delay()
     return { operation_id: 'op-loan-payment', message: 'Loan payment processed' }
   },
 
-  async getMemberPaymentSchedule(memberId: string): Promise<any> {
+  async getMemberPaymentSchedule(_memberId: string): Promise<any> {
     await delay()
     return {
       items: [
@@ -469,7 +469,7 @@ export const mockApi = {
     ]
   },
 
-  async getMeetingPurchases(meetingId: string): Promise<MeetingOperation[]> {
+  async getMeetingPurchases(_meetingId: string): Promise<MeetingOperation[]> {
     await delay()
     const purchases = await mockApi.getMemberPurchases('1')
     // Convertir MemberPurchase[] a Operation[]
@@ -484,22 +484,22 @@ export const mockApi = {
     }))
   },
 
-  async getMeetingTransfers(meetingId: string): Promise<any[]> {
+  async getMeetingTransfers(_meetingId: string): Promise<any[]> {
     await delay()
     return []
   },
 
-  async getMeetingExchanges(meetingId: string): Promise<any[]> {
+  async getMeetingExchanges(_meetingId: string): Promise<any[]> {
     await delay()
     return []
   },
 
-  async getMeetingStockLoanPayments(meetingId: string): Promise<any[]> {
+  async getMeetingStockLoanPayments(_meetingId: string): Promise<any[]> {
     await delay()
     return []
   },
 
-  async getRevaluationPreview(meetingId: string): Promise<any> {
+  async getRevaluationPreview(_meetingId: string): Promise<any> {
     await delay()
     return {
       total_contributions: 10000,
@@ -535,7 +535,7 @@ export const mockApi = {
     }
   },
 
-  async getDisbursementPlan(meetingId: string): Promise<any> {
+  async getDisbursementPlan(_meetingId: string): Promise<any> {
     await delay()
     return {
       plan: [
@@ -556,7 +556,7 @@ export const mockApi = {
     }
   },
 
-  async executeDisbursementPlan(meetingId: string, data: any): Promise<any> {
+  async executeDisbursementPlan(_meetingId: string, data: any): Promise<any> {
     await delay()
     return {
       operation_ids: ['op-disburse-1', 'op-disburse-2'],
@@ -590,7 +590,7 @@ export const mockApi = {
     return { ...loan }
   },
 
-  async simulatePaymentPlan(data: any): Promise<any> {
+  async simulatePaymentPlan(_data: any): Promise<any> {
     await delay()
     return {
       items: [
@@ -602,7 +602,7 @@ export const mockApi = {
     }
   },
 
-  async simulateLoanScenarios(id: string, data: any): Promise<any> {
+  async simulateLoanScenarios(_id: string, _data: any): Promise<any> {
     await delay()
     return {
       base_scenario: {
