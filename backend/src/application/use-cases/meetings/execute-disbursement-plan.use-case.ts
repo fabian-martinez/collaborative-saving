@@ -25,6 +25,7 @@ import {
   PendingMemberPayment,
   PendingMemberPaymentType,
 } from '@domain/entities/pending-member-payment.entity';
+import { DisbursementPriorityHelper } from './disbursement-priority.helper';
 
 /**
  * Execute Disbursement Plan Use Case
@@ -156,69 +157,24 @@ export class ExecuteDisbursementPlanUseCase {
 
     // 2. Ordenar ítems usando el helper de prioridad
     return [...plan].sort((a, b) => {
-      const priorityA = this.getPriority(a, meetingId, paymentsMap.get(a.pendingMemberPaymentId || ''));
-      const priorityB = this.getPriority(b, meetingId, paymentsMap.get(b.pendingMemberPaymentId || ''));
-      
+      const priorityA = DisbursementPriorityHelper.getPriority(
+        a,
+        meetingId,
+        paymentsMap.get(a.pendingMemberPaymentId || ''),
+      );
+      const priorityB = DisbursementPriorityHelper.getPriority(
+        b,
+        meetingId,
+        paymentsMap.get(b.pendingMemberPaymentId || ''),
+      );
+
       if (priorityA !== priorityB) {
         return priorityA - priorityB;
       }
-      
+
       // Si tienen la misma prioridad, mantener orden original (estable) o por monto
       return 0;
     });
-  }
-
-  /**
-   * Calcula la prioridad de un ítem según ADR-0006
-   * 1: Deuda Antigua con Socios (Retiros/Dividendos de reuniones anteriores)
-   * 2: Deuda Antigua de Préstamos (Desembolsos de préstamos anteriores)
-   * 3: Dividendos del Período Actual
-   * 4: Préstamos Nuevos
-   * 5: Retiros de Acciones Nuevos
-   * 6: Otros
-   */
-  private getPriority(
-    item: DisbursementPlanItemDto,
-    meetingId: string,
-    payment?: PendingMemberPayment,
-  ): number {
-    // Prioridad 4: Préstamos Nuevos
-    if (item.newLoanRequest) {
-      return 4;
-    }
-
-    // Prioridad 5: Retiros de Acciones Nuevos (sin pago pendiente previo)
-    if (item.disbursementStockRequest && !item.pendingMemberPaymentId) {
-      return 5;
-    }
-
-    // Si tiene un pago pendiente asociado
-    if (payment) {
-      // Prioridad 2: Deuda Antigua de Préstamos
-      if (payment.type === PendingMemberPaymentType.LOAN) {
-        return 2;
-      }
-
-      // Prioridad 3: Dividendos del Período Actual
-      if (
-        payment.type === PendingMemberPaymentType.DIVIDEND &&
-        (payment.referenceMeetingId === meetingId || payment.meetingId === meetingId)
-      ) {
-        return 3;
-      }
-
-      // Prioridad 1: Deuda Antigua con Socios (Retiros o dividendos de reuniones anteriores)
-      // Cualquier otro pago pendiente que no sea préstamo o dividendo actual cae aquí
-      return 1;
-    }
-
-    // Prioridad 2 Fallback: Desembolsos de préstamos antiguos (si vienen sin pendingMemberPaymentId)
-    if (item.type === DisbursementType.LOAN && !item.newLoanRequest) {
-      return 2;
-    }
-
-    // Prioridad 6: Otros desembolsos
-    return 6;
   }
 
   private async calculateAvailableCash(meetingId: string): Promise<number> {

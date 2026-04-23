@@ -1,5 +1,6 @@
 import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pending-member-payment-repository.port';
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
+import { PendingMemberPaymentType } from '@domain/entities/pending-member-payment.entity';
 import { DisbursementPlanPreviewDto } from '@application/dto/meetings/disbursement-plan-preview.dto';
 import {
   DisbursementPlanItemDto,
@@ -57,11 +58,11 @@ export class GetDisbursementPlanPreviewQueryHandler {
       // Mapear PendingMemberPaymentType a DisbursementType
       let disbursementType: DisbursementType;
       const paymentType = p.type;
-      if (paymentType === 'dividend') {
+      if (paymentType === PendingMemberPaymentType.DIVIDEND) {
         disbursementType = DisbursementType.DIVIDEND;
-      } else if (paymentType === 'stock_withdrawal') {
+      } else if (paymentType === PendingMemberPaymentType.STOCK_WITHDRAWAL) {
         disbursementType = DisbursementType.WITHDRAWAL;
-      } else if (paymentType === 'loan') {
+      } else if (paymentType === PendingMemberPaymentType.LOAN) {
         disbursementType = DisbursementType.LOAN;
       } else {
         disbursementType = DisbursementType.OTHER;
