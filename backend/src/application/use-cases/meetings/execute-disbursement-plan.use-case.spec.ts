@@ -440,16 +440,15 @@ describe('ExecuteDisbursementPlanUseCase', () => {
       notes: 'Test meeting',
     });
 
-    const pendingPayment = {
+    const pendingPayment = PendingMemberPayment.fromPersistence({
       id: 'pending-1',
-      memberId: 'member-1',
-      meetingId: meeting.id,
-      type: 'other' as const,
+      member_id: 'member-1',
+      meeting_id: meeting.id,
+      type: 'other',
       amount: 200,
-      status: 'pending' as const,
-      approve: jest.fn(),
-      markAsPaid: jest.fn(),
-    };
+      status: 'pending',
+      created_at: new Date(),
+    });
 
     const dto: ExecuteDisbursementPlanDto = {
       meetingId: meeting.id,
@@ -473,12 +472,8 @@ describe('ExecuteDisbursementPlanUseCase', () => {
 
     meetingRepository.findById.mockResolvedValue(meeting);
     ledgerEntryRepository.findByMeeting.mockResolvedValue(ledgerEntries);
-    pendingMemberPaymentRepository.findById.mockResolvedValue(
-      pendingPayment as any,
-    );
-    pendingMemberPaymentRepository.save.mockResolvedValue(
-      pendingPayment as any,
-    );
+    pendingMemberPaymentRepository.findById.mockResolvedValue(pendingPayment);
+    pendingMemberPaymentRepository.save.mockResolvedValue(pendingPayment);
     recordOperationUseCase.execute.mockResolvedValue({
       operationId: 'op-2',
       ledgerEntryIds: [],
@@ -487,7 +482,7 @@ describe('ExecuteDisbursementPlanUseCase', () => {
     const result = await useCase.execute(dto);
 
     expect(result.success).toBe(true);
-    expect(pendingPayment.approve).toHaveBeenCalled();
+    expect(pendingPayment.status).toBe('paid');
   });
 
   it('should handle OTHER disbursement with full payment', async () => {
@@ -553,31 +548,88 @@ describe('ExecuteDisbursementPlanUseCase', () => {
     const dto: ExecuteDisbursementPlanDto = {
       meetingId,
       plan: [
-        { memberId: 'm5', type: DisbursementType.WITHDRAWAL, amount: 100, disbursementStockRequest: { stockId: 's1' } }, // Prioridad 5 (Nuevo retiro)
-        { memberId: 'm4', type: DisbursementType.LOAN, amount: 400, newLoanRequest: { approvedAmount: 400 } as any }, // Prioridad 4 (Nuevo préstamo)
-        { memberId: 'm3', type: DisbursementType.DIVIDEND, amount: 300, pendingMemberPaymentId: 'p3' }, // Prioridad 3 (Dividendo actual)
-        { memberId: 'm2', type: DisbursementType.LOAN, amount: 200, pendingMemberPaymentId: 'p2' }, // Prioridad 2 (Préstamo antiguo)
-        { memberId: 'm1', type: DisbursementType.WITHDRAWAL, amount: 100, pendingMemberPaymentId: 'p1' }, // Prioridad 1 (Deuda antigua socio)
+        {
+          memberId: 'm5',
+          type: DisbursementType.WITHDRAWAL,
+          amount: 100,
+          disbursementStockRequest: { stockId: 's1' },
+        }, // Prioridad 5 (Nuevo retiro)
+        {
+          memberId: 'm4',
+          type: DisbursementType.LOAN,
+          amount: 400,
+          newLoanRequest: {
+            memberId: 'm4',
+            amount: 400,
+            approvedAmount: 400,
+            loanType: 'corriente',
+            interestRate: 0.02,
+            monthlyPaymentAmount: 100,
+          },
+        }, // Prioridad 4 (Nuevo préstamo)
+        {
+          memberId: 'm3',
+          type: DisbursementType.DIVIDEND,
+          amount: 300,
+          pendingMemberPaymentId: 'p3',
+        }, // Prioridad 3 (Dividendo actual)
+        {
+          memberId: 'm2',
+          type: DisbursementType.LOAN,
+          amount: 200,
+          pendingMemberPaymentId: 'p2',
+        }, // Prioridad 2 (Préstamo antiguo)
+        {
+          memberId: 'm1',
+          type: DisbursementType.WITHDRAWAL,
+          amount: 100,
+          pendingMemberPaymentId: 'p1',
+        }, // Prioridad 1 (Deuda antigua socio)
         { memberId: 'm6', type: DisbursementType.OTHER, amount: 50 }, // Prioridad 6 (Otros)
       ],
     };
 
     // Mocks de los pagos pendientes
     const p1 = PendingMemberPayment.fromPersistence({
-      id: 'p1', member_id: 'm1', meeting_id: 'old-meeting', type: 'stock_withdrawal', amount: 100, status: 'pending', created_at: new Date(), reference_meeting_id: 'old-meeting'
+      id: 'p1',
+      member_id: 'm1',
+      meeting_id: 'old-meeting',
+      type: 'stock_withdrawal',
+      amount: 100,
+      status: 'pending',
+      created_at: new Date(),
+      reference_meeting_id: 'old-meeting',
     });
     const p2 = PendingMemberPayment.fromPersistence({
-      id: 'p2', member_id: 'm2', meeting_id: 'old-meeting', type: 'loan', amount: 200, status: 'pending', created_at: new Date(), reference_meeting_id: 'old-meeting'
+      id: 'p2',
+      member_id: 'm2',
+      meeting_id: 'old-meeting',
+      type: 'loan',
+      amount: 200,
+      status: 'pending',
+      created_at: new Date(),
+      reference_meeting_id: 'old-meeting',
     });
     const p3 = PendingMemberPayment.fromPersistence({
-      id: 'p3', member_id: 'm3', meeting_id: meetingId, type: 'dividend', amount: 300, status: 'pending', created_at: new Date(), reference_meeting_id: meetingId
+      id: 'p3',
+      member_id: 'm3',
+      meeting_id: meetingId,
+      type: 'dividend',
+      amount: 300,
+      status: 'pending',
+      created_at: new Date(),
+      reference_meeting_id: meetingId,
     });
 
     meetingRepository.findById.mockResolvedValue(meeting);
     ledgerEntryRepository.findByMeeting.mockResolvedValue([
-      LedgerEntry.create({ operationId: 'op', accountType: CASH_ACCOUNT, amount: 5000 })
+      LedgerEntry.create({
+        operationId: 'op',
+        accountType: CASH_ACCOUNT,
+        amount: 5000,
+      }),
     ]);
-    
+
     pendingMemberPaymentRepository.findById.mockImplementation((id) => {
       if (id === 'p1') return Promise.resolve(p1);
       if (id === 'p2') return Promise.resolve(p2);
@@ -588,7 +640,10 @@ describe('ExecuteDisbursementPlanUseCase', () => {
     processDividendExecuteMock.mockResolvedValue(300); // Para p3 y otros dividendos
     processLoanExecuteMock.mockResolvedValue(400); // Genérico
     processStockExecuteMock.mockResolvedValue(100); // Genérico
-    recordOperationUseCase.execute.mockResolvedValue({ operationId: 'op', ledgerEntryIds: [] });
+    recordOperationUseCase.execute.mockResolvedValue({
+      operationId: 'op',
+      ledgerEntryIds: [],
+    });
 
     await useCase.execute(dto);
 
@@ -600,12 +655,28 @@ describe('ExecuteDisbursementPlanUseCase', () => {
     // 5. Nuevo Retiro (m5) -> Withdrawal
     // 6. Otros (m6) -> Other
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const call1 = processStockExecuteMock.mock.calls[0][0];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const call2 = processLoanExecuteMock.mock.calls[0][0];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const call3 = processDividendExecuteMock.mock.calls[0][0];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const call4 = processLoanExecuteMock.mock.calls[1][0];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const call5 = processStockExecuteMock.mock.calls[1][0];
+
     const calls = [
-      processStockExecuteMock.mock.calls[0][0].item.memberId,    // p1 (m1)
-      processLoanExecuteMock.mock.calls[0][0].item.memberId,     // p2 (m2)
-      processDividendExecuteMock.mock.calls[0][0].item.memberId, // p3 (m3)
-      processLoanExecuteMock.mock.calls[1][0].item.memberId,     // m4
-      processStockExecuteMock.mock.calls[1][0].item.memberId,    // m5
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      call1.item.memberId, // p1 (m1)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      call2.item.memberId, // p2 (m2)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      call3.item.memberId, // p3 (m3)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      call4.item.memberId, // m4
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      call5.item.memberId, // m5
     ];
 
     expect(calls).toEqual(['m1', 'm2', 'm3', 'm4', 'm5']);
