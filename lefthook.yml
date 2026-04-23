@@ -1,42 +1,25 @@
-# EXAMPLE USAGE:
-#
-#   Refer for explanation to following link:
-#   https://lefthook.dev/configuration/
-#
-# pre-push:
-#   jobs:
-#     - name: packages audit
-#       tags:
-#         - frontend
-#         - security
-#       run: yarn audit
-#
-#     - name: gems audit
-#       tags:
-#         - backend
-#         - security
-#       run: bundle audit
-#
-# pre-commit:
-#   parallel: true
-#   jobs:
-#     - run: yarn eslint {staged_files}
-#       glob: "*.{js,ts,jsx,tsx}"
-#
-#     - name: rubocop
-#       glob: "*.rb"
-#       exclude:
-#         - config/application.rb
-#         - config/routes.rb
-#       run: bundle exec rubocop --force-exclusion -- {all_files}
-#
-#     - name: govet
-#       files: git ls-files -m
-#       glob: "*.go"
-#       run: go vet -- {files}
-#
-#     - script: "hello.js"
-#       runner: node
-#
-#     - script: "hello.go"
-#       runner: go run
+# Lefthook configuration
+# Refer to https://github.com/evilmartians/lefthook/blob/master/docs/full_guide.md for more info
+
+pre-commit:
+  parallel: true
+  commands:
+    backend-lint:
+      root: "backend/"
+      glob: "*.{ts,js,json}"
+      run: npm run lint
+    frontend-lint:
+      root: "frontend-v2/"
+      glob: "*.{ts,vue,js,json}"
+      run: npm run lint
+    backend-coverage-staged:
+      root: "backend/"
+      glob: "src/**/*.ts"
+      # Ejecuta solo tests relacionados y mide cobertura solo de los archivos en el commit
+      run: npx jest --findRelatedTests {staged_files} --coverage --collectCoverageFrom="{staged_files}" --passWithNoTests
+
+pre-push:
+  commands:
+    backend-tests-coverage:
+      root: "backend/"
+      run: npm run test:ci -- --coverageReporters="text-summary"
