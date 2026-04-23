@@ -6,8 +6,6 @@ import {
   Body,
   Param,
   ParseUUIDPipe,
-  HttpStatus,
-  HttpException,
 } from '@nestjs/common';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { MemberRole } from '@domain/enums/member-role.enum';
@@ -78,15 +76,8 @@ export class StocksV2Controller {
     },
   })
   async list(): Promise<StockResponseHttpDto[]> {
-    try {
-      const stocks = await this.getStocksQuery.execute();
-      return stocks.map((stock) => this.mapStockToHttp(stock));
-    } catch (error: unknown) {
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const stocks = await this.getStocksQuery.execute();
+    return stocks.map((stock) => this.mapStockToHttp(stock));
   }
 
   @Get(':id')
@@ -125,18 +116,8 @@ export class StocksV2Controller {
   async detail(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<StockResponseHttpDto> {
-    try {
-      const stock = await this.getStockDetailQuery.execute(id);
-      return this.mapStockToHttp(stock);
-    } catch (error: unknown) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const stock = await this.getStockDetailQuery.execute(id);
+    return this.mapStockToHttp(stock);
   }
 
   @Post()
@@ -171,26 +152,16 @@ export class StocksV2Controller {
       'Bad request - Invalid stock data or stock type already exists',
   })
   async create(@Body() dto: CreateStockHttpDto): Promise<StockResponseHttpDto> {
-    try {
-      const createDto: CreateStockDto = {
-        type: dto.type,
-        value: dto.value,
-        monthlyContribution: dto.monthly_contribution,
-        isGuaranteed: dto.is_guaranteed,
-        guaranteedYield: dto.guaranteed_yield,
-        behavior: dto.behavior,
-      };
-      const result = await this.createStockUseCase.execute(createDto);
-      return this.mapStockToHttp(result);
-    } catch (error: unknown) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const createDto: CreateStockDto = {
+      type: dto.type,
+      value: dto.value,
+      monthlyContribution: dto.monthly_contribution,
+      isGuaranteed: dto.is_guaranteed,
+      guaranteedYield: dto.guaranteed_yield,
+      behavior: dto.behavior,
+    };
+    const result = await this.createStockUseCase.execute(createDto);
+    return this.mapStockToHttp(result);
   }
 
   @Patch(':id')
@@ -236,26 +207,16 @@ export class StocksV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateStockHttpDto,
   ): Promise<StockResponseHttpDto> {
-    try {
-      const updateDto = {
-        type: dto.type,
-        value: dto.value,
-        monthlyContribution: dto.monthly_contribution,
-        isGuaranteed: dto.is_guaranteed,
-        guaranteedYield: dto.guaranteed_yield,
-        behavior: dto.behavior,
-      };
-      const result = await this.updateStockUseCase.execute(id, updateDto);
-      return this.mapStockToHttp(result);
-    } catch (error: unknown) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const updateDto = {
+      type: dto.type,
+      value: dto.value,
+      monthlyContribution: dto.monthly_contribution,
+      isGuaranteed: dto.is_guaranteed,
+      guaranteedYield: dto.guaranteed_yield,
+      behavior: dto.behavior,
+    };
+    const result = await this.updateStockUseCase.execute(id, updateDto);
+    return this.mapStockToHttp(result);
   }
 
   private mapStockToHttp(stock: StockResponseDto): StockResponseHttpDto {

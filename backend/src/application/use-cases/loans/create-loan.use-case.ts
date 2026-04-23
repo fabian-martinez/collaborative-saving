@@ -120,6 +120,7 @@ export class CreateLoanUseCase {
         loanId: savedLoan.id,
         operationId: '', // No operation created
         status: savedLoan.status,
+        disbursedAmount: savedLoan.disbursedAmount,
       };
     }
 
@@ -181,6 +182,7 @@ export class CreateLoanUseCase {
       loanId: savedLoan.id,
       operationId: operationResult.operationId,
       status: savedLoan.status,
+      disbursedAmount: savedLoan.disbursedAmount,
     };
   }
 

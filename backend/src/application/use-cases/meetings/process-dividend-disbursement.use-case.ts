@@ -33,7 +33,7 @@ export class ProcessDividendDisbursementUseCase {
     item: DisbursementPlanItemDto;
     meetingId: string;
     availableCash: number;
-  }): Promise<void> {
+  }): Promise<number> {
     const { item, meetingId, availableCash } = dto;
     let pendingPayment: PendingMemberPayment | null = null;
 
@@ -127,6 +127,8 @@ export class ProcessDividendDisbursementUseCase {
         await this.pendingMemberPaymentRepository.save(newPendingPayment);
       }
     }
+
+    return maxDisbursable;
   }
 
   private createDividendLedgerEntries(

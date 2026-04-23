@@ -48,7 +48,7 @@ export class ProcessStockWithdrawalDisbursementUseCase {
     item: DisbursementPlanItemDto;
     meetingId: string;
     availableCash: number;
-  }): Promise<void> {
+  }): Promise<number> {
     const { item, meetingId, availableCash } = dto;
 
     // 1. Validar que hay stockId para el retiro
@@ -89,7 +89,7 @@ export class ProcessStockWithdrawalDisbursementUseCase {
     meetingId: string,
     availableCash: number,
     stock: Stock,
-  ): Promise<void> {
+  ): Promise<number> {
     // 1. Obtener el pending payment
     const pendingPayment = await this.pendingMemberPaymentRepository.findById(
       item.pendingMemberPaymentId!,
@@ -173,6 +173,8 @@ export class ProcessStockWithdrawalDisbursementUseCase {
       pendingPayment.markAsPaid();
       await this.pendingMemberPaymentRepository.save(pendingPayment);
     }
+
+    return maxDisbursable;
   }
 
   /**
@@ -184,7 +186,7 @@ export class ProcessStockWithdrawalDisbursementUseCase {
     meetingId: string,
     availableCash: number,
     stock: Stock,
-  ): Promise<void> {
+  ): Promise<number> {
     const stockValue = stock.value;
     if (stockValue <= 0) {
       throw new BusinessRuleError('El valor de la acción debe ser > 0');
@@ -329,6 +331,8 @@ export class ProcessStockWithdrawalDisbursementUseCase {
       // El pago pendiente se crea con estado PENDING por defecto
       await this.pendingMemberPaymentRepository.save(newPendingPayment);
     }
+
+    return maxDisbursable;
   }
 
   private createWithdrawalLedgerEntries(
