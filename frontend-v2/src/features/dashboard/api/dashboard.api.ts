@@ -73,8 +73,8 @@ export const dashboardApi = {
     if (USE_MOCKS) {
       return mockApi.getMonthlyMovements()
     }
-    // TODO: Implementar llamada real a API
-    throw new Error('Not implemented')
+    const response = await apiClient.get<MonthlyMovements>('/v2/dashboard/monthly-movements')
+    return response.data
   },
 
   async getNextMeeting(): Promise<NextMeeting> {
