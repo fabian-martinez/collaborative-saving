@@ -245,30 +245,56 @@ export class RecordLoanPaymentUseCase {
     const subscriptions =
       await this.stockSubscriptionRepository.findByFinancingLoan(loanId);
 
+    if (subscriptions.length === 0) {
+      return;
+    }
+
+    // All subscriptions for a single loan belong to the same member
+    const memberId = subscriptions[0].memberId;
+
+    // Bolt ⚡: Prevent N+1 queries by fetching all free subscriptions for the member at once
+    const freeSubscriptions =
+      await this.stockSubscriptionRepository.findFreeOfFinancing(memberId);
+
+    // Map of stockId -> free subscription
+    const freeSubscriptionMap = new Map(
+      freeSubscriptions.map((sub) => [sub.stockId, sub]),
+    );
+
+    const subscriptionsToSave: typeof subscriptions = [];
+
     for (const subscription of subscriptions) {
       // Release the loan
       subscription.update({ financingLoanId: null });
 
-      // Look for existing subscription without loan of the same type
-      const freeSubscription =
-        await this.stockSubscriptionRepository.findByMemberAndStockAndNoLoan(
-          subscription.memberId,
-          subscription.stockId,
-        );
+      // Look for existing subscription without loan of the same type in our map
+      const freeSubscription = freeSubscriptionMap.get(subscription.stockId);
 
       if (freeSubscription && freeSubscription.id !== subscription.id) {
         // Consolidate: add quantity to existing subscription
         freeSubscription.update({
           quantity: freeSubscription.quantity + subscription.quantity,
         });
-        await this.stockSubscriptionRepository.save(freeSubscription);
+
+        // Add to save list if not already there
+        if (!subscriptionsToSave.includes(freeSubscription)) {
+          subscriptionsToSave.push(freeSubscription);
+        }
 
         // Mark released subscription as inactive
         subscription.markAsInactive();
+      } else if (!freeSubscription) {
+        // If there wasn't a free subscription before, this newly released one
+        // becomes the free subscription for this stock type
+        freeSubscriptionMap.set(subscription.stockId, subscription);
       }
 
-      // Save the subscription (either consolidated or just released)
-      await this.stockSubscriptionRepository.save(subscription);
+      subscriptionsToSave.push(subscription);
+    }
+
+    // Save all updated subscriptions in a single batch
+    if (subscriptionsToSave.length > 0) {
+      await this.stockSubscriptionRepository.saveMany(subscriptionsToSave);
     }
   }
 }
