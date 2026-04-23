@@ -167,7 +167,7 @@ export class PendingMemberPayment {
     return this._meetingId;
   }
 
-  get type(): string {
+  get type(): PendingMemberPaymentType {
     return this._type;
   }
 
