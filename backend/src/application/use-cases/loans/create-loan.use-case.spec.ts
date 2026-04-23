@@ -167,6 +167,7 @@ describe('CreateLoanUseCase', () => {
         loanId: savedLoan.id,
         operationId: 'operation-id-1',
         status: LoanStatus.ACTIVE,
+        disbursedAmount: 10000,
       });
 
       expect(memberFindByIdSpy).toHaveBeenCalledWith(mockMemberId);
@@ -229,6 +230,7 @@ describe('CreateLoanUseCase', () => {
         loanId: savedLoan.id,
         operationId: 'operation-id-1',
         status: LoanStatus.ACTIVE,
+        disbursedAmount: 5000,
       });
 
       expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
@@ -283,6 +285,7 @@ describe('CreateLoanUseCase', () => {
         loanId: savedLoan.id,
         operationId: 'operation-id-1',
         status: LoanStatus.ACTIVE,
+        disbursedAmount: 3000,
       });
 
       expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
@@ -333,7 +336,14 @@ describe('CreateLoanUseCase', () => {
       );
       pendingMemberPaymentSaveSpy.mockResolvedValue({} as PendingMemberPayment);
 
-      await useCase.execute(dto);
+      const result = await useCase.execute(dto);
+
+      expect(result).toEqual({
+        loanId: savedLoan.id,
+        operationId: 'operation-id-1',
+        status: LoanStatus.PENDING,
+        disbursedAmount: 5000,
+      });
 
       expect(pendingMemberPaymentSaveSpy).toHaveBeenCalledWith(
         expect.objectContaining({
