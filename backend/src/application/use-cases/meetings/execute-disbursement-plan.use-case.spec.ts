@@ -277,17 +277,22 @@ describe('ExecuteDisbursementPlanUseCase', () => {
 
     await useCase.execute(dto);
 
-    expect(processDividendExecuteMock).toHaveBeenCalledTimes(1);
-    expect(processDividendExecuteMock).toHaveBeenCalledWith(
+    // Con el ordenamiento por prioridad:
+    // 1. member-2 (LOAN sin newLoanRequest -> Prioridad 2) -> availableCash: 1000
+    // 2. member-1 (DIVIDEND sin pendingId -> Prioridad 6) -> availableCash: 700
+    // 3. member-3 (WITHDRAWAL sin pendingId -> Prioridad 6) -> availableCash: 200
+
+    expect(processLoanExecuteMock).toHaveBeenCalledTimes(1);
+    expect(processLoanExecuteMock).toHaveBeenCalledWith(
       expect.objectContaining({
         availableCash: 1000,
       }),
     );
 
-    expect(processLoanExecuteMock).toHaveBeenCalledTimes(1);
-    expect(processLoanExecuteMock).toHaveBeenCalledWith(
+    expect(processDividendExecuteMock).toHaveBeenCalledTimes(1);
+    expect(processDividendExecuteMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        availableCash: 500,
+        availableCash: 700,
       }),
     );
 
@@ -533,5 +538,76 @@ describe('ExecuteDisbursementPlanUseCase', () => {
 
     expect(result.success).toBe(true);
     expect(result.totalDisbursed).toBe(200);
+  });
+
+  it('should process disbursement items in the correct priority order according to ADR-0006', async () => {
+    const meetingId = 'current-meeting-id';
+    const meeting = Meeting.fromPersistence({
+      id: meetingId,
+      date: new Date(),
+      status: 'active',
+      notes: 'Current meeting',
+    });
+
+    // Desordenados a propósito
+    const dto: ExecuteDisbursementPlanDto = {
+      meetingId,
+      plan: [
+        { memberId: 'm5', type: DisbursementType.WITHDRAWAL, amount: 100, disbursementStockRequest: { stockId: 's1' } }, // Prioridad 5 (Nuevo retiro)
+        { memberId: 'm4', type: DisbursementType.LOAN, amount: 400, newLoanRequest: { approvedAmount: 400 } as any }, // Prioridad 4 (Nuevo préstamo)
+        { memberId: 'm3', type: DisbursementType.DIVIDEND, amount: 300, pendingMemberPaymentId: 'p3' }, // Prioridad 3 (Dividendo actual)
+        { memberId: 'm2', type: DisbursementType.LOAN, amount: 200, pendingMemberPaymentId: 'p2' }, // Prioridad 2 (Préstamo antiguo)
+        { memberId: 'm1', type: DisbursementType.WITHDRAWAL, amount: 100, pendingMemberPaymentId: 'p1' }, // Prioridad 1 (Deuda antigua socio)
+        { memberId: 'm6', type: DisbursementType.OTHER, amount: 50 }, // Prioridad 6 (Otros)
+      ],
+    };
+
+    // Mocks de los pagos pendientes
+    const p1 = PendingMemberPayment.fromPersistence({
+      id: 'p1', member_id: 'm1', meeting_id: 'old-meeting', type: 'stock_withdrawal', amount: 100, status: 'pending', created_at: new Date(), reference_meeting_id: 'old-meeting'
+    });
+    const p2 = PendingMemberPayment.fromPersistence({
+      id: 'p2', member_id: 'm2', meeting_id: 'old-meeting', type: 'loan', amount: 200, status: 'pending', created_at: new Date(), reference_meeting_id: 'old-meeting'
+    });
+    const p3 = PendingMemberPayment.fromPersistence({
+      id: 'p3', member_id: 'm3', meeting_id: meetingId, type: 'dividend', amount: 300, status: 'pending', created_at: new Date(), reference_meeting_id: meetingId
+    });
+
+    meetingRepository.findById.mockResolvedValue(meeting);
+    ledgerEntryRepository.findByMeeting.mockResolvedValue([
+      LedgerEntry.create({ operationId: 'op', accountType: CASH_ACCOUNT, amount: 5000 })
+    ]);
+    
+    pendingMemberPaymentRepository.findById.mockImplementation((id) => {
+      if (id === 'p1') return Promise.resolve(p1);
+      if (id === 'p2') return Promise.resolve(p2);
+      if (id === 'p3') return Promise.resolve(p3);
+      return Promise.resolve(null);
+    });
+
+    processDividendExecuteMock.mockResolvedValue(300); // Para p3 y otros dividendos
+    processLoanExecuteMock.mockResolvedValue(400); // Genérico
+    processStockExecuteMock.mockResolvedValue(100); // Genérico
+    recordOperationUseCase.execute.mockResolvedValue({ operationId: 'op', ledgerEntryIds: [] });
+
+    await useCase.execute(dto);
+
+    // Verificar el orden de ejecución basado en los mocks llamados
+    // 1. Deuda Antigua Socio (p1) -> Withdrawal
+    // 2. Deuda Antigua Préstamo (p2) -> Loan
+    // 3. Dividendo Actual (p3) -> Dividend
+    // 4. Nuevo Préstamo (m4) -> Loan
+    // 5. Nuevo Retiro (m5) -> Withdrawal
+    // 6. Otros (m6) -> Other
+
+    const calls = [
+      processStockExecuteMock.mock.calls[0][0].item.memberId,    // p1 (m1)
+      processLoanExecuteMock.mock.calls[0][0].item.memberId,     // p2 (m2)
+      processDividendExecuteMock.mock.calls[0][0].item.memberId, // p3 (m3)
+      processLoanExecuteMock.mock.calls[1][0].item.memberId,     // m4
+      processStockExecuteMock.mock.calls[1][0].item.memberId,    // m5
+    ];
+
+    expect(calls).toEqual(['m1', 'm2', 'm3', 'm4', 'm5']);
   });
 });
