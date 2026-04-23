@@ -12,6 +12,11 @@ pre-commit:
       root: "frontend-v2/"
       glob: "*.{ts,vue,js,json}"
       run: npm run lint
+    backend-coverage-staged:
+      root: "backend/"
+      glob: "src/**/*.ts"
+      # Ejecuta solo tests relacionados y mide cobertura solo de los archivos en el commit
+      run: npx jest --findRelatedTests {staged_files} --coverage --collectCoverageFrom="{staged_files}" --passWithNoTests
 
 pre-push:
   commands:
