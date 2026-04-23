@@ -37,6 +37,7 @@ cd backend && npm run test
 
 ## Reglas no obvias
 
+- **Flujo de Trabajo (Git):** NUNCA realices push o commit directamente a la rama `main`. Sigue estrictamente el [CONTRIBUTING.md](./CONTRIBUTING.md). Siempre crea una rama de fix o feature (ej: `fix/nombre-bug`) desde la versión más reciente de `main` y abre un Pull Request para integrar los cambios.
 - **Arquitectura Hexagonal Estricta:** El dominio no debe depender de la infraestructura ni de la aplicación.
 - **Contabilidad de Partida Doble:** Cualquier transacción financiera debe registrar entradas en `ledger_entries` asegurando que el balance sea cero.
 - **Naming de API:** Se utiliza `snake_case` para los endpoints y payloads para mantener consistencia con la base de datos.
