@@ -50,7 +50,7 @@ export class ProcessLoanDisbursementUseCase {
     item: DisbursementPlanItemDto;
     meetingId: string;
     availableCash: number;
-  }): Promise<void> {
+  }): Promise<number> {
     const { item, meetingId, availableCash } = dto;
 
     // 1. Si es un nuevo préstamo, usar CreateLoanUseCase
@@ -115,7 +115,7 @@ export class ProcessLoanDisbursementUseCase {
       calculatedTerm = Math.max(1, calculatedTerm);
 
       // CreateLoanUseCase ya maneja efectivo disponible y desembolsos parciales
-      await this.createLoanUseCase.execute({
+      const result = await this.createLoanUseCase.execute({
         memberId: item.memberId,
         meetingId,
         loanType: loanTypeForCreate,
@@ -126,13 +126,16 @@ export class ProcessLoanDisbursementUseCase {
         term: calculatedTerm,
         guaranteedStockId: null,
       });
-      return;
+      return result.disbursedAmount;
     }
 
     // 2. Si es un préstamo pendiente, procesar desembolso
     if (item.loanId) {
-      await this.processPendingLoanDisbursement(item, meetingId, availableCash);
-      return;
+      return await this.processPendingLoanDisbursement(
+        item,
+        meetingId,
+        availableCash,
+      );
     }
 
     throw new BusinessRuleError(
@@ -144,7 +147,7 @@ export class ProcessLoanDisbursementUseCase {
     item: DisbursementPlanItemDto,
     meetingId: string,
     availableCash: number,
-  ): Promise<void> {
+  ): Promise<number> {
     // 1. Obtener préstamo
     const loan = await this.loanRepository.findById(item.loanId!);
     if (!loan) {
@@ -322,6 +325,8 @@ export class ProcessLoanDisbursementUseCase {
         await this.pendingMemberPaymentRepository.save(newPendingPayment);
       }
     }
+
+    return maxDisbursable;
   }
 
   private createLoanDisbursementLedgerEntries(

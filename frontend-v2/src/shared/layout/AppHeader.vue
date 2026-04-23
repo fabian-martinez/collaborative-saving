@@ -7,7 +7,7 @@ import { formatDate } from '@/shared/utils/formatters'
 
 const notifications = ref(0) // Mock - esto vendrá del store después
 const userInitials = ref('AD') // Mock - esto vendrá del store después
-const { isCollapsed, toggleMobile } = useSidebar()
+const { isCollapsed, isMobileOpen, toggleMobile } = useSidebar()
 
 const meetingsStore = useMeetingsStore()
 const activeMeeting = computed(() => meetingsStore.activeMeeting)
@@ -31,7 +31,9 @@ const formattedMeetingDate = computed(() => {
       <button
         @click="toggleMobile"
         class="btn btn-ghost btn-circle lg:hidden"
-        aria-label="Abrir menú"
+        :aria-label="isMobileOpen ? 'Cerrar menú' : 'Abrir menú'"
+        :title="isMobileOpen ? 'Cerrar menú' : 'Abrir menú'"
+        :aria-expanded="isMobileOpen"
       >
         <Menu class="w-6 h-6" />
       </button>

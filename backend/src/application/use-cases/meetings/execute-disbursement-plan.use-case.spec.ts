@@ -193,7 +193,7 @@ describe('ExecuteDisbursementPlanUseCase', () => {
 
     meetingRepository.findById.mockResolvedValue(meeting);
     ledgerEntryRepository.findByMeeting.mockResolvedValue(ledgerEntries);
-    processDividendDisbursementUseCase.execute.mockResolvedValue(undefined);
+    processDividendDisbursementUseCase.execute.mockResolvedValue(500);
 
     const result = await useCase.execute(dto);
 
@@ -271,11 +271,9 @@ describe('ExecuteDisbursementPlanUseCase', () => {
 
     meetingRepository.findById.mockResolvedValue(meeting);
     ledgerEntryRepository.findByMeeting.mockResolvedValue(ledgerEntries);
-    processDividendDisbursementUseCase.execute.mockResolvedValue(undefined);
-    processLoanDisbursementUseCase.execute.mockResolvedValue(undefined);
-    processStockWithdrawalDisbursementUseCase.execute.mockResolvedValue(
-      undefined,
-    );
+    processDividendDisbursementUseCase.execute.mockResolvedValue(500);
+    processLoanDisbursementUseCase.execute.mockResolvedValue(300);
+    processStockWithdrawalDisbursementUseCase.execute.mockResolvedValue(200);
 
     await useCase.execute(dto);
 
@@ -395,7 +393,7 @@ describe('ExecuteDisbursementPlanUseCase', () => {
           amount: 500, // Reduced after first disbursement
         }),
       ]);
-    processDividendDisbursementUseCase.execute.mockResolvedValue(undefined);
+    processDividendDisbursementUseCase.execute.mockResolvedValue(500);
 
     await expect(useCase.execute(dto)).rejects.toThrow(BusinessRuleError);
   });

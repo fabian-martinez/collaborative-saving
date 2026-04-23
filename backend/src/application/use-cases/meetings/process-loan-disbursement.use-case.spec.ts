@@ -134,16 +134,18 @@ describe('ProcessLoanDisbursementUseCase', () => {
           loanId: 'loan-id-1',
           operationId: 'operation-id-1',
           status: 'active',
+          disbursedAmount: 10000,
         });
 
         // Act
-        await useCase.execute({
+        const result = await useCase.execute({
           item,
           meetingId: mockMeetingId,
           availableCash: 10000,
         });
 
         // Assert
+        expect(result).toBe(10000);
         const findMemberByIdSpy = jest.spyOn(memberRepository, 'findById');
         const findMeetingByIdSpy = jest.spyOn(meetingRepository, 'findById');
         const executeLoanSpy = jest.spyOn(createLoanUseCase, 'execute');
@@ -184,16 +186,18 @@ describe('ProcessLoanDisbursementUseCase', () => {
           loanId: 'loan-id-1',
           operationId: 'operation-id-1',
           status: 'active',
+          disbursedAmount: 10000,
         });
 
         // Act
-        await useCase.execute({
+        const result = await useCase.execute({
           item,
           meetingId: mockMeetingId,
           availableCash: 10000,
         });
 
         // Assert
+        expect(result).toBe(10000);
         const executeSpy = jest.spyOn(createLoanUseCase, 'execute');
         expect(executeSpy).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -310,16 +314,18 @@ describe('ProcessLoanDisbursementUseCase', () => {
           loanId: 'loan-id-1',
           operationId: 'operation-id-1',
           status: 'active',
+          disbursedAmount: 10000,
         });
 
         // Act
-        await useCase.execute({
+        const result = await useCase.execute({
           item,
           meetingId: mockMeetingId,
           availableCash: 10000,
         });
 
         // Assert
+        expect(result).toBe(10000);
         const executeLoanSpy = jest.spyOn(createLoanUseCase, 'execute');
         expect(executeLoanSpy).toHaveBeenCalled();
         const callArgs = executeLoanSpy.mock.calls[0][0];
@@ -348,16 +354,18 @@ describe('ProcessLoanDisbursementUseCase', () => {
           loanId: 'loan-id-1',
           operationId: 'operation-id-1',
           status: 'active',
+          disbursedAmount: 5000,
         });
 
         // Act
-        await useCase.execute({
+        const result = await useCase.execute({
           item,
           meetingId: mockMeetingId,
           availableCash: 5000,
         });
 
         // Assert
+        expect(result).toBe(5000);
         const executeLoanSpy = jest.spyOn(createLoanUseCase, 'execute');
         expect(executeLoanSpy).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -404,13 +412,14 @@ describe('ProcessLoanDisbursementUseCase', () => {
         );
 
         // Act
-        await useCase.execute({
+        const result = await useCase.execute({
           item,
           meetingId: mockMeetingId,
           availableCash: 5000,
         });
 
         // Assert
+        expect(result).toBe(5000);
         const findLoanByIdSpy = jest.spyOn(loanRepository, 'findById');
         const saveLoanSpy = jest.spyOn(loanRepository, 'save');
         const executeOpSpy = jest.spyOn(recordOperationUseCase, 'execute');
@@ -516,13 +525,14 @@ describe('ProcessLoanDisbursementUseCase', () => {
         );
 
         // Act
-        await useCase.execute({
+        const result = await useCase.execute({
           item,
           meetingId: mockMeetingId,
           availableCash: 10000,
         });
 
         // Assert
+        expect(result).toBe(4000);
         const executeOpSpy = jest.spyOn(recordOperationUseCase, 'execute');
         expect(executeOpSpy).toHaveBeenCalled();
         const callArgs = executeOpSpy.mock.calls[0][0];
@@ -571,13 +581,14 @@ describe('ProcessLoanDisbursementUseCase', () => {
         );
 
         // Act
-        await useCase.execute({
+        const result = await useCase.execute({
           item,
           meetingId: mockMeetingId,
           availableCash: 3000,
         });
 
         // Assert
+        expect(result).toBe(3000);
         const executeOpSpy = jest.spyOn(recordOperationUseCase, 'execute');
         expect(executeOpSpy).toHaveBeenCalled();
         const callArgs = executeOpSpy.mock.calls[0][0];
@@ -672,13 +683,14 @@ describe('ProcessLoanDisbursementUseCase', () => {
         );
 
         // Act
-        await useCase.execute({
+        const result = await useCase.execute({
           item,
           meetingId: mockMeetingId,
           availableCash: 5000,
         });
 
         // Assert
+        expect(result).toBe(5000);
         const findPaymentByIdSpy = jest.spyOn(
           pendingMemberPaymentRepository,
           'findById',
@@ -736,13 +748,14 @@ describe('ProcessLoanDisbursementUseCase', () => {
         );
 
         // Act
-        await useCase.execute({
+        const result = await useCase.execute({
           item,
           meetingId: mockMeetingId,
           availableCash: 5000,
         });
 
         // Assert
+        expect(result).toBe(5000);
         const savePaymentSpy = jest.spyOn(
           pendingMemberPaymentRepository,
           'save',
@@ -790,13 +803,14 @@ describe('ProcessLoanDisbursementUseCase', () => {
         );
 
         // Act
-        await useCase.execute({
+        const result = await useCase.execute({
           item,
           meetingId: mockMeetingId,
           availableCash: 5000,
         });
 
         // Assert
+        expect(result).toBe(5000);
         const executeOpSpy = jest.spyOn(recordOperationUseCase, 'execute');
         expect(executeOpSpy).toHaveBeenCalled();
         const callArgs = executeOpSpy.mock.calls[0][0];
@@ -850,13 +864,14 @@ describe('ProcessLoanDisbursementUseCase', () => {
         );
 
         // Act
-        await useCase.execute({
+        const result = await useCase.execute({
           item,
           meetingId: mockMeetingId,
           availableCash: 5000,
         });
 
         // Assert
+        expect(result).toBe(5000);
         const executeOpSpy = jest.spyOn(recordOperationUseCase, 'execute');
         expect(executeOpSpy).toHaveBeenCalled();
         const callArgs = executeOpSpy.mock.calls[0][0];
@@ -1011,13 +1026,14 @@ describe('ProcessLoanDisbursementUseCase', () => {
         );
 
         // Act
-        await useCase.execute({
+        const result = await useCase.execute({
           item,
           meetingId: mockMeetingId,
           availableCash: 5000,
         });
 
         // Assert
+        expect(result).toBe(5000);
         expect(mockLoan.disbursedAmount).toBe(5000);
         expect(mockLoan.outstandingBalance).toBe(5000); // Debe incrementarse con el desembolso
         const saveLoanSpy = jest.spyOn(loanRepository, 'save');
@@ -1064,13 +1080,14 @@ describe('ProcessLoanDisbursementUseCase', () => {
         );
 
         // Act
-        await useCase.execute({
+        const result = await useCase.execute({
           item,
           meetingId: mockMeetingId,
           availableCash: 4000,
         });
 
         // Assert
+        expect(result).toBe(4000);
         expect(mockLoan.disbursedAmount).toBe(7000); // 3000 + 4000
         expect(mockLoan.outstandingBalance).toBe(7000); // 3000 + 4000 (incrementado)
         const saveLoanSpy = jest.spyOn(loanRepository, 'save');
@@ -1116,13 +1133,14 @@ describe('ProcessLoanDisbursementUseCase', () => {
         );
 
         // Act
-        await useCase.execute({
+        const result = await useCase.execute({
           item,
           meetingId: mockMeetingId,
           availableCash: 5000,
         });
 
         // Assert
+        expect(result).toBe(5000);
         const savePendingPaymentSpy = jest.spyOn(
           pendingMemberPaymentRepository,
           'save',
@@ -1192,13 +1210,14 @@ describe('ProcessLoanDisbursementUseCase', () => {
         );
 
         // Act
-        await useCase.execute({
+        const result = await useCase.execute({
           item,
           meetingId: mockMeetingId,
           availableCash: 2000,
         });
 
         // Assert
+        expect(result).toBe(2000);
         // Después del desembolso: disbursedAmount = 5000, remaining = 5000
         const savePendingPaymentSpy = jest.spyOn(
           pendingMemberPaymentRepository,

@@ -8,4 +8,5 @@ export interface CreateLoanResponseDto {
   loanId: string;
   operationId: string;
   status: string;
+  disbursedAmount: number;
 }
