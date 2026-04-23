@@ -147,31 +147,25 @@ export class ExecuteDisbursementPlanUseCase {
     switch (item.type) {
       case DisbursementType.LOAN:
         // ProcessLoanDisbursementUseCase maneja su propio límite de efectivo
-        await this.processLoanDisbursementUseCase.execute({
+        return await this.processLoanDisbursementUseCase.execute({
           item,
           meetingId,
           availableCash: currentAvailableCash,
         });
-        // Retornar monto desembolsado (puede ser parcial)
-        return Math.min(item.amount, currentAvailableCash);
 
       case DisbursementType.WITHDRAWAL:
-        await this.processStockWithdrawalDisbursementUseCase.execute({
+        return await this.processStockWithdrawalDisbursementUseCase.execute({
           item,
           meetingId,
           availableCash: currentAvailableCash,
         });
-        // Retornar monto desembolsado (puede ser parcial)
-        return Math.min(item.amount, currentAvailableCash);
 
       case DisbursementType.DIVIDEND:
-        await this.processDividendDisbursementUseCase.execute({
+        return await this.processDividendDisbursementUseCase.execute({
           item,
           meetingId,
           availableCash: currentAvailableCash,
         });
-        // Retornar monto desembolsado (puede ser parcial)
-        return Math.min(item.amount, currentAvailableCash);
 
       case DisbursementType.OTHER:
         return await this.processOtherDisbursement(
