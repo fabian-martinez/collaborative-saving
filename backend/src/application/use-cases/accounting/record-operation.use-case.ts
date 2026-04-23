@@ -51,8 +51,9 @@ export class RecordOperationUseCase {
         }),
       );
 
-      // 3. Validate balance (débitos = créditos)
-      this.balanceValidator.validateBalance(ledgerEntries);
+      // 3. Associate entries with operation and validate balance (débitos = créditos)
+      // This will throw BusinessRuleError if balance is invalid
+      operation.setEntries(ledgerEntries);
 
       // 4. Save Operation
       const savedOperation = await this.operationRepository.save(operation);

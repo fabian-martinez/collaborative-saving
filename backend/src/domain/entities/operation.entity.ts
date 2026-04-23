@@ -1,7 +1,11 @@
 import { randomUUID } from 'crypto';
 import { OperationType } from '../enums/operation-type.enum';
+import { LedgerEntry } from './ledger-entry.entity';
+import { BusinessRuleError } from '../errors/business-rule.error';
 
 export class Operation {
+  private _entries: LedgerEntry[] = [];
+
   constructor(
     public readonly id: string,
     private _memberId: string | null,
@@ -76,6 +80,55 @@ export class Operation {
     this.validateInvariants();
   }
 
+  /**
+   * Sets the ledger entries for this operation and validates the balance.
+   *
+   * @param entries - Array of ledger entries
+   * @throws BusinessRuleError if balance is invalid
+   */
+  setEntries(entries: LedgerEntry[]): void {
+    this.validateBalance(entries);
+    this._entries = [...entries];
+  }
+
+  /**
+   * Validates that the sum of debits and credits is zero.
+   *
+   * @param entries - Entries to validate
+   * @throws BusinessRuleError if balance is invalid
+   */
+  private validateBalance(entries: LedgerEntry[]): void {
+    if (entries.length < 2) {
+      throw new BusinessRuleError(
+        `Operation must have at least 2 ledger entries, got ${entries.length}`,
+      );
+    }
+
+    let totalDebits = 0;
+    let totalCredits = 0;
+
+    for (const entry of entries) {
+      const amount = entry.amount;
+      if (amount > 0) {
+        totalDebits += amount;
+      } else if (amount < 0) {
+        totalCredits += Math.abs(amount);
+      } else {
+        throw new BusinessRuleError('Ledger entry amount cannot be zero');
+      }
+    }
+
+    // Round to 2 decimal places to avoid floating point precision issues
+    const roundedDebits = Math.round(totalDebits * 100) / 100;
+    const roundedCredits = Math.round(totalCredits * 100) / 100;
+
+    if (roundedDebits !== roundedCredits) {
+      throw new BusinessRuleError(
+        `Operation is not balanced: debits = ${roundedDebits}, credits = ${roundedCredits}`,
+      );
+    }
+  }
+
   private validateInvariants(): void {
     if (!this._type) {
       throw new Error('Operation type is required');
@@ -87,11 +140,15 @@ export class Operation {
       throw new Error('Operation meetingId is required');
     }
     // Allow a small margin (5 minutes) to handle time differences between server and database
-    // This is common in distributed systems and prevents false positives
     const now = new Date();
     const maxAllowedDate = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes in the future
     if (this._date > maxAllowedDate) {
       throw new Error('Operation date cannot be in the future');
+    }
+
+    // If we have entries, they must be balanced
+    if (this._entries.length > 0) {
+      this.validateBalance(this._entries);
     }
   }
 
@@ -113,5 +170,9 @@ export class Operation {
 
   get description(): string | null | undefined {
     return this._description;
+  }
+
+  get entries(): LedgerEntry[] {
+    return [...this._entries];
   }
 }
