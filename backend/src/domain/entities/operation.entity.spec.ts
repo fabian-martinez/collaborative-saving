@@ -224,4 +224,131 @@ describe('Operation Entity', () => {
       ).toThrow('Operation date cannot be in the future');
     });
   });
+
+  describe('balance validation', () => {
+    let operation: Operation;
+    const operationId = 'op-123';
+
+    beforeEach(() => {
+      operation = Operation.create({
+        meetingId: 'meeting-1',
+        type: OperationType.LOAN_DISBURSEMENT,
+      });
+    });
+
+    it('should accept balanced entries', () => {
+      const entries = [
+        {
+          id: '1',
+          amount: 100,
+          operationId: operation.id,
+          accountType: 'CASH' as any,
+          createdAt: new Date(),
+          validateInvariants: () => {},
+          isDebit: () => true,
+          isCredit: () => false,
+        },
+        {
+          id: '2',
+          amount: -100,
+          operationId: operation.id,
+          accountType: 'LOANS_RECEIVABLE' as any,
+          createdAt: new Date(),
+          validateInvariants: () => {},
+          isDebit: () => false,
+          isCredit: () => true,
+        },
+      ];
+
+      expect(() => operation.setEntries(entries as any)).not.toThrow();
+      expect(operation.entries).toHaveLength(2);
+    });
+
+    it('should throw BusinessRuleError when entries are not balanced', () => {
+      const entries = [
+        {
+          id: '1',
+          amount: 100,
+          operationId: operation.id,
+          accountType: 'CASH' as any,
+          createdAt: new Date(),
+          validateInvariants: () => {},
+          isDebit: () => true,
+          isCredit: () => false,
+        },
+        {
+          id: '2',
+          amount: -50,
+          operationId: operation.id,
+          accountType: 'LOANS_RECEIVABLE' as any,
+          createdAt: new Date(),
+          validateInvariants: () => {},
+          isDebit: () => false,
+          isCredit: () => true,
+        },
+      ];
+
+      expect(() => operation.setEntries(entries as any)).toThrow(
+        'Operation is not balanced',
+      );
+    });
+
+    it('should throw BusinessRuleError when there are fewer than 2 entries', () => {
+      const entries = [
+        {
+          id: '1',
+          amount: 100,
+          operationId: operation.id,
+          accountType: 'CASH' as any,
+          createdAt: new Date(),
+          validateInvariants: () => {},
+          isDebit: () => true,
+          isCredit: () => false,
+        },
+      ];
+
+      expect(() => operation.setEntries(entries as any)).toThrow(
+        'Operation must have at least 2 ledger entries',
+      );
+    });
+
+    it('should throw BusinessRuleError when an entry amount is zero', () => {
+      const entries = [
+        {
+          id: '1',
+          amount: 100,
+          operationId: operation.id,
+          accountType: 'CASH' as any,
+          createdAt: new Date(),
+          validateInvariants: () => {},
+          isDebit: () => true,
+          isCredit: () => false,
+        },
+        {
+          id: '2',
+          amount: 0,
+          operationId: operation.id,
+          accountType: 'LOANS_RECEIVABLE' as any,
+          createdAt: new Date(),
+          validateInvariants: () => {},
+          isDebit: () => false,
+          isCredit: () => false,
+        },
+        {
+          id: '3',
+          amount: -100,
+          operationId: operation.id,
+          accountType: 'OTHER' as any,
+          createdAt: new Date(),
+          validateInvariants: () => {},
+          isDebit: () => false,
+          isCredit: () => true,
+        },
+      ];
+
+      expect(() => operation.setEntries(entries as any)).toThrow(
+        'Ledger entry amount cannot be zero',
+      );
+    });
+  });
 });

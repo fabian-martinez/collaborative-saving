@@ -35,6 +35,11 @@ cd frontend-v2 && npm run dev
 cd backend && npm run test
 ```
 
+## Seguimiento de Tareas
+
+- **Issues:** El seguimiento de tareas y bugs se realiza en GitHub.
+- **Consulta:** Utiliza la herramienta `gh` para consultar el estado y detalles de los issues (ej: `gh issue list`, `gh issue view <number>`).
+
 ## Reglas no obvias
 
 - **Flujo de Trabajo (Git):** NUNCA realices push o commit directamente a la rama `main`. Sigue estrictamente el [CONTRIBUTING.md](./CONTRIBUTING.md). Siempre crea una rama de fix o feature (ej: `fix/nombre-bug`) desde la versión más reciente de `main` y abre un Pull Request para integrar los cambios.
