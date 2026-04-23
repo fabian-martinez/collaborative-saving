@@ -1,5 +1,6 @@
 import { Operation } from './operation.entity';
 import { OperationType } from '../enums/operation-type.enum';
+import { LedgerEntry } from './ledger-entry.entity';
 
 describe('Operation Entity', () => {
   const mockId = '550e8400-e29b-41d4-a716-446655440000';
@@ -222,6 +223,132 @@ describe('Operation Entity', () => {
           date: futureDate,
         }),
       ).toThrow('Operation date cannot be in the future');
+    });
+  });
+
+  describe('balance validation', () => {
+    let operation: Operation;
+
+    beforeEach(() => {
+      operation = Operation.create({
+        meetingId: 'meeting-1',
+        type: OperationType.LOAN_DISBURSEMENT,
+      });
+    });
+
+    it('should accept balanced entries', () => {
+      const entries = [
+        {
+          id: '1',
+          amount: 100,
+          operationId: operation.id,
+          accountType: 'CASH',
+          createdAt: new Date(),
+          validateInvariants: () => {},
+          isDebit: () => true,
+          isCredit: () => false,
+        },
+        {
+          id: '2',
+          amount: -100,
+          operationId: operation.id,
+          accountType: 'LOANS_RECEIVABLE',
+          createdAt: new Date(),
+          validateInvariants: () => {},
+          isDebit: () => false,
+          isCredit: () => true,
+        },
+      ] as unknown as LedgerEntry[];
+
+      expect(() => operation.setEntries(entries)).not.toThrow();
+      expect(operation.entries).toHaveLength(2);
+    });
+
+    it('should throw BusinessRuleError when entries are not balanced', () => {
+      const entries = [
+        {
+          id: '1',
+          amount: 100,
+          operationId: operation.id,
+          accountType: 'CASH',
+          createdAt: new Date(),
+          validateInvariants: () => {},
+          isDebit: () => true,
+          isCredit: () => false,
+        },
+        {
+          id: '2',
+          amount: -50,
+          operationId: operation.id,
+          accountType: 'LOANS_RECEIVABLE',
+          createdAt: new Date(),
+          validateInvariants: () => {},
+          isDebit: () => false,
+          isCredit: () => true,
+        },
+      ] as unknown as LedgerEntry[];
+
+      expect(() => operation.setEntries(entries)).toThrow(
+        'Operation is not balanced',
+      );
+    });
+
+    it('should throw BusinessRuleError when there are fewer than 2 entries', () => {
+      const entries = [
+        {
+          id: '1',
+          amount: 100,
+          operationId: operation.id,
+          accountType: 'CASH',
+          createdAt: new Date(),
+          validateInvariants: () => {},
+          isDebit: () => true,
+          isCredit: () => false,
+        },
+      ] as unknown as LedgerEntry[];
+
+      expect(() => operation.setEntries(entries)).toThrow(
+        'Operation must have at least 2 ledger entries',
+      );
+    });
+
+    it('should throw BusinessRuleError when an entry amount is zero', () => {
+      const entries = [
+        {
+          id: '1',
+          amount: 100,
+          operationId: operation.id,
+          accountType: 'CASH',
+          createdAt: new Date(),
+          validateInvariants: () => {},
+          isDebit: () => true,
+          isCredit: () => false,
+        },
+        {
+          id: '2',
+          amount: 0,
+          operationId: operation.id,
+          accountType: 'LOANS_RECEIVABLE',
+          createdAt: new Date(),
+          validateInvariants: () => {},
+          isDebit: () => false,
+          isCredit: () => false,
+        },
+        {
+          id: '3',
+          amount: -100,
+          operationId: operation.id,
+          accountType: 'OTHER',
+          createdAt: new Date(),
+          validateInvariants: () => {},
+          isDebit: () => false,
+          isCredit: () => true,
+        },
+      ] as unknown as LedgerEntry[];
+
+      expect(() => operation.setEntries(entries)).toThrow(
+        'Ledger entry amount cannot be zero',
+      );
     });
   });
 });

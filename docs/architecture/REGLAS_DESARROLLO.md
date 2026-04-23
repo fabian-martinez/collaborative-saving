@@ -79,7 +79,7 @@
 - **TODAS las operaciones contables** DEBEN registrarse usando `RecordOperationUseCase`.
 - **NO crear** operaciones directamente con TypeORM (`queryRunner.manager.create(Operation, ...)`).
 - **NO crear** ledger entries directamente con TypeORM (`queryRunner.manager.create(LedgerEntry, ...)`).
-- **NO duplicar** lógica de validación de balance (ya está centralizada en `OperationBalanceValidator`).
+- **NO duplicar** lógica de validación de balance (está centralizada en la entidad `Operation` y `OperationBalanceValidator`).
 - **NO gestionar** transacciones manualmente para operaciones contables (use case lo maneja automáticamente).
 
 ### Ejemplo de Uso Obligatorio

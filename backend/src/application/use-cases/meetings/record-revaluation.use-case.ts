@@ -90,8 +90,7 @@ export class RecordRevaluationUseCase {
         description: `Revaluación de activos para la reunión del ${meeting.date.toLocaleDateString()}`,
       });
 
-      const savedOperation = await this.operationRepository.save(operation);
-      const operationId = savedOperation.id;
+      const operationId = operation.id;
 
       // 2. Crear historiales y actualizar valores de acciones
       const stockHistories: StockValueHistory[] = [];
@@ -325,8 +324,11 @@ export class RecordRevaluationUseCase {
         }),
       );
 
-      // Validar balance
-      this.balanceValidator.validateBalance(ledgerEntryEntities);
+      // Validar balance y asociar asientos con la operación
+      operation.setEntries(ledgerEntryEntities);
+
+      // Guardar la operación
+      await this.operationRepository.save(operation);
 
       // Guardar asientos contables
       await this.ledgerEntryRepository.saveMany(ledgerEntryEntities);
