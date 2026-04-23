@@ -146,8 +146,7 @@ describe('StocksV2Controller', () => {
       const error = new Error('Database error');
       getStocksQueryExecuteSpy.mockRejectedValue(error);
 
-      await expect(controller.list()).rejects.toThrow(HttpException);
-      await expect(controller.list()).rejects.toThrow('Database error');
+      await expect(controller.list()).rejects.toThrow(error);
     });
   });
 
@@ -181,10 +180,7 @@ describe('StocksV2Controller', () => {
       const error = new Error('Internal error');
       getStockDetailQueryExecuteSpy.mockRejectedValue(error);
 
-      await expect(controller.detail(stockId)).rejects.toThrow(HttpException);
-      await expect(controller.detail(stockId)).rejects.toThrow(
-        'Internal error',
-      );
+      await expect(controller.detail(stockId)).rejects.toThrow(error);
     });
   });
 
@@ -284,10 +280,7 @@ describe('StocksV2Controller', () => {
       const error = new Error('Internal error');
       createStockUseCaseExecuteSpy.mockRejectedValue(error);
 
-      await expect(controller.create(createDto)).rejects.toThrow(HttpException);
-      await expect(controller.create(createDto)).rejects.toThrow(
-        'Internal error',
-      );
+      await expect(controller.create(createDto)).rejects.toThrow(error);
     });
   });
 
@@ -410,10 +403,7 @@ describe('StocksV2Controller', () => {
       updateStockUseCaseExecuteSpy.mockRejectedValue(error);
 
       await expect(controller.update(stockId, updateDto)).rejects.toThrow(
-        HttpException,
-      );
-      await expect(controller.update(stockId, updateDto)).rejects.toThrow(
-        'Update failed',
+        error,
       );
     });
   });
