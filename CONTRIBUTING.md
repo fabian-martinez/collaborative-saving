@@ -2,6 +2,22 @@
 
 Para mantener la calidad y evitar que las ramas queden aisladas, seguimos este flujo de trabajo obligatorio.
 
+## 🚀 Ciclo de Vida de una Tarea (Paso a Paso)
+
+Para asegurar la trazabilidad y calidad, cada cambio debe seguir este flujo estrictamente:
+
+1.  **Identificar/Crear Issue**: Selecciona un issue existente de la columna "Backlog" o crea uno nuevo detallando el problema o funcionalidad. **No se permite iniciar desarrollo sin un issue asociado.**
+2.  **Crear Rama**: Crea una rama local desde la versión más reciente de `main` usando el prefijo adecuado:
+    - `feat/nombre-funcionalidad`
+    - `fix/descripcion-bug`
+    - `refactor/nombre-mejora`
+3.  **Implementar Cambios**: Realiza los cambios siguiendo la estrategia de **TDD Outside-In** (primero el test, luego la implementación). Asegúrate de seguir los estándares de arquitectura hexagonal.
+4.  **Commitear**: Realiza commits atómicos y descriptivos siguiendo el estándar de **Conventional Commits** (en inglés).
+5.  **Pushear**: Sube tu rama al repositorio remoto en GitHub (`git push origin nombre-de-tu-rama`).
+6.  **Crear Pull Request (PR)**: Abre un PR hacia la rama `main` en GitHub.
+    - Vincula el issue en la descripción usando la palabra clave `Closes #numero-del-issue`.
+    - Asegúrate de que los tests automáticos (GitHub Actions) pasen exitosamente.
+
 ## 🔱 Gestión de Tareas (GitHub Issues)
 **GitHub Issues es la única fuente de verdad para el trabajo pendiente.**
 1.  **No trabajes sin un Issue**: Cada rama y cada Pull Request DEBE estar vinculado a un Issue de GitHub.
