@@ -40,7 +40,6 @@ describe('RecordRevaluationUseCase', () => {
   let ledgerEntrySaveManySpy: jest.SpyInstance;
   let pendingPaymentSaveManySpy: jest.SpyInstance;
   let calculateRevaluationDataSpy: jest.SpyInstance;
-  let validateBalanceSpy: jest.SpyInstance;
 
   beforeEach(() => {
     meetingRepository = {
@@ -151,7 +150,6 @@ describe('RecordRevaluationUseCase', () => {
       assetRevaluationDomainService,
       'calculateRevaluationData',
     );
-    validateBalanceSpy = jest.spyOn(balanceValidator, 'validateBalance');
 
     useCase = new RecordRevaluationUseCase(
       meetingRepository,
@@ -272,12 +270,6 @@ describe('RecordRevaluationUseCase', () => {
       totalMandatoryContributions: 0,
       mandatoryContributionsByType: [],
     };
-
-    const savedOperation = Operation.create({
-      meetingId,
-      type: 'ASSET_REVALUATION' as OperationType,
-      date: meeting.date,
-    });
 
     meetingRepository.findById.mockResolvedValue(meeting);
     operationRepository.findByMeetingAndType.mockResolvedValue([]);
@@ -423,12 +415,6 @@ describe('RecordRevaluationUseCase', () => {
       mandatoryContributionsByType: [],
     };
 
-    const savedOperation = Operation.create({
-      meetingId,
-      type: 'ASSET_REVALUATION' as OperationType,
-      date: meeting.date,
-    });
-
     meetingRepository.findById.mockResolvedValue(meeting);
     operationRepository.findByMeetingAndType.mockResolvedValue([]);
     assetRevaluationDomainService.calculateRevaluationData.mockResolvedValue(
@@ -505,12 +491,6 @@ describe('RecordRevaluationUseCase', () => {
       mandatoryContributionsByType: [],
     };
 
-    const savedOperation = Operation.create({
-      meetingId,
-      type: 'ASSET_REVALUATION' as OperationType,
-      date: meeting.date,
-    });
-
     meetingRepository.findById.mockResolvedValue(meeting);
     operationRepository.findByMeetingAndType.mockResolvedValue([]);
     assetRevaluationDomainService.calculateRevaluationData.mockResolvedValue(
@@ -585,12 +565,6 @@ describe('RecordRevaluationUseCase', () => {
       totalMandatoryContributions: 0,
       mandatoryContributionsByType: [],
     };
-
-    const savedOperation = Operation.create({
-      meetingId,
-      type: 'ASSET_REVALUATION' as OperationType,
-      date: meeting.date,
-    });
 
     meetingRepository.findById.mockResolvedValue(meeting);
     operationRepository.findByMeetingAndType.mockResolvedValue([]);
@@ -673,12 +647,6 @@ describe('RecordRevaluationUseCase', () => {
       mandatoryContributionsByType: [],
     };
 
-    const savedOperation = Operation.create({
-      meetingId,
-      type: 'ASSET_REVALUATION' as OperationType,
-      date: meeting.date,
-    });
-
     meetingRepository.findById.mockResolvedValue(meeting);
     operationRepository.findByMeetingAndType.mockResolvedValue([]);
     assetRevaluationDomainService.calculateRevaluationData.mockResolvedValue(
@@ -748,12 +716,6 @@ describe('RecordRevaluationUseCase', () => {
       mandatoryContributionsByType: [],
     };
 
-    const savedOperation = Operation.create({
-      meetingId,
-      type: 'ASSET_REVALUATION' as OperationType,
-      date: meeting.date,
-    });
-
     meetingRepository.findById.mockResolvedValue(meeting);
     operationRepository.findByMeetingAndType.mockResolvedValue([]);
     assetRevaluationDomainService.calculateRevaluationData.mockResolvedValue(
@@ -811,12 +773,6 @@ describe('RecordRevaluationUseCase', () => {
       totalMandatoryContributions: 0,
       mandatoryContributionsByType: [],
     };
-
-    const savedOperation = Operation.create({
-      meetingId,
-      type: 'ASSET_REVALUATION' as OperationType,
-      date: meeting.date,
-    });
 
     meetingRepository.findById.mockResolvedValue(meeting);
     operationRepository.findByMeetingAndType.mockResolvedValue([]);
