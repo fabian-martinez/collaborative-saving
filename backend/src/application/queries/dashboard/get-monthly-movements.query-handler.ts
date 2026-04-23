@@ -21,9 +21,13 @@ export class GetMonthlyMovementsQueryHandler {
 
     const movements = await Promise.all(
       closedMeetings.map(async (meeting) => {
-        const summary = await this.meetingSummaryService.calculateSummary(meeting.id);
+        const summary = await this.meetingSummaryService.calculateSummary(
+          meeting.id,
+        );
 
-        const monthLabel = new Intl.DateTimeFormat('es-ES', { month: 'short' }).format(meeting.date);
+        const monthLabel = new Intl.DateTimeFormat('es-ES', {
+          month: 'short',
+        }).format(meeting.date);
 
         return {
           label: monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1).replace('.', ''),
