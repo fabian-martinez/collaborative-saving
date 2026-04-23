@@ -2,9 +2,9 @@
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": ".",
   "testEnvironment": "node",
-  "testRegex": "\.spec\.ts$",
+  "testRegex": "\\.spec\\.ts$",
   "transform": {
-    "^.+\.(t|j)s$": "ts-jest"
+    "^.+\\.(t|j)s$": "ts-jest"
   },
   "moduleNameMapper": {
     "^@domain/(.*)$": "<rootDir>/src/domain/",
