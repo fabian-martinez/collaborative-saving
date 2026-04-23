@@ -86,13 +86,14 @@ describe('ProcessDividendDisbursementUseCase', () => {
       pendingMemberPaymentRepository.findById = findByIdMockFn;
       recordOperationUseCase.execute = executeMockFn;
 
-      await useCase.execute({
+      const result = await useCase.execute({
         item,
         meetingId,
         availableCash: 1000,
       });
 
       // Should approve pending payment and then mark as paid (full disbursement)
+      expect(result).toBe(500);
       expect(saveMock).toHaveBeenCalledTimes(2); // Approve + markAsPaid
       expect(pendingPayment.status).toBe(PendingMemberPaymentStatus.PAID);
 
@@ -147,13 +148,14 @@ describe('ProcessDividendDisbursementUseCase', () => {
       pendingMemberPaymentRepository.findById = findByIdMockFn2;
       recordOperationUseCase.execute = executeMockFn2;
 
-      await useCase.execute({
+      const result = await useCase.execute({
         item,
         meetingId,
         availableCash: 600, // Solo hay 600 disponible
       });
 
       // Should disburse 600
+      expect(result).toBe(600);
       expect(executeMockFn2).toHaveBeenCalledWith(
         expect.objectContaining({
           entries: expect.arrayContaining([
@@ -245,13 +247,14 @@ describe('ProcessDividendDisbursementUseCase', () => {
       pendingMemberPaymentRepository.save = saveMock3;
       recordOperationUseCase.execute = executeMockFn3;
 
-      await useCase.execute({
+      const result = await useCase.execute({
         item,
         meetingId,
         availableCash: 1000,
       });
 
       // Should create new pending payment and then mark as paid (full disbursement)
+      expect(result).toBe(500);
       expect(saveMock3).toHaveBeenCalledTimes(2); // Create (with approve) + markAsPaid
 
       // First call: create and approve
@@ -319,13 +322,14 @@ describe('ProcessDividendDisbursementUseCase', () => {
     pendingMemberPaymentRepository.save = saveMock4;
     recordOperationUseCase.execute = executeMockFn4;
 
-    await useCase.execute({
+    const result = await useCase.execute({
       item,
       meetingId,
       availableCash: 300, // Menos que el item amount
     });
 
     // Should disburse only 300 (min of item amount, available cash, pending amount)
+    expect(result).toBe(300);
     expect(executeMockFn4).toHaveBeenCalledWith(
       expect.objectContaining({
         entries: expect.arrayContaining([
