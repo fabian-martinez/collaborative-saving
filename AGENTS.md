@@ -1,26 +1,56 @@
-# 🤖 AGENTS.md - Agent Manifest
+# AGENTS.md
 
-Eres un Agente de IA trabajando en Collaborative Saving. Este repositorio utiliza una **Arquitectura Hexagonal Estricta** en NestJS y un **Frontend Vue 3 (V2)**.
-Toda tu ejecución debe regirse por los siguientes documentos bajo demanda. **NO asumas arquitecturas sin leerlos.**
+Guía para agentes de IA que trabajan en este repositorio. Sigue la convención [agents.md](https://agents.md).
 
-## 📋 Gestión de Tareas
-**GitHub Issues es tu fuente de verdad.**
--   Antes de empezar, pide al usuario el número de Issue (`#ID`) en el que vas a trabajar.
--   Si encuentras un bug o una mejora necesaria fuera de tu tarea, **no la implementes directamente**. Pide al usuario crear un nuevo Issue.
--   Tus mensajes de commit deben referenciar el Issue (ej: `feat(loans): calculate interests #42`).
+Este archivo solo captura lo que no es obvio leyendo el código. Para arquitectura, modelo de datos, decisiones y contexto más amplio, sigue los enlaces y lee la fuente.
 
-## 📂 Enrutamiento de Reglas (Lee estas reglas según tu tarea)
-- **Desarrollo General / Estándares**: REVISA OBLIGATORIAMENTE `.agent/rules/PROJECT_STANDARDS.md` para entender nomenclaturas y estructura.
-- **Si tocarás Finanzas/Transacciones/Préstamos**: LEE OBLIGATORIAMENTE `.agent/rules/ACCOUNTING_RULES.md` y USA la skill `Accounting Operation Builder`.
-- **Arquitectura Hexagonal**: REVISA `.agent/rules/ARCHITECTURE_PATTERNS.md` para entender el flujo (Infrastructure → Application → Domain).
-- **Antes de compilar/finalizar tarea**: REVISA `.agent/rules/COMMON_PITFALLS.md`, `.agent/rules/LESSONS_LEARNED.md` y `.agent/rules/TESTING_PATTERNS.md`.
+## Dónde encontrar las cosas
 
-## 🛠️ Skills y Workflows Disponibles
-Tienes herramientas especializadas en `.agent/skills/` y `.agent/workflows/`. Antes de realizar tareas complejas, **DEBES** leer su documentación:
+- [Negocio](./docs/business.md) — Qué es Collaborative Saving y por qué existe.
+- [Arquitectura](./docs/architecture.md) — Stack técnico (NestJS, Vue 3) y patrones (Hexagonal).
+- [Modelo de datos](./docs/data-model.md) — Esquema de PostgreSQL (Supabase) y contabilidad.
+- [Infraestructura](./docs/infrastructure.md) — Despliegue en Supabase y CI/CD.
+- [Decisiones](./docs/adrs/README.md) — Registro de decisiones arquitectónicas (ADRs).
+- [Diseño](./docs/design.md) — Sistema de diseño y UI/UX.
+- [Usuario objetivo](./docs/target-user.md) — Quién usa la plataforma.
 
-1. **[Hexagonal Module Scaffolder](./.agent/skills/hexagonal-module-scaffolder/SKILL.md)**: Úsala para crear nuevos módulos (Entities, Use Cases, Adapters).
-2. **[Accounting Operation Builder](./.agent/skills/accounting-operation-builder/SKILL.md)**: **OBLIGATORIA** para cualquier cambio que involucre dinero, préstamos o acciones.
-3. **[Unit Test Generator](./.agent/skills/unit-test-generator/SKILL.md)**: Para asegurar la cobertura >90% en la capa de aplicación.
+Lee estos docs antes de hacer cambios estructurales.
 
----
-*Este documento es tu contrato de ejecución centralizado. Utiliza el enrutamiento para conocer la arquitectura.*
+## Comandos
+
+```bash
+# Iniciar todo el proyecto (backend + frontend)
+npm run dev
+
+# Instalar dependencias en todos los paquetes
+npm run install:all
+
+# Backend: Iniciar en modo desarrollo
+cd backend && npm run start:dev
+
+# Frontend: Iniciar en modo desarrollo
+cd frontend-v2 && npm run dev
+
+# Backend: Correr pruebas
+cd backend && npm run test
+```
+
+## Reglas no obvias
+
+- **Arquitectura Hexagonal Estricta:** El dominio no debe depender de la infraestructura ni de la aplicación.
+- **Contabilidad de Partida Doble:** Cualquier transacción financiera debe registrar entradas en `ledger_entries` asegurando que el balance sea cero.
+- **Naming de API:** Se utiliza `snake_case` para los endpoints y payloads para mantener consistencia con la base de datos.
+
+## Pruebas
+
+El backend utiliza Jest para pruebas unitarias e integración. Se busca una cobertura >90% en la capa de aplicación. El frontend utiliza Vitest.
+
+## Estilo de código
+
+Se utiliza ESLint y Prettier. Las reglas están configuradas en los paquetes `backend` y `frontend-v2`. Se prefiere el uso de TypeScript estricto.
+
+## Seguridad
+
+- No commitees `.env` ni archivos con credenciales. Agrega variables nuevas a `.env.example`.
+- No registres secretos, tokens ni información personal en logs.
+- Asume que cualquier cosa en este repo es legible por un agente de IA — nunca pegues secretos aquí.
