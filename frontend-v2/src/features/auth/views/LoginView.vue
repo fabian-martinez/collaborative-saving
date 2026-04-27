@@ -3,11 +3,13 @@ import { ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import ErrorMessage from '@/shared/components/ErrorMessage.vue';
+import { Eye, EyeClosed } from 'iconoir-vue/regular';
 
 const email = ref('');
 const password = ref('');
 const error = ref('');
 const loading = ref(false);
+const showPassword = ref(false);
 
 const router = useRouter();
 const route = useRoute();
@@ -60,14 +62,26 @@ async function handleLogin() {
             <label class="label" for="password">
               <span class="label-text">Password</span>
             </label>
-            <input
-              id="password"
-              v-model="password"
-              type="password"
-              placeholder="••••••••"
-              class="input input-bordered w-full"
-              required
-            />
+            <div class="relative">
+              <input
+                id="password"
+                v-model="password"
+                :type="showPassword ? 'text' : 'password'"
+                placeholder="••••••••"
+                class="input input-bordered w-full pr-10"
+                required
+              />
+              <button
+                type="button"
+                class="absolute inset-y-0 right-0 px-3 flex items-center text-base-content/60 hover:text-base-content"
+                @click="showPassword = !showPassword"
+                :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                :aria-pressed="showPassword"
+              >
+                <Eye v-if="!showPassword" class="w-5 h-5" />
+                <EyeClosed v-else class="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           <ErrorMessage
