@@ -36,6 +36,7 @@ describe('GetMemberStockLoanPaymentsQueryHandler', () => {
   beforeEach(() => {
     memberRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findActive: jest.fn(),
       save: jest.fn(),
       softDelete: jest.fn(),
@@ -43,6 +44,7 @@ describe('GetMemberStockLoanPaymentsQueryHandler', () => {
 
     stockRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByType: jest.fn(),
       findAll: jest.fn(),
       findActive: jest.fn(),
@@ -52,6 +54,7 @@ describe('GetMemberStockLoanPaymentsQueryHandler', () => {
 
     stockSubscriptionRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByMemberAndStock: jest.fn(),
       findByMember: jest.fn(),
       findActiveByMember: jest.fn(),
@@ -63,15 +66,16 @@ describe('GetMemberStockLoanPaymentsQueryHandler', () => {
 
     loanRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByMember: jest.fn(),
       findActiveByMember: jest.fn(),
       findPendingByMember: jest.fn(),
       save: jest.fn(),
-      findByIds: jest.fn(),
     } as unknown as jest.Mocked<LoanRepository>;
 
     loanTransactionDetailRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByLoan: jest.fn(),
       findByLoanAndMeeting: jest.fn(),
       save: jest.fn(),
@@ -80,6 +84,7 @@ describe('GetMemberStockLoanPaymentsQueryHandler', () => {
 
     operationRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByMeeting: jest.fn(),
       findByMeetingAndType: jest.fn(),
       findByMember: jest.fn(),
@@ -89,6 +94,7 @@ describe('GetMemberStockLoanPaymentsQueryHandler', () => {
 
     ledgerEntryRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByOperation: jest.fn(),
       findByOperations: jest.fn(),
       findByMeeting: jest.fn(),
@@ -222,7 +228,7 @@ describe('GetMemberStockLoanPaymentsQueryHandler', () => {
       jest
         .spyOn(stockSubscriptionRepository, 'findById')
         .mockResolvedValue(subscription);
-      jest.spyOn(stockRepository, 'findById').mockResolvedValue(stock);
+      jest.spyOn(stockRepository, 'findByIds').mockResolvedValue([stock]);
       jest.spyOn(loanRepository, 'findByIds').mockResolvedValue([loan]);
       jest
         .spyOn(loanTransactionDetailRepository, 'findByLoan')
