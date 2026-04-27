@@ -73,9 +73,7 @@ export class GetMemberStockTransfersQueryHandler {
     }
 
     // Fetch related entities
-    const stocks = await Promise.all(
-      Array.from(stockIds).map((id) => this.stockRepository.findById(id)),
-    );
+    const stocks = await this.stockRepository.findByIds(Array.from(stockIds));
     const subscriptions = await Promise.all(
       Array.from(subscriptionIds).map((id) =>
         this.stockSubscriptionRepository.findById(id),

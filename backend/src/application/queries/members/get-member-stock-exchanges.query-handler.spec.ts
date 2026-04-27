@@ -43,6 +43,7 @@ describe('GetMemberStockExchangesQueryHandler', () => {
 
     stockRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByType: jest.fn(),
       findAll: jest.fn(),
       findActive: jest.fn(),
@@ -244,16 +245,8 @@ describe('GetMemberStockExchangesQueryHandler', () => {
           return Promise.resolve(null);
         });
       jest
-        .spyOn(stockRepository, 'findById')
-        .mockImplementation((id: string) => {
-          if (id === fromStockId) {
-            return Promise.resolve(fromStock);
-          }
-          if (id === toStockId) {
-            return Promise.resolve(toStock);
-          }
-          return Promise.resolve(null);
-        });
+        .spyOn(stockRepository, 'findByIds')
+        .mockResolvedValue([fromStock, toStock]);
       jest
         .spyOn(pendingMemberPaymentRepository, 'findByMember')
         .mockResolvedValue([pendingPayment]);
@@ -389,16 +382,8 @@ describe('GetMemberStockExchangesQueryHandler', () => {
           return Promise.resolve(null);
         });
       jest
-        .spyOn(stockRepository, 'findById')
-        .mockImplementation((id: string) => {
-          if (id === fromStockId) {
-            return Promise.resolve(fromStock);
-          }
-          if (id === toStockId) {
-            return Promise.resolve(toStock);
-          }
-          return Promise.resolve(null);
-        });
+        .spyOn(stockRepository, 'findByIds')
+        .mockResolvedValue([fromStock, toStock]);
       jest
         .spyOn(pendingMemberPaymentRepository, 'findByMember')
         .mockResolvedValue([]);
