@@ -1,3 +1,4 @@
+import apiClient from '@/api/client'
 import { mockApi } from '@/api/mocks'
 
 const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
