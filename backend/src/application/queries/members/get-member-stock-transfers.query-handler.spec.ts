@@ -24,6 +24,7 @@ describe('GetMemberStockTransfersQueryHandler', () => {
   beforeEach(() => {
     memberRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findActive: jest.fn(),
       save: jest.fn(),
       softDelete: jest.fn(),
@@ -31,6 +32,7 @@ describe('GetMemberStockTransfersQueryHandler', () => {
 
     stockRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByType: jest.fn(),
       findAll: jest.fn(),
       findActive: jest.fn(),
@@ -40,6 +42,7 @@ describe('GetMemberStockTransfersQueryHandler', () => {
 
     stockSubscriptionRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByMemberAndStock: jest.fn(),
       findByMember: jest.fn(),
       findActiveByMember: jest.fn(),
@@ -51,6 +54,7 @@ describe('GetMemberStockTransfersQueryHandler', () => {
 
     operationRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByMeeting: jest.fn(),
       findByMeetingAndType: jest.fn(),
       findByMember: jest.fn(),
@@ -60,6 +64,7 @@ describe('GetMemberStockTransfersQueryHandler', () => {
 
     ledgerEntryRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByOperation: jest.fn(),
       findByOperations: jest.fn(),
       findByMeeting: jest.fn(),
@@ -200,7 +205,7 @@ describe('GetMemberStockTransfersQueryHandler', () => {
           }
           return Promise.resolve(null);
         });
-      jest.spyOn(stockRepository, 'findById').mockResolvedValue(stock);
+      jest.spyOn(stockRepository, 'findByIds').mockResolvedValue([stock]);
 
       const result = await queryHandler.execute(fromMemberId, {
         meetingId: undefined,
