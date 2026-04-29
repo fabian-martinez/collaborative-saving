@@ -61,6 +61,7 @@ flowchart LR
 - **Aislamiento del Dominio:** El dominio no puede importar nada de `infrastructure`.
 - **Inmutabilidad Financiera:** Las operaciones financieras registradas no se borran, se compensan con nuevas operaciones si es necesario.
 - **Validación en el Dominio:** Los invariantes de negocio deben validarse en las entidades o servicios de dominio.
+- **Inyección de Dependencias (DI):** Los tokens `Symbol()` para inyección en NestJS deben estar centralizados en `src/domain/constants/injection-tokens.ts` para evitar dependencias desconocidas entre módulos.
 
 ## Docs relacionados
 
