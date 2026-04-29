@@ -11,12 +11,11 @@ import { Member } from '@infrastructure/typeorm/entities/member.entity';
 import { TypeOrmTransactionManager } from '@infrastructure/services/transaction-manager/typeorm-transaction-manager.service';
 import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pending-member-payment-repository.port';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
-import { MEMBER_REPOSITORY } from '@domain/constants/injection-tokens';
-
-const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
-  'PendingMemberPaymentRepository',
-);
-const TRANSACTION_MANAGER = Symbol('TransactionManager');
+import {
+  MEMBER_REPOSITORY,
+  PENDING_MEMBER_PAYMENT_REPOSITORY,
+  TRANSACTION_MANAGER,
+} from '@domain/constants/injection-tokens';
 
 @Module({
   imports: [TypeOrmModule.forFeature([PendingMemberPayment, Member])],
