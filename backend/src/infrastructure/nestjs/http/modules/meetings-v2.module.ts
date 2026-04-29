@@ -61,21 +61,19 @@ import { TransactionManager } from '@domain/ports/services/transaction-manager.p
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
 import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
 
-const MEETING_REPOSITORY = Symbol('MeetingRepository');
-const OPERATION_REPOSITORY = Symbol('OperationRepository');
-const LEDGER_ENTRY_REPOSITORY = Symbol('LedgerEntryRepository');
-const STOCK_REPOSITORY = Symbol('StockRepository');
-const STOCK_SUBSCRIPTION_REPOSITORY = Symbol('StockSubscriptionRepository');
-const LOAN_REPOSITORY = Symbol('LoanRepository');
-const STOCK_VALUE_HISTORY_REPOSITORY = Symbol('StockValueHistoryRepository');
-const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
-  'PendingMemberPaymentRepository',
-);
-const TRANSACTION_MANAGER = Symbol('TransactionManager');
-const MEMBER_REPOSITORY = Symbol('MemberRepository');
-const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
-  'LoanTransactionDetailRepository',
-);
+import {
+  MEETING_REPOSITORY,
+  OPERATION_REPOSITORY,
+  LEDGER_ENTRY_REPOSITORY,
+  STOCK_REPOSITORY,
+  STOCK_SUBSCRIPTION_REPOSITORY,
+  LOAN_REPOSITORY,
+  STOCK_VALUE_HISTORY_REPOSITORY,
+  PENDING_MEMBER_PAYMENT_REPOSITORY,
+  TRANSACTION_MANAGER,
+  MEMBER_REPOSITORY,
+  LOAN_TRANSACTION_DETAIL_REPOSITORY,
+} from '@domain/constants/injection-tokens';
 
 @Module({
   imports: [
@@ -540,6 +538,6 @@ const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
     TypeOrmMeetingRepository,
     TypeOrmOperationRepository,
   ],
-  exports: [MEETING_REPOSITORY],
+  exports: [MEETING_REPOSITORY, MeetingSummaryService],
 })
 export class MeetingsV2Module {}

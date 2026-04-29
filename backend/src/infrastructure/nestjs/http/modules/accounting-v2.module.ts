@@ -13,8 +13,10 @@ import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-r
 import { Operation as OperationEntity } from '@infrastructure/typeorm/entities/operation.entity';
 import { LedgerEntry as LedgerEntryEntity } from '@infrastructure/typeorm/entities/ledger-entry.entity';
 
-const OPERATION_REPOSITORY = Symbol('OperationRepository');
-const LEDGER_ENTRY_REPOSITORY = Symbol('LedgerEntryRepository');
+import {
+  OPERATION_REPOSITORY,
+  LEDGER_ENTRY_REPOSITORY,
+} from '@domain/constants/injection-tokens';
 
 @Module({
   imports: [TypeOrmModule.forFeature([OperationEntity, LedgerEntryEntity])],

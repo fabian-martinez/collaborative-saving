@@ -9,7 +9,7 @@ import { GetStockDetailQueryHandler } from '@application/queries/stocks/get-stoc
 import { TypeOrmStockRepository } from '../../../typeorm/repositories/typeorm-stock.repository';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 
-const STOCK_REPOSITORY = Symbol('StockRepository');
+import { STOCK_REPOSITORY } from '@domain/constants/injection-tokens';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Stock])],
