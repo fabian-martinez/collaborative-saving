@@ -40,19 +40,17 @@ import { EventBus } from '@domain/ports/services/event-bus.port';
 import { OperationBalanceValidator } from '@domain/services/operation-balance-validator.service';
 import { AmortizationCalculatorService } from '@domain/services/amortization-calculator.service';
 
-const MEMBER_REPOSITORY = Symbol('MemberRepository');
-const MEETING_REPOSITORY = Symbol('MeetingRepository');
-const LOAN_REPOSITORY = Symbol('LoanRepository');
-const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
-  'LoanTransactionDetailRepository',
-);
-const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
-  'PendingMemberPaymentRepository',
-);
-const OPERATION_REPOSITORY = Symbol('OperationRepository');
-const LEDGER_ENTRY_REPOSITORY = Symbol('LedgerEntryRepository');
-const STOCK_SUBSCRIPTION_REPOSITORY = Symbol('StockSubscriptionRepository');
-const TRANSACTION_MANAGER = Symbol('TransactionManager');
+import {
+  MEMBER_REPOSITORY,
+  MEETING_REPOSITORY,
+  LOAN_REPOSITORY,
+  LOAN_TRANSACTION_DETAIL_REPOSITORY,
+  PENDING_MEMBER_PAYMENT_REPOSITORY,
+  OPERATION_REPOSITORY,
+  LEDGER_ENTRY_REPOSITORY,
+  STOCK_SUBSCRIPTION_REPOSITORY,
+  TRANSACTION_MANAGER,
+} from '@domain/constants/injection-tokens';
 
 @Module({
   imports: [
