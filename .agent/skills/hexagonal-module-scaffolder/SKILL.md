@@ -248,8 +248,7 @@ import { TypeOrm{Name}Repository } from '@infrastructure/typeorm/repositories/ty
 import { Create{Name}UseCase } from '@application/use-cases/{context}/create-{name}.use-case';
 import { {Name}sV2Controller } from '../controllers/{name}s.v2.controller';
 import { {Name}Repository } from '@domain/ports/repositories/{name}-repository.port';
-
-const {NAME}_REPOSITORY = Symbol('{Name}Repository');
+import { {NAME}_REPOSITORY } from '@domain/constants/injection-tokens';
 
 @Module({
   imports: [TypeOrmModule.forFeature([{Name}Entity])],
@@ -273,7 +272,8 @@ export class {Name}sV2Module {}
 2. **No `any` type**: Use proper TypeScript types
 3. **No legacy imports**: Never import from `src/{feature}/` in domain/application
 4. **Swagger**: All endpoints need `@ApiTags`, `@ApiOperation`, `@ApiResponse`
-5. **Accounting operations**: If module involves money, use `accounting-operation-builder` skill
+5. **Centralized DI Tokens**: You MUST add `export const {NAME}_REPOSITORY = Symbol('{Name}Repository');` to `backend/src/domain/constants/injection-tokens.ts`. Never create local `Symbol` constants inside the module.
+6. **Accounting operations**: If module involves money, use `accounting-operation-builder` skill
 
 ## After Generation
 
