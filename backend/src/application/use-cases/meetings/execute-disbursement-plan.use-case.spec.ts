@@ -54,6 +54,7 @@ describe('ExecuteDisbursementPlanUseCase', () => {
 
     pendingMemberPaymentRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByMember: jest.fn(),
       findByMeeting: jest.fn(),
       findPendingByMeeting: jest.fn(),
@@ -335,6 +336,7 @@ describe('ExecuteDisbursementPlanUseCase', () => {
       operationId: 'op-2',
       ledgerEntryIds: [],
     });
+    pendingMemberPaymentRepository.findByIds.mockResolvedValue([]);
     pendingMemberPaymentRepository.findById.mockResolvedValue(null);
     pendingMemberPaymentRepository.save.mockResolvedValue(
       PendingMemberPayment.fromPersistence({
@@ -472,6 +474,9 @@ describe('ExecuteDisbursementPlanUseCase', () => {
 
     meetingRepository.findById.mockResolvedValue(meeting);
     ledgerEntryRepository.findByMeeting.mockResolvedValue(ledgerEntries);
+    pendingMemberPaymentRepository.findByIds.mockResolvedValue([
+      pendingPayment,
+    ]);
     pendingMemberPaymentRepository.findById.mockResolvedValue(pendingPayment);
     pendingMemberPaymentRepository.save.mockResolvedValue(pendingPayment);
     recordOperationUseCase.execute.mockResolvedValue({
@@ -630,12 +635,15 @@ describe('ExecuteDisbursementPlanUseCase', () => {
       }),
     ]);
 
-    pendingMemberPaymentRepository.findById.mockImplementation((id) => {
-      if (id === 'p1') return Promise.resolve(p1);
-      if (id === 'p2') return Promise.resolve(p2);
-      if (id === 'p3') return Promise.resolve(p3);
-      return Promise.resolve(null);
-    });
+    pendingMemberPaymentRepository.findByIds.mockImplementation(
+      (ids: string[]) => {
+        const allPayments = { p1, p2, p3 };
+        const result = ids
+          .map((id) => allPayments[id as keyof typeof allPayments])
+          .filter(Boolean);
+        return Promise.resolve(result);
+      },
+    );
 
     processDividendExecuteMock.mockResolvedValue(300); // Para p3 y otros dividendos
     processLoanExecuteMock.mockResolvedValue(400); // Genérico

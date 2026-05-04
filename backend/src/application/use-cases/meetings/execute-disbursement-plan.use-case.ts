@@ -148,10 +148,17 @@ export class ExecuteDisbursementPlanUseCase {
       .filter((id): id is string => !!id);
 
     const paymentsMap = new Map<string, PendingMemberPayment>();
-    for (const id of paymentIds) {
-      const payment = await this.pendingMemberPaymentRepository.findById(id);
-      if (payment) {
-        paymentsMap.set(id, payment);
+
+    if (paymentIds.length > 0) {
+      // ⚡ Bolt Performance Optimization:
+      // Replaced iterative findById calls (N+1 query problem) with a single
+      // batched findByIds call. This significantly reduces database roundtrips
+      // from O(N) to O(1) for retrieving pending payments, improving the
+      // overall execution time of the disbursement plan sorting operation.
+      const payments =
+        await this.pendingMemberPaymentRepository.findByIds(paymentIds);
+      for (const payment of payments) {
+        paymentsMap.set(payment.id, payment);
       }
     }
 

@@ -2,6 +2,7 @@ import { PendingMemberPayment } from '../../entities/pending-member-payment.enti
 
 export interface PendingMemberPaymentRepository {
   findById(id: string): Promise<PendingMemberPayment | null>;
+  findByIds(ids: string[]): Promise<PendingMemberPayment[]>;
   findByMember(memberId: string): Promise<PendingMemberPayment[]>;
   findByMeeting(meetingId: string): Promise<PendingMemberPayment[]>;
   findPendingByMeeting(meetingId: string): Promise<PendingMemberPayment[]>;
