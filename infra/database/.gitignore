@@ -1,3 +1,6 @@
+# Backups
+*.sql
+
 # Supabase
 .branches
 .temp

@@ -19,10 +19,10 @@ Se identificó una duplicación masiva de código (más de 1,300 líneas en 8 se
 Se eligió la **Opción C (RecordOperationUseCase)**.
 
 Cualquier movimiento financiero en el sistema **DEBE** pasar por este caso de uso transversal, el cual garantiza:
-1.  **Validación de Balance**: Débitos sumados deben ser iguales a Créditos.
-2.  **Transaccionalidad Atómica**: La operación y sus asientos se guardan o fallan como un conjunto único.
-3.  **Trazabilidad**: Asignación automática de IDs y timestamps.
-4.  **Desacoplamiento**: Los servicios de negocio (Préstamos, Acciones, Reuniones) solo especifican el "qué" y no el "cómo" contable.
+1. **Validación de Balance**: Débitos sumados deben ser iguales a Créditos.
+2. **Transaccionalidad Atómica**: La operación y sus asientos se guardan o fallan como un conjunto único.
+3. **Trazabilidad**: Asignación automática de IDs y timestamps.
+4. **Desacoplamiento**: Los servicios de negocio (Préstamos, Acciones, Reuniones) solo especifican el "qué" y no el "cómo" contable.
 
 ## Consecuencias
 

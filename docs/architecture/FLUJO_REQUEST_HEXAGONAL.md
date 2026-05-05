@@ -411,7 +411,7 @@ describe('CreateLoanUseCase', () => {
 });
 ```
 
-**Ejecutar**: 
+**Ejecutar**:
 - ✅ Tests unitarios pasan
 - ✅ Test E2E sigue pasando (usando mocks en DI)
 
@@ -551,7 +551,7 @@ export class TypeOrmLoanRepository implements LoanRepository {
 export class LoansModule {}
 ```
 
-**Ejecutar**: 
+**Ejecutar**:
 - ✅ Test E2E pasa con DB real
 - ✅ Tests unitarios siguen usando mocks
 - ✅ Tests de integración del repository
