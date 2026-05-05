@@ -4,6 +4,9 @@
 pre-commit:
   parallel: true
   commands:
+    markdown-lint:
+      glob: "*.md"
+      run: npx markdownlint {staged_files} --fix
     backend-lint:
       root: "backend/"
       glob: "*.{ts,js,json}"

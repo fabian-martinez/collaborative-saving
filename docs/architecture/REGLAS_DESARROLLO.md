@@ -40,7 +40,7 @@
 
 ---
 
-# Appendix: Detailed Rules (Architecture & Process)
+## Appendix: Detailed Rules (Architecture & Process)
 
 ## 1) Principios rectores
 - Arquitectura Hexagonal: infrastructure → application → domain. Domain no depende de frameworks.

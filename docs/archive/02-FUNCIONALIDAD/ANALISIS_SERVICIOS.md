@@ -524,6 +524,7 @@ export class EventBus {
 ## 📊 Métricas de Calidad de Servicios
 
 ### Complejidad por Servicio
+
 | Servicio | Líneas | Métodos | Complejidad | SRP Violation |
 |----------|--------|---------|-------------|---------------|
 | MeetingsService | 673 | 15+ | Muy Alta | ⚠️ Crítica |

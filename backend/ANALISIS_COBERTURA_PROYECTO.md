@@ -31,6 +31,7 @@ El proyecto backend de Collaborative Saving tiene una **cobertura general del 32
 ### 1. Domain Layer (Capa de Dominio) - ✅ Excelente
 
 #### Value Objects - 100% ✅
+
 | Archivo | Statements | Branches | Functions | Lines | Estado |
 |---------|-----------|----------|-----------|-------|--------|
 | `email.value-object.ts` | 100% | 100% | 100% | 100% | ✅ Perfecto |
@@ -41,6 +42,7 @@ El proyecto backend de Collaborative Saving tiene una **cobertura general del 32
 **Conclusión**: Los Value Objects están completamente cubiertos con tests exhaustivos.
 
 #### Domain Entities - 96.88% ✅
+
 | Archivo | Statements | Branches | Functions | Lines | Estado |
 |---------|-----------|----------|-----------|-------|--------|
 | `member.entity.ts` | 100% | 96.87% | 100% | 100% | ✅ Excelente |
@@ -58,6 +60,7 @@ El proyecto backend de Collaborative Saving tiene una **cobertura general del 32
 **Conclusión**: Las entidades de dominio tienen cobertura excelente, con un promedio del 96.88%.
 
 #### Domain Services - 93.19% ✅
+
 | Archivo | Statements | Branches | Functions | Lines | Estado |
 |---------|-----------|----------|-----------|-------|--------|
 | `asset-revaluation.service.ts` | 98.66% | 87.14% | 100% | 100% | ✅ Excelente |
@@ -70,6 +73,7 @@ El proyecto backend de Collaborative Saving tiene una **cobertura general del 32
 **Conclusión**: La mayoría de servicios de dominio tienen excelente cobertura, excepto `payment-mapper.service.ts` que requiere atención urgente.
 
 #### Domain Enums - 74.6% ⚠️
+
 | Archivo | Statements | Branches | Functions | Lines | Estado |
 |---------|-----------|----------|-----------|-------|--------|
 | `loan-status.enum.ts` | 100% | 100% | 100% | 100% | ✅ Perfecto |
@@ -92,6 +96,7 @@ El proyecto backend de Collaborative Saving tiene una **cobertura general del 32
 #### Use Cases - Cobertura Variable
 
 **Members Use Cases - 85.44% ✅**
+
 | Archivo | Statements | Branches | Functions | Lines | Estado |
 |---------|-----------|----------|-----------|-------|--------|
 | `create-member.use-case.ts` | 100% | 100% | 100% | 100% | ✅ Perfecto |
@@ -105,12 +110,14 @@ El proyecto backend de Collaborative Saving tiene una **cobertura general del 32
 | `process-stock-transfer.use-case.ts` | 76.27% | 60% | 100% | 76.27% | ✅ Buena |
 
 **Stocks Use Cases - 100% ✅**
+
 | Archivo | Statements | Branches | Functions | Lines | Estado |
 |---------|-----------|----------|-----------|-------|--------|
 | `create-stock.use-case.ts` | 100% | 100% | 100% | 100% | ✅ Perfecto |
 | `update-stock.use-case.ts` | 100% | 92.3% | 100% | 100% | ✅ Excelente |
 
 **Loans Use Cases - 95.6% ✅**
+
 | Archivo | Statements | Branches | Functions | Lines | Estado |
 |---------|-----------|----------|-----------|-------|--------|
 | `create-loan.use-case.ts` | 98.41% | 96.87% | 100% | 98.41% | ✅ Excelente |
@@ -119,6 +126,7 @@ El proyecto backend de Collaborative Saving tiene una **cobertura general del 32
 | `record-loan-payment.use-case.ts` | 90.47% | 91.66% | 100% | 90.47% | ✅ Excelente |
 
 **Mandatory Contributions Use Cases - 100% ✅**
+
 | Archivo | Statements | Branches | Functions | Lines | Estado |
 |---------|-----------|----------|-----------|-------|--------|
 | `create-mandatory-contribution.use-case.ts` | 100% | 100% | 100% | 100% | ✅ Perfecto |
@@ -126,6 +134,7 @@ El proyecto backend de Collaborative Saving tiene una **cobertura general del 32
 | `delete-mandatory-contribution.use-case.ts` | 100% | 100% | 100% | 100% | ✅ Perfecto |
 
 **Meetings Use Cases - 50.34% ⚠️**
+
 | Archivo | Statements | Branches | Functions | Lines | Estado |
 |---------|-----------|----------|-----------|-------|--------|
 | `process-dividend-disbursement.use-case.ts` | 100% | 94.44% | 100% | 100% | ✅ Excelente |
@@ -137,6 +146,7 @@ El proyecto backend de Collaborative Saving tiene una **cobertura general del 32
 | `process-stock-withdrawal-disbursement.use-case.ts` | 0% | 0% | 0% | 0% | 🚨 Sin cobertura |
 
 **Accounting Use Cases - 100% ✅**
+
 | Archivo | Statements | Branches | Functions | Lines | Estado |
 |---------|-----------|----------|-----------|-------|--------|
 | `record-operation.use-case.ts` | 100% | 100% | 100% | 100% | ✅ Perfecto |
@@ -189,6 +199,7 @@ El proyecto backend de Collaborative Saving tiene una **cobertura general del 32
 ### 3. Infrastructure Layer (Capa de Infraestructura) - ⚠️ Mejorable
 
 #### Controllers - 69.6% ⚠️
+
 | Archivo | Statements | Branches | Functions | Lines | Estado |
 |---------|-----------|----------|-----------|-------|--------|
 | `stocks.v2.controller.ts` | 100% | 71.42% | 100% | 100% | ✅ Excelente |
@@ -200,6 +211,7 @@ El proyecto backend de Collaborative Saving tiene una **cobertura general del 32
 **Conclusión**: Los controladores tienen cobertura variable. `meetings.v2.controller.ts` requiere atención urgente.
 
 #### Repositories - 51.07% ⚠️
+
 | Archivo | Statements | Branches | Functions | Lines | Estado |
 |---------|-----------|----------|-----------|-------|--------|
 | `typeorm-member.repository.ts` | 100% | 100% | 100% | 100% | ✅ Perfecto |
@@ -217,6 +229,7 @@ El proyecto backend de Collaborative Saving tiene una **cobertura general del 32
 **Conclusión**: Los repositorios tienen cobertura insuficiente. Varios repositorios críticos no tienen tests.
 
 #### Mappers - 89.33% ✅
+
 | Archivo | Statements | Branches | Functions | Lines | Estado |
 |---------|-----------|----------|-----------|-------|--------|
 | `member.mapper.ts` | 100% | 92.3% | 100% | 100% | ✅ Excelente |
@@ -234,6 +247,7 @@ El proyecto backend de Collaborative Saving tiene una **cobertura general del 32
 **Conclusión**: Los mappers tienen buena cobertura general.
 
 #### Services - Cobertura Variable
+
 | Archivo | Statements | Branches | Functions | Lines | Estado |
 |---------|-----------|----------|-----------|-------|--------|
 | `typeorm-transaction-manager.service.ts` | 82.92% | 25% | 62.5% | 82.05% | ✅ Buena |
@@ -285,6 +299,7 @@ El proyecto backend de Collaborative Saving tiene una **cobertura general del 32
 ## 📈 Comparación con Estándares del Proyecto
 
 ### Estándares Definidos (ADR-0007)
+
 | Categoría | Objetivo | Actual | Estado |
 |-----------|----------|--------|--------|
 | **Entidades de dominio** | 100% | 96.88% | ✅ Cumple |
@@ -346,7 +361,7 @@ El proyecto backend de Collaborative Saving tiene una **cobertura general del 32
 ### Meetings Module - ⚠️ Baja (0-100%)
 - **Cobertura promedio**: ~50%
 - **Estado**: ⚠️ Baja
-- **Áreas críticas**: 
+- **Áreas críticas**:
   - Use cases de desembolsos (0%) 🚨
   - Controller (45.16%) 🚨
   - Repository (0%) 🚨

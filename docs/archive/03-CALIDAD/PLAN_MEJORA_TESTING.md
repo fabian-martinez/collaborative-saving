@@ -450,6 +450,7 @@ it('should not fail')
 ### 1. Métricas de Cobertura
 
 #### Cobertura por Categoría
+
 | Categoría | Objetivo | Actual | Estado |
 |-----------|----------|--------|--------|
 | Servicios Críticos | 90% | 27% | 🚨 Crítico |
