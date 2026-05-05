@@ -43,8 +43,8 @@ Esto permite, por ejemplo, cambiar TypeORM por cualquier otro ORM o usar reposit
 
 ## ✅ Regla de Oro de Dependencias
 
-1.  **Dominio**: No depende de nada.
-2.  **Aplicación**: Depende solo del Dominio.
-3.  **Infraestructura**: Depende de Aplicación y Dominio.
+1. **Dominio**: No depende de nada.
+2. **Aplicación**: Depende solo del Dominio.
+3. **Infraestructura**: Depende de Aplicación y Dominio.
 
 > **Nunca** debe haber un import de `infrastructure` dentro de `domain` o `application`.

@@ -311,7 +311,7 @@ ALTER TABLE stock_subscriptions ADD CONSTRAINT chk_stock_subscriptions_status CH
 
 ### 4. ⚠️ Forma Normal de Boyce-Codd (BCNF)
 - **Estado**: ⚠️ Parcialmente cumplida
-- **Problema identificado**: 
+- **Problema identificado**:
   ```typescript
   // En LedgerEntry, account_type podría tener dependencias funcionales
   // con los campos de referencia (loan_id, stock_id, etc.)
@@ -498,6 +498,7 @@ enum LoanStatus {
 ## 📈 Métricas de Calidad del Modelo
 
 ### Complejidad de Entidades
+
 | Entidad | Campos | Relaciones | Complejidad |
 |---------|--------|------------|-------------|
 | LedgerEntry | 8 | 5 | Alta |

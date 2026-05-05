@@ -536,6 +536,7 @@ export class CacheInterceptor implements NestInterceptor {
 ## 📊 Métricas de Calidad de Controladores
 
 ### Complejidad por Controlador
+
 | Controlador | Endpoints | Líneas | Complejidad | Documentación |
 |-------------|-----------|--------|-------------|---------------|
 | MeetingsController | 12 | 184 | Alta | ✅ Completa |
