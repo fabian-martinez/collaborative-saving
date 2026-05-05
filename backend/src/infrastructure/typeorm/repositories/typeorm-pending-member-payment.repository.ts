@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pending-member-payment-repository.port';
 import { PendingMemberPayment as PendingMemberPaymentDomain } from '@domain/entities/pending-member-payment.entity';
 import { PendingMemberPayment as PendingMemberPaymentEntity } from '../entities/pending-member-payment.entity';
@@ -40,6 +40,15 @@ export class TypeOrmPendingMemberPaymentRepository implements PendingMemberPayme
     const repo = this.getRepository();
     const entity = await repo.findOne({ where: { id } });
     return entity ? PendingMemberPaymentMapper.toDomain(entity) : null;
+  }
+
+  async findByIds(ids: string[]): Promise<PendingMemberPaymentDomain[]> {
+    if (!ids || ids.length === 0) {
+      return [];
+    }
+    const repo = this.getRepository();
+    const entities = await repo.find({ where: { id: In(ids) } });
+    return entities.map((e) => PendingMemberPaymentMapper.toDomain(e));
   }
 
   async findByMember(memberId: string): Promise<PendingMemberPaymentDomain[]> {
