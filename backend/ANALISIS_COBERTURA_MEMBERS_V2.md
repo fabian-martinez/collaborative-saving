@@ -267,6 +267,7 @@ El módulo Members V2 implementado con arquitectura hexagonal tiene una **cobert
 ## 📈 Comparación con Estándares del Proyecto
 
 ### Estándares Definidos (ADR-0007)
+
 | Categoría | Objetivo | Members V2 | Estado |
 |-----------|----------|------------|--------|
 | Entidades de dominio | 100% | ~100% | ✅ Cumple |

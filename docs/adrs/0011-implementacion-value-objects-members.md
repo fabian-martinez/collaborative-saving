@@ -18,13 +18,13 @@ Durante la migración a la Arquitectura Hexagonal del módulo de Members, surgi�
 
 Se optó por la **Opción C (Enfoque pragmático)**.
 
-1.  **SÍ usar Value Objects** para:
-    *   `Email`: Validación compleja y alta reutilización.
-    *   `MemberStatus`: Garantiza invariantes de negocio (solo estados válidos).
-    *   `Phone`: Necesita normalización y validación de formato.
-2.  **NO usar Value Objects** para:
-    *   `MemberId`: Ya es validado como UUID por la infraestructura (NestJS Pipes).
-    *   `Address`/`Beneficiary`: Son metadatos simples sin lógica asociada.
+1. **SÍ usar Value Objects** para:
+    - `Email`: Validación compleja y alta reutilización.
+    - `MemberStatus`: Garantiza invariantes de negocio (solo estados válidos).
+    - `Phone`: Necesita normalización y validación de formato.
+2. **NO usar Value Objects** para:
+    - `MemberId`: Ya es validado como UUID por la infraestructura (NestJS Pipes).
+    - `Address`/`Beneficiary`: Son metadatos simples sin lógica asociada.
 
 ## Consecuencias
 
