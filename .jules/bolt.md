@@ -10,3 +10,6 @@
 ## 2026-04-27 - Optimizing N+1 queries using `findByIds` in TypeORM
 **Learning:** We can efficiently prevent N+1 queries by replacing iterative `Promise.all(ids.map(id => repo.findById(id)))` calls with a single bulk retrieval `await repo.findByIds(ids)`. However, `findByIds` omits records that don't exist, breaking the 1:1 index mapping between the requested IDs and the returned array (which some legacy code, like `calculate-member-insurance.use-case.ts`, relies upon).
 **Action:** Always prefer `findByIds` with a lookup `Map` (e.g. `const entityMap = new Map(entities.map(e => [e.id, e]));`) over `Promise.all(findById)`. Use `Promise.all(findById)` *only* when the exact 1:1 mapped array structure including `null` values is strictly required by the specific algorithm.
+## 2024-05-28 - Optimize PendingMemberPayment Retrieval using Batching
+**Learning:** In the `ExecuteDisbursementPlanUseCase`, the sorting of disbursement plan items was causing an N+1 query problem by iteratively fetching `PendingMemberPayment` entities one by one using `findById`. This degraded performance when executing large disbursement plans.
+**Action:** Always batch fetching operations when dealing with lists or arrays of IDs. Add `findByIds` batch methods to TypeORM repository ports and implementations (using the SQL `IN` operator) to resolve N+1 bottlenecks.

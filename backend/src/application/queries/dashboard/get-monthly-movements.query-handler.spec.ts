@@ -66,7 +66,9 @@ describe('GetMonthlyMovementsQueryHandler', () => {
       { id: '2', date: new Date('2024-02-15'), status: 'closed' },
     ];
 
-    meetingRepository.findAll.mockResolvedValue([...mockMeetings].reverse() as Meeting[]);
+    meetingRepository.findAll.mockResolvedValue(
+      [...mockMeetings].reverse() as Meeting[],
+    );
 
     meetingSummaryService.calculateSummary.mockResolvedValue({
       totalCollected: 1000,

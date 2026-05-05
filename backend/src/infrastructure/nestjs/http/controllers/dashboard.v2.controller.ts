@@ -1,4 +1,11 @@
-import { Controller, Get, UsePipes, ValidationPipe, HttpStatus, HttpException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  UsePipes,
+  ValidationPipe,
+  HttpStatus,
+  HttpException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { GetMonthlyMovementsQueryHandler } from '@application/queries/dashboard/get-monthly-movements.query-handler';
 import { GetMonthlyMovementsResponseHttpDto } from '../dto/dashboard/monthly-movements-response-http.dto';
@@ -13,7 +20,8 @@ export class DashboardV2Controller {
   @Get('monthly-movements')
   @ApiOperation({
     summary: 'Get monthly movements for dashboard chart',
-    description: 'Retrieves the last 6 closed meetings and their total collected vs disbursed amounts.',
+    description:
+      'Retrieves the last 6 closed meetings and their total collected vs disbursed amounts.',
   })
   @ApiResponse({
     status: 200,
@@ -27,9 +35,9 @@ export class DashboardV2Controller {
 
       return {
         movements: result.movements,
-        labels: result.movements.map(m => m.label),
-        collected: result.movements.map(m => m.collected),
-        disbursed: result.movements.map(m => m.disbursed),
+        labels: result.movements.map((m) => m.label),
+        collected: result.movements.map((m) => m.collected),
+        disbursed: result.movements.map((m) => m.disbursed),
       };
     } catch (error: unknown) {
       throw new HttpException(
