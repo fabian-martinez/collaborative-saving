@@ -7,7 +7,7 @@ La base de datos gestiona el ciclo de vida de los socios, sus participaciones (a
 ## Herramienta de migraciones
 
 - **Herramienta:** SQL nativo / Supabase Migrations.
-- **Ubicación:** `supabase/migrations/`
+- **Ubicación:** `infra/database/migrations/`
 - **Flujo:** Las migraciones se aplican secuencialmente. Se utiliza `0001_initial_tables.sql` como base.
 
 ## Diagrama entidad-relación

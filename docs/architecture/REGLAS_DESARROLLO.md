@@ -12,9 +12,9 @@
 - Navigate quickly to feature code:
   - Backend (Nest): `src/<feature>/...` (actual), hexagonal under `src/{domain,application,infrastructure}` (nuevo)
   - Use `rg "class .*Controller" -n src` para ubicar controladores rápido
-- DB (Supabase/Postgres):
+- DB (Postgres):
   - Prefer MCP over Supabase CLI (cuando corresponda)
-  - Migrations en `supabase/migrations`
+  - Migrations en `infra/database/migrations`
 - Containers (si aplica):
   - Prefer Podman: `podman compose up -d`
 - Crear estructura hexagonal base (si falta):
