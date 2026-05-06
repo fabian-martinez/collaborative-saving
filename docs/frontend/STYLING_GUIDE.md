@@ -218,6 +218,9 @@ El tema está configurado en `src/assets/main.css`:
 }
 ```
 
+> [!NOTE]
+> Para consultar los valores exactos de los colores primarios, secundarios, neutros y las decisiones de tipografía a nivel global, asegúrate de revisar el **[Design System Global](../design.md)**. No dupliques los colores a menos que estén definidos allí.
+
 ## Iconoir
 
 ### Instalación y Uso

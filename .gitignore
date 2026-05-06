@@ -153,3 +153,5 @@ docs/.DS_Store
 supabase/*.sql
 backend/.env.test
 backend/secrets/
+docs/screenshots/
+docs/stitch_screens/
