@@ -67,6 +67,6 @@ flowchart LR
 ## Docs relacionados
 
 - [Decisiones](./adrs/) — Por qué la arquitectura se ve así.
+- [Guías de Frontend](./frontend/README.md) — Convenciones, estilos y arquitectura del frontend.
 - [Modelo de datos](./data-model.md) — Esquema + relaciones.
 - [Infraestructura](./infrastructure.md) — Topología de despliegue.
-logía de despliegue.

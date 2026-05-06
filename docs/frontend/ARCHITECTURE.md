@@ -203,63 +203,9 @@ onMounted(() => store.fetchData())
 
 ## Decisiones Arquitectónicas (ADR)
 
-### ADR-001: Feature-Based Organization
+Para consultar las decisiones técnicas fundamentales de arquitectura y desarrollo del frontend, dirígete al registro oficial de ADRs globales:
 
-**Decisión**: Organizar código por features en lugar de por tipo de archivo.
-
-**Contexto**: Proyecto creciente con múltiples dominios de negocio.
-
-**Consecuencias**:
-- ✅ Fácil de navegar
-- ✅ Escalable
-- ✅ Menos conflictos en equipo
-- ⚠️ Puede haber duplicación si no se comparte bien
-
-### ADR-002: snake_case Direct Usage
-
-**Decisión**: Trabajar directamente con `snake_case` del backend sin normalización.
-
-**Contexto**: API V2 usa `snake_case` consistentemente.
-
-**Consecuencias**:
-- ✅ Sin overhead de transformación
-- ✅ Consistencia con backend
-- ⚠️ Requiere disciplina en el código frontend
-
-### ADR-003: Pinia para State Management
-
-**Decisión**: Usar Pinia en lugar de Vuex.
-
-**Contexto**: Pinia es el estado oficial de Vue 3, más simple y con mejor TypeScript.
-
-**Consecuencias**:
-- ✅ Mejor soporte TypeScript
-- ✅ API más simple
-- ✅ DevTools integradas
-- ✅ Menos boilerplate
-
-### ADR-004: Mocks para Desarrollo
-
-**Decisión**: Sistema de mocks activable con variable de entorno.
-
-**Contexto**: Desarrollo frontend sin depender del backend.
-
-**Consecuencias**:
-- ✅ Desarrollo independiente
-- ✅ Testing más fácil
-- ⚠️ Mocks deben mantenerse actualizados
-
-### ADR-005: Composition API Exclusivo
-
-**Decisión**: Usar solo Composition API, no Options API.
-
-**Contexto**: Vue 3 recomienda Composition API para nuevos proyectos.
-
-**Consecuencias**:
-- ✅ Mejor organización de lógica
-- ✅ Mejor reutilización
-- ✅ Mejor TypeScript
-- ⚠️ Curva de aprendizaje para desarrolladores nuevos
+- **[ADR-0013: Decisiones Técnicas Frontend V2](../adrs/0013-decisiones-tecnicas-frontend-v2.md)**
 
 ## Patrones de Diseño
 

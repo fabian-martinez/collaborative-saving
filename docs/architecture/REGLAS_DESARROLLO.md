@@ -9,9 +9,10 @@
 - Frontend: `cd app`
   - Install deps: `npm ci`
   - Start dev: `npm run dev`
-- Navigate quickly to feature code:
-  - Backend (Nest): `src/<feature>/...` (actual), hexagonal under `src/{domain,application,infrastructure}` (nuevo)
+- Backend (Nest): `src/<feature>/...` (actual), hexagonal under `src/{domain,application,infrastructure}` (nuevo)
   - Use `rg "class .*Controller" -n src` para ubicar controladores rápido
+- Frontend (Vue 3 / Vite): `src/features/<feature>/...`
+  - Variables de entorno locales en `.env.local` (ej. `VITE_USE_MOCKS=true` para desarrollo sin backend).
 - DB (Postgres):
   - Prefer MCP over Supabase CLI (cuando corresponda)
   - Migrations en `infra/database/migrations`
