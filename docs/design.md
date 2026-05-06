@@ -183,3 +183,4 @@ Se utiliza **Tailwind CSS v4** junto con **DaisyUI** para una UI consistente y r
 
 - [Usuario objetivo](./target-user.md)
 - [Arquitectura](./architecture.md)
+- [Guía de Estilos Frontend](./frontend/STYLING_GUIDE.md)
