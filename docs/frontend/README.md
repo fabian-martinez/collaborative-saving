@@ -30,7 +30,6 @@ Bienvenido a la documentación completa de desarrollo del frontend V2. Esta docu
 - **[Guía de Testing](./TESTING_GUIDE.md)** - Estrategia y guía de testing
 - **[Manejo de Errores](./ERROR_HANDLING.md)** - Estrategia de manejo de errores
 - **[Performance](./PERFORMANCE.md)** - Optimización y mejores prácticas
-- **[Contribución](./CONTRIBUTING.md)** - Proceso de contribución y PRs
 - **[Checklist de Implementación](./IMPLEMENTATION_CHECKLIST.md)** - Checklists para desarrollo
 
 ## 🚀 Inicio Rápido

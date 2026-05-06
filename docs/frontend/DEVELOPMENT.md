@@ -295,30 +295,9 @@ npm run build
 
 ## Git Workflow
 
-### Branch Naming
+Para consultar las normas sobre convenciones de commits, nombrado de ramas y el ciclo de vida de una tarea (GitHub Flow), dirígete a la guía de contribución global del proyecto:
 
-```bash
-feature/nombre-feature
-fix/nombre-fix
-refactor/nombre-refactor
-```
-
-### Commits
-
-```bash
-# Formato: tipo(scope): descripción
-git commit -m "feat(members): add member creation form"
-git commit -m "fix(api): handle 404 errors correctly"
-git commit -m "refactor(stores): simplify member store"
-```
-
-**Tipos:**
-- `feat`: Nueva funcionalidad
-- `fix`: Corrección de bug
-- `refactor`: Refactorización
-- `docs`: Documentación
-- `style`: Formato
-- `test`: Tests
+- **[Guía de Contribución (CONTRIBUTING.md)](../../CONTRIBUTING.md)**
 
 ## Recursos Útiles
 
