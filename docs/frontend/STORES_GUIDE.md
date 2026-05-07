@@ -1,48 +1,31 @@
 # Guía de Stores (Pinia)
 
-## Introducción
+## Cuándo Usar Stores
 
-Esta guía explica cómo usar Pinia para el manejo de estado en el proyecto. Pinia es el estado oficial de Vue 3 y reemplaza a Vuex.
+| ✅ Usar Store | ❌ No Usar Store |
+|---|---|
+| Estado compartido entre componentes | Estado local de un solo componente → `ref()` |
+| Estado que persiste entre navegaciones | Props simples → props/emits |
+| Datos de API | Formularios simples → estado local |
+| Lógica de negocio compleja | Estado temporal de UI |
 
-## ¿Cuándo Usar Stores?
-
-### ✅ Usar Stores Para:
-
-- Estado compartido entre múltiples componentes
-- Estado que persiste entre navegaciones
-- Lógica de negocio compleja
-- Datos que vienen de API
-- Estado global de la aplicación
-
-### ❌ No Usar Stores Para:
-
-- Estado local de un componente → `ref()` o `reactive()`
-- Props simples → Props y emits
-- Estado temporal → Estado local
-- Formularios simples → Estado local del componente
-
-## Estructura de un Store
-
-### Setup Syntax (Recomendado)
+## Patrón Estándar (Setup Syntax)
 
 ```typescript
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
 export const useFeatureStore = defineStore('feature', () => {
-  // 1. State (refs)
+  // State
   const items = ref<Item[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
-  const selectedId = ref<string | null>(null)
 
-  // 2. Getters (computed)
+  // Getters
   const hasItems = computed(() => items.value.length > 0)
-  const selectedItem = computed(() => 
-    items.value.find(item => item.id === selectedId.value)
-  )
+  const selectedItem = computed(() => items.value.find(i => i.id === selectedId.value))
 
-  // 3. Actions (functions)
+  // Actions
   async function fetchItems() {
     loading.value = true
     error.value = null
@@ -55,442 +38,99 @@ export const useFeatureStore = defineStore('feature', () => {
     }
   }
 
-  function selectItem(id: string) {
-    selectedId.value = id
-  }
-
-  // 4. Return
-  return {
-    // State
-    items,
-    loading,
-    error,
-    selectedId,
-    // Getters
-    hasItems,
-    selectedItem,
-    // Actions
-    fetchItems,
-    selectItem
-  }
+  return { items, loading, error, hasItems, selectedItem, fetchItems }
 })
 ```
 
 ## Patrones Comunes
 
-### 1. Store con API Calls
+### Store con Múltiples Recursos (fetch paralelo)
 
 ```typescript
-export const useMembersStore = defineStore('members', () => {
-  const members = ref<Member[]>([])
-  const loading = ref(false)
-  const error = ref<string | null>(null)
-
-  async function fetchMembers() {
-    loading.value = true
-    error.value = null
-    try {
-      members.value = await membersApi.getMembers()
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Error al cargar miembros'
-      console.error('Error fetching members:', e)
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function createMember(data: CreateMemberRequest) {
-    loading.value = true
-    error.value = null
-    try {
-      const newMember = await membersApi.createMember(data)
-      members.value.push(newMember)
-      return newMember
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Error al crear miembro'
-      throw e
-    } finally {
-      loading.value = false
-    }
-  }
-
-  return {
-    members,
-    loading,
-    error,
-    fetchMembers,
-    createMember
-  }
-})
-```
-
-### 2. Store con Estado Derivado
-
-```typescript
-export const useDashboardStore = defineStore('dashboard', () => {
-  const metrics = ref<Metrics | null>(null)
-  const monthlyMovements = ref<MonthlyMovements | null>(null)
-
-  // Getters computados
-  const totalRevenue = computed(() => 
-    monthlyMovements.value?.collected.reduce((sum, val) => sum + val, 0) || 0
-  )
-
-  const growthRate = computed(() => {
-    if (!monthlyMovements.value) return 0
-    const collected = monthlyMovements.value.collected
-    if (collected.length < 2) return 0
-    const last = collected[collected.length - 1]
-    const previous = collected[collected.length - 2]
-    return ((last - previous) / previous) * 100
-  })
-
-  return {
-    metrics,
-    monthlyMovements,
-    totalRevenue,
-    growthRate
-  }
-})
-```
-
-### 3. Store con Múltiples Recursos
-
-```typescript
-export const useMemberDetailStore = defineStore('memberDetail', () => {
-  // Múltiples recursos relacionados
-  const member = ref<Member | null>(null)
-  const loans = ref<Loan[]>([])
-  const payments = ref<Payment[]>([])
-  
-  const loading = ref(false)
-  const error = ref<string | null>(null)
-
-  async function fetchMemberData(memberId: string) {
-    loading.value = true
-    error.value = null
-    try {
-      // Fetch en paralelo
-      const [memberData, loansData, paymentsData] = await Promise.all([
-        membersApi.getMemberById(memberId),
-        loansApi.getMemberLoans(memberId),
-        membersApi.getMemberPayments(memberId)
-      ])
-      
-      member.value = memberData
-      loans.value = loansData
-      payments.value = paymentsData
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Error al cargar datos'
-    } finally {
-      loading.value = false
-    }
-  }
-
-  return {
-    member,
-    loans,
-    payments,
-    loading,
-    error,
-    fetchMemberData
-  }
-})
-```
-
-## Usar Stores en Componentes
-
-### Básico
-
-```vue
-<script setup lang="ts">
-import { onMounted } from 'vue'
-import { useMembersStore } from '../stores/members'
-
-const store = useMembersStore()
-
-onMounted(() => {
-  store.fetchMembers()
-})
-</script>
-
-<template>
-  <div v-if="store.loading">Cargando...</div>
-  <div v-else-if="store.error">{{ store.error }}</div>
-  <div v-else>
-    <div v-for="member in store.members" :key="member.id">
-      {{ member.name }}
-    </div>
-  </div>
-</template>
-```
-
-### Con Destructuring (Cuidado)
-
-```typescript
-// ⚠️ Destructuring pierde reactividad
-const { members, loading } = useMembersStore() // No reactivo
-
-// ✅ Usar storeToRefs para mantener reactividad
-import { storeToRefs } from 'pinia'
-
-const store = useMembersStore()
-const { members, loading, error } = storeToRefs(store) // Reactivo
-
-// ✅ O acceder directamente
-const store = useMembersStore()
-store.members // Reactivo
-```
-
-### Con Computed
-
-```vue
-<script setup lang="ts">
-import { computed } from 'vue'
-import { useMembersStore } from '../stores/members'
-
-const store = useMembersStore()
-
-const activeMembers = computed(() => 
-  store.members.filter(m => m.status === 'active')
-)
-</script>
-```
-
-## Actions vs Getters
-
-### Actions
-
-- Funciones que modifican estado
-- Pueden ser asíncronas
-- Llaman a APIs
-- Mutan el estado del store
-
-```typescript
-async function fetchMembers() {
+async function fetchItemData(itemId: string) {
   loading.value = true
-  members.value = await api.getMembers()
-  loading.value = false
+  error.value = null
+  try {
+    const [itemData, relatedData] = await Promise.all([
+      api.getItemById(itemId),
+      api.getItemRelated(itemId)
+    ])
+    item.value = itemData
+    related.value = relatedData
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Error al cargar datos'
+  } finally {
+    loading.value = false
+  }
 }
 ```
-
-### Getters (Computed)
-
-- Valores derivados del estado
-- Siempre síncronos
-- No mutan estado
-- Se recalculan automáticamente
-
-```typescript
-const activeMembers = computed(() => 
-  members.value.filter(m => m.status === 'active')
-)
-```
-
-## Composición de Stores
 
 ### Store que Usa Otro Store
 
 ```typescript
 export const useDashboardStore = defineStore('dashboard', () => {
-  const membersStore = useMembersStore()
-  const loansStore = useLoansStore()
-
-  const totalMembers = computed(() => membersStore.members.length)
-  const totalLoans = computed(() => loansStore.loans.length)
-
-  return {
-    totalMembers,
-    totalLoans
-  }
+  const itemsStore = useItemsStore()
+  const totalItems = computed(() => itemsStore.items.length)
+  return { totalItems }
 })
 ```
 
-## Resetear Estado
+### Reset de Estado
 
 ```typescript
-export const useFeatureStore = defineStore('feature', () => {
-  const items = ref<Item[]>([])
-  const loading = ref(false)
-  const error = ref<string | null>(null)
-
-  function reset() {
-    items.value = []
-    loading.value = false
-    error.value = null
-  }
-
-  return {
-    items,
-    loading,
-    error,
-    reset
-  }
-})
-
-// Uso
-const store = useFeatureStore()
-store.reset()
-```
-
-## Manejo de Errores
-
-### Patrón Estándar
-
-```typescript
-async function fetchData() {
-  loading.value = true
+function reset() {
+  items.value = []
+  loading.value = false
   error.value = null
-  try {
-    data.value = await api.getData()
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Error desconocido'
-    console.error('Error fetching data:', e)
-    // Opcional: re-throw para que el componente pueda manejar
-    throw e
-  } finally {
-    loading.value = false
-  }
 }
 ```
 
-### Errores Específicos
+## Uso en Componentes
 
-```typescript
-async function createItem(data: CreateRequest) {
-  loading.value = true
-  error.value = null
-  try {
-    const newItem = await api.createItem(data)
-    items.value.push(newItem)
-    return newItem
-  } catch (e) {
-    if (e instanceof ApiException) {
-      error.value = e.message
-      // Manejar errores específicos
-      if (e.status === 409) {
-        error.value = 'El item ya existe'
-      }
-    } else {
-      error.value = 'Error al crear item'
-    }
-    throw e
-  } finally {
-    loading.value = false
-  }
-}
+```vue
+<script setup lang="ts">
+import { onMounted } from 'vue'
+import { useItemStore } from '../stores/items'
+
+const store = useItemStore()
+onMounted(() => store.fetchItems())
+</script>
+
+<template>
+  <div v-if="store.loading">Cargando...</div>
+  <div v-else-if="store.error">{{ store.error }}</div>
+  <div v-for="item in store.items" :key="item.id">{{ item.name }}</div>
+</template>
 ```
 
-## Best Practices
-
-### 1. Un Store por Feature
+### Destructuring Reactivo
 
 ```typescript
-// ✅ Bueno
-// stores/members.ts
-export const useMembersStore = defineStore('members', () => { /* ... */ })
+// ⚠️ Pierde reactividad
+const { items } = useItemStore()
 
-// ❌ Evitar
-// stores/all.ts - Todo en un store gigante
+// ✅ Mantiene reactividad
+import { storeToRefs } from 'pinia'
+const store = useItemStore()
+const { items, loading } = storeToRefs(store)
+
+// ✅ También válido
+store.items // acceso directo
 ```
 
-### 2. Estado Inmutable
+## Reglas
 
-```typescript
-// ✅ Bueno - Crear nuevo array
-items.value = [...items.value, newItem]
+- **Un store por feature**, dividir si la lógica es muy diferente (ej: `items.ts` + `itemDetail.ts`)
+- **Actions**: funciones que mutan estado (pueden ser async)
+- **Getters**: `computed` para datos derivados (siempre síncronos, no mutan estado)
+- **Nombres descriptivos**: `fetchItems()`, `createItem()` — no `get()`, `post()`
+- **No poner estado de UI** en stores (modals, tooltips → estado local del componente)
+- Si hay múltiples operaciones independientes, usar **loading states separados**
 
-// ❌ Evitar - Mutación directa (aunque funcione)
-items.value.push(newItem) // Funciona pero menos claro
-```
-
-### 3. Actions Descriptivas
-
-```typescript
-// ✅ Bueno
-async function fetchMembers() { /* ... */ }
-async function createMember() { /* ... */ }
-function selectMember() { /* ... */ }
-
-// ❌ Evitar
-async function get() { /* ... */ }
-async function post() { /* ... */ }
-```
-
-### 4. Getters para Datos Derivados
-
-```typescript
-// ✅ Bueno - Getter
-const activeMembers = computed(() => 
-  members.value.filter(m => m.status === 'active')
-)
-
-// ❌ Evitar - Action para datos derivados
-function getActiveMembers() {
-  return members.value.filter(m => m.status === 'active')
-}
-```
-
-### 5. Loading States Separados
-
-```typescript
-// ✅ Bueno - Loading específico
-const loadingMembers = ref(false)
-const loadingLoans = ref(false)
-
-// ❌ Evitar - Loading genérico (si hay múltiples operaciones)
-const loading = ref(false) // ¿Qué está cargando?
-```
-
-## Anti-Patrones
-
-### ❌ Evitar: Mutar Props en Store
-
-```typescript
-// ❌ Malo
-const store = useStore()
-store.updateProps(props) // No mutar props
-
-// ✅ Bueno
-const store = useStore()
-store.updateData(data) // Usar datos, no props
-```
-
-### ❌ Evitar: Lógica de UI en Store
-
-```typescript
-// ❌ Malo
-function showModal() {
-  isModalOpen.value = true // UI state en store
-}
-
-// ✅ Bueno
-// UI state en componente
-const isModalOpen = ref(false)
-```
-
-### ❌ Evitar: Stores Demasiado Grandes
-
-```typescript
-// ❌ Malo - 500+ líneas
-// ✅ Bueno - Dividir en múltiples stores relacionados
-// stores/members.ts
-// stores/memberDetail.ts
-```
-
-## Testing Stores
-
-Ver [TESTING_GUIDE.md](./TESTING_GUIDE.md) para detalles.
-
-**Resumen:**
-- Testear state inicial
-- Testear actions
-- Testear getters
-- Mockear API calls
+> Ver [Manejo de Errores](./ERROR_HANDLING.md) para patrones detallados de error handling en stores.
 
 ## Referencias
 
 - [Pinia Documentation](https://pinia.vuejs.org/)
-- [Guía de Features](./FEATURES_GUIDE.md)
 - [Guía de API](./API_GUIDE.md)
-
+- [Testing](./TESTING_GUIDE.md)
