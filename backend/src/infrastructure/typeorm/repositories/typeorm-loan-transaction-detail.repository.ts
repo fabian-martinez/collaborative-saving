@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
 import { LoanTransactionDetail as LoanTransactionDetailDomain } from '@domain/entities/loan-transaction-detail.entity';
 import { LoanTransactionDetail as LoanTransactionDetailEntity } from '../entities/loan-transaction-detail.entity';
@@ -56,6 +56,17 @@ export class TypeOrmLoanTransactionDetailRepository implements LoanTransactionDe
       )
       .where('loan_transaction_detail.loan_id = :loanId', { loanId })
       .getMany();
+    return entities.map((e) => LoanTransactionDetailMapper.toDomain(e));
+  }
+
+  async findByOperationIds(
+    operationIds: string[],
+  ): Promise<LoanTransactionDetailDomain[]> {
+    if (!operationIds || operationIds.length === 0) return [];
+    const repo = this.getRepository();
+    const entities = await repo.find({
+      where: { operationId: In(operationIds) },
+    });
     return entities.map((e) => LoanTransactionDetailMapper.toDomain(e));
   }
 
