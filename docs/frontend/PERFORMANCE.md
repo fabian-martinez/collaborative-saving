@@ -1,49 +1,15 @@
 # Guía de Performance
 
-## Introducción
+## Code Splitting y Lazy Loading
 
-Esta guía explica cómo optimizar el rendimiento del frontend, incluyendo lazy loading, code splitting, y mejores prácticas.
+> Ver [Routing](./ROUTING_GUIDE.md) para configuración de lazy loading en rutas.
 
-## Lazy Loading de Rutas
-
-### Configuración
-
-Todas las rutas usan lazy loading automático:
+Para componentes pesados individuales:
 
 ```typescript
-{
-  path: '/members',
-  name: 'members',
-  component: () => import('@/features/members/views/MembersView.vue')
-}
-```
+import { defineAsyncComponent } from 'vue'
 
-**Beneficios:**
-- Code splitting automático
-- Carga solo lo necesario
-- Mejor tiempo de carga inicial
-
-### Verificar Lazy Loading
-
-En DevTools → Network:
-- Al navegar a una ruta, se carga un nuevo chunk
-- Chunks tienen nombres descriptivos
-
-## Code Splitting
-
-### Automático con Vite
-
-Vite hace code splitting automático:
-- Cada ruta lazy-loaded es un chunk
-- Imports dinámicos crean chunks
-
-### Code Splitting Manual
-
-```typescript
-// Lazy load componente pesado
-const HeavyComponent = defineAsyncComponent(() =>
-  import('@/components/HeavyComponent.vue')
-)
+const HeavyChart = defineAsyncComponent(() => import('@/components/HeavyChart.vue'))
 ```
 
 ## Optimización de Componentes
@@ -51,217 +17,92 @@ const HeavyComponent = defineAsyncComponent(() =>
 ### v-show vs v-if
 
 ```vue
-<!-- ✅ v-show - Mejor para toggle frecuente -->
+<!-- v-show: toggle frecuente (el elemento siempre está en el DOM) -->
 <div v-show="isVisible">Contenido</div>
 
-<!-- ✅ v-if - Mejor para renderizado condicional -->
+<!-- v-if: renderizado condicional (mount/unmount) -->
 <div v-if="hasData">Contenido</div>
 ```
 
-### Computed vs Methods
+### Computed (siempre cacheado)
 
-```vue
-<script setup>
-// ✅ Computed - Cacheado
-const filteredItems = computed(() => 
-  items.value.filter(i => i.active)
-)
+```typescript
+// ✅ Computed — se recalcula solo si cambian dependencias
+const filtered = computed(() => items.value.filter(i => i.active))
 
-// ❌ Methods - Se recalcula cada vez
-function getFilteredItems() {
-  return items.value.filter(i => i.active)
-}
-</script>
+// ❌ Función — se recalcula en cada render
+function getFiltered() { return items.value.filter(i => i.active) }
 ```
 
-### v-memo (Vue 3.2+)
+### Keys Estables en Listas
 
 ```vue
-<!-- Para listas grandes -->
+<!-- ✅ Key estable -->
+<div v-for="item in items" :key="item.id">
+
+<!-- ❌ Index como key -->
+<div v-for="(item, index) in items" :key="index">
+```
+
+### v-memo para Listas Grandes
+
+```vue
 <div v-for="item in items" :key="item.id" v-memo="[item.id, item.status]">
-  <!-- Solo re-renderiza si item.id o item.status cambian -->
+  <!-- Solo re-renderiza si id o status cambian -->
 </div>
 ```
 
-## Optimización de Imágenes
-
-### Lazy Loading
-
-```vue
-<template>
-  <img 
-    src="/image.jpg" 
-    loading="lazy" 
-    alt="Description"
-  />
-</template>
-```
-
-### Formatos Modernos
-
-- Usar WebP cuando sea posible
-- Usar tamaños apropiados
-- Considerar `srcset` para responsive
-
-## Memoización
-
-### useMemo (si se implementa)
+## Debounce en Búsquedas
 
 ```typescript
-import { computed } from 'vue'
+const searchQuery = ref('')
+const debouncedQuery = useDebounce(searchQuery, 500)
+watch(debouncedQuery, (query) => performSearch(query))
+```
 
-// Computed ya es memoizado automáticamente
-const expensiveValue = computed(() => {
-  // Cálculo costoso
-  return heavyCalculation(data.value)
-})
+## Paginación
+
+```typescript
+async function fetchItems(page: number = 1) {
+  const response = await api.getItems({ page, limit: 20 })
+  // No cargar miles de items a la vez
+}
 ```
 
 ## Virtual Scrolling
 
-Para listas muy grandes (1000+ items):
+Para listas de 1000+ items, usar `vue-virtual-scroller`:
 
 ```vue
-<!-- Considerar librería como vue-virtual-scroller -->
 <VirtualList :items="items" :item-height="50">
-  <template #default="{ item }">
-    <ItemCard :item="item" />
-  </template>
+  <template #default="{ item }"><ItemCard :item="item" /></template>
 </VirtualList>
 ```
 
-## Bundle Optimization
-
-### Analizar Bundle
-
-```bash
-npm run build
-# Revisar output en dist/
-# Ver tamaños de chunks
-```
+## Bundle
 
 ### Tree Shaking
 
-Vite hace tree shaking automático:
-- Solo importa lo que usas
-- Elimina código muerto
-
-### Evitar Imports Completos
-
 ```typescript
-// ✅ Bueno - Tree shaking funciona
+// ✅ Import específico
 import { formatCurrency } from '@/shared/utils/formatters'
 
-// ⚠️ Cuidado - Puede importar todo
+// ⚠️ Importa todo
 import * as formatters from '@/shared/utils/formatters'
 ```
 
-## Performance en Stores
+### Análisis
 
-### Evitar Computaciones Pesadas
-
-```typescript
-// ✅ Bueno - Computed cacheado
-const expensiveValue = computed(() => {
-  return heavyCalculation(data.value)
-})
-
-// ❌ Evitar - En action (se ejecuta cada vez)
-async function fetchData() {
-  const result = heavyCalculation(data.value) // Malo
-}
+```bash
+npm run build   # Revisar tamaños de chunks en dist/
 ```
 
-### Paginación y Lazy Loading
+## Monitoreo
 
-```typescript
-// Para listas grandes, cargar por páginas
-async function fetchMembers(page: number = 1) {
-  const response = await api.getMembers({ page, limit: 20 })
-  // ...
-}
-```
-
-## Best Practices
-
-### 1. Lazy Load Rutas
-
-```typescript
-// ✅ Siempre
-component: () => import('@/features/...')
-
-// ❌ Nunca
-import View from '@/features/...'
-component: View
-```
-
-### 2. Usar Computed para Datos Derivados
-
-```typescript
-// ✅ Bueno
-const activeMembers = computed(() => 
-  members.value.filter(m => m.status === 'active')
-)
-
-// ❌ Evitar
-function getActiveMembers() {
-  return members.value.filter(m => m.status === 'active')
-}
-```
-
-### 3. Evitar Re-renders Innecesarios
-
-```vue
-<!-- ✅ Bueno - Key estable -->
-<div v-for="item in items" :key="item.id">
-
-<!-- ❌ Evitar - Key que cambia -->
-<div v-for="(item, index) in items" :key="index">
-```
-
-### 4. Debounce en Búsquedas
-
-```typescript
-import { useDebounce } from '@/shared/composables/useDebounce'
-
-const searchQuery = ref('')
-const debouncedQuery = useDebounce(searchQuery, 500)
-
-watch(debouncedQuery, (query) => {
-  // Búsqueda solo después de 500ms sin cambios
-  performSearch(query)
-})
-```
-
-### 5. Paginación para Listas Grandes
-
-```typescript
-// No cargar todos los items a la vez
-async function fetchItems(page: number) {
-  const response = await api.getItems({ page, limit: 20 })
-  // ...
-}
-```
-
-## Monitoreo de Performance
-
-### Lighthouse
-
-Ejecutar Lighthouse en Chrome DevTools:
-- Performance score
-- First Contentful Paint
-- Time to Interactive
-- Bundle size
-
-### Web Vitals
-
-Monitorear métricas clave:
-- LCP (Largest Contentful Paint)
-- FID (First Input Delay)
-- CLS (Cumulative Layout Shift)
+- **Lighthouse** en Chrome DevTools: Performance score, FCP, TTI
+- **Web Vitals**: LCP, FID, CLS
 
 ## Referencias
 
 - [Vue Performance](https://vuejs.org/guide/best-practices/performance.html)
 - [Vite Optimization](https://vitejs.dev/guide/performance.html)
-

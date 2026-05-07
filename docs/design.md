@@ -183,4 +183,11 @@ Se utiliza **Tailwind CSS v4** junto con **DaisyUI** para una UI consistente y r
 
 - [Usuario objetivo](./target-user.md)
 - [Arquitectura](./architecture.md)
-- [Guía de Estilos Frontend](./frontend/STYLING_GUIDE.md)
+
+### Guías de UI/UX (Frontend)
+- [Guía de Estilos y Tema](./frontend/STYLING_GUIDE.md) — Tailwind, DaisyUI, colores.
+- [Guía de Componentes](./frontend/COMPONENTS_GUIDE.md) — Uso de componentes UI base.
+- [Guía de Formularios](./frontend/FORMS_GUIDE.md) — Manejo de inputs y validaciones de usuario.
+- [Manejo de Errores (UX)](./frontend/ERROR_HANDLING.md) — Feedback para acciones fallidas.
+- [Convenciones de UI](./frontend/CODING_CONVENTIONS.md) — Convenciones generales en la UI.
+- [Índice Frontend](./frontend/README.md) — Directorio completo de documentación frontend.
