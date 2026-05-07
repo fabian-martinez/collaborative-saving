@@ -61,7 +61,7 @@
       <div class="card bg-base-100 shadow-lg mb-8 w-full max-w-full min-w-0 box-border">
         <div class="card-body w-full max-w-full min-w-0 overflow-x-hidden box-border">
           <div class="collapse collapse-arrow bg-base-100 border border-base-300 rounded-lg">
-            <input type="checkbox" />
+            <input type="checkbox" aria-label="Expandir Información Personal" />
             <div class="collapse-title text-base font-medium">
               Información Personal
             </div>
@@ -218,6 +218,7 @@ const memberId = computed(() => route.params.id as string)
 const activeMeetingId = computed(() => activeMeetingStore.meetingId)
 
 const activeTab = ref('resumen')
+
 const showRegisterPaymentModal = ref(false)
 const selectedSubscriptionId = ref<string | null>(null)
 const insuranceAmount = ref(0)
