@@ -2,6 +2,7 @@ import { StockSubscription } from '../../entities/stock-subscription.entity';
 
 export interface StockSubscriptionRepository {
   findById(id: string): Promise<StockSubscription | null>;
+  findByIds(ids: string[]): Promise<StockSubscription[]>;
   findByMemberAndStock(
     memberId: string,
     stockId: string,
