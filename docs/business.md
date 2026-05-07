@@ -24,3 +24,4 @@ El sistema está diseñado para ser financiado por los propios socios del fondo 
 
 - [Usuario objetivo](./target-user.md) — Quién usa el producto.
 - [Arquitectura](./architecture.md) — Cómo está construido el sistema.
+- [Estructura de Features](./frontend/FEATURES_GUIDE.md) — Cómo se mapean los dominios de negocio en la interfaz.
