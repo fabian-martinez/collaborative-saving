@@ -1,313 +1,120 @@
 # Guía de Testing
 
-## Introducción
-
-Esta guía explica la estrategia de testing para el frontend, aunque actualmente no hay un framework de testing configurado. Esta guía establece las bases para cuando se implemente testing.
-
-## Estrategia de Testing
-
-### Pirámide de Testing
+## Estrategia
 
 ```
-        /\
-       /  \      E2E Tests (pocos)
-      /____\
-     /      \    Integration Tests (algunos)
-    /________\
-   /          \   Unit Tests (muchos)
-  /____________\
+     /\        E2E (pocos — flujos críticos)
+    /  \
+   /____\      Integration (algunos — features completas)
+  /______\
+ /________\    Unit (muchos — componentes, stores, utils)
 ```
 
-### Prioridades
-
-1. **Unit Tests**: Componentes, stores, composables, utils
-2. **Integration Tests**: Features completas, flujos de usuario
-3. **E2E Tests**: Flujos críticos end-to-end
+Framework: **Vitest** + **Vue Test Utils**.
 
 ## Testing de Componentes
 
-### Setup (Futuro)
-
 ```typescript
-// test/setup.ts
-import { config } from '@vue/test-utils'
-
-config.global.stubs = {
-  RouterLink: true,
-  RouterView: true
-}
-```
-
-### Ejemplo: Test de Componente Simple
-
-```typescript
-// Component.test.ts
 import { mount } from '@vue/test-utils'
 import { describe, it, expect } from 'vitest'
-import MemberCard from '../components/MemberCard.vue'
+import ItemCard from '../components/ItemCard.vue'
 
-describe('MemberCard', () => {
-  it('renders member name', () => {
-    const member = {
-      id: '1',
-      name: 'Juan Pérez',
-      email: 'juan@example.com'
-    }
-    
-    const wrapper = mount(MemberCard, {
-      props: { member }
-    })
-    
-    expect(wrapper.text()).toContain('Juan Pérez')
+describe('ItemCard', () => {
+  const item = { id: '1', name: 'Item Test', email: 'test@example.com' }
+
+  it('renders item name', () => {
+    const wrapper = mount(ItemCard, { props: { item } })
+    expect(wrapper.text()).toContain('Item Test')
   })
-  
-  it('emits edit event on button click', async () => {
-    const member = { id: '1', name: 'Juan' }
-    const wrapper = mount(MemberCard, {
-      props: { member }
-    })
-    
+
+  it('emits edit event on click', async () => {
+    const wrapper = mount(ItemCard, { props: { item } })
     await wrapper.find('button').trigger('click')
-    
     expect(wrapper.emitted('edit')).toBeTruthy()
-    expect(wrapper.emitted('edit')[0]).toEqual(['1'])
+    expect(wrapper.emitted('edit')![0]).toEqual(['1'])
   })
 })
 ```
 
 ## Testing de Stores
 
-### Ejemplo: Test de Store
-
 ```typescript
-// stores/members.test.ts
 import { setActivePinia, createPinia } from 'pinia'
-import { describe, it, expect, beforeEach } from 'vitest'
-import { useMembersStore } from './members'
-import { membersApi } from '@/api/members.api'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { useItemStore } from './items'
+import { itemsApi } from '@/api/items.api'
 
-// Mock API
-vi.mock('@/api/members.api', () => ({
-  membersApi: {
-    getMembers: vi.fn()
-  }
+vi.mock('@/api/items.api', () => ({
+  itemsApi: { getItems: vi.fn() }
 }))
 
-describe('Members Store', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-  
-  it('fetches members', async () => {
-    const mockMembers = [
-      { id: '1', name: 'Juan' }
-    ]
-    
-    vi.mocked(membersApi.getMembers).mockResolvedValue(mockMembers)
-    
-    const store = useMembersStore()
-    await store.fetchMembers()
-    
-    expect(store.members).toEqual(mockMembers)
+describe('Item Store', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('fetches items', async () => {
+    vi.mocked(itemsApi.getItems).mockResolvedValue([{ id: '1', name: 'Test' }])
+    const store = useItemStore()
+    await store.fetchItems()
+    expect(store.items).toHaveLength(1)
     expect(store.loading).toBe(false)
   })
-  
+
   it('handles errors', async () => {
-    vi.mocked(membersApi.getMembers).mockRejectedValue(new Error('API Error'))
-    
-    const store = useMembersStore()
-    await store.fetchMembers()
-    
+    vi.mocked(itemsApi.getItems).mockRejectedValue(new Error('API Error'))
+    const store = useItemStore()
+    await store.fetchItems()
     expect(store.error).toBeTruthy()
-    expect(store.members).toEqual([])
-  })
-})
-```
-
-## Testing de Composables
-
-### Ejemplo: Test de Composable
-
-```typescript
-// composables/useApi.test.ts
-import { describe, it, expect, vi } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/vue'
-import { useApi } from './useApi'
-
-describe('useApi', () => {
-  it('executes API call and updates state', async () => {
-    const mockApiCall = vi.fn().mockResolvedValue({ data: 'test' })
-    
-    const { result } = renderHook(() => useApi())
-    
-    await result.current.execute(mockApiCall)
-    
-    expect(result.current.data.value).toEqual({ data: 'test' })
-    expect(result.current.loading.value).toBe(false)
-    expect(result.current.error.value).toBeNull()
-  })
-  
-  it('handles errors', async () => {
-    const mockApiCall = vi.fn().mockRejectedValue(new Error('API Error'))
-    
-    const { result } = renderHook(() => useApi())
-    
-    await result.current.execute(mockApiCall)
-    
-    expect(result.current.error.value).toBeTruthy()
-    expect(result.current.loading.value).toBe(false)
+    expect(store.items).toEqual([])
   })
 })
 ```
 
 ## Testing de Utils
 
-### Ejemplo: Test de Utilidad
-
 ```typescript
-// utils/formatters.test.ts
 import { describe, it, expect } from 'vitest'
-import { formatCurrency, formatDate } from './formatters'
+import { formatCurrency } from './formatters'
 
-describe('formatters', () => {
-  describe('formatCurrency', () => {
-    it('formats number as currency', () => {
-      expect(formatCurrency(1000000)).toBe('$1.000.000')
-    })
-    
-    it('handles zero', () => {
-      expect(formatCurrency(0)).toBe('$0')
-    })
-  })
-  
-  describe('formatDate', () => {
-    it('formats date string', () => {
-      const date = '2024-01-15T10:30:00Z'
-      expect(formatDate(date)).toMatch(/15\/01\/2024/)
-    })
-  })
+describe('formatCurrency', () => {
+  it('formats number', () => expect(formatCurrency(1000000)).toBe('$1.000.000'))
+  it('handles zero', () => expect(formatCurrency(0)).toBe('$0'))
 })
 ```
 
-## Mocks y Fixtures
-
-### Fixtures de Datos
+## Fixtures y Mocks
 
 ```typescript
-// test/fixtures/members.ts
-export const mockMember = {
-  id: '1',
-  name: 'Juan Pérez',
-  email: 'juan@example.com',
-  status: 'active',
-  created_at: '2024-01-15T10:30:00Z'
-}
-
-export const mockMembers = [
-  mockMember,
-  {
-    id: '2',
-    name: 'María García',
-    email: 'maria@example.com',
-    status: 'active',
-    created_at: '2024-02-20T14:20:00Z'
-  }
-]
+// test/fixtures/items.ts
+export const mockItem = { id: '1', name: 'Item Test', status: 'active', created_at: '2024-01-15T10:30:00Z' }
+export const mockItems = [mockItem, { id: '2', name: 'Item 2', status: 'active', created_at: '2024-02-20T14:20:00Z' }]
 ```
 
-### Mock de API
+## Reglas
 
-```typescript
-// test/mocks/api.ts
-import { vi } from 'vitest'
+- Testear **comportamiento**, no implementación: `expect(wrapper.text()).toContain(...)` no `expect(wrapper.vm.prop)`
+- **Aislar** tests: `beforeEach(() => setActivePinia(createPinia()))`
+- Nombres **descriptivos**: `'displays error when API fails'` no `'test error'`
+- Datos **realistas** en fixtures
 
-export const mockMembersApi = {
-  getMembers: vi.fn(),
-  getMemberById: vi.fn(),
-  createMember: vi.fn()
-}
-```
+### Cobertura Objetivo
 
-## Best Practices
+| Capa | Objetivo |
+|---|---|
+| Utils | 90%+ |
+| Stores | 80%+ |
+| Componentes críticos | 80%+ |
+| Composables | 80%+ |
 
-### 1. Testear Comportamiento, No Implementación
-
-```typescript
-// ✅ Bueno - Testea comportamiento
-expect(wrapper.text()).toContain('Juan Pérez')
-
-// ❌ Evitar - Testea implementación
-expect(wrapper.vm.member.name).toBe('Juan Pérez')
-```
-
-### 2. Usar Datos Realistas
-
-```typescript
-// ✅ Bueno
-const member = {
-  id: '1',
-  name: 'Juan Pérez',
-  email: 'juan@example.com'
-}
-
-// ❌ Evitar
-const member = { id: '1', name: 'Test' }
-```
-
-### 3. Aislar Tests
-
-```typescript
-// ✅ Bueno - Cada test es independiente
-beforeEach(() => {
-  setActivePinia(createPinia())
-})
-
-// ❌ Evitar - Tests dependen unos de otros
-```
-
-### 4. Nombrar Tests Descriptivamente
-
-```typescript
-// ✅ Bueno
-it('displays error message when API call fails', () => { })
-
-// ❌ Evitar
-it('test error', () => { })
-```
-
-## Cobertura de Testing
-
-### Objetivos de Cobertura
-
-- **Componentes críticos**: 80%+
-- **Stores**: 80%+
-- **Utils**: 90%+
-- **Composables**: 80%+
-
-### Verificar Cobertura
-
-```bash
-npm run test:coverage
-```
-
-## Testing Manual
-
-Mientras no hay tests automatizados:
-
-### Checklist de Testing Manual
+## Testing Manual (mientras no hay tests automatizados)
 
 - [ ] Componente renderiza correctamente
-- [ ] Props funcionan como se espera
-- [ ] Eventos se emiten correctamente
-- [ ] Estados de loading/error se muestran
+- [ ] Estados loading/error/empty se muestran
 - [ ] Navegación funciona
 - [ ] Formularios validan correctamente
-- [ ] Responsive funciona en diferentes tamaños
-- [ ] No hay errores en consola
+- [ ] Responsive en diferentes tamaños
+- [ ] Sin errores en consola
 
 ## Referencias
 
-- [Vue Test Utils](https://test-utils.vuejs.org/)
 - [Vitest](https://vitest.dev/)
-- [Testing Library](https://testing-library.com/)
-
+- [Vue Test Utils](https://test-utils.vuejs.org/)
