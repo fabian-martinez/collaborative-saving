@@ -1,45 +1,26 @@
 # Arquitectura del Frontend
 
-## Introducción
-
-Este documento describe la arquitectura general del frontend V2, sus principios de diseño, decisiones arquitectónicas y el flujo de datos.
-
-## Principios Arquitectónicos
+## Principios
 
 ### 1. Feature-Based Architecture
-
-El proyecto está organizado por **features** (dominios de negocio) en lugar de por tipo de archivo. Cada feature es autocontenida y agrupa todo lo relacionado con un dominio específico.
-
-**Beneficios:**
-- Fácil de navegar y entender
-- Escalable - nuevas features no afectan existentes
-- Facilita el trabajo en equipo (menos conflictos)
-- Mejor encapsulación
+Organizado por dominios de negocio. Cada feature es autocontenida (vistas, componentes, stores, API clients). Ver [Estructura de Carpetas](./FOLDER_STRUCTURE.md).
 
 ### 2. Separación de Concerns
 
-Cada capa tiene responsabilidades claras:
-
-- **API Layer**: Comunicación con el backend
-- **Store Layer**: Estado global y lógica de negocio
-- **View Layer**: Presentación y UI
-- **Component Layer**: Componentes reutilizables
+| Capa | Responsabilidad |
+|---|---|
+| API Layer (`src/api/`) | Comunicación HTTP con backend |
+| Store Layer (`src/features/*/stores/`) | Estado global y lógica de negocio |
+| View Layer (`src/features/*/views/`) | Páginas y orquestación |
+| Component Layer | UI reutilizable (shared + feature) |
 
 ### 3. Composition over Configuration
-
-Uso extensivo de:
-- **Composables** para lógica reutilizable
-- **Composition API** de Vue 3
-- **Composición de componentes** con slots
+Uso extensivo de Composables, Composition API de Vue 3 y composición de componentes con slots.
 
 ### 4. Type Safety First
+TypeScript en todo: APIs tipadas, interfaces para props/eventos, tipos compartidos en `shared/types`.
 
-TypeScript en todo el código:
-- Tipos explícitos para APIs
-- Interfaces para props y eventos
-- Tipos compartidos en `shared/types`
-
-## Arquitectura General
+## Diagrama General
 
 ```mermaid
 graph TB
@@ -70,206 +51,71 @@ graph TB
 
 ## Flujo de Datos
 
-### Flujo Típico: Cargar Datos
+### Cargar Datos
 
 ```mermaid
 sequenceDiagram
     participant V as View
     participant S as Store
     participant A as API Client
-    participant H as HTTP Client
     participant B as Backend
     
     V->>S: fetchData()
     S->>A: getData()
-    A->>H: GET /v2/endpoint
-    H->>B: HTTP Request
-    B-->>H: Response
-    H-->>A: Data (snake_case)
+    A->>B: GET /v2/endpoint
+    B-->>A: Response (snake_case)
     A-->>S: Typed Data
-    S->>S: Update State
-    S-->>V: Reactive State
-    V->>V: Render UI
+    S-->>V: Reactive State → Render
 ```
 
-### Flujo Típico: Acción del Usuario
+### Acción del Usuario
 
 ```mermaid
 sequenceDiagram
     participant U as User
     participant C as Component
-    participant V as View
     participant S as Store
-    participant A as API Client
     participant B as Backend
     
     U->>C: Click/Action
-    C->>V: Emit Event
-    V->>S: action(data)
-    S->>A: create/update(data)
-    A->>B: POST/PATCH
-    B-->>A: Response
-    A-->>S: Success/Error
-    S->>S: Update State
-    S-->>V: New State
-    V->>C: Re-render
-    C-->>U: Updated UI
+    C->>S: action(data)
+    S->>B: POST/PATCH
+    B-->>S: Response
+    S-->>C: Updated State → Re-render
 ```
 
-## Estructura de Capas
+## Capas en Detalle
 
-### 1. API Layer (`src/api/`)
+### API Layer (`src/api/`)
+- Cliente HTTP base con interceptores y manejo centralizado de errores
+- Un archivo `.api.ts` por módulo del backend
+- Trabaja directamente con `snake_case` (sin normalización a camelCase)
+- Sistema de mocks con `VITE_USE_MOCKS`
 
-**Responsabilidad**: Comunicación con el backend
+> Ver [Guía de API](./API_GUIDE.md) para patrones y ejemplos.
 
-- Cliente HTTP base con interceptores
-- Clientes específicos por módulo
-- Manejo de errores centralizado
-- Tipos TypeScript para requests/responses
-- Sistema de mocks para desarrollo
+### Store Layer (Pinia)
+- Setup syntax con `defineStore`
+- State (`ref`), Actions (`async functions`), Getters (`computed`)
+- Manejo de `loading` y `error` en cada action
 
-**Características:**
-- Trabaja directamente con `snake_case`
-- Sin normalización a `camelCase`
-- Tipado completo con TypeScript
+> Ver [Guía de Stores](./STORES_GUIDE.md) para patrones y ejemplos.
 
-### 2. Store Layer (`src/features/*/stores/`)
+### View Layer
+- Componentes de página que orquestan stores y componentes
+- Manejo de routing, estados de carga/error/vacío
 
-**Responsabilidad**: Estado global y lógica de negocio
+### Component Layer
+- **Feature** (`src/features/*/components/`): específicos de un dominio
+- **Shared** (`src/shared/components/`): reutilizables, sin dependencias de features
 
-- Stores de Pinia por feature
-- Estado reactivo
-- Actions para operaciones asíncronas
-- Getters para datos derivados
-- Manejo de loading y error states
+> Ver [Guía de Componentes](./COMPONENTS_GUIDE.md) para patrones y ejemplos.
 
-**Patrón:**
-```typescript
-export const useFeatureStore = defineStore('feature', () => {
-  // State
-  const data = ref<Type[]>([])
-  const loading = ref(false)
-  const error = ref<string | null>(null)
-  
-  // Actions
-  async function fetchData() { /* ... */ }
-  
-  // Getters (computed)
-  const hasData = computed(() => data.value.length > 0)
-  
-  return { data, loading, error, fetchData, hasData }
-})
-```
-
-### 3. View Layer (`src/features/*/views/`)
-
-**Responsabilidad**: Páginas y vistas principales
-
-- Componentes de página
-- Orquestación de componentes
-- Manejo de routing
-- Estados de loading/error
-- Composición de stores y composables
-
-**Estructura típica:**
-```vue
-<script setup lang="ts">
-import { useFeatureStore } from '../stores/feature'
-import FeatureComponent from '../components/FeatureComponent.vue'
-
-const store = useFeatureStore()
-onMounted(() => store.fetchData())
-</script>
-
-<template>
-  <div>
-    <LoadingSpinner :loading="store.loading" />
-    <ErrorMessage :error="store.error" />
-    <FeatureComponent v-if="store.hasData" :data="store.data" />
-  </div>
-</template>
-```
-
-### 4. Component Layer
-
-**Componentes Específicos** (`src/features/*/components/`)
-- Componentes usados solo en una feature
-- Encapsulan lógica específica del dominio
-
-**Componentes Compartidos** (`src/shared/components/`)
-- Componentes reutilizables
-- Sin dependencias de features
-- Altamente configurables
-
-## Decisiones Arquitectónicas (ADR)
-
-Para consultar las decisiones técnicas fundamentales de arquitectura y desarrollo del frontend, dirígete al registro oficial de ADRs globales:
+## Decisiones Arquitectónicas
 
 - **[ADR-0013: Decisiones Técnicas Frontend V2](../adrs/0013-decisiones-tecnicas-frontend-v2.md)**
-
-## Patrones de Diseño
-
-### 1. Repository Pattern (API Clients)
-
-Los API clients actúan como repositorios, abstraen la comunicación HTTP:
-
-```typescript
-export const membersApi = {
-  async getMembers(): Promise<Member[]> { /* ... */ },
-  async getMemberById(id: string): Promise<Member> { /* ... */ }
-}
-```
-
-### 2. Store Pattern (Pinia)
-
-Stores centralizan estado y lógica:
-
-```typescript
-const store = defineStore('name', () => {
-  // State + Actions + Getters
-})
-```
-
-### 3. Component Composition
-
-Componentes pequeños y composables:
-
-```vue
-<DataTable :data="items" :columns="columns">
-  <template #actions="{ item }">
-    <button @click="edit(item)">Edit</button>
-  </template>
-</DataTable>
-```
-
-### 4. Composable Pattern
-
-Lógica reutilizable extraída a composables:
-
-```typescript
-export function useApi<T>() {
-  const loading = ref(false)
-  const error = ref<string | null>(null)
-  // ...
-  return { loading, error, execute }
-}
-```
-
-## Convenciones de Naming
-
-Ver [CODING_CONVENTIONS.md](./CODING_CONVENTIONS.md) para detalles completos.
-
-**Resumen:**
-- Features: `kebab-case` (ej: `member-detail`)
-- Components: `PascalCase` (ej: `MemberCard.vue`)
-- Stores: `camelCase` (ej: `useMemberStore`)
-- API clients: `camelCase` + `Api` (ej: `membersApi`)
-- Types: `PascalCase` (ej: `MemberResponse`)
 
 ## Referencias
 
 - [Estructura de Carpetas](./FOLDER_STRUCTURE.md)
-- [Guía de Features](./FEATURES_GUIDE.md)
-- [Guía de Stores](./STORES_GUIDE.md)
-- [Guía de API](./API_GUIDE.md)
-
+- [Convenciones de Código](./CODING_CONVENTIONS.md)
