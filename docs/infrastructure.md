@@ -95,3 +95,5 @@ Para realizar cambios en la estructura de la base de datos de manera segura:
 
 - [Arquitectura](./architecture.md)
 - [Decisiones](./adrs/)
+- [Desarrollo Frontend](./frontend/DEVELOPMENT.md) — Configuración de entorno y Vite.
+- [Performance Frontend](./frontend/PERFORMANCE.md) — Optimizaciones y builds.
