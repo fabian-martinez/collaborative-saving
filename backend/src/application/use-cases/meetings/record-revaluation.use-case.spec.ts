@@ -48,7 +48,7 @@ describe('RecordRevaluationUseCase', () => {
       findAll: jest.fn(),
       save: jest.fn(),
       findLatestClosed: jest.fn(),
-    } as unknown as jest.Mocked<MeetingRepository>;
+    };
 
     operationRepository = {
       findById: jest.fn(),
@@ -79,7 +79,7 @@ describe('RecordRevaluationUseCase', () => {
       save: jest.fn(),
       saveMany: jest.fn(),
       findGuaranteed: jest.fn(),
-    } as unknown as jest.Mocked<StockRepository>;
+    };
 
     stockSubscriptionRepository = {
       findById: jest.fn(),
@@ -100,7 +100,7 @@ describe('RecordRevaluationUseCase', () => {
       findByStockBeforeDate: jest.fn(),
       save: jest.fn(),
       saveMany: jest.fn(),
-    } as unknown as jest.Mocked<StockValueHistoryRepository>;
+    };
 
     pendingMemberPaymentRepository = {
       findById: jest.fn(),

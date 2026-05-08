@@ -40,7 +40,7 @@ describe('AssetRevaluationDomainService', () => {
       findAll: jest.fn(),
       save: jest.fn(),
       findLatestClosed: jest.fn(),
-    } as unknown as jest.Mocked<MeetingRepository>;
+    };
 
     ledgerEntryRepository = {
       findById: jest.fn(),
@@ -99,7 +99,7 @@ describe('AssetRevaluationDomainService', () => {
       findByStockBeforeDate: jest.fn(),
       save: jest.fn(),
       saveMany: jest.fn(),
-    } as unknown as jest.Mocked<StockValueHistoryRepository>;
+    };
 
     service = new AssetRevaluationDomainService(
       meetingRepository,

@@ -24,7 +24,7 @@ describe('DeletePendingPaymentUseCase', () => {
       saveMany: jest.fn(),
       calculateRemainingAmount: jest.fn(),
       delete: jest.fn(),
-    } as unknown as jest.Mocked<PendingMemberPaymentRepository>;
+    };
 
     findByIdSpy = jest.spyOn(repository, 'findById');
     deleteSpy = jest.spyOn(repository, 'delete');

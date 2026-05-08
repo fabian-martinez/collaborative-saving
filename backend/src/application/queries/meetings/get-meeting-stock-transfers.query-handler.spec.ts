@@ -18,7 +18,7 @@ describe('GetMeetingStockTransfersQueryHandler', () => {
       findAll: jest.fn(),
       save: jest.fn(),
       findLatestClosed: jest.fn(),
-    } as unknown as jest.Mocked<MeetingRepository>;
+    };
 
     operationRepository = {
       findById: jest.fn(),

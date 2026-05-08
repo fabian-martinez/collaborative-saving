@@ -17,7 +17,7 @@ describe('MemberMapper', () => {
         beneficiary: 'John Doe',
         registrationDate: new Date('2024-01-15'),
         createdAt: new Date('2024-01-15'),
-        deletedAt: null as unknown as Date,
+        deletedAt: null,
       };
 
       const domain = MemberMapper.toDomain(entity);
@@ -47,7 +47,7 @@ describe('MemberMapper', () => {
         beneficiary: null as unknown as string,
         registrationDate: new Date('2024-01-15'),
         createdAt: new Date('2024-01-15'),
-        deletedAt: null as unknown as Date,
+        deletedAt: null,
       };
 
       const domain = MemberMapper.toDomain(entity);
@@ -67,7 +67,7 @@ describe('MemberMapper', () => {
         status: 'active',
         registrationDate: new Date('2024-01-15'),
         createdAt: new Date('2024-01-15'),
-        deletedAt: null as unknown as Date,
+        deletedAt: null,
         identificationNumber: null as unknown as string,
         address: null as unknown as string,
         phone: null as unknown as string,
@@ -88,7 +88,7 @@ describe('MemberMapper', () => {
         status: 'invalid-status',
         registrationDate: new Date('2024-01-15'),
         createdAt: new Date('2024-01-15'),
-        deletedAt: null as unknown as Date,
+        deletedAt: null,
         identificationNumber: null as unknown as string,
         address: null as unknown as string,
         phone: null as unknown as string,
@@ -111,7 +111,7 @@ describe('MemberMapper', () => {
         status: 'active',
         registrationDate: new Date('2024-01-15'),
         createdAt: new Date('2024-01-15'),
-        deletedAt: null as unknown as Date,
+        deletedAt: null,
         identificationNumber: null as unknown as string,
         address: null as unknown as string,
         phone: null as unknown as string,

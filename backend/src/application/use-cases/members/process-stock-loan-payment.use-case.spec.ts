@@ -195,7 +195,7 @@ describe('ProcessStockLoanPaymentUseCase', () => {
             accountType: 'CASH',
             amount: -600000, // credit - virtual cash received from stocks
           }),
-        ]) as unknown as Array<{ accountType: string; amount: number }>,
+        ]),
       }),
     );
   });

@@ -127,13 +127,10 @@ export class MandatoryContributionsV2Controller {
     } catch (e: unknown) {
       if (e instanceof Error) {
         console.error(e.message);
-        throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+        throw e;
       } else {
         console.error(String(e));
-        throw new HttpException(
-          'Internal server error',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
+        throw e;
       }
     }
   }
@@ -186,7 +183,7 @@ export class MandatoryContributionsV2Controller {
       } else {
         console.error(String(e));
       }
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+      throw e;
     }
   }
 
@@ -249,7 +246,7 @@ export class MandatoryContributionsV2Controller {
       } else {
         console.error(String(e));
       }
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+      throw e;
     }
   }
 
@@ -284,7 +281,7 @@ export class MandatoryContributionsV2Controller {
       } else {
         console.error(String(e));
       }
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+      throw e;
     }
   }
 }

@@ -175,7 +175,7 @@ describe('TypeOrmPendingMemberPaymentRepository', () => {
         raw: [],
         generatedMaps: [],
         affected: 1,
-      } as UpdateResult);
+      });
 
       const result = await repository.save(domain);
       expect(updateSpy).toHaveBeenCalledWith(domain.id, expect.any(Object));
@@ -213,7 +213,7 @@ describe('TypeOrmPendingMemberPaymentRepository', () => {
         raw: [],
         generatedMaps: [],
         affected: 1,
-      } as UpdateResult);
+      });
 
       await expect(repository.save(domain)).rejects.toThrow(
         'PendingMemberPayment not found after update',

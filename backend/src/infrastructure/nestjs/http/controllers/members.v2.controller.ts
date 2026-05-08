@@ -222,13 +222,10 @@ export class MembersV2Controller {
     } catch (e: unknown) {
       if (e instanceof Error) {
         console.error(e.message);
-        throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+        throw e;
       } else {
         console.error(String(e));
-        throw new HttpException(
-          'Internal server error',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
+        throw e;
       }
     }
   }
@@ -277,13 +274,10 @@ export class MembersV2Controller {
     } catch (e: unknown) {
       if (e instanceof Error) {
         console.error(e.message);
-        throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+        throw e;
       } else {
         console.error(String(e));
-        throw new HttpException(
-          'Internal server error',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
+        throw e;
       }
     }
   }
@@ -339,7 +333,7 @@ export class MembersV2Controller {
       } else {
         console.error(String(e));
       }
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+      throw e;
     }
   }
 
@@ -367,15 +361,8 @@ export class MembersV2Controller {
   async getMemberLoans(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<LoanResponseHttpDto[]> {
-    try {
-      const loans = await this.getMemberLoansQuery.execute(id);
-      return loans.map((loan) => this.mapLoanToHttp(loan));
-    } catch (error: unknown) {
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const loans = await this.getMemberLoansQuery.execute(id);
+    return loans.map((loan) => this.mapLoanToHttp(loan));
   }
 
   @Patch(':id')
@@ -442,7 +429,7 @@ export class MembersV2Controller {
       } else {
         console.error(String(e));
       }
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+      throw e;
     }
   }
 
@@ -479,7 +466,7 @@ export class MembersV2Controller {
       } else {
         console.error(String(e));
       }
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+      throw e;
     }
   }
 
@@ -553,7 +540,7 @@ export class MembersV2Controller {
       } else {
         console.error(String(e));
       }
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+      throw e;
     }
   }
 
@@ -568,7 +555,7 @@ export class MembersV2Controller {
       stock_quantity: d.stockQuantity,
       novelty_comment: d.noveltyComment,
       creation_date: d.creationDate,
-    } as MemberDueResponseHttpDto;
+    };
   }
 
   @Get(':id/payments')
@@ -679,15 +666,12 @@ export class MembersV2Controller {
       );
     } catch (e: unknown) {
       if (e instanceof MemberNotFoundException) {
-        throw new HttpException(e.message, HttpStatus.NOT_FOUND);
+        throw e;
       }
       if (e instanceof HttpException) {
         throw e;
       }
-      throw new HttpException(
-        e instanceof Error ? e.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw e;
     }
   }
 
@@ -737,15 +721,12 @@ export class MembersV2Controller {
         e instanceof StockSubscriptionNotFoundException ||
         e instanceof StockNotFoundException
       ) {
-        throw new HttpException(e.message, HttpStatus.NOT_FOUND);
+        throw e;
       }
       if (e instanceof HttpException) {
         throw e;
       }
-      throw new HttpException(
-        e instanceof Error ? e.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw e;
     }
   }
 
@@ -935,21 +916,18 @@ export class MembersV2Controller {
       return this.mapPurchaseStockToHttp(result);
     } catch (error: unknown) {
       if (error instanceof MemberNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       if (error instanceof StockNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
@@ -999,15 +977,12 @@ export class MembersV2Controller {
       return purchases.map((purchase) => this.mapPurchaseToHttp(purchase));
     } catch (e: unknown) {
       if (e instanceof MemberNotFoundException) {
-        throw new HttpException(e.message, HttpStatus.NOT_FOUND);
+        throw e;
       }
       if (e instanceof HttpException) {
         throw e;
       }
-      throw new HttpException(
-        e instanceof Error ? e.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw e;
     }
   }
 
@@ -1106,7 +1081,7 @@ export class MembersV2Controller {
       return exchanges.map((exchange) => this.mapStockExchangeToHttp(exchange));
     } catch (error) {
       if (error instanceof MemberNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       throw error;
     }
@@ -1206,7 +1181,7 @@ export class MembersV2Controller {
       return transfers.map((transfer) => this.mapStockTransferToHttp(transfer));
     } catch (error) {
       if (error instanceof MemberNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       throw error;
     }
@@ -1307,7 +1282,7 @@ export class MembersV2Controller {
       return payments.map((payment) => this.mapStockLoanPaymentToHttp(payment));
     } catch (error) {
       if (error instanceof MemberNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       throw error;
     }
@@ -1356,7 +1331,7 @@ export class MembersV2Controller {
       return this.mapPaymentScheduleToHttp(schedule);
     } catch (error) {
       if (error instanceof MemberNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       throw error;
     }
@@ -1369,18 +1344,15 @@ export class MembersV2Controller {
       error instanceof MeetingNotFoundException ||
       error instanceof LoanNotFoundException
     ) {
-      throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+      throw error;
     }
     if (error instanceof InvalidRequestError) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw error;
     }
     if (error instanceof HttpException) {
       throw error;
     }
-    throw new HttpException(
-      error instanceof Error ? error.message : 'Internal server error',
-      HttpStatus.INTERNAL_SERVER_ERROR,
-    );
+    throw error;
   }
 
   private mapStockOperationResponseToHttp(
@@ -1402,7 +1374,7 @@ export class MembersV2Controller {
       member_id: r.memberId,
       total_amount: r.totalAmount,
       ledger_entry_ids: r.ledgerEntryIds,
-    } as RecordMonthlyPaymentsResponseHttpDto;
+    };
   }
 
   private mapPurchaseStockToHttp(

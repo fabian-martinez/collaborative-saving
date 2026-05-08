@@ -135,9 +135,7 @@ describe('TypeOrmLoanTransactionDetailRepository', () => {
       const mockQueryBuilder = {
         innerJoin: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
-        getMany: jest
-          .fn()
-          .mockResolvedValue(entities as LoanTransactionDetailEntity[]),
+        getMany: jest.fn().mockResolvedValue(entities),
       };
 
       typeOrmRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);

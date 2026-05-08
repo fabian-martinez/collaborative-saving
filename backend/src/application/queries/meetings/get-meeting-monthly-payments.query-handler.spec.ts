@@ -30,7 +30,7 @@ describe('GetMeetingMonthlyPaymentsQueryHandler', () => {
       findAll: jest.fn(),
       save: jest.fn(),
       findLatestClosed: jest.fn(),
-    } as unknown as jest.Mocked<MeetingRepository>;
+    };
 
     operationRepository = {
       findById: jest.fn(),
@@ -52,13 +52,13 @@ describe('GetMeetingMonthlyPaymentsQueryHandler', () => {
       saveMany: jest.fn(),
       sumByAccountType: jest.fn(),
       getAccountsSummary: jest.fn(),
-    } as unknown as jest.Mocked<LedgerEntryRepository>;
+    };
 
     paymentMapperService = {
       calculatePaymentTotalAmount: jest.fn(),
       mapPaymentFilterToOperationTypes: jest.fn(),
       mapOperationTypeToPaymentType: jest.fn(),
-    } as unknown as jest.Mocked<PaymentMapperService>;
+    };
 
     findByIdSpy = jest.spyOn(meetingRepository, 'findById');
     findByMeetingAndTypesSpy = jest.spyOn(

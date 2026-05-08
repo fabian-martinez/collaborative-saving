@@ -15,7 +15,7 @@ describe('CreateMandatoryContributionUseCase', () => {
       findAll: jest.fn(),
       save: jest.fn(),
       delete: jest.fn(),
-    } as unknown as jest.Mocked<MandatoryContributionRepository>;
+    };
 
     findByAssetTypeSpy = jest.spyOn(repository, 'findByAssetType');
     saveSpy = jest.spyOn(repository, 'save');

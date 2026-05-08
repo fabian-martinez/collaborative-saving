@@ -78,7 +78,7 @@ describe('PurchaseStockUseCase', () => {
       findAll: jest.fn(),
       save: jest.fn(),
       findLatestClosed: jest.fn(),
-    } as unknown as jest.Mocked<MeetingRepository>;
+    };
 
     stockRepository = {
       findById: jest.fn(),
@@ -193,7 +193,7 @@ describe('PurchaseStockUseCase', () => {
               accountType: CASH_ACCOUNT,
               amount: 200000,
             }),
-          ]) as unknown as LedgerEntryDto[],
+          ]),
         }),
       );
     });
@@ -223,7 +223,7 @@ describe('PurchaseStockUseCase', () => {
         loanId: 'loan-id-1',
         operationId: 'loan-operation-id-1',
         status: 'active',
-      } as unknown as CreateLoanResponseDto);
+      });
 
       const result = await useCase.execute(dto);
 
@@ -258,7 +258,7 @@ describe('PurchaseStockUseCase', () => {
               amount: 200000,
               loanId: 'loan-id-1',
             }),
-          ]) as unknown as LedgerEntryDto[],
+          ]),
         }),
       );
     });
@@ -288,7 +288,7 @@ describe('PurchaseStockUseCase', () => {
         loanId: 'loan-id-1',
         operationId: 'loan-operation-id-1',
         status: 'active',
-      } as unknown as CreateLoanResponseDto);
+      });
 
       const result = await useCase.execute(dto);
 
@@ -321,7 +321,7 @@ describe('PurchaseStockUseCase', () => {
               amount: 100000,
               loanId: 'loan-id-1',
             }),
-          ]) as unknown as LedgerEntryDto[],
+          ]),
         }),
       );
     });

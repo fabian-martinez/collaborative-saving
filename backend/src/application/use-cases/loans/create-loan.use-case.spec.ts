@@ -64,7 +64,7 @@ describe('CreateLoanUseCase', () => {
       findAll: jest.fn(),
       save: jest.fn(),
       findLatestClosed: jest.fn(),
-    } as unknown as jest.Mocked<MeetingRepository>;
+    };
 
     loanRepository = {
       findById: jest.fn(),
@@ -156,10 +156,8 @@ describe('CreateLoanUseCase', () => {
       });
 
       loanSaveSpy.mockResolvedValue(savedLoan);
-      loanTransactionDetailSaveSpy.mockResolvedValue(
-        {} as LoanTransactionDetail,
-      );
-      pendingMemberPaymentSaveSpy.mockResolvedValue({} as PendingMemberPayment);
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
+      pendingMemberPaymentSaveSpy.mockResolvedValue({});
 
       const result = await useCase.execute(dto);
 
@@ -187,7 +185,7 @@ describe('CreateLoanUseCase', () => {
               accountType: MEMBER_EQUITY_ACCOUNT,
               amount: -10000,
             }),
-          ]) as unknown as LedgerEntryDto[],
+          ]),
         }),
       );
       expect(loanTransactionDetailSaveSpy).toHaveBeenCalled();
@@ -220,9 +218,7 @@ describe('CreateLoanUseCase', () => {
       });
 
       loanSaveSpy.mockResolvedValue(savedLoan);
-      loanTransactionDetailSaveSpy.mockResolvedValue(
-        {} as LoanTransactionDetail,
-      );
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
 
       const result = await useCase.execute(dto);
 
@@ -244,7 +240,7 @@ describe('CreateLoanUseCase', () => {
               accountType: LOANS_RECEIVABLE_ACCOUNT,
               amount: 5000,
             }),
-          ]) as unknown as LedgerEntryDto[],
+          ]),
         }),
       );
     });
@@ -275,9 +271,7 @@ describe('CreateLoanUseCase', () => {
       });
 
       loanSaveSpy.mockResolvedValue(savedLoan);
-      loanTransactionDetailSaveSpy.mockResolvedValue(
-        {} as LoanTransactionDetail,
-      );
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
 
       const result = await useCase.execute(dto);
 
@@ -299,7 +293,7 @@ describe('CreateLoanUseCase', () => {
               accountType: LOANS_RECEIVABLE_ACCOUNT,
               amount: 3000,
             }),
-          ]) as unknown as LedgerEntryDto[],
+          ]),
         }),
       );
     });
@@ -331,10 +325,8 @@ describe('CreateLoanUseCase', () => {
       });
 
       loanSaveSpy.mockResolvedValue(savedLoan);
-      loanTransactionDetailSaveSpy.mockResolvedValue(
-        {} as LoanTransactionDetail,
-      );
-      pendingMemberPaymentSaveSpy.mockResolvedValue({} as PendingMemberPayment);
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
+      pendingMemberPaymentSaveSpy.mockResolvedValue({});
 
       const result = await useCase.execute(dto);
 

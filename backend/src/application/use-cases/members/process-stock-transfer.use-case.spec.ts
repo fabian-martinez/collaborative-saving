@@ -124,7 +124,7 @@ describe('ProcessStockTransferUseCase', () => {
           expect.objectContaining({
             stockSubscriptionId: fromSubscription.id,
           }),
-        ]) as unknown as Array<{ stockSubscriptionId: string }>,
+        ]),
       }),
     );
   });

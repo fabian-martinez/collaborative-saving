@@ -132,10 +132,7 @@ export class MeetingsV2Controller {
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
@@ -193,10 +190,7 @@ export class MeetingsV2Controller {
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
@@ -219,10 +213,7 @@ export class MeetingsV2Controller {
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
@@ -270,15 +261,12 @@ export class MeetingsV2Controller {
       return this.mapMeetingToHttp(meeting);
     } catch (error: unknown) {
       if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
@@ -309,15 +297,12 @@ export class MeetingsV2Controller {
       return this.mapDetailedSummaryToHttp(result);
     } catch (error: unknown) {
       if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
@@ -384,15 +369,12 @@ export class MeetingsV2Controller {
       return this.mapMeetingToHttp(meeting);
     } catch (error: unknown) {
       if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
@@ -423,15 +405,12 @@ export class MeetingsV2Controller {
       return payments.map((p) => this.mapOperationToHttp(p));
     } catch (error: unknown) {
       if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
@@ -462,15 +441,12 @@ export class MeetingsV2Controller {
       return purchases.map((p) => this.mapOperationToHttp(p));
     } catch (error: unknown) {
       if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
@@ -501,15 +477,12 @@ export class MeetingsV2Controller {
       return transfers.map((t) => this.mapOperationToHttp(t));
     } catch (error: unknown) {
       if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
@@ -540,15 +513,12 @@ export class MeetingsV2Controller {
       return exchanges.map((e) => this.mapOperationToHttp(e));
     } catch (error: unknown) {
       if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
@@ -579,15 +549,12 @@ export class MeetingsV2Controller {
       return payments.map((p) => this.mapOperationToHttp(p));
     } catch (error: unknown) {
       if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
@@ -736,15 +703,12 @@ export class MeetingsV2Controller {
       return this.mapRevaluationToHttp(result);
     } catch (error: unknown) {
       if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
@@ -781,15 +745,12 @@ export class MeetingsV2Controller {
       return this.mapRevaluationToHttp(result);
     } catch (error: unknown) {
       if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
@@ -864,15 +825,12 @@ export class MeetingsV2Controller {
       return mappedResult;
     } catch (error: unknown) {
       if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
@@ -920,21 +878,18 @@ export class MeetingsV2Controller {
       return this.mapExecuteDisbursementPlanResponseToHttp(result);
     } catch (error: unknown) {
       if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       if (
         error instanceof BusinessRuleError ||
         error instanceof InvalidRequestError
       ) {
-        throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+        throw error;
       }
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 

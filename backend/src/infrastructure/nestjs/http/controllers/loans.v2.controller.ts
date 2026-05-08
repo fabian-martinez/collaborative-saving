@@ -64,10 +64,7 @@ export class LoansV2Controller {
       const loans = await this.getLoansQuery.execute();
       return loans.map((loan) => this.mapLoanToHttp(loan));
     } catch (error: unknown) {
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
@@ -97,12 +94,9 @@ export class LoansV2Controller {
       return this.mapLoanToHttp(loan);
     } catch (error: unknown) {
       if (error instanceof LoanNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
@@ -151,18 +145,15 @@ export class LoansV2Controller {
       return this.mapLoanToHttp(result);
     } catch (error: unknown) {
       if (error instanceof LoanNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       if (error instanceof InvalidRequestError) {
-        throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+        throw error;
       }
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
@@ -246,7 +237,7 @@ export class LoansV2Controller {
       return await this.simulateLoanPaymentPlanUseCase.execute(id, request);
     } catch (error: unknown) {
       if (error instanceof LoanNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+        throw error;
       }
       if (error instanceof HttpException) {
         throw error;

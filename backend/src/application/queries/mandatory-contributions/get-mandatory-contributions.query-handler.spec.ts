@@ -14,7 +14,7 @@ describe('GetMandatoryContributionsQueryHandler', () => {
       findAll: jest.fn(),
       save: jest.fn(),
       delete: jest.fn(),
-    } as unknown as jest.Mocked<MandatoryContributionRepository>;
+    };
 
     findAllSpy = jest.spyOn(repository, 'findAll');
 

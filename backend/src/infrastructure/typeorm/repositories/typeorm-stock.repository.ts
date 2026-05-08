@@ -64,10 +64,7 @@ export class TypeOrmStockRepository implements StockRepository {
     const entitiesToSave = persistences.map((persistence) => {
       const existing = existingMap.get(persistence.id!);
       if (existing) {
-        return this.repo.merge(
-          existing,
-          persistence as DeepPartial<StockEntity>,
-        );
+        return this.repo.merge(existing, persistence);
       }
       return persistence as StockEntity;
     });
@@ -88,10 +85,7 @@ export class TypeOrmStockRepository implements StockRepository {
     if (existing) {
       // Update existing stock
       // Optimization: merge changes and save to avoid extra DB roundtrip (update + findOne)
-      const updatedEntity = this.repo.merge(
-        existing,
-        persistence as StockEntity,
-      );
+      const updatedEntity = this.repo.merge(existing, persistence);
       const saved = await this.repo.save(updatedEntity);
       return StockMapper.toDomain(saved);
     } else {

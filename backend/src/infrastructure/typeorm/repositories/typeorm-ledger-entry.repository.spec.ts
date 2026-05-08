@@ -229,9 +229,7 @@ describe('TypeOrmLedgerEntryRepository', () => {
         },
       ];
 
-      mockQueryBuilder.getMany.mockResolvedValue(
-        entities as LedgerEntryEntity[],
-      );
+      mockQueryBuilder.getMany.mockResolvedValue(entities);
       const result = await repository.findByOperations(operationIds);
       expect(result).toHaveLength(1);
       expect(result[0]).toBeInstanceOf(LedgerEntryDomain);
@@ -272,9 +270,7 @@ describe('TypeOrmLedgerEntryRepository', () => {
         },
       ];
 
-      mockQueryBuilder.getMany.mockResolvedValue(
-        entities as LedgerEntryEntity[],
-      );
+      mockQueryBuilder.getMany.mockResolvedValue(entities);
       const result = await repository.findByMeeting(meetingId);
       expect(result).toHaveLength(1);
       expect(result[0]).toBeInstanceOf(LedgerEntryDomain);
@@ -458,9 +454,7 @@ describe('TypeOrmLedgerEntryRepository', () => {
       ];
 
       mockQueryBuilder.getCount.mockResolvedValue(2);
-      mockQueryBuilder.getMany.mockResolvedValue(
-        entities as LedgerEntryEntity[],
-      );
+      mockQueryBuilder.getMany.mockResolvedValue(entities);
 
       const result = await repository.findWithPagination(
         {},

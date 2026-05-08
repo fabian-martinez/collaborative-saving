@@ -183,7 +183,7 @@ describe('ProcessStockExchangeUseCase', () => {
       expect.objectContaining({
         entries: expect.arrayContaining([
           expect.objectContaining({ accountType: STOCK_CAPITAL_ACCOUNT }),
-        ]) as unknown as Array<Record<string, any>>,
+        ]),
       }),
     );
   });
@@ -209,7 +209,7 @@ describe('ProcessStockExchangeUseCase', () => {
       expect.objectContaining({
         entries: expect.arrayContaining([
           expect.objectContaining({ accountType: CASH_ACCOUNT }),
-        ]) as unknown as Array<Record<string, any>>,
+        ]),
       }),
     );
   });
@@ -247,7 +247,7 @@ describe('ProcessStockExchangeUseCase', () => {
             accountType: CASH_ACCOUNT,
             amount: -1200000, // negative = credit (money going out conceptually)
           }),
-        ]) as unknown as Array<Record<string, any>>,
+        ]),
       }),
     );
   });
@@ -284,7 +284,7 @@ describe('ProcessStockExchangeUseCase', () => {
             amount: 600000, // positive = debit (asset increase)
             loanId: expect.any(String) as string,
           }),
-        ]) as unknown as Array<Record<string, any>>,
+        ]),
       }),
     );
   });

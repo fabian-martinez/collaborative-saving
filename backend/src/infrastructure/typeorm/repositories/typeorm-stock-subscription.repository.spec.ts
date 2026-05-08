@@ -22,7 +22,7 @@ describe('TypeOrmStockSubscriptionRepository', () => {
     const mockTransactionManager: TransactionManager = {
       execute: jest.fn(),
       getActiveQueryRunner: jest.fn().mockReturnValue(null),
-    } as unknown as TransactionManager;
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

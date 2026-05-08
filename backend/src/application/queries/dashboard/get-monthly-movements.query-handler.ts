@@ -15,7 +15,7 @@ export class GetMonthlyMovementsQueryHandler {
 
     // Get last 6 closed meetings, sorted by date ASC for the chart
     const closedMeetings = meetings
-      .filter(m => m.status === 'closed')
+      .filter((m) => m.status === 'closed')
       .slice(0, 6)
       .reverse();
 
@@ -30,11 +30,13 @@ export class GetMonthlyMovementsQueryHandler {
         }).format(meeting.date);
 
         return {
-          label: monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1).replace('.', ''),
+          label:
+            monthLabel.charAt(0).toUpperCase() +
+            monthLabel.slice(1).replace('.', ''),
           collected: summary.totalCollected || 0,
           disbursed: summary.totalDisbursed || 0,
         };
-      })
+      }),
     );
 
     return { movements };
