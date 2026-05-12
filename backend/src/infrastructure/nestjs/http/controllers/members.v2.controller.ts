@@ -225,10 +225,7 @@ export class MembersV2Controller {
         throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
       } else {
         console.error(String(e));
-        throw new HttpException(
-          'Internal server error',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
+        throw e;
       }
     }
   }
@@ -280,10 +277,7 @@ export class MembersV2Controller {
         throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
       } else {
         console.error(String(e));
-        throw new HttpException(
-          'Internal server error',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
+        throw e;
       }
     }
   }
@@ -367,15 +361,8 @@ export class MembersV2Controller {
   async getMemberLoans(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<LoanResponseHttpDto[]> {
-    try {
-      const loans = await this.getMemberLoansQuery.execute(id);
-      return loans.map((loan) => this.mapLoanToHttp(loan));
-    } catch (error: unknown) {
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const loans = await this.getMemberLoansQuery.execute(id);
+    return loans.map((loan) => this.mapLoanToHttp(loan));
   }
 
   @Patch(':id')
@@ -684,10 +671,7 @@ export class MembersV2Controller {
       if (e instanceof HttpException) {
         throw e;
       }
-      throw new HttpException(
-        e instanceof Error ? e.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw e;
     }
   }
 
@@ -742,10 +726,7 @@ export class MembersV2Controller {
       if (e instanceof HttpException) {
         throw e;
       }
-      throw new HttpException(
-        e instanceof Error ? e.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw e;
     }
   }
 
@@ -946,10 +927,7 @@ export class MembersV2Controller {
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
@@ -1004,10 +982,7 @@ export class MembersV2Controller {
       if (e instanceof HttpException) {
         throw e;
       }
-      throw new HttpException(
-        e instanceof Error ? e.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw e;
     }
   }
 
@@ -1377,10 +1352,7 @@ export class MembersV2Controller {
     if (error instanceof HttpException) {
       throw error;
     }
-    throw new HttpException(
-      error instanceof Error ? error.message : 'Internal server error',
-      HttpStatus.INTERNAL_SERVER_ERROR,
-    );
+    throw error;
   }
 
   private mapStockOperationResponseToHttp(

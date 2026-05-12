@@ -125,9 +125,7 @@ describe('MandatoryContributionsV2Controller', () => {
         new Error('Mandatory contribution not found'),
       );
 
-      await expect(controller.detail('non-existent-id')).rejects.toThrow(
-        HttpException,
-      );
+      await expect(controller.detail('non-existent-id')).rejects.toThrow();
     });
   });
 
@@ -157,7 +155,7 @@ describe('MandatoryContributionsV2Controller', () => {
         new Error('Value must be greater than 0'),
       );
 
-      await expect(controller.create(createDto)).rejects.toThrow(HttpException);
+      await expect(controller.create(createDto)).rejects.toThrow();
     });
   });
 
@@ -200,7 +198,7 @@ describe('MandatoryContributionsV2Controller', () => {
 
       await expect(
         controller.update('non-existent-id', updateDto),
-      ).rejects.toThrow(HttpException);
+      ).rejects.toThrow();
     });
   });
 
@@ -220,9 +218,7 @@ describe('MandatoryContributionsV2Controller', () => {
         new Error('Mandatory contribution not found'),
       );
 
-      await expect(controller.remove('non-existent-id')).rejects.toThrow(
-        HttpException,
-      );
+      await expect(controller.remove('non-existent-id')).rejects.toThrow();
     });
   });
 });

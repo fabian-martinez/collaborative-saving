@@ -130,10 +130,7 @@ export class MandatoryContributionsV2Controller {
         throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
       } else {
         console.error(String(e));
-        throw new HttpException(
-          'Internal server error',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
+        throw e;
       }
     }
   }
