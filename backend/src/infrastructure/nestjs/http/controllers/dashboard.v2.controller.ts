@@ -8,13 +8,16 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { GetMonthlyMovementsQueryHandler } from '@application/queries/dashboard/get-monthly-movements.query-handler';
+import { GetPortfolioStatusQueryHandler } from '@application/queries/dashboard/get-portfolio-status.query-handler';
 import { GetMonthlyMovementsResponseHttpDto } from '../dto/dashboard/monthly-movements-response-http.dto';
+import { GetPortfolioStatusResponseHttpDto } from '../dto/dashboard/portfolio-status-response-http.dto';
 
 @ApiTags('Dashboard V2')
 @Controller('v2/dashboard')
 export class DashboardV2Controller {
   constructor(
     private readonly getMonthlyMovementsQuery: GetMonthlyMovementsQueryHandler,
+    private readonly getPortfolioStatusQuery: GetPortfolioStatusQueryHandler,
   ) {}
 
   @Get('monthly-movements')
@@ -38,6 +41,34 @@ export class DashboardV2Controller {
         labels: result.movements.map((m) => m.label),
         collected: result.movements.map((m) => m.collected),
         disbursed: result.movements.map((m) => m.disbursed),
+      };
+    } catch (error: unknown) {
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('portfolio-status')
+  @ApiOperation({
+    summary: 'Get portfolio status distribution',
+    description: 'Returns count of loans up to date, overdue and written off.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Portfolio status retrieved successfully',
+    type: GetPortfolioStatusResponseHttpDto,
+  })
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async getPortfolioStatus(): Promise<GetPortfolioStatusResponseHttpDto> {
+    try {
+      const result = await this.getPortfolioStatusQuery.execute();
+
+      return {
+        up_to_date: result.upToDate,
+        overdue: result.overdue,
+        written_off: result.writtenOff,
       };
     } catch (error: unknown) {
       throw new HttpException(
