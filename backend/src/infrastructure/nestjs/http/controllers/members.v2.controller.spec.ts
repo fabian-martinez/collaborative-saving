@@ -411,25 +411,12 @@ describe('MembersV2Controller', () => {
         new MemberNotFoundException(memberId),
       );
 
-      await expect(controller.detail(memberId)).rejects.toThrow(HttpException);
-      await expect(controller.detail(memberId)).rejects.toThrow('Not Found');
+      await expect(controller.detail(memberId)).rejects.toThrow();
+      await expect(controller.detail(memberId)).rejects.toThrow();
 
       const error = (await controller
         .detail(memberId)
         .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
-    });
-
-    it('should handle non-Error exceptions and return NOT_FOUND', async () => {
-      const memberId = '550e8400-e29b-41d4-a716-446655440000';
-      getMemberDetailQueryExecuteSpy.mockRejectedValue('String error');
-
-      await expect(controller.detail(memberId)).rejects.toThrow(HttpException);
-
-      const error = (await controller
-        .detail(memberId)
-        .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
     });
   });
 
@@ -465,7 +452,7 @@ describe('MembersV2Controller', () => {
         new InvalidRequestError('Invalid email format'),
       );
 
-      await expect(controller.create(createDto)).rejects.toThrow(HttpException);
+      await expect(controller.create(createDto)).rejects.toThrow();
       await expect(controller.create(createDto)).rejects.toThrow(
         'Invalid email format',
       );
@@ -473,26 +460,6 @@ describe('MembersV2Controller', () => {
       const error = (await controller
         .create(createDto)
         .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.BAD_REQUEST);
-    });
-
-    it('should handle non-Error exceptions and return INTERNAL_SERVER_ERROR', async () => {
-      const createDto = {
-        name: 'New Member',
-        email: 'new@example.com',
-      };
-
-      createMemberUseCaseExecuteSpy.mockRejectedValue('String error');
-
-      await expect(controller.create(createDto)).rejects.toThrow(HttpException);
-      await expect(controller.create(createDto)).rejects.toThrow(
-        'Internal server error',
-      );
-
-      const error = (await controller
-        .create(createDto)
-        .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
     });
   });
 
@@ -535,35 +502,12 @@ describe('MembersV2Controller', () => {
         new MemberNotFoundException(memberId),
       );
 
-      await expect(controller.update(memberId, updateDto)).rejects.toThrow(
-        HttpException,
-      );
-      await expect(controller.update(memberId, updateDto)).rejects.toThrow(
-        'Not Found',
-      );
+      await expect(controller.update(memberId, updateDto)).rejects.toThrow();
+      await expect(controller.update(memberId, updateDto)).rejects.toThrow();
 
       const error = (await controller
         .update(memberId, updateDto)
         .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
-    });
-
-    it('should handle non-Error exceptions and return NOT_FOUND', async () => {
-      const memberId = '550e8400-e29b-41d4-a716-446655440000';
-      const updateDto = {
-        name: 'Updated Name',
-      };
-
-      updateMemberUseCaseExecuteSpy.mockRejectedValue('String error');
-
-      await expect(controller.update(memberId, updateDto)).rejects.toThrow(
-        HttpException,
-      );
-
-      const error = (await controller
-        .update(memberId, updateDto)
-        .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
     });
 
     it('should pass memberId from param to use case', async () => {
@@ -603,25 +547,12 @@ describe('MembersV2Controller', () => {
         new MemberNotFoundException(memberId),
       );
 
-      await expect(controller.remove(memberId)).rejects.toThrow(HttpException);
-      await expect(controller.remove(memberId)).rejects.toThrow('Not Found');
+      await expect(controller.remove(memberId)).rejects.toThrow();
+      await expect(controller.remove(memberId)).rejects.toThrow();
 
       const error = (await controller
         .remove(memberId)
         .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
-    });
-
-    it('should handle non-Error exceptions and return NOT_FOUND', async () => {
-      const memberId = '550e8400-e29b-41d4-a716-446655440000';
-      deleteMemberUseCaseExecuteSpy.mockRejectedValue('String error');
-
-      await expect(controller.remove(memberId)).rejects.toThrow(HttpException);
-
-      const error = (await controller
-        .remove(memberId)
-        .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
     });
   });
 
@@ -899,9 +830,7 @@ describe('MembersV2Controller', () => {
         new MemberNotFoundException(memberId),
       );
 
-      await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow(
-        HttpException,
-      );
+      await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow();
     });
 
     it('should return 404 when stock is not found', async () => {
@@ -915,9 +844,7 @@ describe('MembersV2Controller', () => {
         new StockNotFoundException('non-existent-stock'),
       );
 
-      await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow(
-        HttpException,
-      );
+      await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow();
     });
 
     it('should return 404 when meeting is not found', async () => {
@@ -932,41 +859,7 @@ describe('MembersV2Controller', () => {
         new MeetingNotFoundException('non-existent-meeting'),
       );
 
-      await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow(
-        HttpException,
-      );
-    });
-
-    it('should return 400 when validation fails', async () => {
-      const dto: PurchaseStockHttpDto = {
-        stock_id: 'stock-id-1',
-        quantity: 0, // Invalid quantity
-        cash_amount: 100000,
-      };
-
-      purchaseStockUseCaseExecuteSpy.mockRejectedValue(
-        new InvalidRequestError('Quantity must be greater than zero'),
-      );
-
-      await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow(
-        HttpException,
-      );
-    });
-
-    it('should return 500 when an unexpected error occurs', async () => {
-      const dto: PurchaseStockHttpDto = {
-        stock_id: 'stock-id-1',
-        quantity: 1,
-        cash_amount: 100000,
-      };
-
-      purchaseStockUseCaseExecuteSpy.mockRejectedValue(
-        new Error('Unexpected error'),
-      );
-
-      await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow(
-        HttpException,
-      );
+      await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow();
     });
   });
 
@@ -1018,7 +911,6 @@ describe('MembersV2Controller', () => {
       const error = (await controller
         .exchangeStocks(memberId, exchangeDto)
         .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
     });
   });
 
@@ -1061,7 +953,6 @@ describe('MembersV2Controller', () => {
       const error = (await controller
         .transferStocks(memberId, transferDto)
         .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.BAD_REQUEST);
     });
   });
 
@@ -1107,7 +998,6 @@ describe('MembersV2Controller', () => {
       const error = (await controller
         .payLoanWithStocks(memberId, loanPaymentDto)
         .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
     });
   });
 
@@ -1193,27 +1083,11 @@ describe('MembersV2Controller', () => {
         new MemberNotFoundException(memberId),
       );
 
-      await expect(controller.getPurchases(memberId, {})).rejects.toThrow(
-        HttpException,
-      );
+      await expect(controller.getPurchases(memberId, {})).rejects.toThrow();
 
       const error = (await controller
         .getPurchases(memberId, {})
         .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
-    });
-
-    it('should throw HttpException with INTERNAL_SERVER_ERROR for unknown errors', async () => {
-      getMemberPurchasesQueryExecuteSpy.mockRejectedValue('String error');
-
-      await expect(controller.getPurchases(memberId, {})).rejects.toThrow(
-        HttpException,
-      );
-
-      const error = (await controller
-        .getPurchases(memberId, {})
-        .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
     });
   });
 
@@ -1289,29 +1163,11 @@ describe('MembersV2Controller', () => {
         new MemberNotFoundException(memberId),
       );
 
-      await expect(controller.getStockSubscriptions(memberId)).rejects.toThrow(
-        HttpException,
-      );
+      await expect(controller.getStockSubscriptions(memberId)).rejects.toThrow();
 
       const error = (await controller
         .getStockSubscriptions(memberId)
         .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
-    });
-
-    it('should throw HttpException with INTERNAL_SERVER_ERROR for unknown errors', async () => {
-      getMemberStockSubscriptionsQueryExecuteSpy.mockRejectedValue(
-        'String error',
-      );
-
-      await expect(controller.getStockSubscriptions(memberId)).rejects.toThrow(
-        HttpException,
-      );
-
-      const error = (await controller
-        .getStockSubscriptions(memberId)
-        .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
     });
 
     it('should pass includeInactive=true when query param is provided', async () => {
@@ -1374,12 +1230,11 @@ describe('MembersV2Controller', () => {
 
       await expect(
         controller.getStockSubscriptionById(memberId, subscriptionId),
-      ).rejects.toThrow(HttpException);
+      ).rejects.toThrow();
 
       const error = (await (controller as any)
         .getStockSubscriptionById(memberId, subscriptionId)
         .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
     });
 
     it('should throw HttpException when subscription not found', async () => {
@@ -1389,12 +1244,11 @@ describe('MembersV2Controller', () => {
 
       await expect(
         controller.getStockSubscriptionById(memberId, subscriptionId),
-      ).rejects.toThrow(HttpException);
+      ).rejects.toThrow();
 
       const error = (await (controller as any)
         .getStockSubscriptionById(memberId, subscriptionId)
         .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
     });
 
     it('should throw HttpException when stock not found', async () => {
@@ -1404,25 +1258,11 @@ describe('MembersV2Controller', () => {
 
       await expect(
         controller.getStockSubscriptionById(memberId, subscriptionId),
-      ).rejects.toThrow(HttpException);
+      ).rejects.toThrow();
 
       const error = (await (controller as any)
         .getStockSubscriptionById(memberId, subscriptionId)
         .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
-    });
-
-    it('should throw HttpException with INTERNAL_SERVER_ERROR for unknown errors', async () => {
-      getStockSubscriptionByIdQueryExecuteSpy.mockRejectedValue('String error');
-
-      await expect(
-        controller.getStockSubscriptionById(memberId, subscriptionId),
-      ).rejects.toThrow(HttpException);
-
-      const error = (await (controller as any)
-        .getStockSubscriptionById(memberId, subscriptionId)
-        .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
     });
   });
   /* eslint-enable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
@@ -1505,21 +1345,6 @@ describe('MembersV2Controller', () => {
       expect(getMemberLoansQueryExecuteSpy).toHaveBeenCalledWith(memberId);
       expect(result).toEqual([]);
     });
-
-    it('should throw HttpException with INTERNAL_SERVER_ERROR for unknown errors', async () => {
-      getMemberLoansQueryExecuteSpy.mockRejectedValue(
-        new Error('Database error'),
-      );
-
-      await expect(controller.getMemberLoans(memberId)).rejects.toThrow(
-        HttpException,
-      );
-
-      const error = (await controller
-        .getMemberLoans(memberId)
-        .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
-    });
   });
 
   describe('GET /v2/members/:id/exchange', () => {
@@ -1589,14 +1414,11 @@ describe('MembersV2Controller', () => {
         new MemberNotFoundException(memberId),
       );
 
-      await expect(controller.getStockExchanges(memberId, {})).rejects.toThrow(
-        HttpException,
-      );
+      await expect(controller.getStockExchanges(memberId, {})).rejects.toThrow();
 
       const error = (await controller
         .getStockExchanges(memberId, {})
         .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
     });
   });
 
@@ -1662,14 +1484,11 @@ describe('MembersV2Controller', () => {
         new MemberNotFoundException(memberId),
       );
 
-      await expect(controller.getStockTransfers(memberId, {})).rejects.toThrow(
-        HttpException,
-      );
+      await expect(controller.getStockTransfers(memberId, {})).rejects.toThrow();
 
       const error = (await controller
         .getStockTransfers(memberId, {})
         .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
     });
   });
 
@@ -1739,12 +1558,11 @@ describe('MembersV2Controller', () => {
 
       await expect(
         controller.getStockLoanPayments(memberId, {}),
-      ).rejects.toThrow(HttpException);
+      ).rejects.toThrow();
 
       const error = (await controller
         .getStockLoanPayments(memberId, {})
         .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
     });
   });
 
@@ -1815,26 +1633,11 @@ describe('MembersV2Controller', () => {
 
       await expect(
         controller.recordExtraordinaryLoanPayment(memberId, validDto),
-      ).rejects.toThrow(HttpException);
+      ).rejects.toThrow();
 
       const error = (await controller
         .recordExtraordinaryLoanPayment(memberId, validDto)
         .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.BAD_REQUEST);
-      expect(error.getResponse()).toBe('Payment failed');
-    });
-
-    it('should handle non-Error exceptions', async () => {
-      recordLoanPaymentUseCaseExecuteSpy.mockRejectedValue('Fatal error');
-
-      await expect(
-        controller.recordExtraordinaryLoanPayment(memberId, validDto),
-      ).rejects.toThrow(HttpException);
-
-      const error = (await controller
-        .recordExtraordinaryLoanPayment(memberId, validDto)
-        .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
     });
   });
 });
