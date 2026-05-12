@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository, IsNull, In } from 'typeorm';
 import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-subscription-repository.port';
 import { StockSubscription as StockSubscriptionDomain } from '@domain/entities/stock-subscription.entity';
 import { StockSubscription as StockSubscriptionEntity } from '../entities/stock-subscription.entity';
@@ -32,6 +32,13 @@ export class TypeOrmStockSubscriptionRepository implements StockSubscriptionRepo
     const repo = this.getRepository();
     const entity = await repo.findOne({ where: { id } });
     return entity ? StockSubscriptionMapper.toDomain(entity) : null;
+  }
+
+  async findByIds(ids: string[]): Promise<StockSubscriptionDomain[]> {
+    if (!ids || ids.length === 0) return [];
+    const repo = this.getRepository();
+    const entities = await repo.find({ where: { id: In(ids) } });
+    return entities.map((e) => StockSubscriptionMapper.toDomain(e));
   }
 
   async findByMemberAndStock(
