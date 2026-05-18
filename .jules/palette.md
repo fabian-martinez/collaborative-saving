@@ -1,0 +1,1 @@
+## 2026-05-18 - Vanguard package updates\n **Learning:** Avoid blind pnpm update, targeted patches by overriding pnpm config in package.json helps resolve deep subdependencies safely without altering lockfiles extensively for unrelated dependencies.\n **Action:** Use pnpm overrides in package.json for patching transitive dependency vulnerabilities.
