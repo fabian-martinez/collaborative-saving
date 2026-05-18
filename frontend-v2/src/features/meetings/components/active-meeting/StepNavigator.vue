@@ -44,20 +44,32 @@
 
     <!-- Botones de Navegación -->
     <div class="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4">
-      <button
-        class="btn btn-ghost w-full sm:w-auto text-base-content/70"
-        :disabled="currentStep === 1"
-        @click="handlePrevious"
+      <div
+        class="tooltip"
+        :class="{ 'tooltip-open': false }"
+        :data-tip="currentStep === 1 ? 'Estás en el primer paso' : 'Ir al paso anterior'"
       >
-        ← Anterior
-      </button>
-      <button
-        class="btn btn-primary w-full sm:w-auto"
-        :disabled="currentStep === 5"
-        @click="handleNext"
+        <button
+          class="btn btn-ghost w-full sm:w-auto text-base-content/70"
+          :disabled="currentStep === 1"
+          @click="handlePrevious"
+        >
+          ← Anterior
+        </button>
+      </div>
+      <div
+        class="tooltip"
+        :class="{ 'tooltip-open': false }"
+        :data-tip="currentStep === 5 ? 'Estás en el último paso' : 'Ir al siguiente paso'"
       >
-        Siguiente →
-      </button>
+        <button
+          class="btn btn-primary w-full sm:w-auto"
+          :disabled="currentStep === 5"
+          @click="handleNext"
+        >
+          Siguiente →
+        </button>
+      </div>
     </div>
   </div>
 </template>
