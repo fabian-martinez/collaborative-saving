@@ -36,6 +36,7 @@ describe('CalculateMemberInsuranceUseCase', () => {
 
     stockRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByType: jest.fn(),
       findAll: jest.fn(),
       findActive: jest.fn(),
@@ -113,15 +114,15 @@ describe('CalculateMemberInsuranceUseCase', () => {
       createLoan({ id: loanId, outstandingBalance: 100000 }),
     ]);
 
-    stockRepository.findById.mockResolvedValue(
+    stockRepository.findByIds.mockResolvedValue([
       createStock({ id: stockId, value: 50000 }),
-    );
+    ]);
 
     const result = await useCase.execute({ memberId });
 
     expect(result.insuranceAmount).toBe(50);
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(stockRepository.findById).toHaveBeenCalledWith(stockId);
+    expect(stockRepository.findByIds).toHaveBeenCalledWith([stockId]);
   });
 
   it('should return zero when savings cover the debt', async () => {
@@ -135,9 +136,9 @@ describe('CalculateMemberInsuranceUseCase', () => {
       createLoan({ id: 'loan-1', outstandingBalance: 50000 }),
     ]);
 
-    stockRepository.findById.mockResolvedValue(
+    stockRepository.findByIds.mockResolvedValue([
       createStock({ id: stockId, value: 30000 }),
-    );
+    ]);
 
     const result = await useCase.execute({ memberId });
 
@@ -155,9 +156,9 @@ describe('CalculateMemberInsuranceUseCase', () => {
       createLoan({ id: 'loan-1', outstandingBalance: 100000 }),
     ]);
 
-    stockRepository.findById.mockResolvedValue(
+    stockRepository.findByIds.mockResolvedValue([
       createStock({ id: stockId, value: 30000 }),
-    );
+    ]);
 
     const result = await useCase.execute({ memberId, capitalPayment: 20000 });
 
@@ -182,9 +183,9 @@ describe('CalculateMemberInsuranceUseCase', () => {
       createLoan({ id: financingLoanId, outstandingBalance: 50000 }),
     ]);
 
-    stockRepository.findById.mockResolvedValue(
+    stockRepository.findByIds.mockResolvedValue([
       createStock({ id: stockId, value: 40000 }),
-    );
+    ]);
 
     const result = await useCase.execute({ memberId });
 
