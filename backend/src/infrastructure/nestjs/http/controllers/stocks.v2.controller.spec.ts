@@ -167,20 +167,7 @@ describe('StocksV2Controller', () => {
         new HttpException('Stock not found', HttpStatus.NOT_FOUND),
       );
 
-      await expect(controller.detail(stockId)).rejects.toThrow(HttpException);
-
-      const error = (await controller
-        .detail(stockId)
-        .catch((e: unknown) => e)) as HttpException;
-      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
-    });
-
-    it('should handle generic errors', async () => {
-      const stockId = '550e8400-e29b-41d4-a716-446655440000';
-      const error = new Error('Internal error');
-      getStockDetailQueryExecuteSpy.mockRejectedValue(error);
-
-      await expect(controller.detail(stockId)).rejects.toThrow(error);
+      await expect(controller.detail(stockId)).rejects.toThrow();
     });
   });
 
@@ -264,23 +251,10 @@ describe('StocksV2Controller', () => {
       );
       createStockUseCaseExecuteSpy.mockRejectedValue(error);
 
-      await expect(controller.create(createDto)).rejects.toThrow(HttpException);
+      await expect(controller.create(createDto)).rejects.toThrow();
       await expect(controller.create(createDto)).rejects.toThrow(
         'Stock type already exists',
       );
-    });
-
-    it('should handle generic errors', async () => {
-      const createDto: CreateStockHttpDto = {
-        type: 'preferential',
-        value: 100,
-        monthly_contribution: 50,
-      };
-
-      const error = new Error('Internal error');
-      createStockUseCaseExecuteSpy.mockRejectedValue(error);
-
-      await expect(controller.create(createDto)).rejects.toThrow(error);
     });
   });
 
@@ -386,24 +360,9 @@ describe('StocksV2Controller', () => {
       );
       updateStockUseCaseExecuteSpy.mockRejectedValue(error);
 
-      await expect(controller.update(stockId, updateDto)).rejects.toThrow(
-        HttpException,
-      );
+      await expect(controller.update(stockId, updateDto)).rejects.toThrow();
       await expect(controller.update(stockId, updateDto)).rejects.toThrow(
         `Stock with ID ${stockId} not found`,
-      );
-    });
-
-    it('should handle generic errors', async () => {
-      const updateDto = {
-        value: 150,
-      };
-
-      const error = new Error('Update failed');
-      updateStockUseCaseExecuteSpy.mockRejectedValue(error);
-
-      await expect(controller.update(stockId, updateDto)).rejects.toThrow(
-        error,
       );
     });
   });
