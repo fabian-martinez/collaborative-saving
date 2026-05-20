@@ -4,8 +4,11 @@
       <span class="loading loading-spinner loading-lg"></span>
     </div>
 
-    <div v-else id="payment-form-receipt" class="bg-base-100 p-4 md:p-6 rounded-2xl shadow-lg font-sans">
-      <div class="text-center mb-4 md:mb-6">
+    <div v-else id="payment-form-receipt" class="bg-base-100 p-4 md:p-6 rounded-2xl shadow-lg font-sans relative overflow-hidden">
+      <!-- Watermark for Draft -->
+      <div class="watermark-draft">BORRADOR</div>
+
+      <div class="text-center mb-4 md:mb-6 relative z-10">
         <h2 class="text-xl md:text-2xl font-bold">Recibo de Pago</h2>
         <p class="text-base md:text-lg text-base-content/80 wrap-break-word">
           {{ memberName }}
@@ -15,7 +18,7 @@
         </p>
       </div>
 
-      <form @submit.prevent="$emit('submit')" class="space-y-4 md:space-y-6">
+      <form @submit.prevent="$emit('submit')" class="space-y-4 md:space-y-6 relative z-10">
         <!-- Acciones -->
         <div v-if="stockDues.length > 0">
           <h2
@@ -390,4 +393,30 @@ function getAffectedPaymentTypeLabel(type: string): string {
   return typeLabels[type] || type
 }
 </script>
+
+<style scoped>
+.watermark-draft {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-45deg);
+  font-size: 8rem;
+  font-weight: bold;
+  color: #9ca3af !important; /* gray-400 */
+  opacity: 0.15 !important;
+  pointer-events: none;
+  z-index: 0;
+  user-select: none;
+  white-space: nowrap;
+}
+
+@media print {
+  .watermark-draft {
+    color: #9ca3af !important;
+    opacity: 0.2 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+</style>
 
