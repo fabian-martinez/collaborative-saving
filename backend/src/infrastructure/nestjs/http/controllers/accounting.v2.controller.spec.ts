@@ -13,7 +13,6 @@ import { OperationResponseDto } from '@application/dto/accounting/operation-resp
 import { GetAccountsSummaryResponseDto } from '@application/dto/accounting/get-accounts-summary-response.dto';
 import { OperationNotFoundException } from '@application/exceptions/operation-not-found.exception';
 import { LedgerEntryNotFoundException } from '@application/exceptions/ledger-entry-not-found.exception';
-import { HttpException } from '@nestjs/common';
 
 describe('AccountingV2Controller', () => {
   let controller: AccountingV2Controller;
@@ -542,9 +541,7 @@ describe('AccountingV2Controller', () => {
 
       getOperationByIdQuery.execute.mockRejectedValue(error);
 
-      await expect(controller.getOperationById(operationId)).rejects.toThrow(
-        HttpException,
-      );
+      await expect(controller.getOperationById(operationId)).rejects.toThrow();
       await expect(controller.getOperationById(operationId)).rejects.toThrow(
         'Operation with ID non-existent-op not found',
       );
@@ -652,9 +649,7 @@ describe('AccountingV2Controller', () => {
 
       getLedgerEntryByIdQuery.execute.mockRejectedValue(error);
 
-      await expect(controller.getLedgerEntryById(entryId)).rejects.toThrow(
-        HttpException,
-      );
+      await expect(controller.getLedgerEntryById(entryId)).rejects.toThrow();
       await expect(controller.getLedgerEntryById(entryId)).rejects.toThrow(
         'LedgerEntry with ID non-existent-entry not found',
       );

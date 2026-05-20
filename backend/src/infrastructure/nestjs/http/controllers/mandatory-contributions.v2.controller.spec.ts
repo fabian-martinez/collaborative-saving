@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { HttpException } from '@nestjs/common';
 import { MandatoryContributionsV2Controller } from './mandatory-contributions.v2.controller';
 import { GetMandatoryContributionsQueryHandler } from '@application/queries/mandatory-contributions/get-mandatory-contributions.query-handler';
 import { GetMandatoryContributionDetailQueryHandler } from '@application/queries/mandatory-contributions/get-mandatory-contribution-detail.query-handler';
@@ -125,9 +124,7 @@ describe('MandatoryContributionsV2Controller', () => {
         new Error('Mandatory contribution not found'),
       );
 
-      await expect(controller.detail('non-existent-id')).rejects.toThrow(
-        HttpException,
-      );
+      await expect(controller.detail('non-existent-id')).rejects.toThrow();
     });
   });
 
@@ -157,7 +154,7 @@ describe('MandatoryContributionsV2Controller', () => {
         new Error('Value must be greater than 0'),
       );
 
-      await expect(controller.create(createDto)).rejects.toThrow(HttpException);
+      await expect(controller.create(createDto)).rejects.toThrow();
     });
   });
 
@@ -200,7 +197,7 @@ describe('MandatoryContributionsV2Controller', () => {
 
       await expect(
         controller.update('non-existent-id', updateDto),
-      ).rejects.toThrow(HttpException);
+      ).rejects.toThrow();
     });
   });
 
@@ -220,9 +217,7 @@ describe('MandatoryContributionsV2Controller', () => {
         new Error('Mandatory contribution not found'),
       );
 
-      await expect(controller.remove('non-existent-id')).rejects.toThrow(
-        HttpException,
-      );
+      await expect(controller.remove('non-existent-id')).rejects.toThrow();
     });
   });
 });

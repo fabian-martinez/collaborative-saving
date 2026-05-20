@@ -60,15 +60,8 @@ export class LoansV2Controller {
     type: [LoanResponseHttpDto],
   })
   async findAll(): Promise<LoanResponseHttpDto[]> {
-    try {
-      const loans = await this.getLoansQuery.execute();
-      return loans.map((loan) => this.mapLoanToHttp(loan));
-    } catch (error: unknown) {
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const loans = await this.getLoansQuery.execute();
+    return loans.map((loan) => this.mapLoanToHttp(loan));
   }
 
   @Get(':id')
@@ -99,10 +92,7 @@ export class LoansV2Controller {
       if (error instanceof LoanNotFoundException) {
         throw new HttpException(error.message, HttpStatus.NOT_FOUND);
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
@@ -159,10 +149,7 @@ export class LoansV2Controller {
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw error;
     }
   }
 
