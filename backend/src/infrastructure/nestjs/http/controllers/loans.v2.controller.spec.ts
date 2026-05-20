@@ -7,8 +7,6 @@ import { UpdateLoanTermsUseCase } from '@application/use-cases/loans/update-loan
 import { GetPaymentPlanSimulationQueryHandler } from '@application/queries/loans/get-payment-plan-simulation.query-handler';
 import { SimulateLoanPaymentPlanUseCase } from '@application/use-cases/loans/simulate-loan-payment-plan.use-case';
 import { LoanResponseDto } from '@application/dto/loans/loan-response.dto';
-import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
-import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { LoanStatus } from '@domain/entities/loan.entity';
 
 describe('LoansV2Controller', () => {

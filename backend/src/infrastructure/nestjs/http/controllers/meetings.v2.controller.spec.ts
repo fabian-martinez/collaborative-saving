@@ -22,8 +22,6 @@ import { MeetingResponseDto } from '@application/dto/meetings/meeting-response.d
 import { OperationResponseDto } from '@application/dto/meetings/operation-response.dto';
 import { OperationType } from '@domain/enums/operation-type.enum';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
-import { BusinessRuleError } from '@domain/errors/business-rule.error';
-import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { DisbursementTypeHttp } from '../dto/meetings/disbursement-plan-item-http.dto';
 import { DisbursementType } from '@domain/enums/disbursement-type.enum';
 
@@ -719,9 +717,8 @@ describe('MeetingsV2Controller', () => {
       };
 
       getMeetingQueryExecuteSpy.mockResolvedValue(mockMeeting);
-
       // ACT
-      const result = await controller.findOne(meetingId, {});
+      await controller.findOne(meetingId, {});
     });
 
     it('should include summary when includeSummary query param is true', async () => {
@@ -919,12 +916,6 @@ describe('MeetingsV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.getActive()).rejects.toThrow();
-      try {
-        await controller.getActive();
-      } catch (e) {
-        expect(e).toBeInstanceOf(HttpException);
-        if (e instanceof HttpException) {}
-      }
     });
 
     it('should handle active meetings with null notes and include summary', async () => {
@@ -1027,12 +1018,6 @@ describe('MeetingsV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.getPurchases(meetingId)).rejects.toThrow();
-      try {
-        await controller.getPurchases(meetingId);
-      } catch (e) {
-        expect(e).toBeInstanceOf(HttpException);
-        if (e instanceof HttpException) {}
-      }
     });
   });
 
@@ -1151,7 +1136,9 @@ describe('MeetingsV2Controller', () => {
       getMeetingStockLoanPaymentsQueryExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.getStockLoanPayments(meetingId)).rejects.toThrow();
+      await expect(
+        controller.getStockLoanPayments(meetingId),
+      ).rejects.toThrow();
     });
   });
 

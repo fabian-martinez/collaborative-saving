@@ -13,7 +13,6 @@ import { OperationResponseDto } from '@application/dto/accounting/operation-resp
 import { GetAccountsSummaryResponseDto } from '@application/dto/accounting/get-accounts-summary-response.dto';
 import { OperationNotFoundException } from '@application/exceptions/operation-not-found.exception';
 import { LedgerEntryNotFoundException } from '@application/exceptions/ledger-entry-not-found.exception';
-import { HttpException } from '@nestjs/common';
 
 describe('AccountingV2Controller', () => {
   let controller: AccountingV2Controller;
