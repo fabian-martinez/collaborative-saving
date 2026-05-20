@@ -93,7 +93,13 @@
     </div>
     
     <div class="mt-6 md:mt-8 pt-4 border-t">
-      <div class="text-right mt-4">
+      <div class="flex flex-col md:flex-row justify-end gap-4 mt-4">
+        <button class="btn btn-outline w-full md:w-auto" @click="isPrintAllModalOpen = true" :disabled="isLoadingMembers || membersList.length === 0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+          </svg>
+          Imprimir Todos los Borradores
+        </button>
         <button class="btn btn-success w-full md:w-auto" @click="$emit('completed')">
           Finalizar Solicitud de Aportes
         </button>
@@ -110,12 +116,20 @@
       @close="printReceipt.closePrintModal"
       @print="printReceipt.printReceipt"
     />
+
+    <!-- Modal de Impresión de Todos los Borradores -->
+    <PrintAllDraftsModal
+      :is-open="isPrintAllModalOpen"
+      :members="membersList"
+      :print-date="memberSelection.printDate.value"
+      @close="isPrintAllModalOpen = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 // 1. Imports
-import { computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useActiveMeetingStore } from '../../stores/activeMeeting'
 import { usePaymentCollection } from '../../composables/usePaymentCollection'
 import { useMemberSelection } from '../../composables/useMemberSelection'
@@ -128,6 +142,7 @@ import PrintReceiptModal from '@/shared/components/PrintReceiptModal.vue'
 import EditLoanPaymentModal from './EditLoanPaymentModal.vue'
 import EditFineModal from './EditFineModal.vue'
 import NoveltyModal from './NoveltyModal.vue'
+import PrintAllDraftsModal from './collection/PrintAllDraftsModal.vue'
 // Estilos de impresión importados
 import './Step1Collection.print.css'
 
@@ -152,6 +167,7 @@ const printFormReceipt = usePrintReceipt(
 
 // 4. Reactive state
 // (Todo el estado está en los composables)
+const isPrintAllModalOpen = ref(false)
 
 // 5. Computed properties
 const totalCollected = computed(() =>
