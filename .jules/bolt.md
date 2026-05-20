@@ -13,3 +13,6 @@
 ## 2024-05-28 - Optimize PendingMemberPayment Retrieval using Batching
 **Learning:** In the `ExecuteDisbursementPlanUseCase`, the sorting of disbursement plan items was causing an N+1 query problem by iteratively fetching `PendingMemberPayment` entities one by one using `findById`. This degraded performance when executing large disbursement plans.
 **Action:** Always batch fetching operations when dealing with lists or arrays of IDs. Add `findByIds` batch methods to TypeORM repository ports and implementations (using the SQL `IN` operator) to resolve N+1 bottlenecks.
+## 2026-05-18 - Safe Resolution of N+1 Queries with Defaulting Logic
+**Learning:** Replacing `Promise.all(ids.map(id => repo.findById(id)))` with `await repo.findByIds(ids)` breaks functionality if the subsequent logic relies on a perfect 1:1 mapping of requested IDs to results (especially where missing records fallback to default values, e.g., `stock ? stock.value : 0`). `findByIds` filters out missing records, so iterating solely over its output bypasses the fallback mechanism for missing IDs.
+**Action:** When refactoring to `findByIds`, map the database results into a `Map<string, Entity>` immediately. Then, iterate over the *original array of requested IDs*, doing a `Map.get(id)` for each to safely trigger any required fallback logic for missing records.
