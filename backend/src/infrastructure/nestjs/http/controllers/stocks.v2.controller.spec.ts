@@ -168,10 +168,6 @@ describe('StocksV2Controller', () => {
       );
 
       await expect(controller.detail(stockId)).rejects.toThrow();
-
-      const error = (await controller
-        .detail(stockId)
-        .catch((e: unknown) => e)) as HttpException;
     });
   });
 
