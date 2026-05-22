@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, shallowRef, computed } from 'vue';
 import {
   signInWithEmailAndPassword,
   signOut,
@@ -9,7 +9,7 @@ import {
 import { auth } from '@/shared/firebase/config';
 
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref<User | null>(null);
+  const user = shallowRef<User | null>(null);
   const loading = ref(true);
   const initialized = ref(false);
 
