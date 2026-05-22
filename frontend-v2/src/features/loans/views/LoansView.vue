@@ -2,14 +2,27 @@
   <div class="container mx-auto p-4 md:p-6 max-w-7xl">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
       <h1 class="text-2xl font-bold text-base-content">Préstamos</h1>
-      <div class="relative w-full md:w-auto">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Buscar por tipo o estado..."
-          class="input input-bordered w-full md:w-80 pl-10 bg-base-100"
-        />
-        <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-base-content/50" />
+      <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+        <select v-model="filterStatus" class="select select-bordered w-full md:w-auto bg-base-100">
+          <option value="">Todos los estados</option>
+          <option value="active">Activo</option>
+          <option value="pending">Pendiente</option>
+          <option value="paid">Pagado</option>
+          <option value="consolidated">Consolidado</option>
+        </select>
+        <select v-model="filterMemberId" class="select select-bordered w-full md:w-auto bg-base-100">
+          <option value="">Todos los socios</option>
+          <option v-for="m in members" :key="m.id" :value="m.id">{{ m.name }}</option>
+        </select>
+        <div class="relative w-full md:w-auto">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Buscar..."
+            class="input input-bordered w-full md:w-80 pl-10 bg-base-100"
+          />
+          <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-base-content/50" />
+        </div>
       </div>
     </div>
     
@@ -66,8 +79,19 @@ const mappedLoans = computed(() => {
   }))
 })
 
+const filterStatus = ref('active')
+const filterMemberId = ref('')
+
+const filteredByDropdowns = computed(() => {
+  return mappedLoans.value.filter(loan => {
+    const matchStatus = !filterStatus.value || loan.status.toLowerCase() === filterStatus.value.toLowerCase()
+    const matchMember = !filterMemberId.value || loan.member_id === filterMemberId.value
+    return matchStatus && matchMember
+  })
+})
+
 // Búsqueda contextual
-const { searchQuery, filteredItems } = useSearchableList<any>(mappedLoans, [
+const { searchQuery, filteredItems } = useSearchableList<any>(filteredByDropdowns, [
   'loan_type',
   'status',
   'memberName'
