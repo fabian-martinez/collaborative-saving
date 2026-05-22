@@ -40,6 +40,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search } from 'iconoir-vue/regular'
 import { loansApi, type Loan } from '@/api/loans.api'
+import { membersApi, type Member } from '@/api/members.api'
 import { useSearchableList } from '@/shared/composables/useSearchableList'
 import DataTable, { type Column } from '@/shared/components/DataTable.vue'
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
@@ -47,19 +48,33 @@ import ErrorMessage from '@/shared/components/ErrorMessage.vue'
 
 const router = useRouter()
 const loans = ref<Loan[]>([])
+const members = ref<Member[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
 
+const membersMap = computed(() => {
+  return members.value.reduce((acc, m) => {
+    acc[m.id] = m.name
+    return acc
+  }, {} as Record<string, string>)
+})
+
+const mappedLoans = computed(() => {
+  return loans.value.map(l => ({
+    ...l,
+    memberName: membersMap.value[l.member_id] || l.member_id
+  }))
+})
+
 // Búsqueda contextual
-const loansRef = computed(() => loans.value)
-const { searchQuery, filteredItems } = useSearchableList<Loan>(loansRef, [
+const { searchQuery, filteredItems } = useSearchableList<any>(mappedLoans, [
   'loan_type',
   'status',
-  'member_id'
+  'memberName'
 ])
 
 const columns: Column[] = [
-  { key: 'member_id', label: 'Miembro' },
+  { key: 'memberName', label: 'Miembro' },
   { key: 'loan_type', label: 'Tipo' },
   { key: 'approved_amount', label: 'Monto Aprobado', format: 'currency' },
   { key: 'outstanding_balance', label: 'Saldo Pendiente', format: 'currency' },
@@ -69,9 +84,14 @@ const columns: Column[] = [
 onMounted(async () => {
   loading.value = true
   try {
-    loans.value = await loansApi.getLoans()
+    const [loansData, membersData] = await Promise.all([
+      loansApi.getLoans(),
+      membersApi.getMembers()
+    ])
+    loans.value = loansData
+    members.value = membersData
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Error al cargar préstamos'
+    error.value = e instanceof Error ? e.message : 'Error al cargar datos'
   } finally {
     loading.value = false
   }

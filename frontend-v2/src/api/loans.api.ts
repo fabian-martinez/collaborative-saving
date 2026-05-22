@@ -41,9 +41,9 @@ export interface PaymentPlanItem {
 }
 
 export interface PaymentPlanResponse {
-  items: PaymentPlanItem[]
-  total_interest: number
-  total_payment: number
+  schedule: PaymentPlanItem[]
+  totalInterest: number
+  totalPayments: number
 }
 
 export interface LoanScenario {

@@ -593,12 +593,12 @@ export const mockApi = {
   async simulatePaymentPlan(_data: any): Promise<any> {
     await delay()
     return {
-      items: [
+      schedule: [
         { month: 1, payment: 100000, principal: 95000, interest: 5000, balance: 1905000 },
         { month: 2, payment: 100000, principal: 95475, interest: 4525, balance: 1809525 }
       ],
-      total_interest: 50000,
-      total_payment: 2000000
+      totalInterest: 50000,
+      totalPayments: 2000000
     }
   },
 
