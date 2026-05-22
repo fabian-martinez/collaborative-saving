@@ -14,6 +14,7 @@ export class Stock {
     private _guaranteedYield: number | null,
     private _behavior: StockBehavior,
     public readonly createdAt: Date,
+    private _expirationDate: Date | null = null,
     private _deletedAt: Date | null = null,
   ) {
     this.validateInvariants();
@@ -26,6 +27,7 @@ export class Stock {
     isGuaranteed?: boolean;
     guaranteedYield?: number | null;
     behavior?: StockBehavior;
+    expirationDate?: Date | null;
   }): Stock {
     const id = randomUUID();
     const behavior = data.behavior || StockBehavior.CAPITAL_APPRECIATION;
@@ -39,6 +41,7 @@ export class Stock {
       data.isGuaranteed ? data.guaranteedYield || null : null,
       behavior,
       new Date(),
+      data.expirationDate || null,
       null,
     );
   }
@@ -51,6 +54,7 @@ export class Stock {
     is_guaranteed: boolean;
     guaranteed_yield: number | null;
     behavior: string;
+    expiration_date?: Date | string | null;
     created_at?: Date | string;
     deleted_at?: Date | string | null;
   }): Stock {
@@ -67,6 +71,11 @@ export class Stock {
           ? new Date(data.created_at)
           : data.created_at
         : new Date(),
+      data.expiration_date
+        ? typeof data.expiration_date === 'string'
+          ? new Date(data.expiration_date)
+          : data.expiration_date
+        : null,
       data.deleted_at
         ? typeof data.deleted_at === 'string'
           ? new Date(data.deleted_at)
@@ -82,6 +91,7 @@ export class Stock {
     isGuaranteed?: boolean;
     guaranteedYield?: number | null;
     behavior?: StockBehavior;
+    expirationDate?: Date | null;
   }): void {
     if (data.type !== undefined) this._type = data.type;
     if (data.value !== undefined) this._value = data.value;
@@ -97,6 +107,8 @@ export class Stock {
       this._guaranteedYield = data.guaranteedYield;
     }
     if (data.behavior !== undefined) this._behavior = data.behavior;
+    if (data.expirationDate !== undefined)
+      this._expirationDate = data.expirationDate;
 
     this.validateInvariants();
   }
@@ -146,6 +158,10 @@ export class Stock {
 
   get behavior(): StockBehavior {
     return this._behavior;
+  }
+
+  get expirationDate(): Date | null {
+    return this._expirationDate;
   }
 
   get deletedAt(): Date | null {

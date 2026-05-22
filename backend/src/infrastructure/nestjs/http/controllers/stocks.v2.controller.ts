@@ -27,6 +27,10 @@ import { CreateStockDto } from '@application/dto/stocks/create-stock.dto';
 import { UpdateStockHttpDto } from '../dto/update-stock-http.dto';
 import { StockResponseHttpDto } from '../dto/stock-response-http.dto';
 import { StockResponseDto } from '@application/dto/stocks/stock-response.dto';
+import { CreateCdtUseCase } from '@application/use-cases/stocks/create-cdt.use-case';
+import { CloseCdtUseCase } from '@application/use-cases/stocks/close-cdt.use-case';
+import { CreateCdtHttpDto } from '../dto/create-cdt-http.dto';
+import { CloseCdtHttpDto } from '../dto/close-cdt-http.dto';
 
 @ApiTags('Stocks V2')
 @Controller('v2/stocks')
@@ -36,6 +40,8 @@ export class StocksV2Controller {
     private readonly getStockDetailQuery: GetStockDetailQueryHandler,
     private readonly createStockUseCase: CreateStockUseCase,
     private readonly updateStockUseCase: UpdateStockUseCase,
+    private readonly createCdtUseCase: CreateCdtUseCase,
+    private readonly closeCdtUseCase: CloseCdtUseCase,
   ) {}
 
   @Get()
@@ -217,6 +223,58 @@ export class StocksV2Controller {
     };
     const result = await this.updateStockUseCase.execute(id, updateDto);
     return this.mapStockToHttp(result);
+  }
+
+  @Post('cdts')
+  @Roles(MemberRole.ADMIN)
+  @ApiOperation({
+    summary: 'Create a new CDT',
+    description: 'Creates a new CDT stock and subscription for a member',
+  })
+  @ApiBody({ type: CreateCdtHttpDto })
+  @ApiResponse({
+    status: 201,
+    description: 'CDT created successfully',
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad request - Invalid CDT data',
+  })
+  async createCdt(@Body() dto: CreateCdtHttpDto) {
+    return this.createCdtUseCase.execute({
+      memberId: dto.member_id,
+      amount: dto.amount,
+      termMonths: dto.term_months,
+    });
+  }
+
+  @Patch('cdts/:id/close')
+  @Roles(MemberRole.ADMIN)
+  @ApiOperation({
+    summary: 'Close a CDT',
+    description:
+      'Closes a CDT and optionally creates a pending payment linked to a meeting',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The unique identifier of the CDT stock',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiBody({ type: CloseCdtHttpDto })
+  @ApiResponse({
+    status: 200,
+    description: 'CDT closed successfully',
+  })
+  @ApiNotFoundResponse({
+    description: 'CDT not found',
+  })
+  async closeCdt(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CloseCdtHttpDto,
+  ): Promise<void> {
+    await this.closeCdtUseCase.execute({
+      stockId: id,
+      meetingId: dto.meeting_id,
+    });
   }
 
   private mapStockToHttp(stock: StockResponseDto): StockResponseHttpDto {
