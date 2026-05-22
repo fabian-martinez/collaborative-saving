@@ -10,10 +10,13 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || 'dummy'
 };
 
+import type { FirebaseApp } from 'firebase/app';
+import type { Auth } from 'firebase/auth';
+
 const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true';
 
-let app;
-let auth;
+let app: FirebaseApp | null = null;
+let auth: Auth | any;
 
 if (!USE_MOCKS && import.meta.env.VITE_FIREBASE_API_KEY && import.meta.env.VITE_FIREBASE_API_KEY !== 'your_api_key') {
   app = initializeApp(firebaseConfig);
