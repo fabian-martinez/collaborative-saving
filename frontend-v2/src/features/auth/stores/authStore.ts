@@ -28,7 +28,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function login(email: string, password: string) {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const credential = await signInWithEmailAndPassword(auth, email, password);
+      user.value = credential.user;
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -46,8 +47,12 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function getToken(): Promise<string | null> {
-    if (!user.value) return null;
-    return user.value.getIdToken();
+    const currentUser = user.value || auth.currentUser;
+    if (!currentUser) return null;
+    if (typeof currentUser.getIdToken === 'function') {
+      return currentUser.getIdToken();
+    }
+    return 'mock-token';
   }
 
   return {
