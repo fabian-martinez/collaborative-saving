@@ -73,6 +73,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/ledger/views/LedgerView.vue')
   },
   {
+    path: '/ledger/account/:accountId',
+    name: 'account-detail',
+    component: () => import('@/features/ledger/views/AccountDetailView.vue')
+  },
+  {
     path: '/pending-payments',
     name: 'pending-payments',
     component: () => import('@/features/pending-payments/views/PendingPaymentsView.vue')
