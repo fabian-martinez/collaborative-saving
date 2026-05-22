@@ -17,8 +17,9 @@ describe('Stock Entity', () => {
       expect(stock.value).toBe(100);
       expect(stock.monthlyContribution).toBe(50);
       expect(stock.isGuaranteed).toBe(false);
-      expect(stock.guaranteedYield).toBe(null);
+      expect(stock.guaranteedYield).toBeNull();
       expect(stock.behavior).toBe(StockBehavior.CAPITAL_APPRECIATION);
+      expect(stock.expirationDate).toBeNull();
       expect(stock.createdAt).toBeInstanceOf(Date);
       expect(stock.deletedAt).toBeNull();
     });
@@ -104,6 +105,7 @@ describe('Stock Entity', () => {
         is_guaranteed: false,
         guaranteed_yield: null,
         behavior: StockBehavior.CAPITAL_APPRECIATION,
+        expiration_date: '2026-12-31T00:00:00Z',
         created_at: mockDate,
         deleted_at: null,
       });
@@ -234,20 +236,19 @@ describe('Stock Entity', () => {
   describe('getters', () => {
     it('should return correct property values', () => {
       const stock = Stock.create({
-        type: 'test',
-        value: 100,
-        monthlyContribution: 50,
+        type: 'bond',
+        value: 1000,
+        monthlyContribution: 0,
         isGuaranteed: true,
-        guaranteedYield: 0.02,
+        guaranteedYield: 0.1,
         behavior: StockBehavior.DIVIDEND_YIELD,
+        expirationDate: new Date('2026-12-31'),
       });
 
-      expect(stock.type).toBe('test');
-      expect(stock.value).toBe(100);
-      expect(stock.monthlyContribution).toBe(50);
       expect(stock.isGuaranteed).toBe(true);
-      expect(stock.guaranteedYield).toBe(0.02);
+      expect(stock.guaranteedYield).toBe(0.1);
       expect(stock.behavior).toBe(StockBehavior.DIVIDEND_YIELD);
+      expect(stock.expirationDate).toEqual(new Date('2026-12-31'));
     });
   });
 });
