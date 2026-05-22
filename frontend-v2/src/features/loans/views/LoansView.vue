@@ -1,31 +1,37 @@
 <template>
-  <div class="loans-view">
-    <div class="view-header">
-      <h1>Préstamos</h1>
-      <div class="relative">
+  <div class="container mx-auto p-4 md:p-6 max-w-7xl">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+      <h1 class="text-2xl font-bold text-base-content">Préstamos</h1>
+      <div class="relative w-full md:w-auto">
         <input
           v-model="searchQuery"
           type="text"
           placeholder="Buscar por tipo o estado..."
-          class="input input-bordered w-64 pl-10"
+          class="input input-bordered w-full md:w-80 pl-10 bg-base-100"
         />
-        <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-base-content/50" />
       </div>
     </div>
-    <LoadingSpinner :loading="loading" />
-    <ErrorMessage :error="error" />
-    <DataTable
-      v-if="!loading && !error"
-      :data="filteredItems"
-      :columns="columns"
-      :actions="true"
-      :empty-message="searchQuery ? 'No se encontraron préstamos' : 'No hay préstamos registrados'"
-      row-key="id"
-    >
-      <template #actions="{ item }">
-        <button @click="viewLoan(item.id)" class="action-button">Ver</button>
-      </template>
-    </DataTable>
+    
+    <div class="card bg-base-100 shadow-sm border border-base-200">
+      <div class="card-body p-0 overflow-hidden">
+        <LoadingSpinner :loading="loading" class="p-8" />
+        <ErrorMessage :error="error" class="m-4" />
+        
+        <DataTable
+          v-if="!loading && !error"
+          :data="filteredItems"
+          :columns="columns"
+          :actions="true"
+          :empty-message="searchQuery ? 'No se encontraron préstamos' : 'No hay préstamos registrados'"
+          row-key="id"
+        >
+          <template #actions="{ item }">
+            <button @click="viewLoan(item.id)" class="btn btn-primary btn-sm">Ver Detalle</button>
+          </template>
+        </DataTable>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -75,27 +81,3 @@ function viewLoan(id: string) {
   router.push(`/loans/${id}`)
 }
 </script>
-
-<style scoped>
-.loans-view {
-  padding: 2rem;
-}
-
-.view-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-.view-header h1 {
-  margin: 0;
-}
-
-.action-button {
-  padding: 0.25rem 0.5rem;
-  background-color: #3498db;
-  color: white;
-}
-</style>
-

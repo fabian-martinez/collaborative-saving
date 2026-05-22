@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MembersV2Module } from './infrastructure/nestjs/http/modules/members-v2.module';
 import { StocksV2Module } from './infrastructure/nestjs/http/modules/stocks-v2.module';
@@ -31,11 +31,15 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      url: process.env.DATABASE_TEST_URL || process.env.DATABASE_URL,
-      autoLoadEntities: true,
-      synchronize: false, // Recommended to be false in production
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        url: configService.get<string>('DATABASE_TEST_URL') || configService.get<string>('DATABASE_URL'),
+        autoLoadEntities: true,
+        synchronize: false,
+      }),
     }),
     EventBusModule,
     TransactionManagerModule,

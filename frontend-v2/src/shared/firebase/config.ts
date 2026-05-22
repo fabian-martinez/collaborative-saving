@@ -23,7 +23,7 @@ if (!USE_MOCKS && import.meta.env.VITE_FIREBASE_API_KEY && import.meta.env.VITE_
   app = null;
   auth = {
     currentUser: null,
-    onAuthStateChanged: (cb: any) => { cb({ uid: 'mock-user-123', email: 'mock@example.com' }); return () => {}; }
+    onAuthStateChanged: (cb: any) => { cb({ uid: 'mock-user-123', email: 'mock@example.com', getIdToken: async () => 'mock-token' }); return () => {}; }
   } as any;
 }
 
