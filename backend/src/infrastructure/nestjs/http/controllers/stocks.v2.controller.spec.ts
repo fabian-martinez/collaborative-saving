@@ -5,6 +5,8 @@ import { GetStocksQueryHandler } from '@application/queries/stocks/get-stocks.qu
 import { GetStockDetailQueryHandler } from '@application/queries/stocks/get-stock-detail.query-handler';
 import { CreateStockUseCase } from '@application/use-cases/stocks/create-stock.use-case';
 import { UpdateStockUseCase } from '@application/use-cases/stocks/update-stock.use-case';
+import { CreateCdtUseCase } from '@application/use-cases/stocks/create-cdt.use-case';
+import { CloseCdtUseCase } from '@application/use-cases/stocks/close-cdt.use-case';
 import { StockBehavior } from '@domain/entities/stock.entity';
 import { CreateStockHttpDto } from '../dto/create-stock-http.dto';
 import { StockResponseDto } from '@application/dto/stocks/stock-response.dto';
@@ -70,6 +72,18 @@ describe('StocksV2Controller', () => {
         },
         {
           provide: UpdateStockUseCase,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: CreateCdtUseCase,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: CloseCdtUseCase,
           useValue: {
             execute: jest.fn(),
           },

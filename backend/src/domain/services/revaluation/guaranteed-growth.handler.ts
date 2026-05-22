@@ -23,7 +23,7 @@ export class GuaranteedGrowthHandler implements DistributionHandler {
       };
     }
 
-    const availableFromAgilePriority = context.agilePriorityInterest;
+    let availableFromAgilePriority = context.agilePriorityInterest;
     let totalRequired = 0;
     const requiredByStock: Record<string, number> = {};
     for (const stock of guaranteedStocks) {
@@ -45,22 +45,53 @@ export class GuaranteedGrowthHandler implements DistributionHandler {
       };
     }
 
-    const assignedByStock: Record<string, number> = {};
     let totalAssigned = 0;
-    for (const stock of guaranteedStocks) {
+    const assignedByStock: Record<string, number> = {};
+
+    // First pass: Process CDT stocks
+    const cdtStocks = guaranteedStocks.filter((s) => s.type.startsWith('CDT-'));
+    for (const stock of cdtStocks) {
       const required = requiredByStock[stock.id] || 0;
       if (required === 0) continue;
 
       let assign = 0;
-      if (availableFromAgilePriority >= totalRequired) {
+      if (availableFromAgilePriority >= required) {
         assign = required;
       } else {
-        assign = (required / totalRequired) * availableFromAgilePriority;
+        assign = availableFromAgilePriority;
       }
 
       assign = Math.max(assign, 0);
       assignedByStock[stock.id] = assign;
       totalAssigned += assign;
+      availableFromAgilePriority -= assign;
+    }
+
+    // Second pass: Process other guaranteed stocks (proportional if not enough)
+    const otherGuaranteedStocks = guaranteedStocks.filter(
+      (s) => !s.type.startsWith('CDT-'),
+    );
+    const otherTotalRequired = otherGuaranteedStocks.reduce(
+      (sum, stock) => sum + (requiredByStock[stock.id] || 0),
+      0,
+    );
+
+    if (otherTotalRequired > 0 && availableFromAgilePriority > 0) {
+      for (const stock of otherGuaranteedStocks) {
+        const required = requiredByStock[stock.id] || 0;
+        if (required === 0) continue;
+
+        let assign = 0;
+        if (availableFromAgilePriority >= otherTotalRequired) {
+          assign = required;
+        } else {
+          assign = (required / otherTotalRequired) * availableFromAgilePriority;
+        }
+
+        assign = Math.max(assign, 0);
+        assignedByStock[stock.id] = assign;
+        totalAssigned += assign;
+      }
     }
 
     const updatedResult: DistributionResult = {
