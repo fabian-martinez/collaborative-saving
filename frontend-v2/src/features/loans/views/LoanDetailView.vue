@@ -44,31 +44,31 @@
 
             <!-- Datos Grid -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-              <div class="stat-box">
+              <div class="bg-base-200/50 p-3 rounded-lg flex flex-col justify-center">
                 <div class="text-xs text-base-content/70">Miembro</div>
                 <div class="font-medium truncate" :title="loan.member_id">{{ loan.member_id }}</div>
               </div>
-              <div class="stat-box">
+              <div class="bg-base-200/50 p-3 rounded-lg flex flex-col justify-center">
                 <div class="text-xs text-base-content/70">Monto Aprobado</div>
                 <div class="font-medium">{{ formatCurrency(loan.approved_amount) }}</div>
               </div>
-              <div class="stat-box">
+              <div class="bg-base-200/50 p-3 rounded-lg flex flex-col justify-center">
                 <div class="text-xs text-base-content/70">Monto Desembolsado</div>
                 <div class="font-medium">{{ formatCurrency(loan.disbursed_amount) }}</div>
               </div>
-              <div class="stat-box">
+              <div class="bg-base-200/50 p-3 rounded-lg flex flex-col justify-center">
                 <div class="text-xs text-base-content/70">Tasa de Interés</div>
                 <div class="font-medium">{{ formatPercentage(loan.interest_rate) }}</div>
               </div>
-              <div class="stat-box">
+              <div class="bg-base-200/50 p-3 rounded-lg flex flex-col justify-center">
                 <div class="text-xs text-base-content/70">Plazo</div>
                 <div class="font-medium">{{ loan.term }} meses</div>
               </div>
-              <div class="stat-box">
+              <div class="bg-base-200/50 p-3 rounded-lg flex flex-col justify-center">
                 <div class="text-xs text-base-content/70">Cuota Mensual</div>
                 <div class="font-medium">{{ formatCurrency(loan.monthly_payment_amount) }}</div>
               </div>
-              <div class="stat-box">
+              <div class="bg-base-200/50 p-3 rounded-lg flex flex-col justify-center">
                 <div class="text-xs text-base-content/70">Fecha de Creación</div>
                 <div class="font-medium">{{ formatDate(loan.creation_date) }}</div>
               </div>
@@ -213,7 +213,7 @@ async function loadPaymentPlan() {
       term: loan.value.term,
       amortization_type: 'french'
     })
-    paymentPlan.value = plan.items
+    paymentPlan.value = plan.schedule
   } catch (e) {
     planError.value = 'No se pudo simular el plan de pagos actual'
   } finally {
@@ -272,8 +272,4 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-.stat-box {
-  @apply bg-base-200/50 p-3 rounded-lg flex flex-col justify-center;
-}
-</style>
+
