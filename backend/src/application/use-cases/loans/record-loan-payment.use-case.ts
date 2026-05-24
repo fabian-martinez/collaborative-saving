@@ -86,8 +86,12 @@ export class RecordLoanPaymentUseCase {
       } else {
         // Calculate based on loan interest due (standard behavior)
         const interestDue = loan.calculateInterestDue();
-        interestPaid = Math.min(dto.totalPaymentAmount, interestDue);
-        principalPaid = dto.totalPaymentAmount - interestPaid;
+        interestPaid = Number(
+          Math.min(dto.totalPaymentAmount, interestDue).toFixed(2),
+        );
+        principalPaid = Number(
+          (dto.totalPaymentAmount - interestPaid).toFixed(2),
+        );
       }
 
       // 4. Validate principal doesn't exceed outstanding balance

@@ -14,6 +14,8 @@ export class LedgerEntry {
     private _mandatoryContributionId?: string | null,
     private _stockSubscriptionId?: string | null,
   ) {
+    // Redondear estrictamente a 2 decimales para evitar discrepancias entre JS y Postgres
+    this._amount = Math.round(this._amount * 100) / 100;
     this.validateInvariants();
   }
 

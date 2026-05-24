@@ -92,6 +92,9 @@ export class RecordRevaluationUseCase {
 
       const operationId = operation.id;
 
+      // Guardar la operación primero para evitar error de foreign key en historiales y asientos
+      await this.operationRepository.save(operation);
+
       // 2. Crear historiales y actualizar valores de acciones
       const stockHistories: StockValueHistory[] = [];
       const stockUpdates: Array<{ stockId: string; newValue: number }> = [];
@@ -326,9 +329,6 @@ export class RecordRevaluationUseCase {
 
       // Validar balance y asociar asientos con la operación
       operation.setEntries(ledgerEntryEntities);
-
-      // Guardar la operación
-      await this.operationRepository.save(operation);
 
       // Guardar asientos contables
       await this.ledgerEntryRepository.saveMany(ledgerEntryEntities);
