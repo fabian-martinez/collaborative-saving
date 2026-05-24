@@ -36,7 +36,9 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        url: configService.get<string>('DATABASE_TEST_URL') || configService.get<string>('DATABASE_URL'),
+        url:
+          configService.get<string>('DATABASE_TEST_URL') ||
+          configService.get<string>('DATABASE_URL'),
         autoLoadEntities: true,
         synchronize: false,
       }),

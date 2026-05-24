@@ -186,16 +186,18 @@ export class Loan {
   }
 
   private validateInvariants(): void {
+    const EPSILON = 0.01; // Tolerancia para errores de precisión de punto flotante en moneda
+
     if (this._approvedAmount <= 0) {
       throw new Error('Loan approved amount must be > 0');
     }
     if (
-      this._disbursedAmount < 0 ||
-      this._disbursedAmount > this._approvedAmount
+      this._disbursedAmount < -EPSILON ||
+      this._disbursedAmount > this._approvedAmount + EPSILON
     ) {
       throw new Error('Disbursed amount must be between 0 and approved amount');
     }
-    if (this._outstandingBalance < 0) {
+    if (this._outstandingBalance < -EPSILON) {
       throw new Error('Outstanding balance cannot be negative');
     }
     // El saldo pendiente no puede exceder el monto desembolsado
@@ -203,8 +205,8 @@ export class Loan {
     // Excepción: cuando outstanding_balance <= approvedAmount, permitirlo
     // (esto cubre el estado inicial donde outstanding_balance = approvedAmount y disbursedAmount = 0)
     if (
-      this._outstandingBalance > this._disbursedAmount &&
-      this._outstandingBalance > this._approvedAmount
+      this._outstandingBalance > this._disbursedAmount + EPSILON &&
+      this._outstandingBalance > this._approvedAmount + EPSILON
     ) {
       throw new Error(
         'Outstanding balance cannot exceed disbursed amount when it exceeds approved amount',
@@ -212,8 +214,8 @@ export class Loan {
     }
     // Validación más estricta: si se ha desembolsado algo, el outstanding_balance no puede exceder el disbursed_amount
     if (
-      this._disbursedAmount > 0 &&
-      this._outstandingBalance > this._disbursedAmount
+      this._disbursedAmount > EPSILON &&
+      this._outstandingBalance > this._disbursedAmount + EPSILON
     ) {
       throw new Error('Outstanding balance cannot exceed disbursed amount');
     }
