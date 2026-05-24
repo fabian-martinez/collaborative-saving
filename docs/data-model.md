@@ -44,4 +44,5 @@ Se utiliza el control de acceso a nivel de aplicación (NestJS) y se planea impl
 ## Docs relacionados
 
 - [Arquitectura](./architecture.md)
+- [Mapa de Asientos Contables](./accounting-map.md)
 - [Decisiones](./adrs/)
