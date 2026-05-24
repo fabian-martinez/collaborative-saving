@@ -98,7 +98,7 @@ describe('OperationBalanceValidator', () => {
         LedgerEntry.create({
           operationId: 'op-1',
           accountType: CASH_ACCOUNT,
-          amount: -100.01, // Credit
+          amount: -100.02, // Credit
         }),
         LedgerEntry.create({
           operationId: 'op-1',
