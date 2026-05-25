@@ -26,3 +26,7 @@
 **Vulnerability:** A critical vulnerability existed in `protobufjs < 7.5.5` allowing arbitrary code execution (CVE-2023-36665).
 **Learning:** In projects where direct dependency updates break lockfile configurations or tests, the `overrides` field in `package.json` (for npm, similar to `resolutions` in pnpm) is an effective way to force safe versions of deeply nested dependencies without needing to upgrade their direct parents to potentially breaking versions.
 **Prevention:** Proactively scan dependencies using `npm audit`. Apply targeted overrides for critical nested dependencies if a safe, non-breaking parent update is unavailable.
+## 2026-05-25 - Missing Security Headers
+**Vulnerability:** The NestJS application lacked essential HTTP security headers (like Content-Security-Policy, X-Frame-Options, Strict-Transport-Security, X-Content-Type-Options, etc.), leaving it vulnerable to various attacks like clickjacking, cross-site scripting (XSS), and MIME sniffing.
+**Learning:** Default NestJS or Express configurations do not automatically set standard security headers. These headers must be explicitly configured using middleware like `helmet` to provide defense-in-depth at the HTTP layer.
+**Prevention:** Always integrate and enable `helmet` (or equivalent middleware) in the main entry point (e.g., `main.ts`) of the application early in the middleware stack to ensure standard security headers are applied to all responses.
