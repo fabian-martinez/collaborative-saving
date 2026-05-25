@@ -103,12 +103,12 @@ describe('OperationBalanceValidator', () => {
         LedgerEntry.create({
           operationId: 'op-1',
           accountType: STOCK_CAPITAL_ACCOUNT,
-          amount: 50.005, // Debit
+          amount: 50.00, // Debit
         }),
         LedgerEntry.create({
           operationId: 'op-1',
           accountType: LOANS_RECEIVABLE_ACCOUNT,
-          amount: 50.005, // Debit
+          amount: 50.01, // Debit
         }),
       ];
 
