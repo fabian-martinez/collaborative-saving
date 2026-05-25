@@ -179,6 +179,7 @@
                       type="button"
                       @click="$emit('edit-payment', due.originalIndex)"
                       class="btn btn-ghost btn-xs p-1 no-print"
+                      aria-label="Editar pago"
                     >
                       ✏️
                     </button>
@@ -186,6 +187,7 @@
                       type="button"
                       @click="$emit('delete-payment', due.originalIndex)"
                       class="btn btn-ghost btn-xs text-error p-1 no-print"
+                      aria-label="Eliminar pago"
                     >
                       🗑️
                     </button>
