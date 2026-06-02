@@ -78,7 +78,7 @@
       </form>
     </div>
     <form method="dialog" class="modal-backdrop">
-      <button @click="$emit('cancel')">close</button>
+      <button @click="$emit('cancel')" aria-label="Cerrar modal">close</button>
     </form>
   </dialog>
 </template>
