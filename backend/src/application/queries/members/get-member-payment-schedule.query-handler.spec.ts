@@ -42,7 +42,7 @@ describe('GetMemberPaymentScheduleQueryHandler', () => {
       findPendingByMember: jest.fn(),
       save: jest.fn(),
       findByIds: jest.fn(),
-    } as unknown as jest.Mocked<LoanRepository>;
+    };
 
     loanTransactionDetailRepository = {
       findById: jest.fn(),

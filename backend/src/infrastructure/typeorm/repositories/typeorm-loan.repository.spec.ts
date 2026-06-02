@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, UpdateResult } from 'typeorm';
 import { TypeOrmLoanRepository } from './typeorm-loan.repository';
 import { Loan as LoanEntity } from '../entities/loan.entity';
 import { Loan as LoanDomain } from '@domain/entities/loan.entity';
@@ -168,7 +168,9 @@ describe('TypeOrmLoanRepository', () => {
       typeOrmRepo.findOne
         .mockResolvedValueOnce(existingEntity as LoanEntity)
         .mockResolvedValueOnce(updatedEntity as LoanEntity);
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
+      typeOrmRepo.update.mockResolvedValue(
+        undefined as unknown as UpdateResult,
+      );
 
       const result = await repository.save(domain);
       expect(updateSpy).toHaveBeenCalledWith(domain.id, expect.any(Object));
@@ -203,7 +205,9 @@ describe('TypeOrmLoanRepository', () => {
       typeOrmRepo.findOne
         .mockResolvedValueOnce(existingEntity as LoanEntity)
         .mockResolvedValueOnce(null);
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
+      typeOrmRepo.update.mockResolvedValue(
+        undefined as unknown as UpdateResult,
+      );
 
       await expect(repository.save(domain)).rejects.toThrow(
         'Loan not found after update',

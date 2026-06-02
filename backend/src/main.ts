@@ -9,6 +9,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Use Helmet for security headers
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   app.use(helmet());
 
   // Configure explicitly bounded CORS using the ALLOWED_ORIGINS environment variable

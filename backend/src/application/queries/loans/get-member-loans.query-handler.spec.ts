@@ -16,7 +16,7 @@ describe('GetMemberLoansQueryHandler', () => {
       findPendingByMember: jest.fn(),
       save: jest.fn(),
       findByIds: jest.fn(),
-    } as unknown as jest.Mocked<LoanRepository>;
+    };
 
     findByMemberSpy = jest.spyOn(loanRepository, 'findByMember');
 

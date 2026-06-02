@@ -15,7 +15,7 @@ describe('DeleteMandatoryContributionUseCase', () => {
       findAll: jest.fn(),
       save: jest.fn(),
       delete: jest.fn(),
-    } as unknown as jest.Mocked<MandatoryContributionRepository>;
+    };
 
     findByIdSpy = jest.spyOn(repository, 'findById');
     deleteSpy = jest.spyOn(repository, 'delete');

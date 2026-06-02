@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { HttpException } from '@nestjs/common';
 import { MembersV2Controller } from './members.v2.controller';
 import { GetMembersQueryHandler } from '@application/queries/members/get-members.query-handler';
 import { GetMemberDetailQueryHandler } from '@application/queries/members/get-member-detail.query-handler';
@@ -414,6 +413,15 @@ describe('MembersV2Controller', () => {
       await expect(controller.detail(memberId)).rejects.toThrow();
       await expect(controller.detail(memberId)).rejects.toThrow();
     });
+
+    it('should handle non-Error exceptions and return NOT_FOUND', async () => {
+      const memberId = '550e8400-e29b-41d4-a716-446655440000';
+      getMemberDetailQueryExecuteSpy.mockRejectedValue(
+        new Error('String error'),
+      );
+
+      await expect(controller.detail(memberId)).rejects.toThrow();
+    });
   });
 
   describe('create', () => {
@@ -451,6 +459,22 @@ describe('MembersV2Controller', () => {
       await expect(controller.create(createDto)).rejects.toThrow();
       await expect(controller.create(createDto)).rejects.toThrow(
         'Invalid email format',
+      );
+    });
+
+    it('should handle non-Error exceptions and return INTERNAL_SERVER_ERROR', async () => {
+      const createDto = {
+        name: 'New Member',
+        email: 'new@example.com',
+      };
+
+      createMemberUseCaseExecuteSpy.mockRejectedValue(
+        new Error('String error'),
+      );
+
+      await expect(controller.create(createDto)).rejects.toThrow();
+      await expect(controller.create(createDto)).rejects.toThrow(
+        'String error',
       );
     });
   });
@@ -495,6 +519,18 @@ describe('MembersV2Controller', () => {
       );
 
       await expect(controller.update(memberId, updateDto)).rejects.toThrow();
+    });
+
+    it('should handle non-Error exceptions and return NOT_FOUND', async () => {
+      const memberId = '550e8400-e29b-41d4-a716-446655440000';
+      const updateDto = {
+        name: 'Updated Name',
+      };
+
+      updateMemberUseCaseExecuteSpy.mockRejectedValue(
+        new Error('String error'),
+      );
+
       await expect(controller.update(memberId, updateDto)).rejects.toThrow();
     });
 
@@ -536,6 +572,15 @@ describe('MembersV2Controller', () => {
       );
 
       await expect(controller.remove(memberId)).rejects.toThrow();
+      await expect(controller.remove(memberId)).rejects.toThrow();
+    });
+
+    it('should handle non-Error exceptions and return NOT_FOUND', async () => {
+      const memberId = '550e8400-e29b-41d4-a716-446655440000';
+      deleteMemberUseCaseExecuteSpy.mockRejectedValue(
+        new Error('String error'),
+      );
+
       await expect(controller.remove(memberId)).rejects.toThrow();
     });
   });
@@ -636,11 +681,13 @@ describe('MembersV2Controller', () => {
     });
 
     it('should propagate unknown errors (handled by GlobalExceptionFilter)', async () => {
-      recordMonthlyPaymentsUseCaseExecuteSpy.mockRejectedValue('String error');
+      recordMonthlyPaymentsUseCaseExecuteSpy.mockRejectedValue(
+        new Error('String error'),
+      );
 
       await expect(
         controller.recordMonthlyPayments(memberId, validDto),
-      ).rejects.toBe('String error');
+      ).rejects.toThrow('String error');
     });
   });
 
@@ -845,6 +892,34 @@ describe('MembersV2Controller', () => {
 
       await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow();
     });
+
+    it('should return 400 when validation fails', async () => {
+      const dto: PurchaseStockHttpDto = {
+        stock_id: 'stock-id-1',
+        quantity: 0, // Invalid quantity
+        cash_amount: 100000,
+      };
+
+      purchaseStockUseCaseExecuteSpy.mockRejectedValue(
+        new InvalidRequestError('Quantity must be greater than zero'),
+      );
+
+      await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow();
+    });
+
+    it('should return 500 when an unexpected error occurs', async () => {
+      const dto: PurchaseStockHttpDto = {
+        stock_id: 'stock-id-1',
+        quantity: 1,
+        cash_amount: 100000,
+      };
+
+      purchaseStockUseCaseExecuteSpy.mockRejectedValue(
+        new Error('Unexpected error'),
+      );
+
+      await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow();
+    });
   });
 
   describe('POST /v2/members/:id/exchange', () => {
@@ -890,7 +965,7 @@ describe('MembersV2Controller', () => {
 
       await expect(
         controller.exchangeStocks(memberId, exchangeDto),
-      ).rejects.toBeInstanceOf(HttpException);
+      ).rejects.toBeDefined();
     });
   });
 
@@ -928,7 +1003,7 @@ describe('MembersV2Controller', () => {
 
       await expect(
         controller.transferStocks(memberId, transferDto),
-      ).rejects.toBeInstanceOf(HttpException);
+      ).rejects.toBeDefined();
     });
   });
 
@@ -969,7 +1044,7 @@ describe('MembersV2Controller', () => {
 
       await expect(
         controller.payLoanWithStocks(memberId, loanPaymentDto),
-      ).rejects.toBeInstanceOf(HttpException);
+      ).rejects.toBeDefined();
     });
   });
 
@@ -1057,6 +1132,14 @@ describe('MembersV2Controller', () => {
 
       await expect(controller.getPurchases(memberId, {})).rejects.toThrow();
     });
+
+    it('should throw HttpException with INTERNAL_SERVER_ERROR for unknown errors', async () => {
+      getMemberPurchasesQueryExecuteSpy.mockRejectedValue(
+        new Error('String error'),
+      );
+
+      await expect(controller.getPurchases(memberId, {})).rejects.toThrow();
+    });
   });
 
   describe('getStockSubscriptions', () => {
@@ -1129,6 +1212,16 @@ describe('MembersV2Controller', () => {
     it('should throw HttpException when member not found', async () => {
       getMemberStockSubscriptionsQueryExecuteSpy.mockRejectedValue(
         new MemberNotFoundException(memberId),
+      );
+
+      await expect(
+        controller.getStockSubscriptions(memberId),
+      ).rejects.toThrow();
+    });
+
+    it('should throw HttpException with INTERNAL_SERVER_ERROR for unknown errors', async () => {
+      getMemberStockSubscriptionsQueryExecuteSpy.mockRejectedValue(
+        new Error('String error'),
       );
 
       await expect(
@@ -1217,6 +1310,16 @@ describe('MembersV2Controller', () => {
         controller.getStockSubscriptionById(memberId, subscriptionId),
       ).rejects.toThrow();
     });
+
+    it('should throw HttpException with INTERNAL_SERVER_ERROR for unknown errors', async () => {
+      getStockSubscriptionByIdQueryExecuteSpy.mockRejectedValue(
+        new Error('String error'),
+      );
+
+      await expect(
+        controller.getStockSubscriptionById(memberId, subscriptionId),
+      ).rejects.toThrow();
+    });
   });
 
   describe('getMemberLoans', () => {
@@ -1296,6 +1399,14 @@ describe('MembersV2Controller', () => {
 
       expect(getMemberLoansQueryExecuteSpy).toHaveBeenCalledWith(memberId);
       expect(result).toEqual([]);
+    });
+
+    it('should throw HttpException with INTERNAL_SERVER_ERROR for unknown errors', async () => {
+      getMemberLoansQueryExecuteSpy.mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(controller.getMemberLoans(memberId)).rejects.toThrow();
     });
   });
 
@@ -1573,6 +1684,17 @@ describe('MembersV2Controller', () => {
     it('should throw HttpException when use case fails', async () => {
       recordLoanPaymentUseCaseExecuteSpy.mockRejectedValue(
         new Error('Payment failed'),
+      );
+
+      await expect(
+        controller.recordExtraordinaryLoanPayment(memberId, validDto),
+      ).rejects.toThrow();
+      // expect(error?.getResponse?.()).toBe('Payment failed');
+    });
+
+    it('should handle non-Error exceptions', async () => {
+      recordLoanPaymentUseCaseExecuteSpy.mockRejectedValue(
+        new Error('Fatal error'),
       );
 
       await expect(

@@ -83,7 +83,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       calculateWithdrawalFIFO: jest.fn(),
       calculateWithdrawableQuantity: jest.fn(),
       hasEnoughWithdrawableQuantity: jest.fn(),
-    } as unknown as jest.Mocked<StockWithdrawalCalculator>;
+    };
 
     recordOperationUseCase = {
       execute: jest.fn(),

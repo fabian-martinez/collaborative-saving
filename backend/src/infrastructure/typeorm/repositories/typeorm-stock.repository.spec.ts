@@ -63,7 +63,7 @@ describe('TypeOrmStockRepository', () => {
         guaranteed_yield: null,
         behavior: StockBehavior.CAPITAL_APPRECIATION,
         deleted_at: null,
-      } as StockEntity;
+      };
       const entity2: StockEntity = {
         id: stockId2,
         type: 'Acción',
@@ -73,7 +73,7 @@ describe('TypeOrmStockRepository', () => {
         guaranteed_yield: null,
         behavior: StockBehavior.CAPITAL_APPRECIATION,
         deleted_at: null,
-      } as StockEntity;
+      };
 
       findSpy.mockResolvedValue([entity1, entity2]);
 
@@ -120,20 +120,17 @@ describe('TypeOrmStockRepository', () => {
         guaranteed_yield: null,
         behavior: StockBehavior.CAPITAL_APPRECIATION,
         deleted_at: null,
-      } as StockEntity;
+      };
 
       findSpy.mockResolvedValue([existingEntity]);
       // Mock merge avoiding undefined objects
       mergeSpy.mockImplementation(
         (entity: StockEntity, ...dto: Partial<StockEntity>[]): StockEntity => {
-          return Object.assign(
-            entity || ({} as StockEntity),
-            ...dto,
-          ) as StockEntity;
+          return Object.assign(entity || {}, ...dto) as StockEntity;
         },
       );
       saveSpy.mockResolvedValue([
-        { ...existingEntity, value: 100 } as StockEntity,
+        { ...existingEntity, value: 100 },
         {
           id: domain2.id,
           type: 'Acción',
@@ -143,7 +140,7 @@ describe('TypeOrmStockRepository', () => {
           guaranteed_yield: null,
           behavior: StockBehavior.CAPITAL_APPRECIATION,
           deleted_at: null,
-        } as StockEntity,
+        },
       ] as StockEntity[]);
 
       const result: StockDomain[] = await repository.saveMany([
@@ -181,7 +178,7 @@ describe('TypeOrmStockRepository', () => {
         guaranteed_yield: null,
         behavior: StockBehavior.CAPITAL_APPRECIATION,
         deleted_at: null,
-      } as StockEntity;
+      };
 
       typeOrmRepo.findOne.mockResolvedValue(entity);
 
@@ -244,7 +241,7 @@ describe('TypeOrmStockRepository', () => {
           guaranteed_yield: null,
           behavior: StockBehavior.CAPITAL_APPRECIATION,
           deleted_at: null,
-        } as StockEntity,
+        },
         {
           id: 'stock-2',
           type: 'Super',
@@ -254,7 +251,7 @@ describe('TypeOrmStockRepository', () => {
           guaranteed_yield: null,
           behavior: StockBehavior.CAPITAL_APPRECIATION,
           deleted_at: null,
-        } as StockEntity,
+        },
       ];
 
       typeOrmRepo.find.mockResolvedValue(entities);
@@ -293,7 +290,7 @@ describe('TypeOrmStockRepository', () => {
         guaranteed_yield: null,
         behavior: StockBehavior.CAPITAL_APPRECIATION,
         deleted_at: null,
-      } as StockEntity;
+      };
 
       typeOrmRepo.findOne.mockResolvedValue(entity);
 
@@ -337,7 +334,7 @@ describe('TypeOrmStockRepository', () => {
           guaranteed_yield: null,
           behavior: StockBehavior.CAPITAL_APPRECIATION,
           deleted_at: null,
-        } as StockEntity,
+        },
         {
           id: 'stock-2',
           type: 'Super',
@@ -347,7 +344,7 @@ describe('TypeOrmStockRepository', () => {
           guaranteed_yield: null,
           behavior: StockBehavior.CAPITAL_APPRECIATION,
           deleted_at: null,
-        } as StockEntity,
+        },
       ];
 
       typeOrmRepo.find.mockResolvedValue(entities);
@@ -396,7 +393,7 @@ describe('TypeOrmStockRepository', () => {
           guaranteed_yield: null,
           behavior: StockBehavior.CAPITAL_APPRECIATION,
           deleted_at: null,
-        } as StockEntity,
+        },
       ];
 
       typeOrmRepo.find.mockResolvedValue(entities);
@@ -428,7 +425,7 @@ describe('TypeOrmStockRepository', () => {
         guaranteed_yield: stock.guaranteedYield,
         behavior: stock.behavior,
         deleted_at: null,
-      } as StockEntity;
+      };
 
       typeOrmRepo.save.mockResolvedValue(entity);
 
@@ -462,7 +459,7 @@ describe('TypeOrmStockRepository', () => {
         guaranteed_yield: null,
         behavior: StockBehavior.CAPITAL_APPRECIATION,
         deleted_at: null,
-      } as StockEntity;
+      };
 
       const updatedEntity: StockEntity = {
         id: stock.id,
@@ -473,7 +470,7 @@ describe('TypeOrmStockRepository', () => {
         guaranteed_yield: null,
         behavior: StockBehavior.CAPITAL_APPRECIATION,
         deleted_at: null,
-      } as StockEntity;
+      };
 
       typeOrmRepo.findOne.mockResolvedValueOnce(existingEntity); // Found existing
       typeOrmRepo.save.mockResolvedValue(updatedEntity); // Return updated
@@ -503,7 +500,7 @@ describe('TypeOrmStockRepository', () => {
           guaranteed_yield: 0.05,
           behavior: StockBehavior.CAPITAL_APPRECIATION,
           deleted_at: null,
-        } as StockEntity,
+        },
       ];
 
       typeOrmRepo.find.mockResolvedValue(entities);

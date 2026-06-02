@@ -51,7 +51,7 @@ describe('TypeOrmMeetingRepository', () => {
         date: new Date('2024-01-15'),
         status: 'active',
         notes: 'Test meeting',
-      } as MeetingEntity;
+      };
 
       typeOrmRepo.findOne.mockResolvedValue(entity);
 
@@ -87,7 +87,7 @@ describe('TypeOrmMeetingRepository', () => {
         date: new Date('2024-01-15'),
         status: 'active',
         notes: 'Test meeting',
-      } as MeetingEntity;
+      };
 
       typeOrmRepo.findOne.mockResolvedValue(entity);
 
@@ -123,13 +123,13 @@ describe('TypeOrmMeetingRepository', () => {
           date: new Date('2024-02-15'),
           status: 'closed',
           notes: 'Meeting 1',
-        } as MeetingEntity,
+        },
         {
           id: 'meeting-2',
           date: new Date('2024-01-15'),
           status: 'closed',
           notes: 'Meeting 2',
-        } as MeetingEntity,
+        },
       ];
 
       typeOrmRepo.find.mockResolvedValue(entities);
@@ -172,7 +172,7 @@ describe('TypeOrmMeetingRepository', () => {
         date: meeting.date,
         status: 'active',
         notes: 'Test meeting',
-      } as MeetingEntity;
+      };
 
       typeOrmRepo.findOne.mockResolvedValueOnce(null); // Not found
       typeOrmRepo.save.mockResolvedValue(entity);
@@ -201,14 +201,14 @@ describe('TypeOrmMeetingRepository', () => {
         date: new Date('2024-01-15'),
         status: 'active',
         notes: 'Original meeting',
-      } as MeetingEntity;
+      };
 
       const updatedEntity: MeetingEntity = {
         id: meeting.id,
         date: new Date('2024-01-15'),
         status: 'active',
         notes: 'Updated meeting',
-      } as MeetingEntity;
+      };
 
       typeOrmRepo.findOne
         .mockResolvedValueOnce(existingEntity) // Found existing
@@ -237,7 +237,7 @@ describe('TypeOrmMeetingRepository', () => {
         date: new Date('2024-01-15'),
         status: 'active',
         notes: 'Original meeting',
-      } as MeetingEntity;
+      };
 
       typeOrmRepo.findOne
         .mockResolvedValueOnce(existingEntity) // Found existing
@@ -259,7 +259,7 @@ describe('TypeOrmMeetingRepository', () => {
         date: new Date('2024-01-15'),
         status: 'closed',
         notes: 'Closed meeting',
-      } as MeetingEntity;
+      };
 
       typeOrmRepo.findOne.mockResolvedValue(entity);
 

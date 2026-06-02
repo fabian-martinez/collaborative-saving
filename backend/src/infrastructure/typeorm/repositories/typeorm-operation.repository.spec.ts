@@ -240,7 +240,7 @@ describe('TypeOrmOperationRepository', () => {
         },
       ];
 
-      mockQueryBuilder.getMany.mockResolvedValue(entities as OperationEntity[]);
+      mockQueryBuilder.getMany.mockResolvedValue(entities);
 
       // ACT
       const result = await repository.findByMeetingAndTypes(meetingId, types);
@@ -323,7 +323,7 @@ describe('TypeOrmOperationRepository', () => {
         },
       ];
 
-      mockQueryBuilder.getMany.mockResolvedValue(entities as OperationEntity[]);
+      mockQueryBuilder.getMany.mockResolvedValue(entities);
 
       // ACT
       const result = await repository.findByMeetingAndTypes(meetingId, types);
@@ -460,7 +460,7 @@ describe('TypeOrmOperationRepository', () => {
         },
       ];
 
-      mockQueryBuilder.getMany.mockResolvedValue(entities as OperationEntity[]);
+      mockQueryBuilder.getMany.mockResolvedValue(entities);
       const result = await repository.findByMember(memberId);
 
       expect(result).toHaveLength(1);
@@ -578,11 +578,11 @@ describe('TypeOrmOperationRepository', () => {
 
     it('should throw error when LedgerEntryRepository not set', async () => {
       const repositoryWithoutLedger = new TypeOrmOperationRepository(
-        typeOrmRepo as any,
+        typeOrmRepo,
         {
           execute: jest.fn(),
           getActiveQueryRunner: jest.fn().mockReturnValue(null),
-        } as any,
+        },
       );
       const domain = Operation.create({
         meetingId: 'meeting-1',
@@ -641,7 +641,7 @@ describe('TypeOrmOperationRepository', () => {
       ];
 
       mockQueryBuilder.getCount.mockResolvedValue(2);
-      mockQueryBuilder.getMany.mockResolvedValue(entities as OperationEntity[]);
+      mockQueryBuilder.getMany.mockResolvedValue(entities);
 
       const result = await repository.findWithPagination(
         {},
