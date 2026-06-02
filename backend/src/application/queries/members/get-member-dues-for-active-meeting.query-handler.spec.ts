@@ -85,6 +85,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       findByLoan: jest.fn(),
       findByLoanAndMeeting: jest.fn(),
       findByLoansAndMeeting: jest.fn(),
+      findByOperationIds: jest.fn(),
       save: jest.fn(),
       saveMany: jest.fn(),
     };

@@ -19,6 +19,7 @@ describe('GetPendingPaymentsQueryHandler', () => {
   beforeEach(() => {
     pendingMemberPaymentRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByMember: jest.fn(),
       findByMeeting: jest.fn(),
       findPendingByMeeting: jest.fn(),
