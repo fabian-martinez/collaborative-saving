@@ -98,8 +98,8 @@ export const dashboardApi = {
     if (USE_MOCKS) {
       return mockApi.getPortfolioStatus()
     }
-    // TODO: Implementar llamada real a API
-    throw new Error('Not implemented')
+    const response = await apiClient.get<PortfolioStatus>('/v2/dashboard/portfolio-status')
+    return response.data
   }
 }
 
