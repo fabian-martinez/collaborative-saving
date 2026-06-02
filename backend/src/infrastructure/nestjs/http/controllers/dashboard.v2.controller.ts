@@ -48,19 +48,12 @@ export class DashboardV2Controller {
   })
   @UsePipes(new ValidationPipe({ transform: true }))
   async getPortfolioStatus(): Promise<GetPortfolioStatusResponseHttpDto> {
-    try {
-      const result = await this.getPortfolioStatusQuery.execute();
+    const result = await this.getPortfolioStatusQuery.execute();
 
-      return {
-        up_to_date: result.upToDate,
-        overdue: result.overdue,
-        written_off: result.writtenOff,
-      };
-    } catch (error: unknown) {
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    return {
+      up_to_date: result.upToDate,
+      overdue: result.overdue,
+      written_off: result.writtenOff,
+    };
   }
 }

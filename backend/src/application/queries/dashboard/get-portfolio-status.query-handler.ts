@@ -15,11 +15,11 @@ export class GetPortfolioStatusQueryHandler {
     const allLoans = await this.loanRepository.findAll();
 
     const writtenOff = allLoans.filter(
-      (loan) => loan.status === LoanStatus.DEFAULTED,
+      (loan) => (loan.status as LoanStatus) === LoanStatus.DEFAULTED,
     ).length;
 
     const activeLoans = allLoans.filter(
-      (loan) => loan.status === LoanStatus.ACTIVE,
+      (loan) => (loan.status as LoanStatus) === LoanStatus.ACTIVE,
     );
 
     // Get all pending payments of type LOAN_PAYMENT to identify overdue loans
