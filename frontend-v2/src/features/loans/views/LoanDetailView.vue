@@ -131,7 +131,7 @@
         </form>
       </div>
       <form method="dialog" class="modal-backdrop">
-        <button>close</button>
+        <button aria-label="Cerrar modal">close</button>
       </form>
     </dialog>
 

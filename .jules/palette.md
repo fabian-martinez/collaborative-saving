@@ -6,3 +6,6 @@
 ## 2024-05-25 - Added ARIA labels to emoji-based mobile action buttons
 **Learning:** In mobile views specifically (e.g., within `md:hidden` blocks), action buttons often rely entirely on emojis (like ✏️ for Edit or 🗑️ for Delete) to save space. While visually intuitive, these lack accessible names for screen readers, meaning users hear the emoji name rather than the action.
 **Action:** When designing or refactoring responsive layouts that swap text buttons for emoji/icon-only buttons on smaller screens, always ensure the mobile variants include descriptive `aria-label` attributes to maintain accessibility parity with the desktop view.
+## 2024-06-01 - Add aria-label to DaisyUI modal backdrop close buttons
+**Learning:** In DaisyUI modals, the common pattern `<form method="dialog" class="modal-backdrop"><button>close</button></form>` provides an accessible way to close the modal when clicking outside of it. However, the inner button text ("close") is visually hidden and may not be sufficiently localized or descriptive for screen reader users in a non-English application.
+**Action:** When using the DaisyUI modal backdrop pattern, always ensure the inner button has a descriptive and localized `aria-label` (e.g., `aria-label="Cerrar modal"`) to provide clear context for assistive technologies.
