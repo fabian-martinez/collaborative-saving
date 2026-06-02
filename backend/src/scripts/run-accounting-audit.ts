@@ -99,7 +99,7 @@ async function bootstrap() {
         alerts: [],
       });
     }
-    const op = operationsMap.get(row.operationId);
+    const op = operationsMap.get(row.operationId)!;
     const amount = parseFloat(row.amount);
     op.entries.push({
       account: row.accountType,
