@@ -15,7 +15,8 @@
     "start:backend": "cd backend && npm run start:prod",
     "start:app": "cd frontend-v2 && npm run preview",
     "lint:md": "markdownlint \"**/*.md\"",
-    "lint:md:fix": "markdownlint \"**/*.md\" --fix"
+    "lint:md:fix": "markdownlint \"**/*.md\" --fix",
+    "prepare": "lefthook install"
   },
   "devDependencies": {
     "lefthook": "^2.1.6",
