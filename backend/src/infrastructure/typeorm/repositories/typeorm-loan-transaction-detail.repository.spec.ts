@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder, UpdateResult } from 'typeorm';
 import { TypeOrmLoanTransactionDetailRepository } from './typeorm-loan-transaction-detail.repository';
 import { LoanTransactionDetail as LoanTransactionDetailEntity } from '../entities/loan-transaction-detail.entity';
 import {
@@ -138,7 +138,9 @@ describe('TypeOrmLoanTransactionDetailRepository', () => {
         getMany: jest.fn().mockResolvedValue(entities),
       };
 
-      typeOrmRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+      typeOrmRepo.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder as unknown as SelectQueryBuilder<LoanTransactionDetailEntity>,
+      );
 
       const result = await repository.findByLoanAndMeeting(
         'loan-1',
@@ -171,7 +173,9 @@ describe('TypeOrmLoanTransactionDetailRepository', () => {
         getMany: jest.fn().mockResolvedValue([]),
       };
 
-      typeOrmRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+      typeOrmRepo.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder as unknown as SelectQueryBuilder<LoanTransactionDetailEntity>,
+      );
 
       const result = await repository.findByLoanAndMeeting(
         'loan-1',
@@ -233,7 +237,9 @@ describe('TypeOrmLoanTransactionDetailRepository', () => {
       typeOrmRepo.findOne
         .mockResolvedValueOnce(existingEntity as LoanTransactionDetailEntity)
         .mockResolvedValueOnce(updatedEntity as LoanTransactionDetailEntity);
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
+      typeOrmRepo.update.mockResolvedValue(
+        undefined as unknown as UpdateResult,
+      );
 
       const result = await repository.save(domain);
 
@@ -267,7 +273,9 @@ describe('TypeOrmLoanTransactionDetailRepository', () => {
       typeOrmRepo.findOne
         .mockResolvedValueOnce(existingEntity as LoanTransactionDetailEntity)
         .mockResolvedValueOnce(null);
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
+      typeOrmRepo.update.mockResolvedValue(
+        undefined as unknown as UpdateResult,
+      );
 
       await expect(repository.save(domain)).rejects.toThrow(
         'LoanTransactionDetail not found after update',

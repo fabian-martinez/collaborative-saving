@@ -22,8 +22,6 @@ import {
   CASH_ACCOUNT,
   LOANS_RECEIVABLE_ACCOUNT,
 } from '@domain/constants/account-types';
-import { LedgerEntryDto } from '@application/dto/accounting/record-operation.dto';
-import { CreateLoanResponseDto } from '@application/dto/loans/create-loan-response.dto';
 
 describe('PurchaseStockUseCase', () => {
   let useCase: PurchaseStockUseCase;
@@ -182,6 +180,7 @@ describe('PurchaseStockUseCase', () => {
           memberId: mockMemberId,
           meetingId: mockMeeting.id,
           type: OperationType.STOCK_PURCHASE,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           entries: expect.arrayContaining([
             expect.objectContaining({
               accountType: STOCK_CAPITAL_ACCOUNT,
@@ -248,6 +247,7 @@ describe('PurchaseStockUseCase', () => {
       );
       expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           entries: expect.arrayContaining([
             expect.objectContaining({
               accountType: STOCK_CAPITAL_ACCOUNT,
@@ -307,6 +307,7 @@ describe('PurchaseStockUseCase', () => {
       );
       expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           entries: expect.arrayContaining([
             expect.objectContaining({
               accountType: STOCK_CAPITAL_ACCOUNT,

@@ -181,6 +181,7 @@ describe('ProcessStockExchangeUseCase', () => {
     expect(result.operationId).toBe('operation-1');
     expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         entries: expect.arrayContaining([
           expect.objectContaining({ accountType: STOCK_CAPITAL_ACCOUNT }),
         ]),
@@ -207,6 +208,7 @@ describe('ProcessStockExchangeUseCase', () => {
     );
     expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         entries: expect.arrayContaining([
           expect.objectContaining({ accountType: CASH_ACCOUNT }),
         ]),
@@ -242,6 +244,7 @@ describe('ProcessStockExchangeUseCase', () => {
     // Stock modification operation should include CASH_ACCOUNT entry for balance
     expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         entries: expect.arrayContaining([
           expect.objectContaining({
             accountType: CASH_ACCOUNT,
@@ -278,6 +281,7 @@ describe('ProcessStockExchangeUseCase', () => {
     // Stock modification operation should include LOANS_RECEIVABLE_ACCOUNT entry (financing)
     expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         entries: expect.arrayContaining([
           expect.objectContaining({
             accountType: LOANS_RECEIVABLE_ACCOUNT,

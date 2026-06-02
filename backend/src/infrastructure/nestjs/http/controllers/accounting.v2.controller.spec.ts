@@ -6,14 +6,13 @@ import { GetAccountsSummaryQueryHandler } from '@application/queries/accounting/
 import { GetOperationByIdQueryHandler } from '@application/queries/accounting/get-operation-by-id.query-handler';
 import { GetLedgerEntryByIdQueryHandler } from '@application/queries/accounting/get-ledger-entry-by-id.query-handler';
 import { OperationType } from '@domain/enums/operation-type.enum';
-import { CASH_ACCOUNT, AccountType } from '@domain/constants/account-types';
+import { CASH_ACCOUNT } from '@domain/constants/account-types';
 import { PaginatedResponse } from '@application/dto/accounting/paginated-response.dto';
 import { LedgerEntryResponseDto } from '@application/dto/accounting/ledger-entry-response.dto';
 import { OperationResponseDto } from '@application/dto/accounting/operation-response.dto';
 import { GetAccountsSummaryResponseDto } from '@application/dto/accounting/get-accounts-summary-response.dto';
 import { OperationNotFoundException } from '@application/exceptions/operation-not-found.exception';
 import { LedgerEntryNotFoundException } from '@application/exceptions/ledger-entry-not-found.exception';
-import { HttpException } from '@nestjs/common';
 
 describe('AccountingV2Controller', () => {
   let controller: AccountingV2Controller;

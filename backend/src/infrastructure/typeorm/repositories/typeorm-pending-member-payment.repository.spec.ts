@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, UpdateResult } from 'typeorm';
+import { Repository } from 'typeorm';
 import { TypeOrmPendingMemberPaymentRepository } from './typeorm-pending-member-payment.repository';
 import { PendingMemberPayment as PendingMemberPaymentEntity } from '../entities/pending-member-payment.entity';
 import {

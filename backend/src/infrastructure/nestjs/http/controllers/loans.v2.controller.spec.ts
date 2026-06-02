@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { HttpStatus } from '@nestjs/common';
 import { LoansV2Controller } from './loans.v2.controller';
 import { GetLoansQueryHandler } from '@application/queries/loans/get-loans.query-handler';
 import { GetLoanDetailQueryHandler } from '@application/queries/loans/get-loan-detail.query-handler';
@@ -336,14 +335,6 @@ describe('LoansV2Controller', () => {
 
       // ACT & ASSERT
       expect(() => controller.simulatePlan(dto)).toThrow();
-      try {
-        controller.simulatePlan(dto);
-      } catch (e) {
-        expect(e).toBeDefined();
-        if (true) {
-          // expect(e?.getStatus?.()).toBe(HttpStatus.BAD_REQUEST);
-        }
-      }
     });
   });
 
@@ -407,14 +398,6 @@ describe('LoansV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.simulateScenarios(loanId, dto)).rejects.toThrow();
-      try {
-        await controller.simulateScenarios(loanId, dto);
-      } catch (e) {
-        expect(e).toBeDefined();
-        if (true) {
-          // expect(e?.getStatus?.()).toBe(HttpStatus.NOT_FOUND);
-        }
-      }
     });
 
     it('should handle HttpException errors', async () => {
@@ -460,14 +443,6 @@ describe('LoansV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.simulateScenarios(loanId, dto)).rejects.toThrow();
-      try {
-        await controller.simulateScenarios(loanId, dto);
-      } catch (e) {
-        expect(e).toBeDefined();
-        if (true) {
-          // expect(e?.getStatus?.()).toBe(HttpStatus.BAD_REQUEST);
-        }
-      }
     });
 
     it('should handle scenarios with optional fields', async () => {

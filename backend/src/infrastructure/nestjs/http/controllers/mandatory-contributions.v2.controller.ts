@@ -7,7 +7,6 @@ import {
   Patch,
   Body,
   Delete,
-  HttpException,
   HttpStatus,
   UsePipes,
   ValidationPipe,
@@ -114,25 +113,15 @@ export class MandatoryContributionsV2Controller {
   async create(
     @Body() body: CreateMandatoryContributionHttpDto,
   ): Promise<MandatoryContributionResponseHttpDto> {
-    try {
-      const result = await this.createUseCase.execute({
-        assetType: body.asset_type,
-        value: body.value,
-      });
-      return {
-        id: result.id,
-        asset_type: result.assetType,
-        value: result.value,
-      };
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        console.error(e.message);
-        throw e;
-      } else {
-        console.error(String(e));
-        throw e;
-      }
-    }
+    const result = await this.createUseCase.execute({
+      assetType: body.asset_type,
+      value: body.value,
+    });
+    return {
+      id: result.id,
+      asset_type: result.assetType,
+      value: result.value,
+    };
   }
 
   @Get(':id')
@@ -170,21 +159,12 @@ export class MandatoryContributionsV2Controller {
   async detail(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<MandatoryContributionResponseHttpDto> {
-    try {
-      const result = await this.getContributionDetailQuery.execute(id);
-      return {
-        id: result.id,
-        asset_type: result.assetType,
-        value: result.value,
-      };
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        console.error(e.message);
-      } else {
-        console.error(String(e));
-      }
-      throw e;
-    }
+    const result = await this.getContributionDetailQuery.execute(id);
+    return {
+      id: result.id,
+      asset_type: result.assetType,
+      value: result.value,
+    };
   }
 
   @Patch(':id')
@@ -229,25 +209,16 @@ export class MandatoryContributionsV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: UpdateMandatoryContributionHttpDto,
   ): Promise<MandatoryContributionResponseHttpDto> {
-    try {
-      const result = await this.updateUseCase.execute({
-        id,
-        assetType: body.asset_type,
-        value: body.value,
-      });
-      return {
-        id: result.id,
-        asset_type: result.assetType,
-        value: result.value,
-      };
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        console.error(e.message);
-      } else {
-        console.error(String(e));
-      }
-      throw e;
-    }
+    const result = await this.updateUseCase.execute({
+      id,
+      assetType: body.asset_type,
+      value: body.value,
+    });
+    return {
+      id: result.id,
+      asset_type: result.assetType,
+      value: result.value,
+    };
   }
 
   @Delete(':id')
@@ -273,15 +244,6 @@ export class MandatoryContributionsV2Controller {
     description: 'Mandatory contribution not found',
   })
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    try {
-      await this.deleteUseCase.execute({ id });
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        console.error(e.message);
-      } else {
-        console.error(String(e));
-      }
-      throw e;
-    }
+    await this.deleteUseCase.execute({ id });
   }
 }

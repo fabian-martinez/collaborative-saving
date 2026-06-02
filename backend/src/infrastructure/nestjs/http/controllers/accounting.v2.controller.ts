@@ -6,8 +6,6 @@ import {
   UsePipes,
   ValidationPipe,
   ParseUUIDPipe,
-  HttpException,
-  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -22,8 +20,6 @@ import { GetLedgerEntriesQueryHandler } from '@application/queries/accounting/ge
 import { GetAccountsSummaryQueryHandler } from '@application/queries/accounting/get-accounts-summary.query-handler';
 import { GetOperationByIdQueryHandler } from '@application/queries/accounting/get-operation-by-id.query-handler';
 import { GetLedgerEntryByIdQueryHandler } from '@application/queries/accounting/get-ledger-entry-by-id.query-handler';
-import { OperationNotFoundException } from '@application/exceptions/operation-not-found.exception';
-import { LedgerEntryNotFoundException } from '@application/exceptions/ledger-entry-not-found.exception';
 import { GetOperationsQueryHttpDto } from '../dto/get-operations-query-http.dto';
 import { GetLedgerEntriesQueryHttpDto } from '../dto/get-ledger-entries-query-http.dto';
 import { GetAccountsSummaryQueryHttpDto } from '../dto/get-accounts-summary-query-http.dto';
@@ -144,43 +140,34 @@ export class AccountingV2Controller {
   async getOperationById(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<OperationResponseHttpDto> {
-    try {
-      const operation = await this.getOperationByIdQuery.execute(id);
+    const operation = await this.getOperationByIdQuery.execute(id);
 
-      // Calculate total_amount from CASH_ACCOUNT entries with positive amounts
-      const totalAmount = operation.entries
-        .filter(
-          (entry) => entry.accountType === CASH_ACCOUNT && entry.amount > 0,
-        )
-        .reduce((sum, entry) => sum + entry.amount, 0);
+    // Calculate total_amount from CASH_ACCOUNT entries with positive amounts
+    const totalAmount = operation.entries
+      .filter((entry) => entry.accountType === CASH_ACCOUNT && entry.amount > 0)
+      .reduce((sum, entry) => sum + entry.amount, 0);
 
-      return {
-        id: operation.id,
-        member_id: operation.memberId,
-        meeting_id: operation.meetingId,
-        type: operation.type,
-        date: operation.date,
-        description: operation.description,
-        total_amount: totalAmount,
-        entries: operation.entries.map((entry) => ({
-          id: entry.id,
-          operation_id: entry.operationId,
-          account_type: entry.accountType,
-          amount: entry.amount,
-          created_at: entry.createdAt,
-          description: entry.description,
-          loan_id: entry.loanId,
-          stock_id: entry.stockId,
-          mandatory_contribution_id: entry.mandatoryContributionId,
-          stock_subscription_id: entry.stockSubscriptionId,
-        })),
-      };
-    } catch (error: unknown) {
-      if (error instanceof OperationNotFoundException) {
-        throw error;
-      }
-      throw error;
-    }
+    return {
+      id: operation.id,
+      member_id: operation.memberId,
+      meeting_id: operation.meetingId,
+      type: operation.type,
+      date: operation.date,
+      description: operation.description,
+      total_amount: totalAmount,
+      entries: operation.entries.map((entry) => ({
+        id: entry.id,
+        operation_id: entry.operationId,
+        account_type: entry.accountType,
+        amount: entry.amount,
+        created_at: entry.createdAt,
+        description: entry.description,
+        loan_id: entry.loanId,
+        stock_id: entry.stockId,
+        mandatory_contribution_id: entry.mandatoryContributionId,
+        stock_subscription_id: entry.stockSubscriptionId,
+      })),
+    };
   }
 
   @Get('ledger-entries')
@@ -254,27 +241,20 @@ export class AccountingV2Controller {
   async getLedgerEntryById(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<LedgerEntryResponseHttpDto> {
-    try {
-      const entry = await this.getLedgerEntryByIdQuery.execute(id);
+    const entry = await this.getLedgerEntryByIdQuery.execute(id);
 
-      return {
-        id: entry.id,
-        operation_id: entry.operationId,
-        account_type: entry.accountType,
-        amount: entry.amount,
-        created_at: entry.createdAt,
-        description: entry.description,
-        loan_id: entry.loanId,
-        stock_id: entry.stockId,
-        mandatory_contribution_id: entry.mandatoryContributionId,
-        stock_subscription_id: entry.stockSubscriptionId,
-      };
-    } catch (error: unknown) {
-      if (error instanceof LedgerEntryNotFoundException) {
-        throw error;
-      }
-      throw error;
-    }
+    return {
+      id: entry.id,
+      operation_id: entry.operationId,
+      account_type: entry.accountType,
+      amount: entry.amount,
+      created_at: entry.createdAt,
+      description: entry.description,
+      loan_id: entry.loanId,
+      stock_id: entry.stockId,
+      mandatory_contribution_id: entry.mandatoryContributionId,
+      stock_subscription_id: entry.stockSubscriptionId,
+    };
   }
 
   @Get('accounts-summary')

@@ -120,6 +120,7 @@ describe('ProcessStockTransferUseCase', () => {
     expect(result.operationId).toBe('operation-transfer');
     expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         entries: expect.arrayContaining([
           expect.objectContaining({
             stockSubscriptionId: fromSubscription.id,

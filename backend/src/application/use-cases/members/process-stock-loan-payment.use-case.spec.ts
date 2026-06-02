@@ -186,6 +186,7 @@ describe('ProcessStockLoanPaymentUseCase', () => {
         memberId: member.id,
         meetingId: meeting.id,
         type: 'STOCK_LOAN_PAYMENT',
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         entries: expect.arrayContaining([
           expect.objectContaining({
             accountType: 'STOCK_CAPITAL',

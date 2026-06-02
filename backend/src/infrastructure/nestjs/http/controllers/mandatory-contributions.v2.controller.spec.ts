@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { HttpException } from '@nestjs/common';
 import { MandatoryContributionsV2Controller } from './mandatory-contributions.v2.controller';
 import { GetMandatoryContributionsQueryHandler } from '@application/queries/mandatory-contributions/get-mandatory-contributions.query-handler';
 import { GetMandatoryContributionDetailQueryHandler } from '@application/queries/mandatory-contributions/get-mandatory-contribution-detail.query-handler';
@@ -124,6 +123,8 @@ describe('MandatoryContributionsV2Controller', () => {
       getContributionDetailQuery.execute.mockRejectedValue(
         new Error('Mandatory contribution not found'),
       );
+
+      await expect(controller.detail('non-existent-id')).rejects.toThrow();
     });
   });
 
@@ -215,6 +216,8 @@ describe('MandatoryContributionsV2Controller', () => {
       deleteUseCase.execute.mockRejectedValue(
         new Error('Mandatory contribution not found'),
       );
+
+      await expect(controller.remove('non-existent-id')).rejects.toThrow();
     });
   });
 });

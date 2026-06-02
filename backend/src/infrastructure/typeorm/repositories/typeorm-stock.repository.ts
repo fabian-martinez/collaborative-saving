@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, In, DeepPartial } from 'typeorm';
+import { Repository, IsNull, In } from 'typeorm';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { Stock as StockDomain } from '@domain/entities/stock.entity';
 import { Stock as StockEntity } from '../entities/stock.entity';

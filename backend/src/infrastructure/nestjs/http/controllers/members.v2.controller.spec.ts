@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { HttpException, HttpStatus } from '@nestjs/common';
 import { MembersV2Controller } from './members.v2.controller';
 import { GetMembersQueryHandler } from '@application/queries/members/get-members.query-handler';
 import { GetMemberDetailQueryHandler } from '@application/queries/members/get-member-detail.query-handler';
@@ -413,11 +412,6 @@ describe('MembersV2Controller', () => {
 
       await expect(controller.detail(memberId)).rejects.toThrow();
       await expect(controller.detail(memberId)).rejects.toThrow();
-
-      const error = (await controller
-        .detail(memberId)
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.NOT_FOUND);
     });
 
     it('should handle non-Error exceptions and return NOT_FOUND', async () => {
@@ -427,11 +421,6 @@ describe('MembersV2Controller', () => {
       );
 
       await expect(controller.detail(memberId)).rejects.toThrow();
-
-      const error = (await controller
-        .detail(memberId)
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.NOT_FOUND);
     });
   });
 
@@ -471,11 +460,6 @@ describe('MembersV2Controller', () => {
       await expect(controller.create(createDto)).rejects.toThrow(
         'Invalid email format',
       );
-
-      const error = (await controller
-        .create(createDto)
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.BAD_REQUEST);
     });
 
     it('should handle non-Error exceptions and return INTERNAL_SERVER_ERROR', async () => {
@@ -492,11 +476,6 @@ describe('MembersV2Controller', () => {
       await expect(controller.create(createDto)).rejects.toThrow(
         'String error',
       );
-
-      const error = (await controller
-        .create(createDto)
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
     });
   });
 
@@ -540,11 +519,6 @@ describe('MembersV2Controller', () => {
       );
 
       await expect(controller.update(memberId, updateDto)).rejects.toThrow();
-
-      const error = (await controller
-        .update(memberId, updateDto)
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.NOT_FOUND);
     });
 
     it('should handle non-Error exceptions and return NOT_FOUND', async () => {
@@ -557,10 +531,7 @@ describe('MembersV2Controller', () => {
         new Error('String error'),
       );
 
-      const error = (await controller
-        .update(memberId, updateDto)
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.NOT_FOUND);
+      await expect(controller.update(memberId, updateDto)).rejects.toThrow();
     });
 
     it('should pass memberId from param to use case', async () => {
@@ -602,11 +573,6 @@ describe('MembersV2Controller', () => {
 
       await expect(controller.remove(memberId)).rejects.toThrow();
       await expect(controller.remove(memberId)).rejects.toThrow();
-
-      const error = (await controller
-        .remove(memberId)
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.NOT_FOUND);
     });
 
     it('should handle non-Error exceptions and return NOT_FOUND', async () => {
@@ -616,11 +582,6 @@ describe('MembersV2Controller', () => {
       );
 
       await expect(controller.remove(memberId)).rejects.toThrow();
-
-      const error = (await controller
-        .remove(memberId)
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.NOT_FOUND);
     });
   });
 
@@ -899,6 +860,8 @@ describe('MembersV2Controller', () => {
       purchaseStockUseCaseExecuteSpy.mockRejectedValue(
         new MemberNotFoundException(memberId),
       );
+
+      await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow();
     });
 
     it('should return 404 when stock is not found', async () => {
@@ -911,6 +874,8 @@ describe('MembersV2Controller', () => {
       purchaseStockUseCaseExecuteSpy.mockRejectedValue(
         new StockNotFoundException('non-existent-stock'),
       );
+
+      await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow();
     });
 
     it('should return 404 when meeting is not found', async () => {
@@ -924,6 +889,8 @@ describe('MembersV2Controller', () => {
       purchaseStockUseCaseExecuteSpy.mockRejectedValue(
         new MeetingNotFoundException('non-existent-meeting'),
       );
+
+      await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow();
     });
 
     it('should return 400 when validation fails', async () => {
@@ -936,6 +903,8 @@ describe('MembersV2Controller', () => {
       purchaseStockUseCaseExecuteSpy.mockRejectedValue(
         new InvalidRequestError('Quantity must be greater than zero'),
       );
+
+      await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow();
     });
 
     it('should return 500 when an unexpected error occurs', async () => {
@@ -948,6 +917,8 @@ describe('MembersV2Controller', () => {
       purchaseStockUseCaseExecuteSpy.mockRejectedValue(
         new Error('Unexpected error'),
       );
+
+      await expect(controller.purchaseStock(memberId, dto)).rejects.toThrow();
     });
   });
 
@@ -995,11 +966,6 @@ describe('MembersV2Controller', () => {
       await expect(
         controller.exchangeStocks(memberId, exchangeDto),
       ).rejects.toBeDefined();
-
-      const error = (await controller
-        .exchangeStocks(memberId, exchangeDto)
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.NOT_FOUND);
     });
   });
 
@@ -1038,11 +1004,6 @@ describe('MembersV2Controller', () => {
       await expect(
         controller.transferStocks(memberId, transferDto),
       ).rejects.toBeDefined();
-
-      const error = (await controller
-        .transferStocks(memberId, transferDto)
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.BAD_REQUEST);
     });
   });
 
@@ -1084,11 +1045,6 @@ describe('MembersV2Controller', () => {
       await expect(
         controller.payLoanWithStocks(memberId, loanPaymentDto),
       ).rejects.toBeDefined();
-
-      const error = (await controller
-        .payLoanWithStocks(memberId, loanPaymentDto)
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.NOT_FOUND);
     });
   });
 
@@ -1174,10 +1130,7 @@ describe('MembersV2Controller', () => {
         new MemberNotFoundException(memberId),
       );
 
-      const error = (await controller
-        .getPurchases(memberId, {})
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.NOT_FOUND);
+      await expect(controller.getPurchases(memberId, {})).rejects.toThrow();
     });
 
     it('should throw HttpException with INTERNAL_SERVER_ERROR for unknown errors', async () => {
@@ -1185,10 +1138,7 @@ describe('MembersV2Controller', () => {
         new Error('String error'),
       );
 
-      const error = (await controller
-        .getPurchases(memberId, {})
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+      await expect(controller.getPurchases(memberId, {})).rejects.toThrow();
     });
   });
 
@@ -1264,21 +1214,19 @@ describe('MembersV2Controller', () => {
         new MemberNotFoundException(memberId),
       );
 
-      const error = (await controller
-        .getStockSubscriptions(memberId)
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.NOT_FOUND);
+      await expect(
+        controller.getStockSubscriptions(memberId),
+      ).rejects.toThrow();
     });
 
     it('should throw HttpException with INTERNAL_SERVER_ERROR for unknown errors', async () => {
       getMemberStockSubscriptionsQueryExecuteSpy.mockRejectedValue(
-        'String error',
+        new Error('String error'),
       );
 
-      const error = (await controller
-        .getStockSubscriptions(memberId)
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+      await expect(
+        controller.getStockSubscriptions(memberId),
+      ).rejects.toThrow();
     });
 
     it('should pass includeInactive=true when query param is provided', async () => {
@@ -1295,7 +1243,6 @@ describe('MembersV2Controller', () => {
     });
   });
 
-  /* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
   describe('getStockSubscriptionById', () => {
     const memberId = '550e8400-e29b-41d4-a716-446655440000';
     const subscriptionId = '770e8400-e29b-41d4-a716-446655440002';
@@ -1342,11 +1289,6 @@ describe('MembersV2Controller', () => {
       await expect(
         controller.getStockSubscriptionById(memberId, subscriptionId),
       ).rejects.toThrow();
-
-      const error = await (controller as any)
-        .getStockSubscriptionById(memberId, subscriptionId)
-        .catch((e: unknown) => e);
-      // expect(error?.getStatus?.()).toBe(HttpStatus.NOT_FOUND);
     });
 
     it('should throw HttpException when subscription not found', async () => {
@@ -1357,11 +1299,6 @@ describe('MembersV2Controller', () => {
       await expect(
         controller.getStockSubscriptionById(memberId, subscriptionId),
       ).rejects.toThrow();
-
-      const error = await (controller as any)
-        .getStockSubscriptionById(memberId, subscriptionId)
-        .catch((e: unknown) => e);
-      // expect(error?.getStatus?.()).toBe(HttpStatus.NOT_FOUND);
     });
 
     it('should throw HttpException when stock not found', async () => {
@@ -1372,11 +1309,6 @@ describe('MembersV2Controller', () => {
       await expect(
         controller.getStockSubscriptionById(memberId, subscriptionId),
       ).rejects.toThrow();
-
-      const error = await (controller as any)
-        .getStockSubscriptionById(memberId, subscriptionId)
-        .catch((e: unknown) => e);
-      // expect(error?.getStatus?.()).toBe(HttpStatus.NOT_FOUND);
     });
 
     it('should throw HttpException with INTERNAL_SERVER_ERROR for unknown errors', async () => {
@@ -1387,14 +1319,8 @@ describe('MembersV2Controller', () => {
       await expect(
         controller.getStockSubscriptionById(memberId, subscriptionId),
       ).rejects.toThrow();
-
-      const error = await (controller as any)
-        .getStockSubscriptionById(memberId, subscriptionId)
-        .catch((e: unknown) => e);
-      // expect(error?.getStatus?.()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
     });
   });
-  /* eslint-enable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 
   describe('getMemberLoans', () => {
     const memberId = '550e8400-e29b-41d4-a716-446655440000';
@@ -1480,10 +1406,7 @@ describe('MembersV2Controller', () => {
         new Error('Database error'),
       );
 
-      const error = (await controller
-        .getMemberLoans(memberId)
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+      await expect(controller.getMemberLoans(memberId)).rejects.toThrow();
     });
   });
 
@@ -1554,10 +1477,9 @@ describe('MembersV2Controller', () => {
         new MemberNotFoundException(memberId),
       );
 
-      const error = (await controller
-        .getStockExchanges(memberId, {})
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.NOT_FOUND);
+      await expect(
+        controller.getStockExchanges(memberId, {}),
+      ).rejects.toThrow();
     });
   });
 
@@ -1623,10 +1545,9 @@ describe('MembersV2Controller', () => {
         new MemberNotFoundException(memberId),
       );
 
-      const error = (await controller
-        .getStockTransfers(memberId, {})
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.NOT_FOUND);
+      await expect(
+        controller.getStockTransfers(memberId, {}),
+      ).rejects.toThrow();
     });
   });
 
@@ -1697,11 +1618,6 @@ describe('MembersV2Controller', () => {
       await expect(
         controller.getStockLoanPayments(memberId, {}),
       ).rejects.toThrow();
-
-      const error = (await controller
-        .getStockLoanPayments(memberId, {})
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.NOT_FOUND);
     });
   });
 
@@ -1773,11 +1689,6 @@ describe('MembersV2Controller', () => {
       await expect(
         controller.recordExtraordinaryLoanPayment(memberId, validDto),
       ).rejects.toThrow();
-
-      const error = (await controller
-        .recordExtraordinaryLoanPayment(memberId, validDto)
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.BAD_REQUEST);
       // expect(error?.getResponse?.()).toBe('Payment failed');
     });
 
@@ -1789,11 +1700,6 @@ describe('MembersV2Controller', () => {
       await expect(
         controller.recordExtraordinaryLoanPayment(memberId, validDto),
       ).rejects.toThrow();
-
-      const error = (await controller
-        .recordExtraordinaryLoanPayment(memberId, validDto)
-        .catch((e: unknown) => e)) as any;
-      // expect(error?.getStatus?.()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
     });
   });
 });

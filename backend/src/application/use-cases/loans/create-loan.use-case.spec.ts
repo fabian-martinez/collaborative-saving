@@ -9,8 +9,6 @@ import { RecordOperationUseCase } from '@application/use-cases/accounting/record
 import { Member } from '@domain/entities/member.entity';
 import { Meeting } from '@domain/entities/meeting.entity';
 import { Loan, LoanStatus } from '@domain/entities/loan.entity';
-import { LoanTransactionDetail } from '@domain/entities/loan-transaction-detail.entity';
-import { PendingMemberPayment } from '@domain/entities/pending-member-payment.entity';
 import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
@@ -20,7 +18,6 @@ import {
   CASH_ACCOUNT,
   MEMBER_EQUITY_ACCOUNT,
 } from '@domain/constants/account-types';
-import { LedgerEntryDto } from '@application/dto/accounting/record-operation.dto';
 
 describe('CreateLoanUseCase', () => {
   let useCase: CreateLoanUseCase;
@@ -176,6 +173,7 @@ describe('CreateLoanUseCase', () => {
           memberId: mockMemberId,
           meetingId: mockMeetingId,
           type: OperationType.LOAN_DISBURSEMENT,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           entries: expect.arrayContaining([
             expect.objectContaining({
               accountType: LOANS_RECEIVABLE_ACCOUNT,
@@ -231,6 +229,7 @@ describe('CreateLoanUseCase', () => {
 
       expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           entries: expect.arrayContaining([
             expect.objectContaining({
               accountType: CASH_ACCOUNT,
@@ -284,6 +283,7 @@ describe('CreateLoanUseCase', () => {
 
       expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           entries: expect.arrayContaining([
             expect.objectContaining({
               accountType: CASH_ACCOUNT,
