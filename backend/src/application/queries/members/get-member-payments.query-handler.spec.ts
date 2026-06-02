@@ -55,7 +55,7 @@ describe('GetMemberPaymentsQueryHandler', () => {
       calculatePaymentTotalAmount: jest.fn(),
       mapPaymentFilterToOperationTypes: jest.fn(),
       mapOperationTypeToPaymentType: jest.fn(),
-    } as unknown as jest.Mocked<PaymentMapperService>;
+    };
 
     queryHandler = new GetMemberPaymentsQueryHandler(
       memberRepository,

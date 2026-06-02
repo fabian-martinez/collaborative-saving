@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { HttpException, HttpStatus } from '@nestjs/common';
 import { LoansV2Controller } from './loans.v2.controller';
 import { GetLoansQueryHandler } from '@application/queries/loans/get-loans.query-handler';
 import { GetLoanDetailQueryHandler } from '@application/queries/loans/get-loan-detail.query-handler';
@@ -7,6 +6,8 @@ import { UpdateLoanTermsUseCase } from '@application/use-cases/loans/update-loan
 import { GetPaymentPlanSimulationQueryHandler } from '@application/queries/loans/get-payment-plan-simulation.query-handler';
 import { SimulateLoanPaymentPlanUseCase } from '@application/use-cases/loans/simulate-loan-payment-plan.use-case';
 import { LoanResponseDto } from '@application/dto/loans/loan-response.dto';
+import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
+import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { LoanStatus } from '@domain/entities/loan.entity';
 
 describe('LoansV2Controller', () => {
@@ -135,6 +136,12 @@ describe('LoansV2Controller', () => {
         guaranteed_stock_id: mockLoanResponse.guaranteedStockId,
       });
     });
+
+    it('should handle errors and return 500', async () => {
+      getLoansQueryExecuteSpy.mockRejectedValue(new Error('Database error'));
+
+      await expect(controller.findAll()).rejects.toThrow();
+    });
   });
 
   describe('findOne', () => {
@@ -158,6 +165,14 @@ describe('LoansV2Controller', () => {
         creation_date: mockLoanResponse.creationDate,
         guaranteed_stock_id: mockLoanResponse.guaranteedStockId,
       });
+    });
+
+    it('should throw 404 when loan not found', async () => {
+      getLoanDetailQueryExecuteSpy.mockRejectedValue(
+        new LoanNotFoundException('loan-id-1'),
+      );
+
+      await expect(controller.findOne('loan-id-1')).rejects.toThrow();
     });
   });
 
@@ -188,6 +203,26 @@ describe('LoansV2Controller', () => {
       expect(result.monthly_payment_amount).toBe(160000);
     });
 
+    it('should throw 404 when loan not found', async () => {
+      updateLoanTermsUseCaseExecuteSpy.mockRejectedValue(
+        new LoanNotFoundException('loan-id-1'),
+      );
+
+      await expect(
+        controller.updateTerms('loan-id-1', { interest_rate: 0.06 }),
+      ).rejects.toThrow();
+    });
+
+    it('should throw 400 when validation fails', async () => {
+      updateLoanTermsUseCaseExecuteSpy.mockRejectedValue(
+        new InvalidRequestError('Interest rate must be between 0 and 1'),
+      );
+
+      await expect(
+        controller.updateTerms('loan-id-1', { interest_rate: 1.5 }),
+      ).rejects.toThrow();
+    });
+
     it('should update only provided fields', async () => {
       const updatedLoan = {
         ...mockLoanResponse,
@@ -213,7 +248,7 @@ describe('LoansV2Controller', () => {
     });
 
     it('should handle HttpException errors', async () => {
-      const error = new HttpException('Custom error', HttpStatus.BAD_REQUEST);
+      const error = new Error('Custom error');
       updateLoanTermsUseCaseExecuteSpy.mockRejectedValue(error);
 
       await expect(
@@ -222,6 +257,15 @@ describe('LoansV2Controller', () => {
       await expect(
         controller.updateTerms('loan-id-1', { interest_rate: 0.06 }),
       ).rejects.toThrow('Custom error');
+    });
+
+    it('should handle generic errors', async () => {
+      const error = new Error('Internal error');
+      updateLoanTermsUseCaseExecuteSpy.mockRejectedValue(error);
+
+      await expect(
+        controller.updateTerms('loan-id-1', { interest_rate: 0.06 }),
+      ).rejects.toThrow();
     });
   });
 
@@ -265,10 +309,7 @@ describe('LoansV2Controller', () => {
         amortization_type: 'french' as const,
       };
 
-      const error = new HttpException(
-        'Invalid parameters',
-        HttpStatus.BAD_REQUEST,
-      );
+      const error = new Error('Invalid parameters');
       getPaymentPlanSimulationQueryExecuteSpy.mockImplementation(() => {
         throw error;
       });
@@ -276,6 +317,24 @@ describe('LoansV2Controller', () => {
       // ACT & ASSERT
       expect(() => controller.simulatePlan(dto)).toThrow();
       expect(() => controller.simulatePlan(dto)).toThrow('Invalid parameters');
+    });
+
+    it('should handle generic errors and return 400', () => {
+      // ARRANGE
+      const dto = {
+        principal: 1000000,
+        rate: 0.01,
+        term: 12,
+        amortization_type: 'french' as const,
+      };
+
+      const error = new Error('Validation error');
+      getPaymentPlanSimulationQueryExecuteSpy.mockImplementation(() => {
+        throw error;
+      });
+
+      // ACT & ASSERT
+      expect(() => controller.simulatePlan(dto)).toThrow();
     });
   });
 
@@ -320,6 +379,27 @@ describe('LoansV2Controller', () => {
       expect(result).toEqual(mockResult);
     });
 
+    it('should throw 404 when loan not found', async () => {
+      // ARRANGE
+      const loanId = 'loan-id-1';
+      const dto = {
+        scenarios: [
+          {
+            name: 'Scenario 1',
+            extra_payment: 50000,
+            start_month: 1,
+            amortization_type: 'french' as const,
+          },
+        ],
+      };
+
+      const error = new LoanNotFoundException(loanId);
+      simulateLoanPaymentPlanUseCaseExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.simulateScenarios(loanId, dto)).rejects.toThrow();
+    });
+
     it('should handle HttpException errors', async () => {
       // ARRANGE
       const loanId = 'loan-id-1';
@@ -334,10 +414,7 @@ describe('LoansV2Controller', () => {
         ],
       };
 
-      const error = new HttpException(
-        'Invalid scenario',
-        HttpStatus.BAD_REQUEST,
-      );
+      const error = new Error('Invalid scenario');
       simulateLoanPaymentPlanUseCaseExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
@@ -345,6 +422,27 @@ describe('LoansV2Controller', () => {
       await expect(controller.simulateScenarios(loanId, dto)).rejects.toThrow(
         'Invalid scenario',
       );
+    });
+
+    it('should handle generic errors and return 400', async () => {
+      // ARRANGE
+      const loanId = 'loan-id-1';
+      const dto = {
+        scenarios: [
+          {
+            name: 'Scenario 1',
+            extra_payment: 50000,
+            start_month: 1,
+            amortization_type: 'french' as const,
+          },
+        ],
+      };
+
+      const error = new Error('Validation error');
+      simulateLoanPaymentPlanUseCaseExecuteSpy.mockRejectedValue(error);
+
+      // ACT & ASSERT
+      await expect(controller.simulateScenarios(loanId, dto)).rejects.toThrow();
     });
 
     it('should handle scenarios with optional fields', async () => {

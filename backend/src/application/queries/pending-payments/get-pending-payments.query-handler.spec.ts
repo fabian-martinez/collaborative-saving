@@ -19,6 +19,7 @@ describe('GetPendingPaymentsQueryHandler', () => {
   beforeEach(() => {
     pendingMemberPaymentRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByMember: jest.fn(),
       findByMeeting: jest.fn(),
       findPendingByMeeting: jest.fn(),
@@ -28,7 +29,7 @@ describe('GetPendingPaymentsQueryHandler', () => {
       saveMany: jest.fn(),
       calculateRemainingAmount: jest.fn(),
       delete: jest.fn(),
-    } as unknown as jest.Mocked<PendingMemberPaymentRepository>;
+    };
 
     memberRepository = {
       findById: jest.fn(),
@@ -36,7 +37,7 @@ describe('GetPendingPaymentsQueryHandler', () => {
       findActive: jest.fn(),
       save: jest.fn(),
       softDelete: jest.fn(),
-    } as unknown as jest.Mocked<MemberRepository>;
+    };
 
     findWithFiltersSpy = jest.spyOn(
       pendingMemberPaymentRepository,

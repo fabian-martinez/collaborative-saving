@@ -6,7 +6,6 @@ import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-su
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
 import { Loan, LoanStatus } from '@domain/entities/loan.entity';
-import { LoanTransactionDetail } from '@domain/entities/loan-transaction-detail.entity';
 import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { OperationType } from '@domain/enums/operation-type.enum';
@@ -15,7 +14,6 @@ import {
   LOANS_RECEIVABLE_ACCOUNT,
   INTEREST_INCOME_ACCOUNT,
 } from '@domain/constants/account-types';
-import { LedgerEntryDto } from '@application/dto/accounting/record-operation.dto';
 
 describe('RecordLoanPaymentUseCase', () => {
   let useCase: RecordLoanPaymentUseCase;
@@ -129,9 +127,7 @@ describe('RecordLoanPaymentUseCase', () => {
       });
       loanFindByIdSpy.mockResolvedValue(mockLoan);
       loanSaveSpy.mockResolvedValue(mockLoan);
-      loanTransactionDetailSaveSpy.mockResolvedValue(
-        {} as LoanTransactionDetail,
-      );
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
 
       const dto: RecordLoanPaymentDto = {
         loanId: mockLoan.id,
@@ -161,6 +157,7 @@ describe('RecordLoanPaymentUseCase', () => {
           memberId: mockMemberId,
           meetingId: mockMeetingId,
           type: OperationType.LOAN_PAYMENT,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           entries: expect.arrayContaining([
             expect.objectContaining({
               accountType: CASH_ACCOUNT,
@@ -174,7 +171,7 @@ describe('RecordLoanPaymentUseCase', () => {
               accountType: LOANS_RECEIVABLE_ACCOUNT,
               amount: -expectedPrincipal,
             }),
-          ]) as unknown as LedgerEntryDto[],
+          ]),
         }),
       );
 
@@ -186,9 +183,7 @@ describe('RecordLoanPaymentUseCase', () => {
       const mockLoan = createMockLoan({ outstandingBalance: 5000 });
       loanFindByIdSpy.mockResolvedValue(mockLoan);
       loanSaveSpy.mockResolvedValue(mockLoan);
-      loanTransactionDetailSaveSpy.mockResolvedValue(
-        {} as LoanTransactionDetail,
-      );
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
 
       const dto: RecordLoanPaymentDto = {
         loanId: mockLoan.id,
@@ -213,9 +208,7 @@ describe('RecordLoanPaymentUseCase', () => {
       const mockLoan = createMockLoan({ outstandingBalance: 10000 });
       loanFindByIdSpy.mockResolvedValue(mockLoan);
       loanSaveSpy.mockResolvedValue(mockLoan);
-      loanTransactionDetailSaveSpy.mockResolvedValue(
-        {} as LoanTransactionDetail,
-      );
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
 
       const dto: RecordLoanPaymentDto = {
         loanId: mockLoan.id,
@@ -238,9 +231,7 @@ describe('RecordLoanPaymentUseCase', () => {
       });
       loanFindByIdSpy.mockResolvedValue(mockLoan);
       loanSaveSpy.mockResolvedValue(mockLoan);
-      loanTransactionDetailSaveSpy.mockResolvedValue(
-        {} as LoanTransactionDetail,
-      );
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
       jest
         .spyOn(stockSubscriptionRepository, 'findByFinancingLoan')
         .mockResolvedValue([]);
@@ -269,9 +260,7 @@ describe('RecordLoanPaymentUseCase', () => {
       });
       loanFindByIdSpy.mockResolvedValue(mockLoan);
       loanSaveSpy.mockResolvedValue(mockLoan);
-      loanTransactionDetailSaveSpy.mockResolvedValue(
-        {} as LoanTransactionDetail,
-      );
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
 
       // Payment of 100 when interest due is 200 -> all goes to interest
       const dto: RecordLoanPaymentDto = {
@@ -366,9 +355,7 @@ describe('RecordLoanPaymentUseCase', () => {
       const mockLoan = createMockLoan();
       loanFindByIdSpy.mockResolvedValue(mockLoan);
       loanSaveSpy.mockResolvedValue(mockLoan);
-      loanTransactionDetailSaveSpy.mockResolvedValue(
-        {} as LoanTransactionDetail,
-      );
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
 
       const dto: RecordLoanPaymentDto = {
         loanId: mockLoan.id,
@@ -390,9 +377,7 @@ describe('RecordLoanPaymentUseCase', () => {
       const mockLoan = createMockLoan({ interestRate: 0.02 });
       loanFindByIdSpy.mockResolvedValue(mockLoan);
       loanSaveSpy.mockResolvedValue(mockLoan);
-      loanTransactionDetailSaveSpy.mockResolvedValue(
-        {} as LoanTransactionDetail,
-      );
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
 
       const dto: RecordLoanPaymentDto = {
         loanId: mockLoan.id,

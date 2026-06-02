@@ -6,7 +6,7 @@ import { GetAccountsSummaryQueryHandler } from '@application/queries/accounting/
 import { GetOperationByIdQueryHandler } from '@application/queries/accounting/get-operation-by-id.query-handler';
 import { GetLedgerEntryByIdQueryHandler } from '@application/queries/accounting/get-ledger-entry-by-id.query-handler';
 import { OperationType } from '@domain/enums/operation-type.enum';
-import { CASH_ACCOUNT, AccountType } from '@domain/constants/account-types';
+import { CASH_ACCOUNT } from '@domain/constants/account-types';
 import { PaginatedResponse } from '@application/dto/accounting/paginated-response.dto';
 import { LedgerEntryResponseDto } from '@application/dto/accounting/ledger-entry-response.dto';
 import { OperationResponseDto } from '@application/dto/accounting/operation-response.dto';
@@ -82,7 +82,7 @@ describe('AccountingV2Controller', () => {
               {
                 id: 'entry-1',
                 operationId: 'op-1',
-                accountType: CASH_ACCOUNT as AccountType,
+                accountType: CASH_ACCOUNT,
                 amount: 100,
                 createdAt: new Date('2024-01-15'),
                 description: 'Cash entry',
@@ -215,7 +215,7 @@ describe('AccountingV2Controller', () => {
           {
             id: 'entry-1',
             operationId: 'operation-1',
-            accountType: CASH_ACCOUNT as AccountType,
+            accountType: CASH_ACCOUNT,
             amount: 1000,
             createdAt: new Date('2024-01-15'),
             description: 'Test entry',
@@ -330,7 +330,7 @@ describe('AccountingV2Controller', () => {
       const mockResponse: GetAccountsSummaryResponseDto = {
         accounts: [
           {
-            accountType: CASH_ACCOUNT as AccountType,
+            accountType: CASH_ACCOUNT,
             accountName: 'Efectivo',
             totalBalance: 1000,
             totalDebits: 1500,
@@ -341,7 +341,7 @@ describe('AccountingV2Controller', () => {
               {
                 id: 'entry-1',
                 operationId: 'op-1',
-                accountType: CASH_ACCOUNT as AccountType,
+                accountType: CASH_ACCOUNT,
                 amount: 100,
                 createdAt: new Date('2024-01-15'),
                 description: 'Test entry',
@@ -468,7 +468,7 @@ describe('AccountingV2Controller', () => {
           {
             id: 'entry-1',
             operationId: operationId,
-            accountType: CASH_ACCOUNT as AccountType,
+            accountType: CASH_ACCOUNT,
             amount: 100,
             createdAt: new Date('2024-01-15'),
             description: 'Cash entry',
@@ -480,7 +480,7 @@ describe('AccountingV2Controller', () => {
           {
             id: 'entry-2',
             operationId: operationId,
-            accountType: CASH_ACCOUNT as AccountType,
+            accountType: CASH_ACCOUNT,
             amount: 50,
             createdAt: new Date('2024-01-15'),
             description: 'Another cash entry',
@@ -541,7 +541,6 @@ describe('AccountingV2Controller', () => {
 
       getOperationByIdQuery.execute.mockRejectedValue(error);
 
-      await expect(controller.getOperationById(operationId)).rejects.toThrow();
       await expect(controller.getOperationById(operationId)).rejects.toThrow(
         'Operation with ID non-existent-op not found',
       );
@@ -563,7 +562,7 @@ describe('AccountingV2Controller', () => {
           {
             id: 'entry-1',
             operationId: operationId,
-            accountType: CASH_ACCOUNT as AccountType,
+            accountType: CASH_ACCOUNT,
             amount: 100,
             createdAt: new Date('2024-01-15'),
             description: 'Cash entry',
@@ -575,7 +574,7 @@ describe('AccountingV2Controller', () => {
           {
             id: 'entry-2',
             operationId: operationId,
-            accountType: CASH_ACCOUNT as AccountType,
+            accountType: CASH_ACCOUNT,
             amount: -50, // Negative amount should be excluded
             createdAt: new Date('2024-01-15'),
             description: 'Negative cash entry',
@@ -587,7 +586,7 @@ describe('AccountingV2Controller', () => {
           {
             id: 'entry-3',
             operationId: operationId,
-            accountType: 'LOANS_RECEIVABLE' as AccountType, // Non-CASH account should be excluded
+            accountType: 'LOANS_RECEIVABLE', // Non-CASH account should be excluded
             amount: 200,
             createdAt: new Date('2024-01-15'),
             description: 'Loan entry',
@@ -613,7 +612,7 @@ describe('AccountingV2Controller', () => {
       const mockEntry: LedgerEntryResponseDto = {
         id: entryId,
         operationId: 'operation-1',
-        accountType: CASH_ACCOUNT as AccountType,
+        accountType: CASH_ACCOUNT,
         amount: 1000,
         createdAt: new Date('2024-01-15'),
         description: 'Test entry',
@@ -649,7 +648,6 @@ describe('AccountingV2Controller', () => {
 
       getLedgerEntryByIdQuery.execute.mockRejectedValue(error);
 
-      await expect(controller.getLedgerEntryById(entryId)).rejects.toThrow();
       await expect(controller.getLedgerEntryById(entryId)).rejects.toThrow(
         'LedgerEntry with ID non-existent-entry not found',
       );
@@ -663,7 +661,7 @@ describe('AccountingV2Controller', () => {
       const mockEntry: LedgerEntryResponseDto = {
         id: entryId,
         operationId: 'operation-1',
-        accountType: CASH_ACCOUNT as AccountType,
+        accountType: CASH_ACCOUNT,
         amount: 1000,
         createdAt: new Date('2024-01-15'),
         description: 'Test entry with relationships',

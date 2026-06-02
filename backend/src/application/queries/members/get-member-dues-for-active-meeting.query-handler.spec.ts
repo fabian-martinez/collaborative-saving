@@ -45,7 +45,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       findAll: jest.fn(),
       save: jest.fn(),
       findLatestClosed: jest.fn(),
-    } as unknown as jest.Mocked<MeetingRepository>;
+    };
 
     memberRepository = {
       findById: jest.fn(),
@@ -60,7 +60,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       findAll: jest.fn(),
       save: jest.fn(),
       delete: jest.fn(),
-    } as unknown as jest.Mocked<MandatoryContributionRepository>;
+    };
 
     stockSubscriptionRepository = {
       findById: jest.fn(),
@@ -85,9 +85,10 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       findByLoan: jest.fn(),
       findByLoanAndMeeting: jest.fn(),
       findByLoansAndMeeting: jest.fn(),
+      findByOperationIds: jest.fn(),
       save: jest.fn(),
       saveMany: jest.fn(),
-    } as unknown as jest.Mocked<LoanTransactionDetailRepository>;
+    };
 
     stockRepository = {
       findById: jest.fn(),

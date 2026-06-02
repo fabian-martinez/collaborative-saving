@@ -14,7 +14,7 @@ describe('GetMeetingsQueryHandler', () => {
       findAll: jest.fn(),
       save: jest.fn(),
       findLatestClosed: jest.fn(),
-    } as unknown as jest.Mocked<MeetingRepository>;
+    };
 
     findAllSpy = jest.spyOn(meetingRepository, 'findAll');
 

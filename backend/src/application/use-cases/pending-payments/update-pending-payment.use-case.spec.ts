@@ -16,6 +16,7 @@ describe('UpdatePendingPaymentUseCase', () => {
   beforeEach(() => {
     repository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByMember: jest.fn(),
       findByMeeting: jest.fn(),
       findPendingByMeeting: jest.fn(),
@@ -25,7 +26,7 @@ describe('UpdatePendingPaymentUseCase', () => {
       saveMany: jest.fn(),
       calculateRemainingAmount: jest.fn(),
       delete: jest.fn(),
-    } as unknown as jest.Mocked<PendingMemberPaymentRepository>;
+    };
 
     findByIdSpy = jest.spyOn(repository, 'findById');
     saveSpy = jest.spyOn(repository, 'save');

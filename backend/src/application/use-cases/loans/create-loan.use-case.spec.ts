@@ -9,8 +9,6 @@ import { RecordOperationUseCase } from '@application/use-cases/accounting/record
 import { Member } from '@domain/entities/member.entity';
 import { Meeting } from '@domain/entities/meeting.entity';
 import { Loan, LoanStatus } from '@domain/entities/loan.entity';
-import { LoanTransactionDetail } from '@domain/entities/loan-transaction-detail.entity';
-import { PendingMemberPayment } from '@domain/entities/pending-member-payment.entity';
 import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
@@ -20,7 +18,6 @@ import {
   CASH_ACCOUNT,
   MEMBER_EQUITY_ACCOUNT,
 } from '@domain/constants/account-types';
-import { LedgerEntryDto } from '@application/dto/accounting/record-operation.dto';
 
 describe('CreateLoanUseCase', () => {
   let useCase: CreateLoanUseCase;
@@ -64,7 +61,7 @@ describe('CreateLoanUseCase', () => {
       findAll: jest.fn(),
       save: jest.fn(),
       findLatestClosed: jest.fn(),
-    } as unknown as jest.Mocked<MeetingRepository>;
+    };
 
     loanRepository = {
       findById: jest.fn(),
@@ -156,10 +153,8 @@ describe('CreateLoanUseCase', () => {
       });
 
       loanSaveSpy.mockResolvedValue(savedLoan);
-      loanTransactionDetailSaveSpy.mockResolvedValue(
-        {} as LoanTransactionDetail,
-      );
-      pendingMemberPaymentSaveSpy.mockResolvedValue({} as PendingMemberPayment);
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
+      pendingMemberPaymentSaveSpy.mockResolvedValue({});
 
       const result = await useCase.execute(dto);
 
@@ -178,6 +173,7 @@ describe('CreateLoanUseCase', () => {
           memberId: mockMemberId,
           meetingId: mockMeetingId,
           type: OperationType.LOAN_DISBURSEMENT,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           entries: expect.arrayContaining([
             expect.objectContaining({
               accountType: LOANS_RECEIVABLE_ACCOUNT,
@@ -187,7 +183,7 @@ describe('CreateLoanUseCase', () => {
               accountType: MEMBER_EQUITY_ACCOUNT,
               amount: -10000,
             }),
-          ]) as unknown as LedgerEntryDto[],
+          ]),
         }),
       );
       expect(loanTransactionDetailSaveSpy).toHaveBeenCalled();
@@ -220,9 +216,7 @@ describe('CreateLoanUseCase', () => {
       });
 
       loanSaveSpy.mockResolvedValue(savedLoan);
-      loanTransactionDetailSaveSpy.mockResolvedValue(
-        {} as LoanTransactionDetail,
-      );
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
 
       const result = await useCase.execute(dto);
 
@@ -235,6 +229,7 @@ describe('CreateLoanUseCase', () => {
 
       expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           entries: expect.arrayContaining([
             expect.objectContaining({
               accountType: CASH_ACCOUNT,
@@ -244,7 +239,7 @@ describe('CreateLoanUseCase', () => {
               accountType: LOANS_RECEIVABLE_ACCOUNT,
               amount: 5000,
             }),
-          ]) as unknown as LedgerEntryDto[],
+          ]),
         }),
       );
     });
@@ -275,9 +270,7 @@ describe('CreateLoanUseCase', () => {
       });
 
       loanSaveSpy.mockResolvedValue(savedLoan);
-      loanTransactionDetailSaveSpy.mockResolvedValue(
-        {} as LoanTransactionDetail,
-      );
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
 
       const result = await useCase.execute(dto);
 
@@ -290,6 +283,7 @@ describe('CreateLoanUseCase', () => {
 
       expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           entries: expect.arrayContaining([
             expect.objectContaining({
               accountType: CASH_ACCOUNT,
@@ -299,7 +293,7 @@ describe('CreateLoanUseCase', () => {
               accountType: LOANS_RECEIVABLE_ACCOUNT,
               amount: 3000,
             }),
-          ]) as unknown as LedgerEntryDto[],
+          ]),
         }),
       );
     });
@@ -331,10 +325,8 @@ describe('CreateLoanUseCase', () => {
       });
 
       loanSaveSpy.mockResolvedValue(savedLoan);
-      loanTransactionDetailSaveSpy.mockResolvedValue(
-        {} as LoanTransactionDetail,
-      );
-      pendingMemberPaymentSaveSpy.mockResolvedValue({} as PendingMemberPayment);
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
+      pendingMemberPaymentSaveSpy.mockResolvedValue({});
 
       const result = await useCase.execute(dto);
 

@@ -62,9 +62,8 @@ describe('TypeOrmTransactionManager', () => {
       expect(startTransactionSpy).toHaveBeenCalledTimes(1);
       expect(operation).toHaveBeenCalledWith(
         expect.objectContaining({
-          execute: expect.any(Function) as unknown as (
-            nestedOperation: () => Promise<unknown>,
-          ) => Promise<unknown>,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          execute: expect.any(Function),
         }),
       );
       expect(commitTransactionSpy).toHaveBeenCalledTimes(1);

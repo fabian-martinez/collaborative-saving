@@ -21,7 +21,7 @@ describe('GetAuthenticatedUserQuery', () => {
     // Actually, looking at the class, it's a plain class. But for DI consistency let's use Test.createTestingModule if we were testing the provider.
     // Here we can just test the class logic directly as unit test.
 
-    identityService = mockIdentityService as unknown as IdentityService;
+    identityService = mockIdentityService;
     memberRepository = mockMemberRepository as unknown as MemberRepository;
     query = new GetAuthenticatedUserQuery(identityService, memberRepository);
 
