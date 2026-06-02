@@ -11,6 +11,7 @@ export interface LoanTransactionDetailRepository {
     loanIds: string[],
     meetingId: string,
   ): Promise<LoanTransactionDetail[]>;
+  findByOperationIds(operationIds: string[]): Promise<LoanTransactionDetail[]>;
   save(transaction: LoanTransactionDetail): Promise<LoanTransactionDetail>;
   saveMany(
     transactions: LoanTransactionDetail[],

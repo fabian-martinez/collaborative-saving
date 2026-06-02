@@ -91,6 +91,7 @@
                 class="btn btn-sm btn-ghost btn-square" 
                 @click="openEditModal(payment)"
                 title="Editar"
+                aria-label="Editar pago"
               >
                 <Edit class="w-4 h-4 text-primary" />
               </button>
@@ -99,6 +100,7 @@
                 @click="confirmDelete(payment)"
                 :disabled="payment.status === 'paid'"
                 title="Eliminar"
+                aria-label="Eliminar pago"
               >
                 <Trash class="w-4 h-4 text-error" />
               </button>

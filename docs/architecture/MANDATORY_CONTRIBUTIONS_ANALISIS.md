@@ -379,7 +379,7 @@ export interface MandatoryContributionRepository {
 
 **Recomendación**: Agregar MandatoryContributions al plan de migración después de Loans u Operations, ya que es un módulo simple (CRUD básico) que completará la arquitectura.
 
-**Prioridad sugerida**: 
+**Prioridad sugerida**:
 - Semana 7-8: Migrar MandatoryContributions (junto con Operations o después)
 
 ---

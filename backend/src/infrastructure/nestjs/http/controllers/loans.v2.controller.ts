@@ -6,8 +6,6 @@ import {
   Param,
   Body,
   ParseUUIDPipe,
-  HttpStatus,
-  HttpException,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -35,8 +33,6 @@ import { UpdateLoanTermsHttpDto } from '../dto/update-loan-terms-http.dto';
 import { PaymentPlanRequestHttpDto } from '../dto/payment-plan-request-http.dto';
 import { SimulateLoanScenariosRequestHttpDto } from '../dto/simulate-loan-scenarios-request-http.dto';
 import { UpdateLoanTermsDto } from '@application/dto/loans/update-loan-terms.dto';
-import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
-import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 
 @ApiTags('Loans V2')
 @Controller('v2/loans')
@@ -60,12 +56,8 @@ export class LoansV2Controller {
     type: [LoanResponseHttpDto],
   })
   async findAll(): Promise<LoanResponseHttpDto[]> {
-    try {
-      const loans = await this.getLoansQuery.execute();
-      return loans.map((loan) => this.mapLoanToHttp(loan));
-    } catch (error: unknown) {
-      throw error;
-    }
+    const loans = await this.getLoansQuery.execute();
+    return loans.map((loan) => this.mapLoanToHttp(loan));
   }
 
   @Get(':id')
@@ -89,15 +81,8 @@ export class LoansV2Controller {
   async findOne(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<LoanResponseHttpDto> {
-    try {
-      const loan = await this.getLoanDetailQuery.execute(id);
-      return this.mapLoanToHttp(loan);
-    } catch (error: unknown) {
-      if (error instanceof LoanNotFoundException) {
-        throw error;
-      }
-      throw error;
-    }
+    const loan = await this.getLoanDetailQuery.execute(id);
+    return this.mapLoanToHttp(loan);
   }
 
   @Patch(':id/terms')
@@ -132,29 +117,16 @@ export class LoansV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateLoanTermsHttpDto,
   ): Promise<LoanResponseHttpDto> {
-    try {
-      const updateDto: UpdateLoanTermsDto = {
-        loanId: id,
-        interestRate: dto.interest_rate,
-        monthlyPaymentAmount: dto.monthly_payment_amount,
-        term: dto.term,
-        // TODO: Extract user ID from request context when authentication is implemented
-        changedBy: undefined,
-      };
-      const result = await this.updateLoanTermsUseCase.execute(updateDto);
-      return this.mapLoanToHttp(result);
-    } catch (error: unknown) {
-      if (error instanceof LoanNotFoundException) {
-        throw error;
-      }
-      if (error instanceof InvalidRequestError) {
-        throw error;
-      }
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw error;
-    }
+    const updateDto: UpdateLoanTermsDto = {
+      loanId: id,
+      interestRate: dto.interest_rate,
+      monthlyPaymentAmount: dto.monthly_payment_amount,
+      term: dto.term,
+      // TODO: Extract user ID from request context when authentication is implemented
+      changedBy: undefined,
+    };
+    const result = await this.updateLoanTermsUseCase.execute(updateDto);
+    return this.mapLoanToHttp(result);
   }
 
   @Post('simulate-plan')
@@ -176,23 +148,13 @@ export class LoansV2Controller {
   })
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   simulatePlan(@Body() dto: PaymentPlanRequestHttpDto) {
-    try {
-      const request: PaymentPlanRequestDto = {
-        principal: dto.principal,
-        rate: dto.rate,
-        term: dto.term,
-        amortizationType: dto.amortization_type,
-      };
-      return this.getPaymentPlanSimulationQuery.execute(request);
-    } catch (error: unknown) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    const request: PaymentPlanRequestDto = {
+      principal: dto.principal,
+      rate: dto.rate,
+      term: dto.term,
+      amortizationType: dto.amortization_type,
+    };
+    return this.getPaymentPlanSimulationQuery.execute(request);
   }
 
   @Post(':id/simulate-scenarios')
@@ -225,28 +187,15 @@ export class LoansV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: SimulateLoanScenariosRequestHttpDto,
   ) {
-    try {
-      const request: SimulateLoanScenariosRequestDto = {
-        scenarios: dto.scenarios.map((s) => ({
-          name: s.name,
-          extraPayment: s.extra_payment,
-          startMonth: s.start_month,
-          amortizationType: s.amortization_type,
-        })),
-      };
-      return await this.simulateLoanPaymentPlanUseCase.execute(id, request);
-    } catch (error: unknown) {
-      if (error instanceof LoanNotFoundException) {
-        throw error;
-      }
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    const request: SimulateLoanScenariosRequestDto = {
+      scenarios: dto.scenarios.map((s) => ({
+        name: s.name,
+        extraPayment: s.extra_payment,
+        startMonth: s.start_month,
+        amortizationType: s.amortization_type,
+      })),
+    };
+    return await this.simulateLoanPaymentPlanUseCase.execute(id, request);
   }
 
   private mapLoanToHttp(loan: LoanResponseDto): LoanResponseHttpDto {

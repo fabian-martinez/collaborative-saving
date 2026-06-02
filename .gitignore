@@ -153,3 +153,16 @@ docs/.DS_Store
 supabase/*.sql
 backend/.env.test
 backend/secrets/
+docs/screenshots/
+docs/stitch_screens/
+
+# Firebase Admin SDK credentials
+backend/*-adminsdk-*.json
+backend/*.json
+!backend/package.json
+!backend/tsconfig.json
+!backend/tsconfig.build.json
+!backend/nest-cli.json
+
+# Backups
+infra/backups/

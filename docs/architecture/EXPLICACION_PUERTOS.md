@@ -78,7 +78,7 @@ export interface MemberRepository {
 }
 ```
 
-**Nota importante**: 
+**Nota importante**:
 - ✅ Es solo una **interface TypeScript**
 - ✅ No tiene implementación
 - ✅ El dominio **define** qué necesita

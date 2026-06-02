@@ -48,12 +48,13 @@ export class CalculateMemberInsuranceUseCase {
     const stockValueMap = new Map<string, number>();
 
     if (stockIds.length > 0) {
-      const stocks = await Promise.all(
-        stockIds.map((id) => this.stockRepository.findById(id)),
-      );
+      // ⚡ Bolt: Prevent N+1 queries by fetching all needed stocks in a single query
+      // Using findByIds combined with a Set/Map preserves functionality for missing stocks
+      const stocks = await this.stockRepository.findByIds(stockIds);
+      const stockMap = new Map(stocks.map((stock) => [stock.id, stock]));
 
-      stocks.forEach((stock, index) => {
-        const stockId = stockIds[index];
+      stockIds.forEach((stockId) => {
+        const stock = stockMap.get(stockId);
         stockValueMap.set(stockId, stock ? stock.value : 0);
       });
     }

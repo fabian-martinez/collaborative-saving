@@ -610,6 +610,7 @@ export class QueryBus {
 ## 📊 Métricas de Arquitectura
 
 ### Separación de Capas
+
 | Capa | Componentes | Responsabilidades | Estado |
 |------|-------------|-------------------|--------|
 | **Presentación** | 11 Controllers | HTTP, Validación | ✅ Bien |
@@ -618,6 +619,7 @@ export class QueryBus {
 | **Infraestructura** | 12 Modules | Configuración | ✅ Bien |
 
 ### Principios Arquitectónicos
+
 | Principio | Implementación | Estado | Mejoras Necesarias |
 |-----------|----------------|--------|-------------------|
 | **SRP** | 70% | ⚠️ Parcial | Dividir servicios grandes |
@@ -627,6 +629,7 @@ export class QueryBus {
 | **DIP** | 95% | ✅ Excelente | Mantener DI |
 
 ### Escalabilidad
+
 | Aspecto | Estado | Comentarios |
 |---------|--------|-------------|
 | **Horizontal** | ✅ Buena | Servicios stateless |

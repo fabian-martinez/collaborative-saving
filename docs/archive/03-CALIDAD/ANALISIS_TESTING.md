@@ -403,6 +403,7 @@ module.exports = {
 ## 📊 Métricas de Testing Actuales
 
 ### Cobertura por Categoría
+
 | Categoría | Archivos | Con Tests | Cobertura | Estado |
 |-----------|----------|-----------|-----------|--------|
 | **Servicios** | 15 | 4 | 27% | ⚠️ Baja |
@@ -414,6 +415,7 @@ module.exports = {
 | **Total** | 76 | 6 | 8% | 🚨 Crítica |
 
 ### Calidad de Tests
+
 | Aspecto | Puntuación | Estado | Comentarios |
 |---------|------------|--------|-------------|
 | **Configuración** | 9/10 | ✅ Excelente | Jest bien configurado |

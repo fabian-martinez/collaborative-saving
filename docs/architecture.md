@@ -18,7 +18,7 @@ NestJS + Vue 3 + PostgreSQL (Supabase), siguiendo una arquitectura hexagonal est
 - **Lenguajes:** TypeScript, SQL.
 - **Framework(s):** NestJS (Backend), Vue 3 (Frontend).
 - **Persistencia:** PostgreSQL (Supabase) + TypeORM.
-- **Despliegue:** Docker (Backend), Supabase.
+- **Despliegue:** Docker (Backend), PostgreSQL.
 - **CI/CD:** GitHub Actions.
 
 ## Patrón
@@ -42,8 +42,9 @@ collaborative-saving/
 │   ├── src/
 │   │   ├── features/
 │   │   └── shared/
-└── supabase/
-    └── migrations/
+└── infra/
+    └── database/
+        └── migrations/
 ```
 
 ## Diagrama de componentes
@@ -52,8 +53,8 @@ collaborative-saving/
 flowchart LR
   user[Usuario] -->|HTTPS| fe[Frontend Vue 3]
   fe -->|REST API| be[Backend NestJS]
-  be -->|SQL| db[(PostgreSQL Supabase)]
-  be -->|Auth| fb[Firebase/Supabase Auth]
+  be -->|SQL| db[(PostgreSQL)]
+  be -->|Auth| fb[Firebase Auth]
 ```
 
 ## Reglas clave
@@ -66,5 +67,7 @@ flowchart LR
 ## Docs relacionados
 
 - [Decisiones](./adrs/) — Por qué la arquitectura se ve así.
+- [Arquitectura del Frontend](./frontend/ARCHITECTURE.md) — Detalles técnicos y patrones del cliente (Vue 3, Pinia).
+- [Guías de Frontend](./frontend/README.md) — Convenciones y estilos generales.
 - [Modelo de datos](./data-model.md) — Esquema + relaciones.
 - [Infraestructura](./infrastructure.md) — Topología de despliegue.

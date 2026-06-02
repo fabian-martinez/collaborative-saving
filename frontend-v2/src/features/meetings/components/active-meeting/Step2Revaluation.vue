@@ -52,6 +52,64 @@
           </div>
         </div>
 
+        <!-- Step 1: Summary -->
+        <div class="mb-6 p-4 bg-base-200 rounded-lg">
+          <h4 class="text-md font-bold mb-3 flex items-center gap-2">
+            <span class="badge badge-primary">Paso 1</span>
+            Resumen de Recaudación
+          </h4>
+          <p class="text-sm text-base-content/80 mb-4">
+            El <strong>Total a Distribuir</strong> ($<CopyOnDblClickNumber :value="previewData.total_to_distribute" />) es la suma de los aportes de capital y los intereses ganados durante el periodo.
+          </p>
+          <progress 
+            class="progress progress-success w-full" 
+            :value="previewData.total_contributions" 
+            :max="previewData.total_to_distribute"
+          ></progress>
+          <div class="flex justify-between text-xs mt-1 text-base-content/70">
+            <span>Aportes ({{ ((previewData.total_contributions / previewData.total_to_distribute) * 100).toFixed(1) }}%)</span>
+            <span>Intereses ({{ ((previewData.total_interest / previewData.total_to_distribute) * 100).toFixed(1) }}%)</span>
+          </div>
+        </div>
+
+        <!-- Step 2: Distribution Rules -->
+        <div class="mb-6 p-4 bg-base-200 rounded-lg">
+          <h4 class="text-md font-bold mb-3 flex items-center gap-2">
+            <span class="badge badge-primary">Paso 2</span>
+            Asignación de Intereses (Total: $<CopyOnDblClickNumber :value="previewData.total_interest" />)
+          </h4>
+          <p class="text-sm text-base-content/80 mb-4">
+            Los intereses se distribuyen primero a las acciones garantizadas para cumplir su tasa fija. El remanente se reparte proporcionalmente entre las demás acciones según su volumen.
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="card bg-base-100 shadow-sm border border-base-300">
+              <div class="card-body p-4">
+                <h5 class="font-bold text-secondary text-sm">Acciones Garantizadas</h5>
+                <p class="text-xs text-base-content/70 mb-2">Se aseguran intereses antes que el resto.</p>
+                <div class="text-xl font-bold text-success">$<CopyOnDblClickNumber :value="guaranteedInterestAllocated" /></div>
+              </div>
+            </div>
+            <div class="card bg-base-100 shadow-sm border border-base-300">
+              <div class="card-body p-4">
+                <h5 class="font-bold text-info text-sm">Acciones Proporcionales</h5>
+                <p class="text-xs text-base-content/70 mb-2">Reciben el remanente de intereses equitativamente.</p>
+                <div class="text-xl font-bold text-success">$<CopyOnDblClickNumber :value="proportionalInterestAllocated" /></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Per-share Breakdown -->
+        <div class="mb-4">
+          <h4 class="text-md font-bold flex items-center gap-2">
+            <span class="badge badge-primary">Paso 3</span>
+            Cálculo por Acción
+          </h4>
+          <p class="text-sm text-base-content/80 mt-2 mb-4">
+            Fórmula: <code>Valor Anterior + Crecimiento (Aportes) + Crecimiento (Intereses) = Nuevo Valor</code>
+          </p>
+        </div>
+
         <!-- Vista Desktop: Tabla completa -->
         <div class="hidden md:block mt-4 w-full">
           <div class="overflow-x-auto w-full" style="max-width: 100%;">
@@ -236,7 +294,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useActiveMeetingStore } from '../../stores/activeMeeting'
 import { meetingsApi, type RevaluationResponse } from '@/api/meetings.api'
 import { contributionsApi, type MandatoryContribution } from '@/api/contributions.api'
@@ -256,6 +314,18 @@ const store = useActiveMeetingStore()
 const emit = defineEmits<{
   completed: []
 }>()
+
+// Computed Properties for Breakdown
+const guaranteedStocks = computed(() => previewData.value?.details.filter(d => d.is_guaranteed) || [])
+const proportionalStocks = computed(() => previewData.value?.details.filter(d => !d.is_guaranteed && d.type !== 'Aportes Obligatorios') || [])
+
+const guaranteedInterestAllocated = computed(() => {
+  return guaranteedStocks.value.reduce((sum, d) => sum + (d.growth_from_interest * d.total_shares), 0)
+})
+
+const proportionalInterestAllocated = computed(() => {
+  return proportionalStocks.value.reduce((sum, d) => sum + (d.growth_from_interest * d.total_shares), 0)
+})
 
 // Calculate interest rate percentage
 function calculateInterestRate(interestGained: number, previousValue: number): string {

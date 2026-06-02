@@ -1,6 +1,6 @@
 <template>
   <div class="collapse collapse-arrow bg-base-100 border border-base-300 rounded-lg" :class="{ 'collapse-open': isExpanded }">
-    <input type="checkbox" :checked="isExpanded" @change="toggleExpanded" />
+    <input type="checkbox" :checked="isExpanded" @change="toggleExpanded" aria-label="Expandir detalles del préstamo" />
     <div class="collapse-title text-base font-medium">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 w-full">
         <div class="flex items-center gap-3 flex-wrap">
