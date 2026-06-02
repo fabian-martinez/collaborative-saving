@@ -83,10 +83,8 @@ export class GetMemberStockLoanPaymentsQueryHandler {
 
     // Fetch related entities
     const stocks = await this.stockRepository.findByIds(Array.from(stockIds));
-    const subscriptions = await Promise.all(
-      Array.from(subscriptionIds).map((id) =>
-        this.stockSubscriptionRepository.findById(id),
-      ),
+    const subscriptions = await this.stockSubscriptionRepository.findByIds(
+      Array.from(subscriptionIds),
     );
     const loans =
       loanIds.size > 0
@@ -94,16 +92,12 @@ export class GetMemberStockLoanPaymentsQueryHandler {
         : [];
 
     // Get loan transaction details for these operations
-    // We need to get all transactions for the loans and filter by operationId
-    const allLoanTransactions =
-      loanIds.size > 0
-        ? await Promise.all(
-            Array.from(loanIds).map((loanId) =>
-              this.loanTransactionDetailRepository.findByLoan(loanId),
-            ),
+    const loanTransactions =
+      operationIds.length > 0
+        ? await this.loanTransactionDetailRepository.findByOperationIds(
+            operationIds,
           )
         : [];
-    const loanTransactions = allLoanTransactions.flat();
 
     // Create maps for quick lookup
     const stockMap = new Map(

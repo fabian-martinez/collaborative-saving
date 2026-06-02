@@ -87,8 +87,8 @@
                     <h2 class="text-2xl font-bold">Registrar compra de acciones</h2>
                     <p class="text-lg text-base-content/80">{{ selectedMember.name }}</p>
                   </div>
-                  <!-- Botón para abrir el modal de compra de acción -->
-                  <div class="flex justify-end mb-4">
+                  <div class="flex justify-end gap-2 mb-4">
+                    <button class="btn btn-secondary btn-sm" @click="openCdtModal()">Crear CDT</button>
                     <button class="btn btn-primary btn-sm" @click="openBuyModal()">Agregar compra</button>
                   </div>
                 <!-- Recibo local editable -->
@@ -98,15 +98,21 @@
                     <div v-for="(line, idx) in localLines" :key="line.id" class="py-3">
                       <div class="flex items-baseline">
                         <div class="shrink-0">
-                          <p class="font-semibold text-xl">{{ stockName(line.stockId) }}</p>
-                          <p class="text-sm text-base-content/70">
+                          <p class="font-semibold text-xl">
+                            <span v-if="line.isCdt">CDT a {{ line.termMonths }} meses</span>
+                            <span v-else>{{ stockName(line.stockId) }}</span>
+                          </p>
+                          <p v-if="!line.isCdt" class="text-sm text-base-content/70">
                             <CopyOnDblClickNumber :value="Number(line.quantity || 0)" /> uds. x 
                             <CopyOnDblClickNumber :value="stocks.find(s => s.id === line.stockId)?.value || 0" /> c/u
+                          </p>
+                          <p v-else class="text-sm text-base-content/70">
+                            Rendimiento: 1.5% mensual
                           </p>
                         </div>
                         <div class="grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
                         <div class="shrink-0 flex items-center gap-2">
-                          <button class="btn btn-ghost btn-xs" @click="openBuyModal(idx)">Editar</button>
+                          <button v-if="!line.isCdt" class="btn btn-ghost btn-xs" @click="openBuyModal(idx)">Editar</button>
                           <button class="btn btn-ghost btn-xs text-error" @click="removeLine(idx)">Anular</button>
                           <p class="text-right font-mono text-2xl whitespace-nowrap">
                             <span v-if="typeof (line.cashAmount + line.creditAmount) === 'number'">
@@ -174,6 +180,13 @@
           @save="handleBuyModalSave"
           @cancel="closeBuyModal"
         />
+
+        <!-- Modal para CDT -->
+        <CreateCdtModal
+          :visible="showCdtModal"
+          @save="handleCdtModalSave"
+          @cancel="closeCdtModal"
+        />
       </div>
     </div>
     <!-- Modal de Vista Previa e Impresión de Compras -->
@@ -209,6 +222,7 @@ import { operationsApi } from '@/api/operations.api'
 import { formatDate } from '@/shared/utils/formatters'
 import { usePrintReceipt } from '@/shared/composables/usePrintReceipt'
 import EditBuyStockModal from './EditBuyStockModal.vue'
+import CreateCdtModal from './CreateCdtModal.vue'
 import OperationDetails from '@/shared/components/OperationDetails.vue'
 import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
 import PurchaseSummary from './collection/PurchaseSummary.vue'
@@ -244,6 +258,8 @@ type LocalLine = {
     interest_rate: number
     loan_type: string
   }
+  isCdt?: boolean
+  termMonths?: number
 }
 
 const localLinesByMember = ref<Record<string, LocalLine[]>>({})
@@ -269,6 +285,9 @@ const buyModalForm = ref<LocalLine>({
   cashAmount: 0,
   creditAmount: 0
 })
+
+// Estado para modal CDT
+const showCdtModal = ref(false)
 
 // Estado para vista de operaciones
 const selectedOperation = ref<Operation | null>(null)
@@ -532,6 +551,29 @@ function handleBuyModalSave(line: Partial<LocalLine> & { stockId: string; quanti
   closeBuyModal()
 }
 
+// Funciones del modal CDT
+function openCdtModal() {
+  showCdtModal.value = true
+}
+
+function closeCdtModal() {
+  showCdtModal.value = false
+}
+
+function handleCdtModalSave(line: { isCdt: true; amount: number; termMonths: number; stockId: string; quantity: number }) {
+  const newLine: LocalLine = {
+    id: `${Date.now()}-${Math.random()}`,
+    stockId: line.stockId,
+    quantity: line.quantity,
+    cashAmount: line.amount,
+    creditAmount: 0,
+    isCdt: true,
+    termMonths: line.termMonths,
+  }
+  localLines.value = [...localLines.value, newLine]
+  closeCdtModal()
+}
+
 function removeLine(idx: number) {
   const lines = [...localLines.value]
   lines.splice(idx, 1)
@@ -555,21 +597,29 @@ async function confirmLocalOperation() {
   
   try {
     for (const line of localLines.value) {
-      const payload: PurchaseStockRequest = {
-        stock_id: line.stockId,
-        quantity: line.quantity,
-        cash_amount: line.cashAmount,
-        meeting_id: store.meetingId,
-      }
-      
-      if (line.creditAmount > 0 && line.loanDetails) {
-        payload.loan_details = {
-          interest_rate: line.loanDetails.interest_rate,
-          loan_type: line.loanDetails.loan_type,
+      if (line.isCdt) {
+        await stocksApi.createCdt({
+          member_id: memberId,
+          amount: line.cashAmount,
+          term_months: line.termMonths || 6,
+        })
+      } else {
+        const payload: PurchaseStockRequest = {
+          stock_id: line.stockId,
+          quantity: line.quantity,
+          cash_amount: line.cashAmount,
+          meeting_id: store.meetingId,
         }
+        
+        if (line.creditAmount > 0 && line.loanDetails) {
+          payload.loan_details = {
+            interest_rate: line.loanDetails.interest_rate,
+            loan_type: line.loanDetails.loan_type,
+          }
+        }
+        
+        await membersApi.createStockPurchase(memberId, payload)
       }
-      
-      await membersApi.createStockPurchase(memberId, payload)
     }
     
     localLines.value = []

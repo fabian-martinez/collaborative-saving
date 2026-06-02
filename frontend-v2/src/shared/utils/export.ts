@@ -12,17 +12,26 @@ export function exportToCSV(data: Record<string, unknown>[], filename: string): 
   const columns = Object.keys(data[0])
 
   // Crear el encabezado CSV
-  const header = columns.map(col => `"${col}"`).join(',')
+  const header = columns.map(col => `"${col}"`).join(';')
 
   // Crear las filas CSV
   const rows = data.map(row => {
     return columns.map(col => {
       const value = row[col]
-      // Escapar comillas y envolver en comillas si contiene comas o saltos de línea
       if (value === null || value === undefined) return '""'
-      const stringValue = String(value).replace(/"/g, '""')
+      
+      let stringValue = ''
+      if (typeof value === 'number') {
+        // Reemplazar punto por coma para decimales en Excel (español)
+        stringValue = String(value).replace('.', ',')
+      } else {
+        stringValue = String(value)
+      }
+      
+      // Escapar comillas y envolver en comillas
+      stringValue = stringValue.replace(/"/g, '""')
       return `"${stringValue}"`
-    }).join(',')
+    }).join(';')
   })
 
   // Combinar header y rows
@@ -55,17 +64,26 @@ export function exportTableToCSV(
   }
 
   // Crear el encabezado CSV con las etiquetas de las columnas
-  const header = columns.map(col => `"${col.label}"`).join(',')
+  const header = columns.map(col => `"${col.label}"`).join(';')
 
   // Crear las filas CSV usando las keys de las columnas
   const rows = data.map(row => {
     return columns.map(col => {
       const value = row[col.key]
-      // Escapar comillas y envolver en comillas si contiene comas o saltos de línea
       if (value === null || value === undefined) return '""'
-      const stringValue = String(value).replace(/"/g, '""')
+      
+      let stringValue = ''
+      if (typeof value === 'number') {
+        // Reemplazar punto por coma para decimales en Excel (español)
+        stringValue = String(value).replace('.', ',')
+      } else {
+        stringValue = String(value)
+      }
+      
+      // Escapar comillas y envolver en comillas
+      stringValue = stringValue.replace(/"/g, '""')
       return `"${stringValue}"`
-    }).join(',')
+    }).join(';')
   })
 
   // Combinar header y rows

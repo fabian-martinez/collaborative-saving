@@ -14,7 +14,7 @@ describe('StockMapper', () => {
         guaranteed_yield: null,
         behavior: StockBehavior.CAPITAL_APPRECIATION,
         deleted_at: null,
-      } as StockEntity;
+      };
 
       const domain = StockMapper.toDomain(entity as StockEntity);
 
@@ -38,7 +38,7 @@ describe('StockMapper', () => {
         guaranteed_yield: 0.02,
         behavior: StockBehavior.DIVIDEND_YIELD,
         deleted_at: null,
-      } as StockEntity;
+      };
 
       const domain = StockMapper.toDomain(entity as StockEntity);
 
@@ -58,7 +58,7 @@ describe('StockMapper', () => {
         guaranteed_yield: null,
         behavior: StockBehavior.CAPITAL_APPRECIATION,
         deleted_at: deletedDate,
-      } as StockEntity;
+      };
 
       const domain = StockMapper.toDomain(entity as StockEntity);
 

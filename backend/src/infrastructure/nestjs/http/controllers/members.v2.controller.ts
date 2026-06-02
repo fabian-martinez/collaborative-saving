@@ -8,7 +8,6 @@ import {
   Patch,
   Body,
   Delete,
-  HttpException,
   HttpStatus,
   UsePipes,
   ValidationPipe,
@@ -68,12 +67,7 @@ import { PurchaseStockUseCase } from '@application/use-cases/members/purchase-st
 import { PurchaseStockResponseDto } from '@application/dto/members/purchase-stock-response.dto';
 import { PurchaseStockHttpDto } from '../dto/purchase-stock-http.dto';
 import { PurchaseStockResponseHttpDto } from '../dto/purchase-stock-response-http.dto';
-import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
-import { StockNotFoundException } from '@application/exceptions/stock-not-found.exception';
-import { StockSubscriptionNotFoundException } from '@application/exceptions/stock-subscription-not-found.exception';
-import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
-import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
-import { InvalidRequestError } from '@domain/errors/invalid-request.error';
+
 import { ProcessStockExchangeUseCase } from '@application/use-cases/members/process-stock-exchange.use-case';
 import { ProcessStockTransferUseCase } from '@application/use-cases/members/process-stock-transfer.use-case';
 import { ProcessStockLoanPaymentUseCase } from '@application/use-cases/members/process-stock-loan-payment.use-case';
@@ -216,21 +210,8 @@ export class MembersV2Controller {
   async create(
     @Body() body: CreateMemberHttpDto,
   ): Promise<MemberResponseHttpDto> {
-    try {
-      const result = await this.createMemberUseCase.execute(body);
-      return this.mapMemberToHttp(result);
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        console.error(e.message);
-        throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
-      } else {
-        console.error(String(e));
-        throw new HttpException(
-          'Internal server error',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-      }
-    }
+    const result = await this.createMemberUseCase.execute(body);
+    return this.mapMemberToHttp(result);
   }
 
   @Post(':id/extraordinary-loan-payment')
@@ -261,31 +242,18 @@ export class MembersV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: RecordExtraordinaryLoanPaymentHttpDto,
   ) {
-    try {
-      const result = await this.recordLoanPaymentUseCase.execute({
-        loanId: body.loanId,
-        meetingId: body.meetingId,
-        totalPaymentAmount: body.amount,
-        forcedPrincipalAmount: body.amount,
-        forcedInterestAmount: 0,
-        notes: body.notes || `Abono extraordinario a capital prestamo`,
-      });
-      return {
-        ...result,
-        memberId: id,
-      };
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        console.error(e.message);
-        throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
-      } else {
-        console.error(String(e));
-        throw new HttpException(
-          'Internal server error',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-      }
-    }
+    const result = await this.recordLoanPaymentUseCase.execute({
+      loanId: body.loanId,
+      meetingId: body.meetingId,
+      totalPaymentAmount: body.amount,
+      forcedPrincipalAmount: body.amount,
+      forcedInterestAmount: 0,
+      notes: body.notes || `Abono extraordinario a capital prestamo`,
+    });
+    return {
+      ...result,
+      memberId: id,
+    };
   }
 
   @Get(':id')
@@ -330,17 +298,8 @@ export class MembersV2Controller {
   async detail(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<MemberResponseHttpDto> {
-    try {
-      const result = await this.getMemberDetailQuery.execute(id);
-      return this.mapMemberToHttp(result);
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        console.error(e.message);
-      } else {
-        console.error(String(e));
-      }
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
-    }
+    const result = await this.getMemberDetailQuery.execute(id);
+    return this.mapMemberToHttp(result);
   }
 
   @Get(':id/loans')
@@ -367,15 +326,8 @@ export class MembersV2Controller {
   async getMemberLoans(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<LoanResponseHttpDto[]> {
-    try {
-      const loans = await this.getMemberLoansQuery.execute(id);
-      return loans.map((loan) => this.mapLoanToHttp(loan));
-    } catch (error: unknown) {
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const loans = await this.getMemberLoansQuery.execute(id);
+    return loans.map((loan) => this.mapLoanToHttp(loan));
   }
 
   @Patch(':id')
@@ -430,20 +382,11 @@ export class MembersV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: UpdateMemberHttpDto,
   ): Promise<MemberResponseHttpDto> {
-    try {
-      const result = await this.updateMemberUseCase.execute({
-        ...body,
-        memberId: id,
-      });
-      return this.mapMemberToHttp(result);
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        console.error(e.message);
-      } else {
-        console.error(String(e));
-      }
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
-    }
+    const result = await this.updateMemberUseCase.execute({
+      ...body,
+      memberId: id,
+    });
+    return this.mapMemberToHttp(result);
   }
 
   @Delete(':id')
@@ -471,16 +414,7 @@ export class MembersV2Controller {
   @UseGuards(RolesGuard)
   @Roles(MemberRole.ADMIN)
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    try {
-      await this.deleteMemberUseCase.execute({ memberId: id });
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        console.error(e.message);
-      } else {
-        console.error(String(e));
-      }
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
-    }
+    await this.deleteMemberUseCase.execute({ memberId: id });
   }
 
   @Get(':id/dues')
@@ -544,17 +478,8 @@ export class MembersV2Controller {
   async getDues(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<MemberDueResponseHttpDto[]> {
-    try {
-      const dues = await this.getMemberDuesQuery.execute(id);
-      return dues.map((d) => this.mapDueToHttp(d));
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        console.error(e.message);
-      } else {
-        console.error(String(e));
-      }
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
-    }
+    const dues = await this.getMemberDuesQuery.execute(id);
+    return dues.map((d) => this.mapDueToHttp(d));
   }
 
   private mapDueToHttp(d: MemberDueResponseDto): MemberDueResponseHttpDto {
@@ -568,7 +493,7 @@ export class MembersV2Controller {
       stock_quantity: d.stockQuantity,
       novelty_comment: d.noveltyComment,
       creation_date: d.creationDate,
-    } as MemberDueResponseHttpDto;
+    };
   }
 
   @Get(':id/payments')
@@ -665,30 +590,17 @@ export class MembersV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Query('includeInactive') includeInactive?: string,
   ): Promise<StockSubscriptionResponseHttpDto[]> {
-    try {
-      // Convert string query param to boolean if provided
-      // Query params come as strings from the URL, so we need to parse them
-      const includeInactiveBool =
-        includeInactive === 'true' || includeInactive === '1';
-      const subscriptions = await this.getMemberStockSubscriptionsQuery.execute(
-        id,
-        includeInactiveBool,
-      );
-      return subscriptions.map((subscription) =>
-        this.mapStockSubscriptionToHttp(subscription),
-      );
-    } catch (e: unknown) {
-      if (e instanceof MemberNotFoundException) {
-        throw new HttpException(e.message, HttpStatus.NOT_FOUND);
-      }
-      if (e instanceof HttpException) {
-        throw e;
-      }
-      throw new HttpException(
-        e instanceof Error ? e.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    // Convert string query param to boolean if provided
+    // Query params come as strings from the URL, so we need to parse them
+    const includeInactiveBool =
+      includeInactive === 'true' || includeInactive === '1';
+    const subscriptions = await this.getMemberStockSubscriptionsQuery.execute(
+      id,
+      includeInactiveBool,
+    );
+    return subscriptions.map((subscription) =>
+      this.mapStockSubscriptionToHttp(subscription),
+    );
   }
 
   @Get(':id/stock-subscriptions/:subscriptionId')
@@ -725,28 +637,11 @@ export class MembersV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Param('subscriptionId', ParseUUIDPipe) subscriptionId: string,
   ): Promise<StockSubscriptionResponseHttpDto> {
-    try {
-      const subscription = await this.getStockSubscriptionByIdQuery.execute(
-        id,
-        subscriptionId,
-      );
-      return this.mapStockSubscriptionToHttp(subscription);
-    } catch (e: unknown) {
-      if (
-        e instanceof MemberNotFoundException ||
-        e instanceof StockSubscriptionNotFoundException ||
-        e instanceof StockNotFoundException
-      ) {
-        throw new HttpException(e.message, HttpStatus.NOT_FOUND);
-      }
-      if (e instanceof HttpException) {
-        throw e;
-      }
-      throw new HttpException(
-        e instanceof Error ? e.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const subscription = await this.getStockSubscriptionByIdQuery.execute(
+      id,
+      subscriptionId,
+    );
+    return this.mapStockSubscriptionToHttp(subscription);
   }
 
   @Get(':id/insurance')
@@ -918,39 +813,20 @@ export class MembersV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: PurchaseStockHttpDto,
   ): Promise<PurchaseStockResponseHttpDto> {
-    try {
-      const result = await this.purchaseStockUseCase.execute({
-        memberId: id,
-        stockId: dto.stock_id,
-        quantity: dto.quantity,
-        cashAmount: dto.cash_amount,
-        loanDetails: dto.loan_details
-          ? {
-              interest_rate: dto.loan_details.interest_rate,
-              loan_type: dto.loan_details.loan_type,
-            }
-          : undefined,
-        meetingId: dto.meeting_id,
-      });
-      return this.mapPurchaseStockToHttp(result);
-    } catch (error: unknown) {
-      if (error instanceof MemberNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-      }
-      if (error instanceof StockNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-      }
-      if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-      }
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const result = await this.purchaseStockUseCase.execute({
+      memberId: id,
+      stockId: dto.stock_id,
+      quantity: dto.quantity,
+      cashAmount: dto.cash_amount,
+      loanDetails: dto.loan_details
+        ? {
+            interest_rate: dto.loan_details.interest_rate,
+            loan_type: dto.loan_details.loan_type,
+          }
+        : undefined,
+      meetingId: dto.meeting_id,
+    });
+    return this.mapPurchaseStockToHttp(result);
   }
 
   @Get(':id/purchase')
@@ -988,27 +864,11 @@ export class MembersV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Query() query: GetMemberPurchasesQueryHttpDto,
   ): Promise<MemberPurchaseResponseHttpDto[]> {
-    try {
-      const queryDto: GetMemberPurchasesQueryDto = query.meeting_id
-        ? { meetingId: query.meeting_id }
-        : {};
-      const purchases = await this.getMemberPurchasesQuery.execute(
-        id,
-        queryDto,
-      );
-      return purchases.map((purchase) => this.mapPurchaseToHttp(purchase));
-    } catch (e: unknown) {
-      if (e instanceof MemberNotFoundException) {
-        throw new HttpException(e.message, HttpStatus.NOT_FOUND);
-      }
-      if (e instanceof HttpException) {
-        throw e;
-      }
-      throw new HttpException(
-        e instanceof Error ? e.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const queryDto: GetMemberPurchasesQueryDto = query.meeting_id
+      ? { meetingId: query.meeting_id }
+      : {};
+    const purchases = await this.getMemberPurchasesQuery.execute(id, queryDto);
+    return purchases.map((purchase) => this.mapPurchaseToHttp(purchase));
   }
 
   @Post(':id/exchange')
@@ -1042,22 +902,18 @@ export class MembersV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: StockExchangeHttpDto,
   ): Promise<StockOperationResponseHttpDto> {
-    try {
-      const result = await this.processStockExchangeUseCase.execute({
-        memberId: id,
-        meetingId: dto.meeting_id,
-        fromSubscriptionId: dto.from_subscription_id,
-        fromQuantity: dto.from_quantity,
-        toStockId: dto.to_stock_id,
-        toQuantity: dto.to_quantity,
-        differenceHandling: dto.difference_handling,
-        targetLoanId: dto.target_loan_id,
-        notes: dto.notes,
-      });
-      return this.mapStockOperationResponseToHttp(result);
-    } catch (error) {
-      return this.handleStockOperationError(error);
-    }
+    const result = await this.processStockExchangeUseCase.execute({
+      memberId: id,
+      meetingId: dto.meeting_id,
+      fromSubscriptionId: dto.from_subscription_id,
+      fromQuantity: dto.from_quantity,
+      toStockId: dto.to_stock_id,
+      toQuantity: dto.to_quantity,
+      differenceHandling: dto.difference_handling,
+      targetLoanId: dto.target_loan_id,
+      notes: dto.notes,
+    });
+    return this.mapStockOperationResponseToHttp(result);
   }
 
   @Get(':id/exchange')
@@ -1095,21 +951,14 @@ export class MembersV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Query() query: GetMemberStockModificationsQueryHttpDto,
   ): Promise<StockExchangeResponseHttpDto[]> {
-    try {
-      const queryDto: { meetingId?: string } = query.meeting_id
-        ? { meetingId: query.meeting_id }
-        : {};
-      const exchanges = await this.getMemberStockExchangesQuery.execute(
-        id,
-        queryDto,
-      );
-      return exchanges.map((exchange) => this.mapStockExchangeToHttp(exchange));
-    } catch (error) {
-      if (error instanceof MemberNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-      }
-      throw error;
-    }
+    const queryDto: { meetingId?: string } = query.meeting_id
+      ? { meetingId: query.meeting_id }
+      : {};
+    const exchanges = await this.getMemberStockExchangesQuery.execute(
+      id,
+      queryDto,
+    );
+    return exchanges.map((exchange) => this.mapStockExchangeToHttp(exchange));
   }
 
   @Post(':id/transfer')
@@ -1145,19 +994,15 @@ export class MembersV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: StockTransferHttpDto,
   ): Promise<StockOperationResponseHttpDto> {
-    try {
-      const result = await this.processStockTransferUseCase.execute({
-        memberId: id,
-        meetingId: dto.meeting_id,
-        fromSubscriptionId: dto.transfer_subscription_id,
-        quantity: dto.transfer_quantity,
-        toMemberId: dto.to_member_id,
-        notes: dto.notes,
-      });
-      return this.mapStockOperationResponseToHttp(result);
-    } catch (error) {
-      return this.handleStockOperationError(error);
-    }
+    const result = await this.processStockTransferUseCase.execute({
+      memberId: id,
+      meetingId: dto.meeting_id,
+      fromSubscriptionId: dto.transfer_subscription_id,
+      quantity: dto.transfer_quantity,
+      toMemberId: dto.to_member_id,
+      notes: dto.notes,
+    });
+    return this.mapStockOperationResponseToHttp(result);
   }
 
   @Get(':id/transfer')
@@ -1195,21 +1040,14 @@ export class MembersV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Query() query: GetMemberStockModificationsQueryHttpDto,
   ): Promise<StockTransferResponseHttpDto[]> {
-    try {
-      const queryDto: { meetingId?: string } = query.meeting_id
-        ? { meetingId: query.meeting_id }
-        : {};
-      const transfers = await this.getMemberStockTransfersQuery.execute(
-        id,
-        queryDto,
-      );
-      return transfers.map((transfer) => this.mapStockTransferToHttp(transfer));
-    } catch (error) {
-      if (error instanceof MemberNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-      }
-      throw error;
-    }
+    const queryDto: { meetingId?: string } = query.meeting_id
+      ? { meetingId: query.meeting_id }
+      : {};
+    const transfers = await this.getMemberStockTransfersQuery.execute(
+      id,
+      queryDto,
+    );
+    return transfers.map((transfer) => this.mapStockTransferToHttp(transfer));
   }
 
   @Post(':id/stock-loan-payment')
@@ -1246,19 +1084,15 @@ export class MembersV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: StockLoanPaymentHttpDto,
   ): Promise<StockOperationResponseHttpDto> {
-    try {
-      const result = await this.processStockLoanPaymentUseCase.execute({
-        memberId: id,
-        meetingId: dto.meeting_id,
-        subscriptionId: dto.loan_payment_subscription_id,
-        quantity: dto.loan_payment_quantity,
-        loanId: dto.loan_id,
-        notes: dto.notes,
-      });
-      return this.mapStockOperationResponseToHttp(result);
-    } catch (error) {
-      return this.handleStockOperationError(error);
-    }
+    const result = await this.processStockLoanPaymentUseCase.execute({
+      memberId: id,
+      meetingId: dto.meeting_id,
+      subscriptionId: dto.loan_payment_subscription_id,
+      quantity: dto.loan_payment_quantity,
+      loanId: dto.loan_id,
+      notes: dto.notes,
+    });
+    return this.mapStockOperationResponseToHttp(result);
   }
 
   @Get(':id/stock-loan-payment')
@@ -1296,21 +1130,14 @@ export class MembersV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Query() query: GetMemberStockModificationsQueryHttpDto,
   ): Promise<StockLoanPaymentResponseHttpDto[]> {
-    try {
-      const queryDto: { meetingId?: string } = query.meeting_id
-        ? { meetingId: query.meeting_id }
-        : {};
-      const payments = await this.getMemberStockLoanPaymentsQuery.execute(
-        id,
-        queryDto,
-      );
-      return payments.map((payment) => this.mapStockLoanPaymentToHttp(payment));
-    } catch (error) {
-      if (error instanceof MemberNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-      }
-      throw error;
-    }
+    const queryDto: { meetingId?: string } = query.meeting_id
+      ? { meetingId: query.meeting_id }
+      : {};
+    const payments = await this.getMemberStockLoanPaymentsQuery.execute(
+      id,
+      queryDto,
+    );
+    return payments.map((payment) => this.mapStockLoanPaymentToHttp(payment));
   }
 
   @Get(':id/payment-schedule')
@@ -1349,38 +1176,10 @@ export class MembersV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Query() query: GetPaymentScheduleQueryHttpDto,
   ): Promise<PaymentScheduleResponseHttpDto> {
-    try {
-      const schedule = await this.getMemberPaymentScheduleQuery.execute(id, {
-        months: query.months,
-      });
-      return this.mapPaymentScheduleToHttp(schedule);
-    } catch (error) {
-      if (error instanceof MemberNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-      }
-      throw error;
-    }
-  }
-
-  private handleStockOperationError(error: unknown): never {
-    if (
-      error instanceof MemberNotFoundException ||
-      error instanceof StockNotFoundException ||
-      error instanceof MeetingNotFoundException ||
-      error instanceof LoanNotFoundException
-    ) {
-      throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-    }
-    if (error instanceof InvalidRequestError) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
-    if (error instanceof HttpException) {
-      throw error;
-    }
-    throw new HttpException(
-      error instanceof Error ? error.message : 'Internal server error',
-      HttpStatus.INTERNAL_SERVER_ERROR,
-    );
+    const schedule = await this.getMemberPaymentScheduleQuery.execute(id, {
+      months: query.months,
+    });
+    return this.mapPaymentScheduleToHttp(schedule);
   }
 
   private mapStockOperationResponseToHttp(
@@ -1402,7 +1201,7 @@ export class MembersV2Controller {
       member_id: r.memberId,
       total_amount: r.totalAmount,
       ledger_entry_ids: r.ledgerEntryIds,
-    } as RecordMonthlyPaymentsResponseHttpDto;
+    };
   }
 
   private mapPurchaseStockToHttp(

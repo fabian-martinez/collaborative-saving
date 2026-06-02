@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, UpdateResult } from 'typeorm';
 import { TypeOrmStockSubscriptionRepository } from './typeorm-stock-subscription.repository';
 import { StockSubscription as StockSubscriptionEntity } from '../entities/stock-subscription.entity';
 import { StockSubscription as StockSubscriptionDomain } from '@domain/entities/stock-subscription.entity';
@@ -22,7 +22,7 @@ describe('TypeOrmStockSubscriptionRepository', () => {
     const mockTransactionManager: TransactionManager = {
       execute: jest.fn(),
       getActiveQueryRunner: jest.fn().mockReturnValue(null),
-    } as unknown as TransactionManager;
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -162,7 +162,9 @@ describe('TypeOrmStockSubscriptionRepository', () => {
       typeOrmRepo.findOne
         .mockResolvedValueOnce(existingEntity as StockSubscriptionEntity)
         .mockResolvedValueOnce(updatedEntity as StockSubscriptionEntity);
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
+      typeOrmRepo.update.mockResolvedValue(
+        undefined as unknown as UpdateResult,
+      );
 
       const result = await repository.save(domain);
       expect(updateSpy).toHaveBeenCalledWith(domain.id, expect.any(Object));
@@ -189,7 +191,9 @@ describe('TypeOrmStockSubscriptionRepository', () => {
       typeOrmRepo.findOne
         .mockResolvedValueOnce(existingEntity as StockSubscriptionEntity)
         .mockResolvedValueOnce(null);
-      typeOrmRepo.update.mockResolvedValue(undefined as any);
+      typeOrmRepo.update.mockResolvedValue(
+        undefined as unknown as UpdateResult,
+      );
 
       await expect(repository.save(domain)).rejects.toThrow(
         'StockSubscription not found after update',

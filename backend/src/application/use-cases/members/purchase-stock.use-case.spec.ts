@@ -22,8 +22,6 @@ import {
   CASH_ACCOUNT,
   LOANS_RECEIVABLE_ACCOUNT,
 } from '@domain/constants/account-types';
-import { LedgerEntryDto } from '@application/dto/accounting/record-operation.dto';
-import { CreateLoanResponseDto } from '@application/dto/loans/create-loan-response.dto';
 
 describe('PurchaseStockUseCase', () => {
   let useCase: PurchaseStockUseCase;
@@ -78,7 +76,7 @@ describe('PurchaseStockUseCase', () => {
       findAll: jest.fn(),
       save: jest.fn(),
       findLatestClosed: jest.fn(),
-    } as unknown as jest.Mocked<MeetingRepository>;
+    };
 
     stockRepository = {
       findById: jest.fn(),
@@ -182,6 +180,7 @@ describe('PurchaseStockUseCase', () => {
           memberId: mockMemberId,
           meetingId: mockMeeting.id,
           type: OperationType.STOCK_PURCHASE,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           entries: expect.arrayContaining([
             expect.objectContaining({
               accountType: STOCK_CAPITAL_ACCOUNT,
@@ -193,7 +192,7 @@ describe('PurchaseStockUseCase', () => {
               accountType: CASH_ACCOUNT,
               amount: 200000,
             }),
-          ]) as unknown as LedgerEntryDto[],
+          ]),
         }),
       );
     });
@@ -223,7 +222,7 @@ describe('PurchaseStockUseCase', () => {
         loanId: 'loan-id-1',
         operationId: 'loan-operation-id-1',
         status: 'active',
-      } as unknown as CreateLoanResponseDto);
+      });
 
       const result = await useCase.execute(dto);
 
@@ -248,6 +247,7 @@ describe('PurchaseStockUseCase', () => {
       );
       expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           entries: expect.arrayContaining([
             expect.objectContaining({
               accountType: STOCK_CAPITAL_ACCOUNT,
@@ -258,7 +258,7 @@ describe('PurchaseStockUseCase', () => {
               amount: 200000,
               loanId: 'loan-id-1',
             }),
-          ]) as unknown as LedgerEntryDto[],
+          ]),
         }),
       );
     });
@@ -288,7 +288,7 @@ describe('PurchaseStockUseCase', () => {
         loanId: 'loan-id-1',
         operationId: 'loan-operation-id-1',
         status: 'active',
-      } as unknown as CreateLoanResponseDto);
+      });
 
       const result = await useCase.execute(dto);
 
@@ -307,6 +307,7 @@ describe('PurchaseStockUseCase', () => {
       );
       expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           entries: expect.arrayContaining([
             expect.objectContaining({
               accountType: STOCK_CAPITAL_ACCOUNT,
@@ -321,7 +322,7 @@ describe('PurchaseStockUseCase', () => {
               amount: 100000,
               loanId: 'loan-id-1',
             }),
-          ]) as unknown as LedgerEntryDto[],
+          ]),
         }),
       );
     });

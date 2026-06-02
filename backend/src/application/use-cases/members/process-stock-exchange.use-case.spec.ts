@@ -181,9 +181,10 @@ describe('ProcessStockExchangeUseCase', () => {
     expect(result.operationId).toBe('operation-1');
     expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         entries: expect.arrayContaining([
           expect.objectContaining({ accountType: STOCK_CAPITAL_ACCOUNT }),
-        ]) as unknown as Array<Record<string, any>>,
+        ]),
       }),
     );
   });
@@ -207,9 +208,10 @@ describe('ProcessStockExchangeUseCase', () => {
     );
     expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         entries: expect.arrayContaining([
           expect.objectContaining({ accountType: CASH_ACCOUNT }),
-        ]) as unknown as Array<Record<string, any>>,
+        ]),
       }),
     );
   });
@@ -242,12 +244,13 @@ describe('ProcessStockExchangeUseCase', () => {
     // Stock modification operation should include CASH_ACCOUNT entry for balance
     expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         entries: expect.arrayContaining([
           expect.objectContaining({
             accountType: CASH_ACCOUNT,
             amount: -1200000, // negative = credit (money going out conceptually)
           }),
-        ]) as unknown as Array<Record<string, any>>,
+        ]),
       }),
     );
   });
@@ -278,13 +281,14 @@ describe('ProcessStockExchangeUseCase', () => {
     // Stock modification operation should include LOANS_RECEIVABLE_ACCOUNT entry (financing)
     expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         entries: expect.arrayContaining([
           expect.objectContaining({
             accountType: LOANS_RECEIVABLE_ACCOUNT,
             amount: 600000, // positive = debit (asset increase)
             loanId: expect.any(String) as string,
           }),
-        ]) as unknown as Array<Record<string, any>>,
+        ]),
       }),
     );
   });

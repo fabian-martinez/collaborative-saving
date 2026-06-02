@@ -27,12 +27,12 @@ describe('UpdateLoanTermsUseCase', () => {
       findPendingByMember: jest.fn(),
       save: jest.fn(),
       findByIds: jest.fn(),
-    } as unknown as jest.Mocked<LoanRepository>;
+    };
 
     eventBus = {
       publish: jest.fn(),
       subscribe: jest.fn(),
-    } as unknown as jest.Mocked<EventBus>;
+    };
 
     findByIdSpy = jest.spyOn(loanRepository, 'findById');
     saveSpy = jest.spyOn(loanRepository, 'save');

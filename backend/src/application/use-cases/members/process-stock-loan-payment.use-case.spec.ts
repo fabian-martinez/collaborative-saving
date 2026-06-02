@@ -186,6 +186,7 @@ describe('ProcessStockLoanPaymentUseCase', () => {
         memberId: member.id,
         meetingId: meeting.id,
         type: 'STOCK_LOAN_PAYMENT',
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         entries: expect.arrayContaining([
           expect.objectContaining({
             accountType: 'STOCK_CAPITAL',
@@ -195,7 +196,7 @@ describe('ProcessStockLoanPaymentUseCase', () => {
             accountType: 'CASH',
             amount: -600000, // credit - virtual cash received from stocks
           }),
-        ]) as unknown as Array<{ accountType: string; amount: number }>,
+        ]),
       }),
     );
   });

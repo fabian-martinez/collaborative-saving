@@ -3,9 +3,14 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { GlobalExceptionFilter } from './infrastructure/nestjs/http/filters/global-exception.filter';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Use Helmet for security headers
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  app.use(helmet());
 
   // Configure explicitly bounded CORS using the ALLOWED_ORIGINS environment variable
   const allowedOrigins = process.env.ALLOWED_ORIGINS

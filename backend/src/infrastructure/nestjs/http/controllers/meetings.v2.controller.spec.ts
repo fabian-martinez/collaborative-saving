@@ -297,7 +297,7 @@ describe('MeetingsV2Controller', () => {
       openMeetingUseCaseExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.open(openDto)).rejects.toThrow(HttpException);
+      await expect(controller.open(openDto)).rejects.toThrow();
       await expect(controller.open(openDto)).rejects.toThrow(
         'An active meeting already exists',
       );
@@ -310,7 +310,7 @@ describe('MeetingsV2Controller', () => {
       openMeetingUseCaseExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.open(openDto)).rejects.toThrow(HttpException);
+      await expect(controller.open(openDto)).rejects.toThrow();
       await expect(controller.open(openDto)).rejects.toThrow('Internal error');
     });
   });
@@ -356,7 +356,7 @@ describe('MeetingsV2Controller', () => {
       closeMeetingUseCaseExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.close(meetingId)).rejects.toThrow(HttpException);
+      await expect(controller.close(meetingId)).rejects.toThrow();
       await expect(controller.close(meetingId)).rejects.toThrow(
         `Meeting with ID ${meetingId} not found`,
       );
@@ -371,7 +371,7 @@ describe('MeetingsV2Controller', () => {
       closeMeetingUseCaseExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.close(meetingId)).rejects.toThrow(HttpException);
+      await expect(controller.close(meetingId)).rejects.toThrow();
       await expect(controller.close(meetingId)).rejects.toThrow(
         'This meeting is already closed',
       );
@@ -383,7 +383,7 @@ describe('MeetingsV2Controller', () => {
       closeMeetingUseCaseExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.close(meetingId)).rejects.toThrow(HttpException);
+      await expect(controller.close(meetingId)).rejects.toThrow();
       await expect(controller.close(meetingId)).rejects.toThrow('Close failed');
     });
   });
@@ -500,17 +500,8 @@ describe('MeetingsV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.getMonthlyPayments(meetingId)).rejects.toThrow(
-        HttpException,
+        MeetingNotFoundException,
       );
-      try {
-        await controller.getMonthlyPayments(meetingId);
-      } catch (e) {
-        expect(e).toBeInstanceOf(HttpException);
-        if (e instanceof HttpException) {
-          expect(e.getStatus()).toBe(HttpStatus.NOT_FOUND);
-          expect(e.message).toContain(meetingId);
-        }
-      }
     });
 
     it('should handle operations with null memberId', async () => {
@@ -576,9 +567,7 @@ describe('MeetingsV2Controller', () => {
       getMeetingMonthlyPaymentsQueryExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.getMonthlyPayments(meetingId)).rejects.toThrow(
-        HttpException,
-      );
+
       await expect(controller.getMonthlyPayments(meetingId)).rejects.toThrow(
         'Internal error',
       );
@@ -673,7 +662,7 @@ describe('MeetingsV2Controller', () => {
       getMeetingsQueryExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.findAll()).rejects.toThrow(HttpException);
+      await expect(controller.findAll()).rejects.toThrow();
       await expect(controller.findAll()).rejects.toThrow('Internal error');
     });
 
@@ -683,7 +672,7 @@ describe('MeetingsV2Controller', () => {
       getMeetingsQueryExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.findAll()).rejects.toThrow(HttpException);
+      await expect(controller.findAll()).rejects.toThrow();
       await expect(controller.findAll()).rejects.toThrow('Custom error');
     });
   });
@@ -727,17 +716,8 @@ describe('MeetingsV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.findOne(meetingId, {})).rejects.toThrow(
-        HttpException,
+        MeetingNotFoundException,
       );
-      try {
-        await controller.findOne(meetingId, {});
-      } catch (e) {
-        expect(e).toBeInstanceOf(HttpException);
-        if (e instanceof HttpException) {
-          expect(e.getStatus()).toBe(HttpStatus.NOT_FOUND);
-          expect(e.message).toContain(meetingId);
-        }
-      }
     });
 
     it('should handle meetings with null notes', async () => {
@@ -785,9 +765,7 @@ describe('MeetingsV2Controller', () => {
       getMeetingQueryExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.findOne(meetingId, {})).rejects.toThrow(
-        HttpException,
-      );
+
       await expect(controller.findOne(meetingId, {})).rejects.toThrow(
         'Internal error',
       );
@@ -988,15 +966,7 @@ describe('MeetingsV2Controller', () => {
       getActiveMeetingQueryExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.getActive()).rejects.toThrow(HttpException);
-      try {
-        await controller.getActive();
-      } catch (e) {
-        expect(e).toBeInstanceOf(HttpException);
-        if (e instanceof HttpException) {
-          expect(e.getStatus()).toBe(HttpStatus.NOT_FOUND);
-        }
-      }
+      await expect(controller.getActive()).rejects.toThrow();
     });
 
     it('should handle active meetings with null notes and include summary', async () => {
@@ -1059,7 +1029,7 @@ describe('MeetingsV2Controller', () => {
       getActiveMeetingQueryExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.getActive()).rejects.toThrow(HttpException);
+      await expect(controller.getActive()).rejects.toThrow();
       await expect(controller.getActive()).rejects.toThrow('Internal error');
     });
 
@@ -1069,7 +1039,7 @@ describe('MeetingsV2Controller', () => {
       getActiveMeetingQueryExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-      await expect(controller.getActive()).rejects.toThrow(HttpException);
+      await expect(controller.getActive()).rejects.toThrow();
       await expect(controller.getActive()).rejects.toThrow('Custom error');
     });
   });
@@ -1110,16 +1080,8 @@ describe('MeetingsV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.getPurchases(meetingId)).rejects.toThrow(
-        HttpException,
+        MeetingNotFoundException,
       );
-      try {
-        await controller.getPurchases(meetingId);
-      } catch (e) {
-        expect(e).toBeInstanceOf(HttpException);
-        if (e instanceof HttpException) {
-          expect(e.getStatus()).toBe(HttpStatus.NOT_FOUND);
-        }
-      }
     });
 
     it('should handle generic errors', async () => {
@@ -1129,7 +1091,7 @@ describe('MeetingsV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.getPurchases(meetingId)).rejects.toThrow(
-        HttpException,
+        'Internal error',
       );
     });
   });
@@ -1170,7 +1132,7 @@ describe('MeetingsV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.getTransfers(meetingId)).rejects.toThrow(
-        HttpException,
+        MeetingNotFoundException,
       );
     });
   });
@@ -1211,7 +1173,7 @@ describe('MeetingsV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.getExchanges(meetingId)).rejects.toThrow(
-        HttpException,
+        MeetingNotFoundException,
       );
     });
   });
@@ -1254,7 +1216,7 @@ describe('MeetingsV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.getStockLoanPayments(meetingId)).rejects.toThrow(
-        HttpException,
+        MeetingNotFoundException,
       );
     });
   });
@@ -1291,7 +1253,7 @@ describe('MeetingsV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.getRevaluation(meetingId)).rejects.toThrow(
-        HttpException,
+        MeetingNotFoundException,
       );
     });
   });
@@ -1332,7 +1294,7 @@ describe('MeetingsV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.confirmRevaluation(meetingId)).rejects.toThrow(
-        HttpException,
+        MeetingNotFoundException,
       );
     });
   });
@@ -1376,7 +1338,7 @@ describe('MeetingsV2Controller', () => {
       // ACT & ASSERT
       await expect(
         controller.getDisbursementPlanPreview(meetingId),
-      ).rejects.toThrow(HttpException);
+      ).rejects.toThrow();
     });
   });
 
@@ -1451,9 +1413,8 @@ describe('MeetingsV2Controller', () => {
       getDetailedMeetingSummaryQueryExecuteSpy.mockRejectedValue(error);
 
       // ACT & ASSERT
-
       await expect(controller.getDetailedSummary(meetingId)).rejects.toThrow(
-        HttpException,
+        MeetingNotFoundException,
       );
     });
   });
@@ -1513,7 +1474,7 @@ describe('MeetingsV2Controller', () => {
       // ACT & ASSERT
       await expect(
         controller.executeDisbursementPlan(meetingId, dto),
-      ).rejects.toThrow(HttpException);
+      ).rejects.toThrow();
     });
 
     it('should return 400 when business rule error', async () => {
@@ -1525,15 +1486,7 @@ describe('MeetingsV2Controller', () => {
       // ACT & ASSERT
       await expect(
         controller.executeDisbursementPlan(meetingId, dto),
-      ).rejects.toThrow(HttpException);
-      try {
-        await controller.executeDisbursementPlan(meetingId, dto);
-      } catch (e) {
-        expect(e).toBeInstanceOf(HttpException);
-        if (e instanceof HttpException) {
-          expect(e.getStatus()).toBe(HttpStatus.BAD_REQUEST);
-        }
-      }
+      ).rejects.toThrow(BusinessRuleError);
     });
 
     it('should return 400 when invalid request error', async () => {
@@ -1545,15 +1498,7 @@ describe('MeetingsV2Controller', () => {
       // ACT & ASSERT
       await expect(
         controller.executeDisbursementPlan(meetingId, dto),
-      ).rejects.toThrow(HttpException);
-      try {
-        await controller.executeDisbursementPlan(meetingId, dto);
-      } catch (e) {
-        expect(e).toBeInstanceOf(HttpException);
-        if (e instanceof HttpException) {
-          expect(e.getStatus()).toBe(HttpStatus.BAD_REQUEST);
-        }
-      }
+      ).rejects.toThrow(InvalidRequestError);
     });
   });
 });

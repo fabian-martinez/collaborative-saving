@@ -36,7 +36,7 @@ describe('GetOperationsQueryHandler', () => {
       saveMany: jest.fn(),
       sumByAccountType: jest.fn(),
       getAccountsSummary: jest.fn(),
-    } as unknown as jest.Mocked<LedgerEntryRepository>;
+    };
 
     queryHandler = new GetOperationsQueryHandler(
       operationRepository,

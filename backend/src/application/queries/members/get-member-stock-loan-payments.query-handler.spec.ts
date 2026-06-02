@@ -78,6 +78,7 @@ describe('GetMemberStockLoanPaymentsQueryHandler', () => {
       findByIds: jest.fn(),
       findByLoan: jest.fn(),
       findByLoanAndMeeting: jest.fn(),
+      findByOperationIds: jest.fn(),
       save: jest.fn(),
       saveMany: jest.fn(),
     } as unknown as jest.Mocked<LoanTransactionDetailRepository>;
@@ -226,12 +227,12 @@ describe('GetMemberStockLoanPaymentsQueryHandler', () => {
         .spyOn(ledgerEntryRepository, 'findByOperations')
         .mockResolvedValue([stockEntry, loanEntry]);
       jest
-        .spyOn(stockSubscriptionRepository, 'findById')
-        .mockResolvedValue(subscription);
+        .spyOn(stockSubscriptionRepository, 'findByIds')
+        .mockResolvedValue([subscription]);
       jest.spyOn(stockRepository, 'findByIds').mockResolvedValue([stock]);
       jest.spyOn(loanRepository, 'findByIds').mockResolvedValue([loan]);
       jest
-        .spyOn(loanTransactionDetailRepository, 'findByLoan')
+        .spyOn(loanTransactionDetailRepository, 'findByOperationIds')
         .mockResolvedValue([transactionDetail]);
 
       const result = await queryHandler.execute(memberId, {

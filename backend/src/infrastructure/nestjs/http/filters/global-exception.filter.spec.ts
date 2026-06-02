@@ -21,10 +21,10 @@ describe('GlobalExceptionFilter', () => {
     mockResponse = {
       status: mockStatus,
       json: mockJson,
-    } as unknown as Response;
+    };
     mockRequest = {
       url: '/test-url',
-    } as unknown as Request;
+    };
 
     mockGetResponse = jest.fn().mockReturnValue(mockResponse);
     mockGetRequest = jest.fn().mockReturnValue(mockRequest);

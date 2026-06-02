@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, In, DeepPartial } from 'typeorm';
+import { Repository, IsNull, In } from 'typeorm';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { Stock as StockDomain } from '@domain/entities/stock.entity';
 import { Stock as StockEntity } from '../entities/stock.entity';
@@ -64,10 +64,7 @@ export class TypeOrmStockRepository implements StockRepository {
     const entitiesToSave = persistences.map((persistence) => {
       const existing = existingMap.get(persistence.id!);
       if (existing) {
-        return this.repo.merge(
-          existing,
-          persistence as DeepPartial<StockEntity>,
-        );
+        return this.repo.merge(existing, persistence);
       }
       return persistence as StockEntity;
     });
@@ -88,10 +85,7 @@ export class TypeOrmStockRepository implements StockRepository {
     if (existing) {
       // Update existing stock
       // Optimization: merge changes and save to avoid extra DB roundtrip (update + findOne)
-      const updatedEntity = this.repo.merge(
-        existing,
-        persistence as StockEntity,
-      );
+      const updatedEntity = this.repo.merge(existing, persistence);
       const saved = await this.repo.save(updatedEntity);
       return StockMapper.toDomain(saved);
     } else {

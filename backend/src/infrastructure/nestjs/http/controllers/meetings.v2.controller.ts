@@ -7,8 +7,6 @@ import {
   Param,
   Query,
   ParseUUIDPipe,
-  HttpStatus,
-  HttpException,
   Logger,
 } from '@nestjs/common';
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -45,7 +43,6 @@ import { DetailedMeetingSummaryDto } from '@application/dto/meetings/detailed-me
 import { OperationResponseDto } from '@application/dto/meetings/operation-response.dto';
 import { RevaluationResponseHttpDto } from '../dto/revaluation-response-http.dto';
 import { RevaluationResultDto } from '@application/dto/meetings/revaluation-result.dto';
-import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { IncludeSummaryQueryDto } from '../dto/include-summary-query.dto';
 import { GetDisbursementPlanPreviewQueryHandler } from '@application/queries/meetings/get-disbursement-plan-preview.query-handler';
 import { ExecuteDisbursementPlanUseCase } from '@application/use-cases/meetings/execute-disbursement-plan.use-case';
@@ -63,8 +60,6 @@ import {
   DisbursementPlanItemHttpDto,
   DisbursementTypeHttp,
 } from '../dto/meetings/disbursement-plan-item-http.dto';
-import { BusinessRuleError } from '@domain/errors/business-rule.error';
-import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 
 @ApiTags('Meetings V2')
 @Controller('v2/meetings')
@@ -121,22 +116,12 @@ export class MeetingsV2Controller {
   async open(
     @Body() dto: OpenMeetingHttpDto,
   ): Promise<OpenMeetingResponseHttpDto> {
-    try {
-      const openDto = {
-        date: dto.date,
-        notes: dto.notes,
-      };
-      const result = await this.openMeetingUseCase.execute(openDto);
-      return this.mapMeetingToHttp(result);
-    } catch (error: unknown) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const openDto = {
+      date: dto.date,
+      notes: dto.notes,
+    };
+    const result = await this.openMeetingUseCase.execute(openDto);
+    return this.mapMeetingToHttp(result);
   }
 
   @Patch(':id/close')
@@ -183,21 +168,11 @@ export class MeetingsV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body?: CloseMeetingHttpDto,
   ): Promise<OpenMeetingResponseHttpDto> {
-    try {
-      const result = await this.closeMeetingUseCase.execute({
-        meetingId: id,
-        authorizedBy: body?.authorizedBy,
-      });
-      return this.mapMeetingToHttp(result);
-    } catch (error: unknown) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const result = await this.closeMeetingUseCase.execute({
+      meetingId: id,
+      authorizedBy: body?.authorizedBy,
+    });
+    return this.mapMeetingToHttp(result);
   }
 
   @Get()
@@ -212,18 +187,8 @@ export class MeetingsV2Controller {
     type: [OpenMeetingResponseHttpDto],
   })
   async findAll(): Promise<OpenMeetingResponseHttpDto[]> {
-    try {
-      const meetings = await this.getMeetingsQuery.execute();
-      return meetings.map((m) => this.mapMeetingToHttp(m));
-    } catch (error: unknown) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const meetings = await this.getMeetingsQuery.execute();
+    return meetings.map((m) => this.mapMeetingToHttp(m));
   }
 
   @Get('active')
@@ -265,21 +230,8 @@ export class MeetingsV2Controller {
     description: 'No active meeting found',
   })
   async getActive(): Promise<OpenMeetingResponseHttpDto> {
-    try {
-      const meeting = await this.getActiveMeetingQuery.execute();
-      return this.mapMeetingToHttp(meeting);
-    } catch (error: unknown) {
-      if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-      }
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const meeting = await this.getActiveMeetingQuery.execute();
+    return this.mapMeetingToHttp(meeting);
   }
 
   @Get(':id/summary')
@@ -304,21 +256,8 @@ export class MeetingsV2Controller {
   async getDetailedSummary(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<DetailedMeetingSummaryHttpDto> {
-    try {
-      const result = await this.getDetailedMeetingSummaryQuery.execute(id);
-      return this.mapDetailedSummaryToHttp(result);
-    } catch (error: unknown) {
-      if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-      }
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const result = await this.getDetailedMeetingSummaryQuery.execute(id);
+    return this.mapDetailedSummaryToHttp(result);
   }
 
   @Get(':id')
@@ -378,22 +317,9 @@ export class MeetingsV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Query() query: IncludeSummaryQueryDto,
   ): Promise<OpenMeetingResponseHttpDto> {
-    try {
-      const includeSummary = query.include_summary === true;
-      const meeting = await this.getMeetingQuery.execute(id, includeSummary);
-      return this.mapMeetingToHttp(meeting);
-    } catch (error: unknown) {
-      if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-      }
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const includeSummary = query.include_summary === true;
+    const meeting = await this.getMeetingQuery.execute(id, includeSummary);
+    return this.mapMeetingToHttp(meeting);
   }
 
   @Get(':id/payments')
@@ -418,21 +344,8 @@ export class MeetingsV2Controller {
   async getMonthlyPayments(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<OperationResponseHttpDto[]> {
-    try {
-      const payments = await this.getMeetingMonthlyPaymentsQuery.execute(id);
-      return payments.map((p) => this.mapOperationToHttp(p));
-    } catch (error: unknown) {
-      if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-      }
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const payments = await this.getMeetingMonthlyPaymentsQuery.execute(id);
+    return payments.map((p) => this.mapOperationToHttp(p));
   }
 
   @Get(':id/purchases')
@@ -457,21 +370,8 @@ export class MeetingsV2Controller {
   async getPurchases(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<OperationResponseHttpDto[]> {
-    try {
-      const purchases = await this.getMeetingPurchasesQuery.execute(id);
-      return purchases.map((p) => this.mapOperationToHttp(p));
-    } catch (error: unknown) {
-      if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-      }
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const purchases = await this.getMeetingPurchasesQuery.execute(id);
+    return purchases.map((p) => this.mapOperationToHttp(p));
   }
 
   @Get(':id/transfers')
@@ -496,21 +396,8 @@ export class MeetingsV2Controller {
   async getTransfers(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<OperationResponseHttpDto[]> {
-    try {
-      const transfers = await this.getMeetingStockTransfersQuery.execute(id);
-      return transfers.map((t) => this.mapOperationToHttp(t));
-    } catch (error: unknown) {
-      if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-      }
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const transfers = await this.getMeetingStockTransfersQuery.execute(id);
+    return transfers.map((t) => this.mapOperationToHttp(t));
   }
 
   @Get(':id/exchanges')
@@ -535,21 +422,8 @@ export class MeetingsV2Controller {
   async getExchanges(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<OperationResponseHttpDto[]> {
-    try {
-      const exchanges = await this.getMeetingStockExchangesQuery.execute(id);
-      return exchanges.map((e) => this.mapOperationToHttp(e));
-    } catch (error: unknown) {
-      if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-      }
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const exchanges = await this.getMeetingStockExchangesQuery.execute(id);
+    return exchanges.map((e) => this.mapOperationToHttp(e));
   }
 
   @Get(':id/stock-loan-payments')
@@ -574,21 +448,8 @@ export class MeetingsV2Controller {
   async getStockLoanPayments(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<OperationResponseHttpDto[]> {
-    try {
-      const payments = await this.getMeetingStockLoanPaymentsQuery.execute(id);
-      return payments.map((p) => this.mapOperationToHttp(p));
-    } catch (error: unknown) {
-      if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-      }
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const payments = await this.getMeetingStockLoanPaymentsQuery.execute(id);
+    return payments.map((p) => this.mapOperationToHttp(p));
   }
 
   private mapMeetingToHttp(
@@ -731,21 +592,8 @@ export class MeetingsV2Controller {
   async getRevaluation(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<RevaluationResponseHttpDto> {
-    try {
-      const result = await this.getRevaluationQuery.execute(id);
-      return this.mapRevaluationToHttp(result);
-    } catch (error: unknown) {
-      if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-      }
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const result = await this.getRevaluationQuery.execute(id);
+    return this.mapRevaluationToHttp(result);
   }
 
   @Patch(':id/revaluation/confirm')
@@ -774,23 +622,10 @@ export class MeetingsV2Controller {
   async confirmRevaluation(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<RevaluationResponseHttpDto> {
-    try {
-      const result = await this.recordRevaluationUseCase.execute({
-        meetingId: id,
-      });
-      return this.mapRevaluationToHttp(result);
-    } catch (error: unknown) {
-      if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-      }
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const result = await this.recordRevaluationUseCase.execute({
+      meetingId: id,
+    });
+    return this.mapRevaluationToHttp(result);
   }
 
   private mapRevaluationToHttp(
@@ -849,31 +684,18 @@ export class MeetingsV2Controller {
   async getDisbursementPlanPreview(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<DisbursementPlanPreviewResponseHttpDto> {
-    try {
-      const result = await this.getDisbursementPlanPreviewQuery.execute(id);
-      this.logger.log(
-        `Disbursement plan preview for meeting ${id}: ${result.plan.length} items`,
-      );
-      const mappedResult = this.mapDisbursementPlanPreviewToHttp(result);
-      this.logger.log(
-        `Mapped result - First 3 items types: ${mappedResult.plan
-          .slice(0, 3)
-          .map((item) => `${item.type} (${typeof item.type})`)
-          .join(', ')}`,
-      );
-      return mappedResult;
-    } catch (error: unknown) {
-      if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-      }
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const result = await this.getDisbursementPlanPreviewQuery.execute(id);
+    this.logger.log(
+      `Disbursement plan preview for meeting ${id}: ${result.plan.length} items`,
+    );
+    const mappedResult = this.mapDisbursementPlanPreviewToHttp(result);
+    this.logger.log(
+      `Mapped result - First 3 items types: ${mappedResult.plan
+        .slice(0, 3)
+        .map((item) => `${item.type} (${typeof item.type})`)
+        .join(', ')}`,
+    );
+    return mappedResult;
   }
 
   @Post(':id/disbursement-plan')
@@ -908,34 +730,13 @@ export class MeetingsV2Controller {
     @Body() dto: ExecuteDisbursementPlanHttpDto,
   ): Promise<ExecuteDisbursementPlanResponseHttpDto> {
     console.log('dto', dto);
-    try {
-      const executeDto: ExecuteDisbursementPlanDto = {
-        meetingId: id,
-        plan: dto.plan.map((item) =>
-          this.mapDisbursementPlanItemFromHttp(item),
-        ),
-      };
-      const result =
-        await this.executeDisbursementPlanUseCase.execute(executeDto);
-      return this.mapExecuteDisbursementPlanResponseToHttp(result);
-    } catch (error: unknown) {
-      if (error instanceof MeetingNotFoundException) {
-        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-      }
-      if (
-        error instanceof BusinessRuleError ||
-        error instanceof InvalidRequestError
-      ) {
-        throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-      }
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const executeDto: ExecuteDisbursementPlanDto = {
+      meetingId: id,
+      plan: dto.plan.map((item) => this.mapDisbursementPlanItemFromHttp(item)),
+    };
+    const result =
+      await this.executeDisbursementPlanUseCase.execute(executeDto);
+    return this.mapExecuteDisbursementPlanResponseToHttp(result);
   }
 
   private mapDisbursementPlanPreviewToHttp(
