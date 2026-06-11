@@ -37,6 +37,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
   let findActiveByMemberLoanSpy: jest.SpyInstance;
   let findByLoanAndMeetingSpy: jest.SpyInstance;
   let findByIdStockSpy: jest.SpyInstance;
+  let findByIdsStockSpy: jest.SpyInstance;
 
   beforeEach(() => {
     meetingRepository = {
@@ -92,6 +93,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
 
     stockRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findAll: jest.fn(),
       save: jest.fn(),
       softDelete: jest.fn(),
@@ -116,6 +118,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       'findByLoansAndMeeting',
     );
     findByIdStockSpy = jest.spyOn(stockRepository, 'findById');
+    findByIdsStockSpy = jest.spyOn(stockRepository, 'findByIds');
 
     queryHandler = new GetMemberDuesForActiveMeetingQueryHandler(
       meetingRepository,
@@ -189,11 +192,13 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
         value: 10000,
         monthlyContribution: 2000,
       });
+      Reflect.set(stock1, 'id', 'stock-1');
       const stock2 = Stock.create({
         type: 'Type B',
         value: 15000,
         monthlyContribution: 3000,
       });
+      Reflect.set(stock2, 'id', 'stock-2');
 
       findActiveSpy.mockResolvedValue(activeMeeting);
       findByIdMemberSpy.mockResolvedValue(member);
@@ -204,6 +209,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       findByIdStockSpy
         .mockResolvedValueOnce(stock1)
         .mockResolvedValueOnce(stock2);
+      findByIdsStockSpy.mockResolvedValue([stock1, stock2]);
 
       // ACT
       const result: MemberDueResponseDto[] =
@@ -311,6 +317,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
         value: 10000,
         monthlyContribution: 2000,
       });
+      Reflect.set(stock1, 'id', 'stock-1');
 
       findActiveSpy.mockResolvedValue(null); // No hay reunión activa
       findByIdMemberSpy.mockResolvedValue(member);
@@ -318,6 +325,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       findActiveByMemberSpy.mockResolvedValue(stockSubscriptions);
       findActiveByMemberLoanSpy.mockResolvedValue(activeLoans);
       findByIdStockSpy.mockResolvedValue(stock1);
+      findByIdsStockSpy.mockResolvedValue([stock1]);
 
       // ACT
       const result: MemberDueResponseDto[] =
@@ -504,6 +512,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
         value: 10000,
         monthlyContribution: 0, // Sin contribución mensual
       });
+      Reflect.set(stock, 'id', 'stock-1');
 
       findActiveSpy.mockResolvedValue(activeMeeting);
       findByIdMemberSpy.mockResolvedValue(member);
@@ -511,6 +520,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       findActiveByMemberSpy.mockResolvedValue(stockSubscriptions);
       findActiveByMemberLoanSpy.mockResolvedValue([]);
       findByIdStockSpy.mockResolvedValue(stock);
+      findByIdsStockSpy.mockResolvedValue([stock]);
 
       // ACT
       const result: MemberDueResponseDto[] =
@@ -820,6 +830,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       findActiveByMemberSpy.mockResolvedValue(stockSubscriptions);
       findActiveByMemberLoanSpy.mockResolvedValue([]);
       findByIdStockSpy.mockResolvedValue(null); // Stock no encontrado
+      findByIdsStockSpy.mockResolvedValue([]);
 
       // ACT
       const result: MemberDueResponseDto[] =

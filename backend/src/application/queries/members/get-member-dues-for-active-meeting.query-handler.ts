@@ -7,6 +7,7 @@ import { LoanRepository } from '@domain/ports/repositories/loan-repository.port'
 import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { Loan } from '@domain/entities/loan.entity';
+import { Stock } from '@domain/entities/stock.entity';
 import { MemberDueResponseDto } from '@application/dto/members/member-due-response.dto';
 import { LoanTransactionType } from '@domain/entities/loan-transaction-detail.entity';
 import { PaymentType } from '@domain/enums/payment-type.enum';
@@ -90,9 +91,18 @@ export class GetMemberDuesForActiveMeetingQueryHandler {
 
     // Obtener información de stocks para cada grupo
     const stockDues: MemberDueResponseDto[] = [];
+
+    // ⚡ Bolt: Fetch all stocks in a single query to prevent N+1 queries during loop iteration
+    const uniqueStockIds = Object.keys(groupedByStock);
+    let stockMap = new Map<string, Stock>();
+    if (uniqueStockIds.length > 0) {
+      const stocks = await this.stockRepository.findByIds(uniqueStockIds);
+      stockMap = new Map(stocks.map((s) => [s.id, s]));
+    }
+
     for (const [stockId, totalQuantity] of Object.entries(groupedByStock)) {
       if (totalQuantity > 0) {
-        const stock = await this.stockRepository.findById(stockId);
+        const stock = stockMap.get(stockId);
         if (stock && stock.monthlyContribution > 0) {
           stockDues.push({
             type: PaymentType.STOCK_FEE,
