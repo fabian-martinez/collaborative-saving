@@ -166,3 +166,7 @@ backend/*.json
 
 # Backups
 infra/backups/
+
+# Agent and CLI artifacts
+.antigravitycli/
+ui_design.pen
