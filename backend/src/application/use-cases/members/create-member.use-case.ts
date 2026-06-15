@@ -2,9 +2,13 @@ import { CreateMemberDto } from '@application/dto/members/create-member.dto';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
 import { MemberResponseDto } from '@application/dto/members/member-response.dto';
 import { Member } from '@domain/entities/member.entity';
+import { IdentityService } from '@domain/ports/services/identity.service.port';
 
 export class CreateMemberUseCase {
-  constructor(private readonly memberRepository: MemberRepository) {}
+  constructor(
+    private readonly memberRepository: MemberRepository,
+    private readonly identityService: IdentityService,
+  ) {}
 
   async execute(dto: CreateMemberDto): Promise<MemberResponseDto> {
     const member = Member.create({
@@ -18,6 +22,10 @@ export class CreateMemberUseCase {
     });
 
     const saved = await this.memberRepository.save(member);
+
+    // Crear automáticamente el usuario en Firebase Auth
+    await this.identityService.createUser(saved.email, saved.name);
+
     return {
       id: saved.id,
       name: saved.name,

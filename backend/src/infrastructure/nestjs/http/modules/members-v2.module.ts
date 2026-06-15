@@ -62,7 +62,11 @@ import { TypeOrmPendingMemberPaymentRepository } from '@infrastructure/typeorm/r
 import { ProcessStockExchangeUseCase } from '@application/use-cases/members/process-stock-exchange.use-case';
 import { ProcessStockTransferUseCase } from '@application/use-cases/members/process-stock-transfer.use-case';
 import { ProcessStockLoanPaymentUseCase } from '@application/use-cases/members/process-stock-loan-payment.use-case';
-import { MEMBER_REPOSITORY } from '@domain/constants/injection-tokens';
+import {
+  MEMBER_REPOSITORY,
+  IDENTITY_SERVICE,
+} from '@domain/constants/injection-tokens';
+import { IdentityService } from '@domain/ports/services/identity.service.port';
 
 const MEETING_REPOSITORY = Symbol('MeetingRepository');
 const MANDATORY_CONTRIBUTION_REPOSITORY = Symbol(
@@ -395,8 +399,9 @@ const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
     // Use cases
     {
       provide: CreateMemberUseCase,
-      useFactory: (repo: MemberRepository) => new CreateMemberUseCase(repo),
-      inject: [MEMBER_REPOSITORY],
+      useFactory: (repo: MemberRepository, identityService: IdentityService) =>
+        new CreateMemberUseCase(repo, identityService),
+      inject: [MEMBER_REPOSITORY, IDENTITY_SERVICE],
     },
     {
       provide: UpdateMemberUseCase,

@@ -9,6 +9,7 @@ describe('GetAuthenticatedUserQuery', () => {
 
   const mockIdentityService = {
     getIdentity: jest.fn(),
+    createUser: jest.fn(),
   };
 
   const mockMemberRepository = {

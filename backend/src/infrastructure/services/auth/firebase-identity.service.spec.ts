@@ -6,8 +6,10 @@ describe('FirebaseIdentityService', () => {
   let service: FirebaseIdentityService;
 
   const mockVerifyIdToken = jest.fn();
+  const mockCreateUser = jest.fn();
   const mockAuth = {
     verifyIdToken: mockVerifyIdToken,
+    createUser: mockCreateUser,
   };
 
   beforeEach(async () => {
@@ -62,6 +64,42 @@ describe('FirebaseIdentityService', () => {
 
       expect(result).toEqual({ email: 'test@example.com' });
       expect(mockVerifyIdToken).toHaveBeenCalledWith('valid-token');
+    });
+  });
+
+  describe('createUser', () => {
+    it('should create user successfully in Firebase Auth', async () => {
+      mockCreateUser.mockResolvedValue({ uid: 'user123' });
+
+      await expect(
+        service.createUser('test@example.com', 'Test User'),
+      ).resolves.not.toThrow();
+      expect(mockCreateUser).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        displayName: 'Test User',
+      });
+    });
+
+    it('should catch and ignore email-already-exists error', async () => {
+      const error = { code: 'auth/email-already-exists' };
+      mockCreateUser.mockRejectedValue(error);
+
+      await expect(
+        service.createUser('existing@example.com', 'Existing User'),
+      ).resolves.not.toThrow();
+      expect(mockCreateUser).toHaveBeenCalledWith({
+        email: 'existing@example.com',
+        displayName: 'Existing User',
+      });
+    });
+
+    it('should throw other errors', async () => {
+      const error = new Error('Some Firebase Error');
+      mockCreateUser.mockRejectedValue(error);
+
+      await expect(
+        service.createUser('test@example.com', 'Test User'),
+      ).rejects.toThrow('Some Firebase Error');
     });
   });
 });
