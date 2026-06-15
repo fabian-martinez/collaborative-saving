@@ -46,18 +46,11 @@ export class GetMemberPaymentScheduleQueryHandler {
     const loans = await this.loanRepository.findActiveByMember(memberId);
 
     // 3. Get all loan transaction details for these loans
-    const allTransactions: Array<{
-      loanId: string;
-      transactions: Awaited<
-        ReturnType<LoanTransactionDetailRepository['findByLoan']>
-      >;
-    }> = [];
-    for (const loan of loans) {
-      const transactions =
-        await this.loanTransactionDetailRepository.findByLoan(loan.id);
-      allTransactions.push({ loanId: loan.id, transactions });
-    }
-    const flatTransactions = allTransactions.flatMap((t) => t.transactions);
+    const loanIds = loans.map((l) => l.id);
+    const flatTransactions =
+      loanIds.length > 0
+        ? await this.loanTransactionDetailRepository.findByLoans(loanIds)
+        : [];
 
     // 4. Get historical loan payments (operations of type LOAN_PAYMENT)
     const loanPaymentOperations = await this.operationRepository.findByMember(
