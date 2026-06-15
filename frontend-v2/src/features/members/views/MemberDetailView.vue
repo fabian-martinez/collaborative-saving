@@ -8,7 +8,7 @@
       <div class="card bg-base-100 shadow-lg mb-6 w-full max-w-full min-w-0 box-border">
         <div class="card-body w-full max-w-full min-w-0 overflow-x-hidden box-border">
           <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
-            <button @click="$router.push('/members')" class="btn btn-ghost self-start sm:self-auto">← Volver</button>
+            <button aria-label="Volver a miembros" @click="$router.push('/members')" class="btn btn-ghost self-start sm:self-auto">← Volver</button>
           </div>
 
           <div class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mb-8 text-center sm:text-left">
