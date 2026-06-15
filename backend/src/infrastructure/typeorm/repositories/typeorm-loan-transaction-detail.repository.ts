@@ -40,6 +40,13 @@ export class TypeOrmLoanTransactionDetailRepository implements LoanTransactionDe
     return entities.map((e) => LoanTransactionDetailMapper.toDomain(e));
   }
 
+  async findByLoans(loanIds: string[]): Promise<LoanTransactionDetailDomain[]> {
+    if (!loanIds || loanIds.length === 0) return [];
+    const repo = this.getRepository();
+    const entities = await repo.find({ where: { loanId: In(loanIds) } });
+    return entities.map((e) => LoanTransactionDetailMapper.toDomain(e));
+  }
+
   async findByLoanAndMeeting(
     loanId: string,
     meetingId: string,

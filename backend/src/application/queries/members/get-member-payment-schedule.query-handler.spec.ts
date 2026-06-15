@@ -47,6 +47,7 @@ describe('GetMemberPaymentScheduleQueryHandler', () => {
     loanTransactionDetailRepository = {
       findById: jest.fn(),
       findByLoan: jest.fn(),
+      findByLoans: jest.fn(),
       findByLoanAndMeeting: jest.fn(),
       save: jest.fn(),
       saveMany: jest.fn(),
@@ -115,7 +116,7 @@ describe('GetMemberPaymentScheduleQueryHandler', () => {
 
       memberRepository.findById.mockResolvedValue(member);
       loanRepository.findActiveByMember.mockResolvedValue([]);
-      loanTransactionDetailRepository.findByLoan.mockResolvedValue([]);
+      loanTransactionDetailRepository.findByLoans.mockResolvedValue([]);
       operationRepository.findByMember.mockResolvedValue([]);
       ledgerEntryRepository.findByOperations.mockResolvedValue([]);
       paymentProjectionService.projectFuturePayments.mockReturnValue([]);
@@ -190,7 +191,7 @@ describe('GetMemberPaymentScheduleQueryHandler', () => {
 
       memberRepository.findById.mockResolvedValue(member);
       loanRepository.findActiveByMember.mockResolvedValue([loan]);
-      loanTransactionDetailRepository.findByLoan.mockResolvedValue([]);
+      loanTransactionDetailRepository.findByLoans.mockResolvedValue([]);
       operationRepository.findByMember.mockResolvedValue([operation]);
       ledgerEntryRepository.findByOperations.mockResolvedValue([
         interestEntry,
@@ -246,7 +247,7 @@ describe('GetMemberPaymentScheduleQueryHandler', () => {
 
       memberRepository.findById.mockResolvedValue(member);
       loanRepository.findActiveByMember.mockResolvedValue([loan]);
-      loanTransactionDetailRepository.findByLoan.mockResolvedValue([]);
+      loanTransactionDetailRepository.findByLoans.mockResolvedValue([]);
       operationRepository.findByMember.mockResolvedValue([]);
       paymentProjectionService.projectFuturePayments.mockReturnValue([
         projection,
@@ -323,7 +324,7 @@ describe('GetMemberPaymentScheduleQueryHandler', () => {
 
       memberRepository.findById.mockResolvedValue(member);
       loanRepository.findActiveByMember.mockResolvedValue([loan1, loan2]);
-      loanTransactionDetailRepository.findByLoan.mockResolvedValue([]);
+      loanTransactionDetailRepository.findByLoans.mockResolvedValue([]);
       operationRepository.findByMember.mockResolvedValue([]);
       paymentProjectionService.projectFuturePayments.mockReturnValue(
         projections,
@@ -361,7 +362,7 @@ describe('GetMemberPaymentScheduleQueryHandler', () => {
 
       memberRepository.findById.mockResolvedValue(member);
       loanRepository.findActiveByMember.mockResolvedValue([loan]);
-      loanTransactionDetailRepository.findByLoan.mockResolvedValue([]);
+      loanTransactionDetailRepository.findByLoans.mockResolvedValue([]);
       operationRepository.findByMember.mockResolvedValue([]);
       paymentProjectionService.projectFuturePayments.mockReturnValue([]);
 
@@ -403,7 +404,7 @@ describe('GetMemberPaymentScheduleQueryHandler', () => {
 
       memberRepository.findById.mockResolvedValue(member);
       loanRepository.findActiveByMember.mockResolvedValue([loan]);
-      loanTransactionDetailRepository.findByLoan.mockResolvedValue([]);
+      loanTransactionDetailRepository.findByLoans.mockResolvedValue([]);
       operationRepository.findByMember.mockResolvedValue([]);
       paymentProjectionService.projectFuturePayments.mockReturnValue([]);
 
