@@ -9,10 +9,7 @@ import { DeleteMandatoryContributionUseCase } from '@application/use-cases/manda
 import { TypeOrmMandatoryContributionRepository } from '@infrastructure/typeorm/repositories/typeorm-mandatory-contribution.repository';
 import { MandatoryContribution } from '@infrastructure/typeorm/entities/mandatory-contribution.entity';
 import { MandatoryContributionRepository } from '@domain/ports/repositories/mandatory-contribution-repository.port';
-
-const MANDATORY_CONTRIBUTION_REPOSITORY = Symbol(
-  'MandatoryContributionRepository',
-);
+import { MANDATORY_CONTRIBUTION_REPOSITORY } from '@domain/constants/injection-tokens';
 
 @Module({
   imports: [TypeOrmModule.forFeature([MandatoryContribution])],

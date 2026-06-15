@@ -4,4 +4,5 @@ export interface ExternalUserIdentity {
 
 export interface IdentityService {
   getIdentity(token: string): Promise<ExternalUserIdentity | null>;
+  createUser(email: string, displayName: string): Promise<void>;
 }

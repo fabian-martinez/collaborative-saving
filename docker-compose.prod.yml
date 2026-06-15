@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cs_backend_prod
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/restored_db_feb21
+      - DATABASE_SSL=false
+      - ALLOWED_ORIGINS=http://localhost:8080,http://localhost:5173
+      # Reemplaza con tu JSON string de Firebase Admin en producción
+      - FIREBASE_SERVICE_ACCOUNT_JSON=
+    depends_on:
+      - db
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend-v2
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:3000
+        - VITE_API_VERSION=v2
+        - VITE_USE_MOCKS=false
+        # Configura tus variables de Firebase correspondientes
+        - VITE_FIREBASE_API_KEY=
+        - VITE_FIREBASE_AUTH_DOMAIN=
+        - VITE_FIREBASE_PROJECT_ID=
+        - VITE_FIREBASE_STORAGE_BUCKET=
+        - VITE_FIREBASE_MESSAGING_SENDER_ID=
+        - VITE_FIREBASE_APP_ID=
+    container_name: cs_frontend_prod
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: always
+
+  # Base de datos de producción local de referencia (si no se usa base de datos externa como Supabase)
+  db:
+    image: postgres:15-alpine
+    container_name: cs_postgres_db_prod
+    environment:
+      POSTGRES_DB: restored_db_feb21
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  pgdata_prod:
