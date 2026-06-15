@@ -62,24 +62,21 @@ import { TypeOrmPendingMemberPaymentRepository } from '@infrastructure/typeorm/r
 import { ProcessStockExchangeUseCase } from '@application/use-cases/members/process-stock-exchange.use-case';
 import { ProcessStockTransferUseCase } from '@application/use-cases/members/process-stock-transfer.use-case';
 import { ProcessStockLoanPaymentUseCase } from '@application/use-cases/members/process-stock-loan-payment.use-case';
-import { MEMBER_REPOSITORY } from '@domain/constants/injection-tokens';
-
-const MEETING_REPOSITORY = Symbol('MeetingRepository');
-const MANDATORY_CONTRIBUTION_REPOSITORY = Symbol(
-  'MandatoryContributionRepository',
-);
-const STOCK_SUBSCRIPTION_REPOSITORY = Symbol('StockSubscriptionRepository');
-const LOAN_REPOSITORY = Symbol('LoanRepository');
-const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
-  'LoanTransactionDetailRepository',
-);
-const STOCK_REPOSITORY = Symbol('StockRepository');
-const OPERATION_REPOSITORY = Symbol('OperationRepository');
-const LEDGER_ENTRY_REPOSITORY = Symbol('LedgerEntryRepository');
-const TRANSACTION_MANAGER = Symbol('TransactionManager');
-const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
-  'PendingMemberPaymentRepository',
-);
+import {
+  MEMBER_REPOSITORY,
+  IDENTITY_SERVICE,
+  MEETING_REPOSITORY,
+  MANDATORY_CONTRIBUTION_REPOSITORY,
+  STOCK_SUBSCRIPTION_REPOSITORY,
+  LOAN_REPOSITORY,
+  LOAN_TRANSACTION_DETAIL_REPOSITORY,
+  STOCK_REPOSITORY,
+  OPERATION_REPOSITORY,
+  LEDGER_ENTRY_REPOSITORY,
+  TRANSACTION_MANAGER,
+  PENDING_MEMBER_PAYMENT_REPOSITORY,
+} from '@domain/constants/injection-tokens';
+import { IdentityService } from '@domain/ports/services/identity.service.port';
 
 @Module({
   imports: [
@@ -395,8 +392,9 @@ const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
     // Use cases
     {
       provide: CreateMemberUseCase,
-      useFactory: (repo: MemberRepository) => new CreateMemberUseCase(repo),
-      inject: [MEMBER_REPOSITORY],
+      useFactory: (repo: MemberRepository, identityService: IdentityService) =>
+        new CreateMemberUseCase(repo, identityService),
+      inject: [MEMBER_REPOSITORY, IDENTITY_SERVICE],
     },
     {
       provide: UpdateMemberUseCase,

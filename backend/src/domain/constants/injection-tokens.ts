@@ -2,6 +2,9 @@ export const MEMBER_REPOSITORY = Symbol('MemberRepository');
 export const IDENTITY_SERVICE = Symbol('IdentityService');
 
 export const MEETING_REPOSITORY = Symbol('MeetingRepository');
+export const MANDATORY_CONTRIBUTION_REPOSITORY = Symbol(
+  'MandatoryContributionRepository',
+);
 export const OPERATION_REPOSITORY = Symbol('OperationRepository');
 export const LEDGER_ENTRY_REPOSITORY = Symbol('LedgerEntryRepository');
 export const STOCK_REPOSITORY = Symbol('StockRepository');

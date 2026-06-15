@@ -41,6 +41,10 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
           configService.get<string>('DATABASE_URL'),
         autoLoadEntities: true,
         synchronize: false,
+        ssl:
+          configService.get<string>('DATABASE_SSL') === 'true'
+            ? { rejectUnauthorized: false }
+            : false,
       }),
     }),
     EventBusModule,
