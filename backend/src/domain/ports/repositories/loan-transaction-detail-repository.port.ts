@@ -3,6 +3,7 @@ import { LoanTransactionDetail } from '../../entities/loan-transaction-detail.en
 export interface LoanTransactionDetailRepository {
   findById(id: string): Promise<LoanTransactionDetail | null>;
   findByLoan(loanId: string): Promise<LoanTransactionDetail[]>;
+  findByLoans(loanIds: string[]): Promise<LoanTransactionDetail[]>;
   findByLoanAndMeeting(
     loanId: string,
     meetingId: string,

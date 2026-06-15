@@ -19,3 +19,6 @@
 ## 2026-06-08 - Mocking ID assignments for Map lookups in tests
 **Learning:** In backend unit tests, domain entities instantiated via `.create()` automatically generate random UUIDs. When testing logic that relies on mapping by ID (like `findByIds` array-to-map caching), if the mock returns these instances without explicitly matching IDs, the Map lookup will fail because the ID requested by the logic won't match the auto-generated entity ID.
 **Action:** Use `Reflect.set(entity, 'id', 'expected-id')` to explicitly align the entity's ID with the mocked retrieval expectations in tests to ensure `Map.get(id)` successfully finds the object.
+## 2026-06-15 - Resolving N+1 in GetMemberPaymentScheduleQueryHandler
+**Learning:** Repositories might lack multi-ID fetch methods for complex relationships (like `LoanTransactionDetailRepository.findByLoans`). Loop-based fetching introduces severe N+1 queries.
+**Action:** When iterating to fetch nested data, implement and use `findBy...s(ids)` in the repository layer using `In(ids)`, fetch everything in one query, and group it locally. Ensure temporary script files used for modifications are deleted before committing to avoid codebase pollution.
