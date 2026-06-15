@@ -65,25 +65,18 @@ import { ProcessStockLoanPaymentUseCase } from '@application/use-cases/members/p
 import {
   MEMBER_REPOSITORY,
   IDENTITY_SERVICE,
+  MEETING_REPOSITORY,
+  MANDATORY_CONTRIBUTION_REPOSITORY,
+  STOCK_SUBSCRIPTION_REPOSITORY,
+  LOAN_REPOSITORY,
+  LOAN_TRANSACTION_DETAIL_REPOSITORY,
+  STOCK_REPOSITORY,
+  OPERATION_REPOSITORY,
+  LEDGER_ENTRY_REPOSITORY,
+  TRANSACTION_MANAGER,
+  PENDING_MEMBER_PAYMENT_REPOSITORY,
 } from '@domain/constants/injection-tokens';
 import { IdentityService } from '@domain/ports/services/identity.service.port';
-
-const MEETING_REPOSITORY = Symbol('MeetingRepository');
-const MANDATORY_CONTRIBUTION_REPOSITORY = Symbol(
-  'MandatoryContributionRepository',
-);
-const STOCK_SUBSCRIPTION_REPOSITORY = Symbol('StockSubscriptionRepository');
-const LOAN_REPOSITORY = Symbol('LoanRepository');
-const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
-  'LoanTransactionDetailRepository',
-);
-const STOCK_REPOSITORY = Symbol('StockRepository');
-const OPERATION_REPOSITORY = Symbol('OperationRepository');
-const LEDGER_ENTRY_REPOSITORY = Symbol('LedgerEntryRepository');
-const TRANSACTION_MANAGER = Symbol('TransactionManager');
-const PENDING_MEMBER_PAYMENT_REPOSITORY = Symbol(
-  'PendingMemberPaymentRepository',
-);
 
 @Module({
   imports: [
