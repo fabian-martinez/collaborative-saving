@@ -452,7 +452,7 @@
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
-        <button @click.prevent="stockModification.closeTransferModal()">Cerrar</button>
+        <button aria-label="Cerrar modal" @click.prevent="stockModification.closeTransferModal()">Cerrar</button>
       </form>
     </dialog>
 
@@ -528,7 +528,7 @@
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
-        <button @click.prevent="stockModification.closeLoanPaymentModal()">Cerrar</button>
+        <button aria-label="Cerrar modal" @click.prevent="stockModification.closeLoanPaymentModal()">Cerrar</button>
       </form>
     </dialog>
 
@@ -581,7 +581,7 @@
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
-        <button @click.prevent="stockModification.closeCashLoanPaymentModal()">Cerrar</button>
+        <button aria-label="Cerrar modal" @click.prevent="stockModification.closeCashLoanPaymentModal()">Cerrar</button>
       </form>
     </dialog>
 
@@ -740,7 +740,7 @@
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
-        <button @click.prevent="stockModification.closeModificationModal()">Cerrar</button>
+        <button aria-label="Cerrar modal" @click.prevent="stockModification.closeModificationModal()">Cerrar</button>
       </form>
     </dialog>
 

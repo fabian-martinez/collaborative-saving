@@ -1,7 +1,7 @@
 <template>
   <div class="container mx-auto p-4 md:p-6 max-w-7xl">
     <div class="flex items-center gap-4 mb-6">
-      <button @click="router.back()" class="btn btn-circle btn-ghost">
+      <button aria-label="Volver" @click="router.back()" class="btn btn-circle btn-ghost">
         <ArrowLeft class="w-6 h-6" />
       </button>
       <h1 class="text-2xl font-bold text-base-content m-0 flex-1">Detalle de Préstamo</h1>
