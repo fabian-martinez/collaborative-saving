@@ -33,6 +33,9 @@ import { UpdateLoanTermsHttpDto } from '../dto/update-loan-terms-http.dto';
 import { PaymentPlanRequestHttpDto } from '../dto/payment-plan-request-http.dto';
 import { SimulateLoanScenariosRequestHttpDto } from '../dto/simulate-loan-scenarios-request-http.dto';
 import { UpdateLoanTermsDto } from '@application/dto/loans/update-loan-terms.dto';
+import { UpdateLoanApprovedAmountUseCase } from '@application/use-cases/loans/update-loan-approved-amount.use-case';
+import { UpdateLoanApprovedAmountHttpDto } from '../dto/update-loan-approved-amount-http.dto';
+import { UpdateLoanApprovedAmountDto } from '@application/dto/loans/update-loan-approved-amount.dto';
 
 @ApiTags('Loans V2')
 @Controller('v2/loans')
@@ -43,6 +46,7 @@ export class LoansV2Controller {
     private readonly updateLoanTermsUseCase: UpdateLoanTermsUseCase,
     private readonly getPaymentPlanSimulationQuery: GetPaymentPlanSimulationQueryHandler,
     private readonly simulateLoanPaymentPlanUseCase: SimulateLoanPaymentPlanUseCase,
+    private readonly updateLoanApprovedAmountUseCase: UpdateLoanApprovedAmountUseCase,
   ) {}
 
   @Get()
@@ -196,6 +200,44 @@ export class LoansV2Controller {
       })),
     };
     return await this.simulateLoanPaymentPlanUseCase.execute(id, request);
+  }
+
+  @Patch(':id/approved-amount')
+  @Roles(MemberRole.ADMIN)
+  @ApiOperation({
+    summary: 'Update loan approved amount',
+    description:
+      'Allows administrators to adjust the approved amount of a loan. Synchronizes outstanding balance and pending member payments.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The unique identifier of the loan',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiBody({
+    type: UpdateLoanApprovedAmountHttpDto,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Loan approved amount updated successfully',
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid request data or business rule violation',
+  })
+  @ApiNotFoundResponse({
+    description: 'Loan not found',
+  })
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  async updateApprovedAmount(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateLoanApprovedAmountHttpDto,
+  ): Promise<void> {
+    const updateDto: UpdateLoanApprovedAmountDto = {
+      loanId: id,
+      newApprovedAmount: dto.new_approved_amount,
+      changedBy: undefined,
+    };
+    await this.updateLoanApprovedAmountUseCase.execute(updateDto);
   }
 
   private mapLoanToHttp(loan: LoanResponseDto): LoanResponseHttpDto {

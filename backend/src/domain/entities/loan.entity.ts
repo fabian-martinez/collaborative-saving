@@ -125,6 +125,37 @@ export class Loan {
     this.validateInvariants();
   }
 
+  updateApprovedAmount(newApprovedAmount: number): void {
+    if (newApprovedAmount < 0) {
+      throw new Error('Approved amount cannot be negative');
+    }
+    if (newApprovedAmount < this._disbursedAmount) {
+      throw new Error(
+        `Cannot reduce approved amount ($${newApprovedAmount}) below disbursed amount ($${this._disbursedAmount})`,
+      );
+    }
+
+    const oldApprovedAmount = this._approvedAmount;
+    this._approvedAmount = newApprovedAmount;
+
+    // If no disbursement has been made, outstandingBalance matches approvedAmount
+    if (
+      this._disbursedAmount === 0 &&
+      Math.abs(this._outstandingBalance - oldApprovedAmount) < 0.01
+    ) {
+      this._outstandingBalance = newApprovedAmount;
+    }
+
+    // Recalculate status
+    if (this._disbursedAmount === this._approvedAmount) {
+      this._status = LoanStatus.ACTIVE;
+    } else {
+      this._status = LoanStatus.PENDING;
+    }
+
+    this.validateInvariants();
+  }
+
   disburse(amount: number): void {
     if (amount <= 0) {
       throw new Error('Disbursement amount must be > 0');
