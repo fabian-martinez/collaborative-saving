@@ -9,6 +9,7 @@ import { LoanResponseDto } from '@application/dto/loans/loan-response.dto';
 import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { LoanStatus } from '@domain/entities/loan.entity';
+import { UpdateLoanApprovedAmountUseCase } from '@application/use-cases/loans/update-loan-approved-amount.use-case';
 
 describe('LoansV2Controller', () => {
   let controller: LoansV2Controller;
@@ -17,12 +18,14 @@ describe('LoansV2Controller', () => {
   let updateLoanTermsUseCase: jest.Mocked<UpdateLoanTermsUseCase>;
   let getPaymentPlanSimulationQuery: jest.Mocked<GetPaymentPlanSimulationQueryHandler>;
   let simulateLoanPaymentPlanUseCase: jest.Mocked<SimulateLoanPaymentPlanUseCase>;
+  let updateLoanApprovedAmountUseCase: jest.Mocked<UpdateLoanApprovedAmountUseCase>;
 
   let getLoansQueryExecuteSpy: jest.SpyInstance;
   let getLoanDetailQueryExecuteSpy: jest.SpyInstance;
   let updateLoanTermsUseCaseExecuteSpy: jest.SpyInstance;
   let getPaymentPlanSimulationQueryExecuteSpy: jest.SpyInstance;
   let simulateLoanPaymentPlanUseCaseExecuteSpy: jest.SpyInstance;
+  let updateLoanApprovedAmountUseCaseExecuteSpy: jest.SpyInstance;
 
   const mockLoanResponse: LoanResponseDto = {
     id: 'loan-id-1',
@@ -60,6 +63,10 @@ describe('LoansV2Controller', () => {
       execute: jest.fn(),
     } as unknown as jest.Mocked<SimulateLoanPaymentPlanUseCase>;
 
+    updateLoanApprovedAmountUseCase = {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<UpdateLoanApprovedAmountUseCase>;
+
     getLoansQueryExecuteSpy = jest.spyOn(getLoansQuery, 'execute');
     getLoanDetailQueryExecuteSpy = jest.spyOn(getLoanDetailQuery, 'execute');
     updateLoanTermsUseCaseExecuteSpy = jest.spyOn(
@@ -72,6 +79,10 @@ describe('LoansV2Controller', () => {
     );
     simulateLoanPaymentPlanUseCaseExecuteSpy = jest.spyOn(
       simulateLoanPaymentPlanUseCase,
+      'execute',
+    );
+    updateLoanApprovedAmountUseCaseExecuteSpy = jest.spyOn(
+      updateLoanApprovedAmountUseCase,
       'execute',
     );
 
@@ -97,6 +108,10 @@ describe('LoansV2Controller', () => {
         {
           provide: SimulateLoanPaymentPlanUseCase,
           useValue: simulateLoanPaymentPlanUseCase,
+        },
+        {
+          provide: UpdateLoanApprovedAmountUseCase,
+          useValue: updateLoanApprovedAmountUseCase,
         },
       ],
     }).compile();
@@ -480,6 +495,42 @@ describe('LoansV2Controller', () => {
         },
       );
       expect(result).toEqual(mockResult);
+    });
+  });
+
+  describe('updateApprovedAmount', () => {
+    it('should update approved amount successfully', async () => {
+      const loanId = 'loan-id-1';
+      const dto = {
+        new_approved_amount: 8000,
+      };
+
+      updateLoanApprovedAmountUseCaseExecuteSpy.mockResolvedValue(undefined);
+
+      await controller.updateApprovedAmount(loanId, dto);
+
+      expect(updateLoanApprovedAmountUseCaseExecuteSpy).toHaveBeenCalledTimes(
+        1,
+      );
+      expect(updateLoanApprovedAmountUseCaseExecuteSpy).toHaveBeenCalledWith({
+        loanId,
+        newApprovedAmount: 8000,
+        changedBy: undefined,
+      });
+    });
+
+    it('should throw exception when use case fails', async () => {
+      const loanId = 'loan-id-1';
+      const dto = {
+        new_approved_amount: 4000,
+      };
+
+      const error = new Error('Cannot reduce approved amount below disbursed');
+      updateLoanApprovedAmountUseCaseExecuteSpy.mockRejectedValue(error);
+
+      await expect(
+        controller.updateApprovedAmount(loanId, dto),
+      ).rejects.toThrow(error);
     });
   });
 });
