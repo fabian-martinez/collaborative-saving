@@ -216,18 +216,39 @@
       @print="handlePrint"
     />
 
-    <div v-if="hasAnyDisbursement" class="mt-8 pt-4 border-t flex flex-col items-center">
+    <div class="mt-8 pt-4 border-t flex flex-col items-center gap-4">
+      <!-- Caso 1: Hay desembolsos y aún no se han aplicado -->
       <button 
+        v-if="hasAnyDisbursement && !applySuccess"
         class="btn btn-primary btn-lg w-full md:w-auto px-12" 
         :disabled="isApplying" 
         @click="applyDisbursements"
       >
         <span v-if="isApplying" class="loading loading-spinner"></span>
-        {{ isApplying ? 'Aplicando...' : 'Finalizar y Aplicar Desembolsos' }}
+        {{ isApplying ? 'Aplicando...' : 'Aplicar Desembolsos' }}
       </button>
+
+      <!-- Errores y éxitos de aplicar desembolsos -->
       <div v-if="applyError" class="alert alert-error mt-4 max-w-2xl">{{ applyError }}</div>
-      <div v-if="applySuccess" class="alert alert-success mt-4 max-w-2xl">
-        ¡Desembolsos aplicados y reunión cerrada correctamente!
+      <div v-if="applySuccess && hasAnyDisbursement" class="alert alert-success mt-4 max-w-2xl text-center w-full">
+        ¡Desembolsos aplicados correctamente! Por favor, revise el resumen y proceda a cerrar la reunión de forma segura.
+      </div>
+
+      <!-- Caso 2: Se aplicaron los desembolsos, o no hay desembolsos por aplicar -->
+      <button 
+        v-if="applySuccess || !hasAnyDisbursement"
+        class="btn btn-secondary btn-lg w-full md:w-auto px-12 mt-4" 
+        :disabled="isClosing" 
+        @click="closeActiveMeeting"
+      >
+        <span v-if="isClosing" class="loading loading-spinner"></span>
+        {{ isClosing ? 'Cerrando Reunión...' : 'Cerrar Reunión de Forma Segura' }}
+      </button>
+
+      <!-- Errores y éxitos de cerrar reunión -->
+      <div v-if="closeError" class="alert alert-error mt-4 max-w-2xl">{{ closeError }}</div>
+      <div v-if="closeSuccess" class="alert alert-success mt-4 max-w-2xl">
+        ¡Reunión cerrada correctamente! Redirigiendo...
       </div>
     </div>
   </div>
@@ -822,6 +843,10 @@ onMounted(async () => {
   }
 })
 
+const isClosing = ref(false)
+const closeError = ref<string | null>(null)
+const closeSuccess = ref(false)
+
 async function applyDisbursements() {
   if (!store.meetingId) return
   
@@ -875,20 +900,35 @@ async function applyDisbursements() {
     
     await meetingsApi.executeDisbursementPlan(store.meetingId, { plan: allItems })
     
-    // Close meeting
-    await meetingsApi.closeMeeting(store.meetingId)
-    
     applySuccess.value = true
     isApplying.value = false // Stop loading state
-    
-    // Navegar a la vista de detalle de la reunión
-    if (store.meetingId) {
-      router.push({ name: 'meeting-detail', params: { id: store.meetingId } })
-    }
     
   } catch (e) {
     applyError.value = e instanceof Error ? e.message : 'Error al aplicar desembolsos'
     isApplying.value = false
+  }
+}
+
+async function closeActiveMeeting() {
+  if (!store.meetingId) return
+  
+  isClosing.value = true
+  closeError.value = null
+  closeSuccess.value = false
+  
+  try {
+    await meetingsApi.closeMeeting(store.meetingId)
+    closeSuccess.value = true
+    
+    // Refrescar estado en el store
+    await store.refreshActiveMeeting()
+    
+    // Navegar a la vista de detalle de la reunión
+    router.push({ name: 'meeting-detail', params: { id: store.meetingId } })
+  } catch (e) {
+    closeError.value = e instanceof Error ? e.message : 'Error al cerrar la reunión'
+  } finally {
+    isClosing.value = false
   }
 }
 </script>
