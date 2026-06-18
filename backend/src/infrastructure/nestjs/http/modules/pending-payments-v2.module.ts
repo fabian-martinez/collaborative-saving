@@ -58,5 +58,6 @@ import {
       inject: [PENDING_MEMBER_PAYMENT_REPOSITORY],
     },
   ],
+  exports: [PENDING_MEMBER_PAYMENT_REPOSITORY],
 })
 export class PendingPaymentsV2Module {}

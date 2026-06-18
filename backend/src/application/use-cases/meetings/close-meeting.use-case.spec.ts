@@ -6,6 +6,9 @@ import { Meeting, MeetingStatus } from '@domain/entities/meeting.entity';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { BusinessRuleError } from '@domain/errors/business-rule.error';
+import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
+import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
+import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pending-member-payment-repository.port';
 import {
   CASH_ACCOUNT,
   ACCUMULATED_SURPLUS_ACCOUNT,
@@ -18,6 +21,10 @@ describe('CloseMeetingUseCase', () => {
   let meetingRepository: jest.Mocked<MeetingRepository>;
   let ledgerEntryRepository: jest.Mocked<LedgerEntryRepository>;
   let recordOperationUseCase: jest.Mocked<RecordOperationUseCase>;
+  let transactionManager: jest.Mocked<TransactionManager>;
+  let operationRepository: jest.Mocked<OperationRepository>;
+  let pendingMemberPaymentRepository: jest.Mocked<PendingMemberPaymentRepository>;
+  let transactionExecuteMock: jest.Mock;
   let findByIdSpy: jest.SpyInstance;
   let saveSpy: jest.SpyInstance;
   let findByMeetingSpy: jest.SpyInstance;
@@ -46,6 +53,26 @@ describe('CloseMeetingUseCase', () => {
       execute: jest.fn(),
     } as unknown as jest.Mocked<RecordOperationUseCase>;
 
+    operationRepository = {
+      findById: jest.fn(),
+      findByMeetingAndType: jest.fn().mockResolvedValue([{} as any]), // Default: revaluation exists
+      save: jest.fn(),
+    } as unknown as jest.Mocked<OperationRepository>;
+
+    pendingMemberPaymentRepository = {
+      findPendingByMeeting: jest.fn().mockResolvedValue([]),
+      findByMeeting: jest.fn().mockResolvedValue([]), // Default: no pending payments
+    } as unknown as jest.Mocked<PendingMemberPaymentRepository>;
+
+    transactionExecuteMock = jest.fn(
+      async (callback: () => Promise<unknown>) => {
+        return await callback();
+      },
+    );
+    transactionManager = {
+      execute: transactionExecuteMock,
+    } as unknown as jest.Mocked<TransactionManager>;
+
     findByIdSpy = jest.spyOn(meetingRepository, 'findById');
     saveSpy = jest.spyOn(meetingRepository, 'save');
     findByMeetingSpy = jest.spyOn(ledgerEntryRepository, 'findByMeeting');
@@ -54,6 +81,9 @@ describe('CloseMeetingUseCase', () => {
       meetingRepository,
       ledgerEntryRepository,
       recordOperationUseCase,
+      transactionManager,
+      operationRepository,
+      pendingMemberPaymentRepository,
     );
   });
 
@@ -276,6 +306,86 @@ describe('CloseMeetingUseCase', () => {
     // ASSERT
     const executeSpy = jest.spyOn(recordOperationUseCase, 'execute');
     expect(executeSpy).not.toHaveBeenCalled();
+    expect(result.status).toBe(MeetingStatus.CLOSED);
+  });
+
+  it('should throw BusinessRuleError if asset revaluation has not been executed', async () => {
+    // ARRANGE
+    const activeMeeting = Meeting.create({
+      date: new Date('2024-01-15'),
+      notes: 'Test meeting',
+    });
+    const meetingId = activeMeeting.id;
+
+    meetingRepository.findById.mockResolvedValue(activeMeeting);
+    // Simular que no hay revaluación registrada
+    operationRepository.findByMeetingAndType.mockResolvedValue([]);
+
+    // ACT & ASSERT
+    await expect(useCase.execute({ meetingId })).rejects.toThrow(
+      BusinessRuleError,
+    );
+    await expect(useCase.execute({ meetingId })).rejects.toThrow(
+      'No se puede cerrar la reunión porque no se ha ejecutado la revaluación de activos.',
+    );
+    expect(saveSpy).not.toHaveBeenCalled();
+  });
+
+  it('should throw BusinessRuleError if pending disbursements exist', async () => {
+    // ARRANGE
+    const activeMeeting = Meeting.create({
+      date: new Date('2024-01-15'),
+      notes: 'Test meeting',
+    });
+    const meetingId = activeMeeting.id;
+
+    meetingRepository.findById.mockResolvedValue(activeMeeting);
+    // Simular que existen desembolsos pendientes
+    pendingMemberPaymentRepository.findByMeeting.mockResolvedValue([
+      {
+        id: 'payment-1',
+        status: 'pending',
+        notes: 'Dividendo generado',
+      } as any,
+    ]);
+
+    // ACT & ASSERT
+    await expect(useCase.execute({ meetingId })).rejects.toThrow(
+      BusinessRuleError,
+    );
+    await expect(useCase.execute({ meetingId })).rejects.toThrow(
+      'No se puede cerrar la reunión porque existen 1 desembolsos pendientes por aplicar o rechazar.',
+    );
+    expect(saveSpy).not.toHaveBeenCalled();
+  });
+
+  it('should close meeting successfully if only remaining balances (saldo pendiente) exist', async () => {
+    // ARRANGE
+    const activeMeeting = Meeting.create({
+      date: new Date('2024-01-15'),
+      notes: 'Test meeting',
+    });
+    const meetingId = activeMeeting.id;
+
+    meetingRepository.findById.mockResolvedValue(activeMeeting);
+    // Simular que solo existen saldos pendientes (carry-overs)
+    pendingMemberPaymentRepository.findByMeeting.mockResolvedValue([
+      {
+        id: 'payment-1',
+        status: 'pending',
+        notes: 'Saldo pendiente de dividendo',
+      } as any,
+    ]);
+    ledgerEntryRepository.findByMeeting.mockResolvedValue([]); // No cash entries
+    meetingRepository.save.mockImplementation(async (meeting) => {
+      return await Promise.resolve(meeting);
+    });
+
+    // ACT
+    const result = await useCase.execute({ meetingId });
+
+    // ASSERT
+    expect(saveSpy).toHaveBeenCalledTimes(1);
     expect(result.status).toBe(MeetingStatus.CLOSED);
   });
 });

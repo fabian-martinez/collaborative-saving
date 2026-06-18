@@ -346,16 +346,25 @@ import {
         meetingRepo: MeetingRepository,
         ledgerEntryRepo: LedgerEntryRepository,
         recordOperationUseCase: RecordOperationUseCase,
+        transactionManager: TransactionManager,
+        operationRepo: OperationRepository,
+        pendingMemberPaymentRepo: PendingMemberPaymentRepository,
       ) =>
         new CloseMeetingUseCase(
           meetingRepo,
           ledgerEntryRepo,
           recordOperationUseCase,
+          transactionManager,
+          operationRepo,
+          pendingMemberPaymentRepo,
         ),
       inject: [
         MEETING_REPOSITORY,
         LEDGER_ENTRY_REPOSITORY,
         RecordOperationUseCase,
+        TRANSACTION_MANAGER,
+        OPERATION_REPOSITORY,
+        PENDING_MEMBER_PAYMENT_REPOSITORY,
       ],
     },
     {

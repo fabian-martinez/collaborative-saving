@@ -14,5 +14,5 @@ export class ExecuteDisbursementPlanHttpDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => DisbursementPlanItemHttpDto)
-  plan: DisbursementPlanItemHttpDto[];
+  plan_items: DisbursementPlanItemHttpDto[];
 }

@@ -125,7 +125,34 @@ export class ExecuteDisbursementPlanUseCase {
         }
       }
 
-      // 6. Retornar resultado
+      // 7. Auto-aplazar pagos pendientes no procesados en esta reunión
+      const allMeetingPayments =
+        await this.pendingMemberPaymentRepository.findByMeeting(dto.meetingId);
+      const processedPaymentIds = new Set(
+        dto.plan
+          .map((item) => item.pendingMemberPaymentId)
+          .filter((id): id is string => !!id),
+      );
+
+      for (const payment of allMeetingPayments) {
+        if (
+          (payment.status === 'pending' || payment.status === 'approved') &&
+          !processedPaymentIds.has(payment.id)
+        ) {
+          const existingNotes = payment.notes || '';
+          if (
+            !existingNotes.includes('Saldo pendiente') &&
+            !existingNotes.includes('saldo pendiente')
+          ) {
+            payment.update({
+              notes: `Saldo pendiente (Aplazado) - ${existingNotes}`.trim(),
+            });
+            await this.pendingMemberPaymentRepository.save(payment);
+          }
+        }
+      }
+
+      // 8. Retornar resultado
       return {
         success: true,
         processedItems: processedItems.length,

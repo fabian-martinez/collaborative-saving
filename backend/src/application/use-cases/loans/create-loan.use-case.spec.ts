@@ -343,6 +343,7 @@ describe('CreateLoanUseCase', () => {
           meetingId: mockMeetingId,
           amount: 5000, // pending amount
           loanId: savedLoan.id,
+          notes: 'Saldo pendiente de préstamo',
         }),
       );
     });
