@@ -49,14 +49,19 @@ export class CloseMeetingUseCase {
         );
       }
 
-      // 2. Validar que no existan desembolsos pendientes por aplicar
-      const pendingDisbursements =
-        await this.pendingMemberPaymentRepository.findPendingByMeeting(
-          dto.meetingId,
-        );
-      if (pendingDisbursements.length > 0) {
+      // 2. Validar que no existan desembolsos pendientes creados en esta reunión sin procesar
+      // (excluyendo los saldos pendientes creados por pagos parciales que se arrastran a la siguiente reunión)
+      const meetingPayments =
+        await this.pendingMemberPaymentRepository.findByMeeting(dto.meetingId);
+      const unprocessedPayments = meetingPayments.filter(
+        (p) =>
+          (p.status === 'pending' || p.status === 'approved') &&
+          !p.notes?.includes('Saldo pendiente') &&
+          !p.notes?.includes('saldo pendiente'),
+      );
+      if (unprocessedPayments.length > 0) {
         throw new BusinessRuleError(
-          `No se puede cerrar la reunión porque existen ${pendingDisbursements.length} desembolsos pendientes por aplicar o rechazar.`,
+          `No se puede cerrar la reunión porque existen ${unprocessedPayments.length} desembolsos pendientes por aplicar o rechazar.`,
         );
       }
 

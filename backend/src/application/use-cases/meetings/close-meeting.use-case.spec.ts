@@ -60,7 +60,8 @@ describe('CloseMeetingUseCase', () => {
     } as unknown as jest.Mocked<OperationRepository>;
 
     pendingMemberPaymentRepository = {
-      findPendingByMeeting: jest.fn().mockResolvedValue([]), // Default: no pending payments
+      findPendingByMeeting: jest.fn().mockResolvedValue([]),
+      findByMeeting: jest.fn().mockResolvedValue([]), // Default: no pending payments
     } as unknown as jest.Mocked<PendingMemberPaymentRepository>;
 
     transactionExecuteMock = jest.fn(
@@ -340,8 +341,12 @@ describe('CloseMeetingUseCase', () => {
 
     meetingRepository.findById.mockResolvedValue(activeMeeting);
     // Simular que existen desembolsos pendientes
-    pendingMemberPaymentRepository.findPendingByMeeting.mockResolvedValue([
-      { id: 'payment-1' } as any,
+    pendingMemberPaymentRepository.findByMeeting.mockResolvedValue([
+      {
+        id: 'payment-1',
+        status: 'pending',
+        notes: 'Dividendo generado',
+      } as any,
     ]);
 
     // ACT & ASSERT
@@ -352,5 +357,35 @@ describe('CloseMeetingUseCase', () => {
       'No se puede cerrar la reunión porque existen 1 desembolsos pendientes por aplicar o rechazar.',
     );
     expect(saveSpy).not.toHaveBeenCalled();
+  });
+
+  it('should close meeting successfully if only remaining balances (saldo pendiente) exist', async () => {
+    // ARRANGE
+    const activeMeeting = Meeting.create({
+      date: new Date('2024-01-15'),
+      notes: 'Test meeting',
+    });
+    const meetingId = activeMeeting.id;
+
+    meetingRepository.findById.mockResolvedValue(activeMeeting);
+    // Simular que solo existen saldos pendientes (carry-overs)
+    pendingMemberPaymentRepository.findByMeeting.mockResolvedValue([
+      {
+        id: 'payment-1',
+        status: 'pending',
+        notes: 'Saldo pendiente de dividendo',
+      } as any,
+    ]);
+    ledgerEntryRepository.findByMeeting.mockResolvedValue([]); // No cash entries
+    meetingRepository.save.mockImplementation(async (meeting) => {
+      return await Promise.resolve(meeting);
+    });
+
+    // ACT
+    const result = await useCase.execute({ meetingId });
+
+    // ASSERT
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+    expect(result.status).toBe(MeetingStatus.CLOSED);
   });
 });
