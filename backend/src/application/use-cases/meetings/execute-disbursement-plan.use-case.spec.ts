@@ -726,7 +726,9 @@ describe('ExecuteDisbursementPlanUseCase', () => {
     ]);
 
     pendingMemberPaymentRepository.findByMeeting.mockResolvedValue([p1]);
-    const pendingPaymentSaveSpy = jest.spyOn(pendingMemberPaymentRepository, 'save').mockResolvedValue(p1);
+    const pendingPaymentSaveSpy = jest
+      .spyOn(pendingMemberPaymentRepository, 'save')
+      .mockResolvedValue(p1);
 
     const result = await useCase.execute(dto);
 
