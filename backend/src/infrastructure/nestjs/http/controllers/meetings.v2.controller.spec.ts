@@ -1425,7 +1425,7 @@ describe('MeetingsV2Controller', () => {
     it('should execute disbursement plan successfully', async () => {
       // ARRANGE
       const dto = {
-        plan: [
+        plan_items: [
           {
             member_id: 'member-1',
             type: DisbursementTypeHttp.LOAN,
@@ -1467,7 +1467,7 @@ describe('MeetingsV2Controller', () => {
 
     it('should return 404 when meeting not found', async () => {
       // ARRANGE
-      const dto = { plan: [] };
+      const dto = { plan_items: [] };
       const error = new MeetingNotFoundException(meetingId);
       executeDisbursementPlanUseCaseExecuteSpy.mockRejectedValue(error);
 
@@ -1479,7 +1479,7 @@ describe('MeetingsV2Controller', () => {
 
     it('should return 400 when business rule error', async () => {
       // ARRANGE
-      const dto = { plan: [] };
+      const dto = { plan_items: [] };
       const error = new BusinessRuleError('Insufficient cash');
       executeDisbursementPlanUseCaseExecuteSpy.mockRejectedValue(error);
 
@@ -1491,7 +1491,7 @@ describe('MeetingsV2Controller', () => {
 
     it('should return 400 when invalid request error', async () => {
       // ARRANGE
-      const dto = { plan: [] };
+      const dto = { plan_items: [] };
       const error = new InvalidRequestError('Invalid plan');
       executeDisbursementPlanUseCaseExecuteSpy.mockRejectedValue(error);
 

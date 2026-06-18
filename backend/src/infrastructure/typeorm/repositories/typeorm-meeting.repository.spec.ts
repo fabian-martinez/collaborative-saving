@@ -5,6 +5,7 @@ import { TypeOrmMeetingRepository } from './typeorm-meeting.repository';
 import { Meeting as MeetingEntity } from '../entities/meeting.entity';
 import { Meeting as MeetingDomain } from '@domain/entities/meeting.entity';
 import { MeetingStatus } from '@domain/entities/meeting.entity';
+import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 
 describe('TypeOrmMeetingRepository', () => {
   let repository: TypeOrmMeetingRepository;
@@ -22,12 +23,21 @@ describe('TypeOrmMeetingRepository', () => {
       update: jest.fn(),
     };
 
+    const mockTransactionManager = {
+      execute: jest.fn(),
+      getActiveQueryRunner: jest.fn().mockReturnValue(null),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TypeOrmMeetingRepository,
         {
           provide: getRepositoryToken(MeetingEntity),
           useValue: mockTypeOrmRepo,
+        },
+        {
+          provide: TransactionManager,
+          useValue: mockTransactionManager,
         },
       ],
     }).compile();

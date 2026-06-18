@@ -732,7 +732,9 @@ export class MeetingsV2Controller {
     console.log('dto', dto);
     const executeDto: ExecuteDisbursementPlanDto = {
       meetingId: id,
-      plan: dto.plan.map((item) => this.mapDisbursementPlanItemFromHttp(item)),
+      plan: dto.plan_items.map((item) =>
+        this.mapDisbursementPlanItemFromHttp(item),
+      ),
     };
     const result =
       await this.executeDisbursementPlanUseCase.execute(executeDto);

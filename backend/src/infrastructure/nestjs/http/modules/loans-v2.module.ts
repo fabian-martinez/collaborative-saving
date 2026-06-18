@@ -224,6 +224,7 @@ import {
     CreateLoanUseCase,
     RecordLoanPaymentUseCase,
     GetMemberLoansQueryHandler,
+    LOAN_REPOSITORY,
   ],
 })
 export class LoansV2Module {}
