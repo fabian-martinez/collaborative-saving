@@ -56,8 +56,8 @@ describe('ExecuteDisbursementPlanUseCase', () => {
       findById: jest.fn(),
       findByIds: jest.fn(),
       findByMember: jest.fn(),
-      findByMeeting: jest.fn(),
-      findPendingByMeeting: jest.fn(),
+      findByMeeting: jest.fn().mockResolvedValue([]),
+      findPendingByMeeting: jest.fn().mockResolvedValue([]),
       save: jest.fn(),
     } as unknown as jest.Mocked<PendingMemberPaymentRepository>;
 
@@ -688,5 +688,50 @@ describe('ExecuteDisbursementPlanUseCase', () => {
     ];
 
     expect(calls).toEqual(['m1', 'm2', 'm3', 'm4', 'm5']);
+  });
+
+  it('should auto-postpone unprocessed pending member payments of the current meeting', async () => {
+    const meetingId = 'meeting-1';
+    const meeting = Meeting.fromPersistence({
+      id: meetingId,
+      date: new Date(),
+      status: 'active',
+      notes: 'Test meeting',
+      created_at: new Date(),
+    });
+
+    const dto = {
+      meetingId,
+      plan: [],
+    };
+
+    const p1 = PendingMemberPayment.fromPersistence({
+      id: 'p1',
+      member_id: 'member-1',
+      meeting_id: meetingId,
+      type: 'dividend',
+      amount: 500,
+      status: 'pending',
+      created_at: new Date(),
+      notes: 'Initial notes',
+    });
+
+    meetingRepository.findById.mockResolvedValue(meeting);
+    ledgerEntryRepository.findByMeeting.mockResolvedValue([
+      LedgerEntry.create({
+        operationId: 'op',
+        accountType: CASH_ACCOUNT,
+        amount: 5000,
+      }),
+    ]);
+
+    pendingMemberPaymentRepository.findByMeeting.mockResolvedValue([p1]);
+    const pendingPaymentSaveSpy = jest.spyOn(pendingMemberPaymentRepository, 'save').mockResolvedValue(p1);
+
+    const result = await useCase.execute(dto);
+
+    expect(result.success).toBe(true);
+    expect(pendingPaymentSaveSpy).toHaveBeenCalledTimes(1);
+    expect(p1.notes).toContain('Saldo pendiente (Aplazado) - Initial notes');
   });
 });

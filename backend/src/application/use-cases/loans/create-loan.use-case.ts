@@ -172,6 +172,7 @@ export class CreateLoanUseCase {
           type: PendingMemberPaymentType.LOAN,
           amount: pendingAmount,
           loanId: savedLoan.id,
+          notes: 'Saldo pendiente de préstamo',
         });
         await this.pendingMemberPaymentRepository.save(pendingPayment);
       }
