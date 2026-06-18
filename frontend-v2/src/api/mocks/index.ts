@@ -560,7 +560,7 @@ export const mockApi = {
     await delay()
     return {
       operation_ids: ['op-disburse-1', 'op-disburse-2'],
-      total_disbursed: data.plan.reduce((sum: number, item: any) => sum + item.amount, 0)
+      total_disbursed: data.plan_items.reduce((sum: number, item: any) => sum + item.amount, 0)
     }
   },
 

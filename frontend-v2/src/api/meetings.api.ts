@@ -101,7 +101,7 @@ export interface DisbursementPlanPreview {
 }
 
 export interface ExecuteDisbursementPlanRequest {
-  plan: DisbursementPlanItem[]
+  plan_items: DisbursementPlanItem[]
 }
 
 export interface ExecuteDisbursementPlanResponse {

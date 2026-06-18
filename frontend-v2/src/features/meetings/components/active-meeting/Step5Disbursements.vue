@@ -898,7 +898,7 @@ async function applyDisbursements() {
       )
     }
     
-    await meetingsApi.executeDisbursementPlan(store.meetingId, { plan: allItems })
+    await meetingsApi.executeDisbursementPlan(store.meetingId, { plan_items: allItems })
     
     applySuccess.value = true
     isApplying.value = false // Stop loading state
