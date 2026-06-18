@@ -2,7 +2,7 @@
   <dialog class="modal" :class="{ 'modal-open': isOpen }">
     <div class="modal-box w-11/12 max-w-5xl bg-base-100">
       <form method="dialog">
-        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="$emit('close')">✕</button>
+        <button aria-label="Cerrar modal" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="$emit('close')">✕</button>
       </form>
       
       <h3 class="font-bold text-lg mb-1">Detalles de Transacciones: {{ monthLabel }}</h3>
@@ -87,7 +87,7 @@
 
     </div>
     <form method="dialog" class="modal-backdrop">
-      <button @click="$emit('close')">close</button>
+      <button aria-label="Cerrar modal" @click="$emit('close')">close</button>
     </form>
   </dialog>
 </template>

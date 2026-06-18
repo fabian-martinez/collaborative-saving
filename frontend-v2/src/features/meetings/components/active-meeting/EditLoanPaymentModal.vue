@@ -45,7 +45,7 @@
       </div>
     </div>
     <form method="dialog" class="modal-backdrop">
-      <button @click="closeModal">close</button>
+      <button aria-label="Cerrar modal" @click="closeModal">close</button>
     </form>
   </dialog>
 </template>
