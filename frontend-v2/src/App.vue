@@ -12,7 +12,13 @@
       }"
     >
       <AppHeader />
-      <main class="flex-1 p-6 overflow-y-auto mt-16">
+      <main
+        class="flex-1 mt-12 min-h-0"
+        :class="{
+          'p-6 overflow-y-auto': route.name !== 'active-meeting',
+          'p-0 overflow-hidden flex flex-col h-[calc(100vh-3rem)]': route.name === 'active-meeting'
+        }"
+      >
         <router-view />
       </main>
     </div>

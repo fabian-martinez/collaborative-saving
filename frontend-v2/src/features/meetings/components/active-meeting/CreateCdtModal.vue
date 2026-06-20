@@ -1,12 +1,26 @@
 <template>
   <dialog v-if="visible" class="modal" :class="{ 'modal-open': visible }">
-    <div class="modal-box">
+    <div class="modal-box relative overflow-visible">
       <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="$emit('cancel')" aria-label="Cerrar modal">✕</button>
       <h3 class="font-bold text-2xl mb-2 text-center">Crear CDT</h3>
       <p class="mb-6 text-base-content/70 text-center">
-        Ingresa el monto del CDT y el plazo en meses.
+        Selecciona el socio, ingresa el monto del CDT y el plazo en meses.
       </p>
       <form @submit.prevent="handleSave" class="space-y-4">
+        <!-- Socio (Solo lectura) -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text text-lg">Socio</span>
+          </label>
+          <input 
+            :value="memberName" 
+            type="text" 
+            class="input input-bordered input-lg w-full" 
+            disabled 
+            required
+          />
+        </div>
+
         <!-- Monto -->
         <div class="form-control">
           <label class="label">
@@ -51,18 +65,22 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
+import type { Member } from '@/api/members.api'
 import { formatMoneyInput, parseMoneyInput } from '@/shared/utils/formatters'
 
 interface LocalLineCdt {
   isCdt: true
+  memberId: string
   amount: number
   termMonths: number
-  stockId: 'CDT' // Un valor ficticio para compatibilidad con la vista
+  stockId: 'CDT'
   quantity: 1
 }
 
 const props = defineProps<{
   visible: boolean
+  members: Member[]
+  memberId?: string
 }>()
 
 const emit = defineEmits<{
@@ -71,9 +89,11 @@ const emit = defineEmits<{
 }>()
 
 const form = ref<{
+  memberId: string
   amount: number
   termMonths: number
 }>({
+  memberId: '',
   amount: 0,
   termMonths: 6,
 })
@@ -81,9 +101,19 @@ const form = ref<{
 const amountDisplay = ref('')
 const errorMsg = ref('')
 
+const memberName = computed(() => {
+  const m = props.members.find(member => member.id === props.memberId)
+  return m ? m.name : ''
+})
+
+watch(() => props.memberId, (newId) => {
+  form.value.memberId = newId || ''
+}, { immediate: true })
+
 watch(() => props.visible, (val) => {
   if (val) {
     form.value = {
+      memberId: props.memberId || '',
       amount: 0,
       termMonths: 6,
     }
@@ -121,6 +151,7 @@ function onAmountBlur() {
 
 const canSave = computed(() => {
   return (
+    form.value.memberId &&
     form.value.amount > 0 &&
     form.value.termMonths > 0 &&
     Number.isInteger(form.value.termMonths)
@@ -136,6 +167,7 @@ function handleSave() {
   
   const line: LocalLineCdt = {
     isCdt: true,
+    memberId: form.value.memberId,
     amount: form.value.amount,
     termMonths: form.value.termMonths,
     stockId: 'CDT',

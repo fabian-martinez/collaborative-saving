@@ -1,198 +1,233 @@
 <template>
-  <div>
-    <div v-if="loading" class="flex justify-center items-center py-12">
-      <span class="loading loading-spinner loading-lg"></span>
+  <div class="h-full flex flex-col min-h-0 overflow-hidden">
+    <div v-if="loading" class="flex justify-center items-center py-12 flex-1">
+      <span class="loading loading-spinner loading-lg text-teal-700"></span>
     </div>
 
-    <div v-if="error && !loading" class="alert alert-error mb-4">
+    <div v-if="error && !loading" class="alert alert-error mb-4 shadow-sm flex-shrink-0">
+      <WarningTriangle class="shrink-0 h-6 w-6" />
       <span>{{ error }}</span>
     </div>
 
-    <div v-if="!loading && !error" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <!-- Columna izquierda: Resumen y lista de socios -->
-      <div class="md:col-span-1">
-        <!-- Resumen sticky - se mantiene visible al hacer scroll -->
-        <PurchaseSummary
-          :total-cash-registered="totalCashRegistered"
-          :registered-operations="registeredOperations"
-          :members="members"
-        />
-        <MemberList
-          :members="members"
-          :selected-member="selectedMember"
-          :is-member-paid="() => false"
-          :has-pending-purchase="hasPendingPurchase"
-          :has-completed-purchase="hasCompletedPurchase"
-          :get-initials="getInitials"
-          :get-member-color="getMemberColor"
-          @select-member="selectMemberAndReset"
-        />
-      </div>
-
-      <!-- Columna derecha: Formulario y recibo local -->
-      <div class="md:col-span-2">
-        <!-- Toggle para ver compras registradas - siempre visible -->
-        <div v-if="selectedMember && hasCompletedPurchases" class="mb-4 flex justify-end items-center gap-3">
-          <span class="text-sm" :class="showPurchaseReceipt ? 'text-base-content/60' : 'text-base-content'">
-            Agregar más compras
-          </span>
-          <input 
-            type="checkbox" 
-            class="toggle toggle-primary"
-            :checked="showPurchaseReceipt"
-            @change="showPurchaseReceipt = !showPurchaseReceipt"
-          />
-          <span class="text-sm" :class="showPurchaseReceipt ? 'text-base-content' : 'text-base-content/60'">
-            Ver compras registradas
-          </span>
-        </div>
-        
-        <div class="card bg-base-100 shadow-lg rounded-lg">
-          <div class="card-body p-4 md:p-6">
-            <div v-if="!selectedMember" class="flex items-center justify-center h-64 text-base-content/60">
-              <p class="text-center">Seleccione un socio para registrar una compra.</p>
+    <div v-if="!loading && !error" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch flex-1 min-h-0 overflow-hidden">
+      <!-- Panel Izquierdo (Workspace Principal) - 8 Columnas -->
+      <div class="lg:col-span-8 card bg-base-100 border border-base-200 shadow-sm rounded-xl p-4 md:p-5 flex flex-col h-full min-h-0 overflow-hidden">
+        <div class="space-y-4 flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
+            <div>
+              <h2 class="text-lg font-bold text-base-content">Compra de Acciones (Paso 3)</h2>
+              <p class="text-xs text-base-content/60 mt-1">
+                Registra las acciones compradas por los socios en esta reunión. Cada acción tiene un valor nominal de $10.00.
+              </p>
             </div>
-            <div v-else>
-              <!-- Operation Details View -->
-              <div v-if="operationDetailLoadingId && !selectedOperation" class="alert alert-info text-sm mb-4">
-                Cargando detalle de la operación...
-              </div>
-              <div v-if="selectedOperation">
-                <div class="flex justify-between items-center mb-4">
-                  <h2 class="text-2xl font-bold">Detalle de operación</h2>
-                  <button class="btn btn-outline btn-sm" @click="closeOperationDetail">Regresar</button>
-                </div>
-                <OperationDetails :operation="selectedOperation" />
-              </div>
-              
-              <!-- Purchase Form View -->
-              <div v-else>
+          </div>
 
-                <!-- Vista de recibo cuando hay compras y está activa -->
-                <PaymentReceiptView
-                  v-if="hasCompletedPurchases && showPurchaseReceipt && viewedPurchaseOperations"
-                  :member-name="selectedMember.name"
-                  :print-date="purchasePrintDate"
-                  :viewed-operations="viewedPurchaseOperations"
-                  :viewed-total="purchaseTotal"
-                  title="Detalle de Compras"
-                  total-label="Total:"
-                  receipt-id="purchase-receipt-print"
-                  @open-print-modal="printReceipt.openPrintModal"
-                />
+          <!-- Search Bar -->
+          <div class="relative w-full max-w-sm flex-shrink-0">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <Search class="w-4 h-4 text-base-content/40" />
+            </span>
+            <input 
+              v-model="searchQuery" 
+              type="text" 
+              placeholder="Buscar socio..." 
+              class="input input-bordered input-sm w-full pl-9 rounded-lg text-sm bg-base-100 focus:outline-none focus:border-teal-700" 
+            />
+          </div>
 
-                <!-- Formulario para agregar compras (cuando no hay recibo activo o no hay compras) -->
-                <div v-if="!showPurchaseReceipt || !hasCompletedPurchases">
-                  <div class="text-center mb-6">
-                    <h2 class="text-2xl font-bold">Registrar compra de acciones</h2>
-                    <p class="text-lg text-base-content/80">{{ selectedMember.name }}</p>
-                  </div>
-                  <div class="flex justify-end gap-2 mb-4">
-                    <button class="btn btn-secondary btn-sm" @click="openCdtModal()">Crear CDT</button>
-                    <button class="btn btn-primary btn-sm" @click="openBuyModal()">Agregar compra</button>
-                  </div>
-                <!-- Recibo local editable -->
-                <div v-if="localLines.length > 0" class="mt-6">
-                  <h3 class="text-lg font-semibold mb-2">Detalle de la compra</h3>
-                  <div class="space-y-4">
-                    <div v-for="(line, idx) in localLines" :key="line.id" class="py-3">
-                      <div class="flex items-baseline">
-                        <div class="shrink-0">
-                          <p class="font-semibold text-xl">
-                            <span v-if="line.isCdt">CDT a {{ line.termMonths }} meses</span>
-                            <span v-else>{{ stockName(line.stockId) }}</span>
-                          </p>
-                          <p v-if="!line.isCdt" class="text-sm text-base-content/70">
-                            <CopyOnDblClickNumber :value="Number(line.quantity || 0)" /> uds. x 
-                            <CopyOnDblClickNumber :value="stocks.find(s => s.id === line.stockId)?.value || 0" /> c/u
-                          </p>
-                          <p v-else class="text-sm text-base-content/70">
-                            Rendimiento: 1.5% mensual
-                          </p>
-                        </div>
-                        <div class="grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
-                        <div class="shrink-0 flex items-center gap-2">
-                          <button v-if="!line.isCdt" class="btn btn-ghost btn-xs" @click="openBuyModal(idx)">Editar</button>
-                          <button class="btn btn-ghost btn-xs text-error" @click="removeLine(idx)">Anular</button>
-                          <p class="text-right font-mono text-2xl whitespace-nowrap">
-                            <span v-if="typeof (line.cashAmount + line.creditAmount) === 'number'">
-                              <CopyOnDblClickNumber :value="line.cashAmount + line.creditAmount" />
-                            </span>
-                            <span v-else>
-                              N/D
-                            </span>
-                          </p>
-                        </div>
+          <!-- Table of Transactions -->
+          <div class="overflow-auto w-full border border-base-200 rounded-lg flex-1 min-h-0">
+            <table class="table table-zebra w-full text-xs md:text-sm">
+              <thead class="sticky top-0 z-10">
+                <tr class="bg-base-200/50 text-base-content/70">
+                  <th class="py-2 px-3 font-bold text-[11px] uppercase tracking-wider">Socio</th>
+                  <th class="py-2 px-3 font-bold text-[11px] uppercase tracking-wider text-center">Acciones Compradas</th>
+                  <th class="py-2 px-3 font-bold text-[11px] uppercase tracking-wider text-right">Inversión</th>
+                  <th class="py-2 px-3 font-bold text-[11px] uppercase tracking-wider text-right">Total Acumulado</th>
+                  <th class="py-2 px-3 font-bold text-[11px] uppercase tracking-wider text-center">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr 
+                  v-for="member in paginatedMembers" 
+                  :key="member.id"
+                  class="hover:bg-base-200/30 transition-all border-l-4 border-transparent"
+                >
+                  <td class="py-2.5 px-3">
+                    <div class="flex items-center gap-3">
+                      <div 
+                        class="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
+                        :style="{ backgroundColor: getMemberColor(member.id) }"
+                      >
+                        {{ getInitials(member.name) }}
                       </div>
-                      <div class="pl-4 mt-2 space-y-1 text-md text-base-content/80 border-l-2 border-base-300/80">
-                        <div class="flex justify-between"><span>Efectivo:</span> <span>
-                          <span v-if="typeof line.cashAmount === 'number'">
-                            <CopyOnDblClickNumber :value="line.cashAmount" />
-                          </span>
-                          <span v-else>
-                            N/D
-                          </span>
-                        </span></div>
-                        <div class="flex justify-between"><span>Crédito:</span> <span>
-                          <span v-if="typeof line.creditAmount === 'number'">
-                            <CopyOnDblClickNumber :value="line.creditAmount" />
-                          </span>
-                          <span v-else>
-                            N/D
-                          </span>
-                        </span></div>
-                        <div class="flex justify-between">
-                          <span>Interés crédito:</span>
-                          <span v-if="line.loanDetails && typeof line.loanDetails.interest_rate === 'number' && line.loanDetails.interest_rate > 0">
-                            {{ (line.loanDetails.interest_rate * 100).toFixed(0) }}%
-                          </span>
-                          <span v-else>-</span>
-                        </div>
+                      <span class="font-semibold text-base-content text-xs">{{ member.name }}</span>
+                    </div>
+                  </td>
+                  <td class="py-2.5 px-3 text-center">
+                    <span class="font-medium text-xs">
+                      {{ getMemberPurchasedShares(member.id) }} acciones
+                    </span>
+                  </td>
+                  <td class="py-2.5 px-3 text-right">
+                    <span class="font-bold text-xs text-emerald-600">
+                      {{ formatCurrency(getMemberTotalInvestment(member.id)) }}
+                    </span>
+                  </td>
+                  <td class="py-2.5 px-3 text-right">
+                    <span class="text-xs text-base-content/70">
+                      {{ accumulatedSharesByMember[member.id] || 0 }} acumuladas
+                    </span>
+                  </td>
+                  <td class="py-2.5 px-3 text-center overflow-visible">
+                    <div class="dropdown dropdown-end">
+                      <div tabindex="0" role="button" class="btn btn-ghost btn-xs btn-circle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                        </svg>
                       </div>
+                      <ul tabindex="0" class="dropdown-content menu menu-xs bg-base-100 rounded-box z-50 w-44 p-1.5 shadow border border-base-200">
+                        <li>
+                          <a @click="openBuyModal(member)" class="text-xs gap-2">
+                            <PlusCircle class="h-3.5 w-3.5 text-teal-700 shrink-0" />
+                            <span>Agregar Compra</span>
+                          </a>
+                        </li>
+                        <li>
+                          <a @click="openCdtModal(member)" class="text-xs gap-2">
+                            <Coins class="h-3.5 w-3.5 text-teal-700 shrink-0" />
+                            <span>Crear CDT</span>
+                          </a>
+                        </li>
+                        <li v-if="getMemberTotalInvestment(member.id) > 0">
+                          <a @click="viewReceiptForMember(member)" class="text-xs gap-2">
+                            <Printer class="h-3.5 w-3.5 text-teal-700 shrink-0" />
+                            <span>Imprimir Recibo</span>
+                          </a>
+                        </li>
+                      </ul>
                     </div>
-                    <div class="flex items-baseline text-2xl font-bold">
-                      <span class="shrink-0">Total a pagar:</span>
-                      <div class="grow border-b-2 border-dotted border-base-300/70 mx-4"></div>
-                      <span class="shrink-0 text-primary font-mono">
-                        <CopyOnDblClickNumber :value="localLines.reduce((sum, l) => sum + l.cashAmount + l.creditAmount, 0)" />
-                      </span>
-                    </div>
-                  </div>
-                  <div class="text-right mt-4">
-                    <button class="btn btn-success btn-lg" @click="confirmLocalOperation" :disabled="isRegistering">
-                      <span v-if="isRegistering" class="loading loading-spinner loading-xs mr-2"></span>
-                      <span v-if="!isRegistering">Confirmar compra</span>
-                      <span v-else>Registrando...</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+                  </td>
+                </tr>
+                <tr v-if="filteredMembers.length === 0">
+                  <td colspan="5" class="text-center py-8 text-base-content/50">
+                    No se encontraron socios.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Footer -->
+          <div class="flex items-center justify-between flex-shrink-0 pt-2 border-t border-base-100">
+            <span class="text-xs text-base-content/60">
+              Mostrando {{ filteredMembers.length }} socios
+            </span>
+            <div class="flex items-center gap-2">
+              <button 
+                class="btn btn-outline btn-xs font-semibold rounded-lg"
+                :disabled="currentPage === 1"
+                @click="currentPage--"
+              >
+                Anterior
+              </button>
+              <button 
+                class="btn btn-outline btn-xs font-semibold rounded-lg"
+                :disabled="currentPage >= totalPages"
+                @click="currentPage++"
+              >
+                Siguiente
+              </button>
             </div>
           </div>
         </div>
-        <!-- Modal propio para compra/edición de acción -->
-        <EditBuyStockModal
-          :visible="showBuyModal"
-          :isEditing="isEditingBuy"
-          :initialData="buyModalForm"
-          :stocks="stocks"
-          @save="handleBuyModalSave"
-          @cancel="closeBuyModal"
-        />
+      </div>
 
-        <!-- Modal para CDT -->
-        <CreateCdtModal
-          :visible="showCdtModal"
-          @save="handleCdtModalSave"
-          @cancel="closeCdtModal"
-        />
+      <!-- Panel Derecho (Sidebar de Resumen / Gráfico) - 4 Columnas -->
+      <div class="lg:col-span-4 card bg-base-100 border border-base-200 shadow-sm rounded-xl p-4 md:p-5 flex flex-col h-full min-h-0 justify-between overflow-auto">
+        <div class="space-y-4">
+          <h3 class="text-sm font-bold text-base-content border-b border-base-200 pb-3 mb-2">Resumen de Compra</h3>
+          
+          <!-- Metrics List -->
+          <div class="space-y-3.5">
+            <div class="flex justify-between items-baseline text-xs">
+              <span class="text-base-content/60 font-medium">Total Acciones Compradas:</span>
+              <span class="font-bold text-base-content text-sm">{{ totalStocksPurchased }} Acciones</span>
+            </div>
+            <div class="flex justify-between items-baseline text-xs">
+              <span class="text-base-content/60 font-medium">Capital Recaudado:</span>
+              <span class="font-bold text-emerald-600 text-sm">{{ formatCurrency(totalCapitalCollected) }}</span>
+            </div>
+            <div class="flex justify-between items-baseline text-xs">
+              <span class="text-base-content/60 font-medium">Valor de Acción Nominal:</span>
+              <span class="font-bold text-base-content text-sm">$10.00</span>
+            </div>
+          </div>
+
+          <!-- Circular Chart -->
+          <div class="flex justify-center py-4">
+            <div class="relative w-28 h-28 flex items-center justify-center">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <!-- Outer circle track -->
+                <circle class="text-base-200" stroke-width="8" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50" />
+                <!-- Progress circle -->
+                <circle class="text-teal-700 transition-all duration-500" stroke-width="8" :stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * Math.min(totalStocksPurchased / 100, 1))" stroke-linecap="round" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50" />
+              </svg>
+              <div class="absolute flex flex-col items-center justify-center text-center">
+                <span class="text-xl font-extrabold text-base-content leading-none">{{ totalStocksPurchased }}</span>
+                <span class="text-[9px] text-base-content/50 uppercase font-bold tracking-wider mt-1">Acciones</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Info Box -->
+          <div class="bg-teal-50/40 border border-teal-100 rounded-xl p-4 flex gap-3 text-xs leading-relaxed text-teal-800">
+            <InfoCircle class="h-5 w-5 text-teal-600 shrink-0" />
+            <p>
+              Una vez registradas todas las acciones compradas, haz clic en 'Siguiente Paso' para proceder con el Paso 4 de Modificación.
+            </p>
+          </div>
+        </div>
+
+        <div class="space-y-2 mt-6">
+          <button 
+            class="btn btn-block bg-black hover:bg-neutral-800 text-white font-semibold rounded-lg text-sm border-0 py-2.5"
+            @click="$emit('completed')"
+          >
+            Siguiente Paso: Modificar
+          </button>
+          <button 
+            class="btn btn-block btn-outline border-base-300 hover:bg-base-200 text-base-content font-semibold rounded-lg text-sm"
+            @click="saveDraft"
+          >
+            Guardar Borrador
+          </button>
+        </div>
       </div>
     </div>
-    <!-- Modal de Vista Previa e Impresión de Compras -->
+
+    <!-- Modals -->
+    <EditBuyStockModal
+      :visible="showBuyModal"
+      :isEditing="isEditingBuy"
+      :initialData="buyModalForm"
+      :stocks="stocks"
+      :members="members"
+      @save="handleBuyModalSave"
+      @cancel="closeBuyModal"
+    />
+
+    <CreateCdtModal
+      :visible="showCdtModal"
+      :members="members"
+      :memberId="selectedMember?.id"
+      @save="handleCdtModalSave"
+      @cancel="closeCdtModal"
+    />
+
     <PrintReceiptModal
       :is-open="printReceipt.isPrintModalOpen.value"
-      :member-name="selectedMember?.name || null"
+      :member-name="selectedMemberName"
       :print-date="purchasePrintDate"
       :viewed-operations="viewedPurchaseOperations"
       :viewed-total="purchaseTotal"
@@ -202,32 +237,20 @@
       @close="printReceipt.closePrintModal"
       @print="printReceipt.printReceipt"
     />
-    <div class="mt-8 pt-4 border-t">
-      <div class="text-right mt-4">
-        <button class="btn btn-success w-full md:w-auto" @click="$emit('completed')">
-          Finalizar registro de compras
-        </button>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { membersApi, type Member, type MemberPurchase, type PurchaseStockRequest } from '@/api/members.api'
+import { WarningTriangle, Search, InfoCircle, Printer, PlusCircle, Coins } from 'iconoir-vue/regular'
+import { membersApi, type Member, type PurchaseStockRequest } from '@/api/members.api'
 import { stocksApi, type Stock } from '@/api/stocks.api'
 import { useActiveMeetingStore } from '../../stores/activeMeeting'
 import { meetingsApi, type Operation } from '@/api/meetings.api'
-import { operationsApi } from '@/api/operations.api'
-import { formatDate } from '@/shared/utils/formatters'
+import { formatCurrency } from '@/shared/utils/formatters'
 import { usePrintReceipt } from '@/shared/composables/usePrintReceipt'
 import EditBuyStockModal from './EditBuyStockModal.vue'
 import CreateCdtModal from './CreateCdtModal.vue'
-import OperationDetails from '@/shared/components/OperationDetails.vue'
-import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
-import PurchaseSummary from './collection/PurchaseSummary.vue'
-import MemberList from './collection/MemberList.vue'
-import PaymentReceiptView from './collection/PaymentReceiptView.vue'
 import PrintReceiptModal from '@/shared/components/PrintReceiptModal.vue'
 
 defineEmits<{
@@ -237,97 +260,40 @@ defineEmits<{
 const store = useActiveMeetingStore()
 const members = ref<Member[]>([])
 const stocks = ref<Stock[]>([])
-const selectedMember = ref<Member | null>(null)
+const registeredOperations = ref<Operation[]>([])
+const accumulatedSharesByMember = ref<Record<string, number>>({})
+
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-// Estado para compras registradas
-const registeredOperations = ref<Operation[]>([])
-const memberPurchasesByMember = ref<Record<string, MemberPurchase[]>>({})
-const memberPurchasesError = ref<string | null>(null)
-const memberPurchasesLoadingMemberId = ref<string | null>(null)
+// Search & Pagination
+const searchQuery = ref('')
+const currentPage = ref(1)
+const itemsPerPage = 5
 
-// Estado para recibo local
-type LocalLine = {
-  id: string
+// Modals State
+const showBuyModal = ref(false)
+const isEditingBuy = ref(false)
+const buyModalForm = ref<{
+  memberId?: string
   stockId: string
   quantity: number
   cashAmount: number
-  creditAmount: number
-  loanDetails?: {
-    interest_rate: number
-    loan_type: string
-  }
-  isCdt?: boolean
-  termMonths?: number
-}
-
-const localLinesByMember = ref<Record<string, LocalLine[]>>({})
-const localLines = computed({
-  get() {
-    return selectedMember.value ? (localLinesByMember.value[selectedMember.value.id] || []) : []
-  },
-  set(val) {
-    if (selectedMember.value) {
-      localLinesByMember.value[selectedMember.value.id] = val
-    }
-  }
-})
-
-// Estado para modal de compra
-const showBuyModal = ref(false)
-const isEditingBuy = ref(false)
-const editingBuyIdx = ref<number | null>(null)
-const buyModalForm = ref<LocalLine>({
-  id: '',
+}>({
   stockId: '',
   quantity: 1,
-  cashAmount: 0,
-  creditAmount: 0
+  cashAmount: 0
 })
 
-// Estado para modal CDT
 const showCdtModal = ref(false)
 
-// Estado para vista de operaciones
-const selectedOperation = ref<Operation | null>(null)
-const operationDetailLoadingId = ref<string | null>(null)
+// Print State
+const selectedMember = ref<Member | null>(null)
+const selectedMemberName = computed(() => selectedMember.value?.name || '')
+const purchasePrintDate = ref('')
+const viewedPurchaseOperations = ref<any[]>([])
+const purchaseTotal = ref(0)
 
-// Estado para registro
-const isRegistering = ref(false)
-
-// Estado para vista de recibo de compras
-const showPurchaseReceipt = ref(false)
-const viewedPurchaseOperations = ref<any[] | null>(null)
-const isLoadingPurchaseOperations = ref(false)
-
-// Cálculos de totales
-const totalCashRegistered = computed(() => {
-  return registeredOperations.value
-    .reduce((sum: number, op) => sum + (op.total_amount || 0), 0)
-})
-
-// Computed para compras
-const hasCompletedPurchases = computed(() => {
-  if (!selectedMember.value) return false
-  const purchases = memberRegisteredPurchases(selectedMember.value.id)
-  return purchases.length > 0
-})
-
-const purchasePrintDate = computed(() => {
-  if (!viewedPurchaseOperations.value || viewedPurchaseOperations.value.length === 0) {
-    return formatDate(new Date())
-  }
-  const firstOp = viewedPurchaseOperations.value[0]
-  return formatDate(firstOp.date || new Date())
-})
-
-const purchaseTotal = computed(() => {
-  if (!viewedPurchaseOperations.value) return 0
-  return viewedPurchaseOperations.value.reduce((sum, op) => sum + (op.total_amount || 0), 0)
-})
-
-// Composable para impresión
 const printReceipt = usePrintReceipt(
   selectedMember,
   'purchase-receipt-print-modal',
@@ -335,7 +301,57 @@ const printReceipt = usePrintReceipt(
   'purchase-receipt-print'
 )
 
-// Funciones helper
+// Computed Properties for Summary
+const totalStocksPurchased = computed(() => {
+  return registeredOperations.value.reduce((sum, op) => sum + getQuantityFromOperation(op), 0)
+})
+
+const totalCapitalCollected = computed(() => {
+  return registeredOperations.value.reduce((sum, op) => sum + (op.total_amount || 0), 0)
+})
+
+// Filtered and Paginated Members
+const filteredMembers = computed(() => {
+  if (!searchQuery.value) return members.value
+  const query = searchQuery.value.toLowerCase()
+  return members.value.filter(m => m.name.toLowerCase().includes(query))
+})
+
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredMembers.value.length / itemsPerPage)))
+
+const paginatedMembers = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  return filteredMembers.value.slice(start, start + itemsPerPage)
+})
+
+// Reset current page when query changes
+watch(searchQuery, () => {
+  currentPage.value = 1
+})
+
+function getMemberPurchasedShares(memberId: string): number {
+  return registeredOperations.value
+    .filter(op => op.member_id === memberId && !op.description?.includes('CDT'))
+    .reduce((sum, op) => sum + getQuantityFromOperation(op), 0)
+}
+
+function getMemberTotalInvestment(memberId: string): number {
+  return registeredOperations.value
+    .filter(op => op.member_id === memberId)
+    .reduce((sum, op) => sum + (op.total_amount || 0), 0)
+}
+
+
+
+function getQuantityFromOperation(operation: Operation): number {
+  if (operation.description?.includes('CDT')) return 0
+  const match = operation.description?.match(/(\d+)\s+uds/)
+  if (match) {
+    return parseInt(match[1], 10)
+  }
+  return Math.round(operation.total_amount / 10)
+}
+
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/)
   if (parts.length === 0) return ''
@@ -344,16 +360,7 @@ function getInitials(name: string): string {
 }
 
 function getMemberColor(memberId: string): string {
-  const colors = [
-    '#3b82f6', // blue
-    '#8b5cf6', // purple
-    '#ec4899', // pink
-    '#f59e0b', // amber
-    '#10b981', // green
-    '#06b6d4', // cyan
-    '#ef4444', // red
-    '#6366f1', // indigo
-  ]
+  const colors = ['#0d9488', '#0891b2', '#0284c7', '#4f46e5', '#7c3aed', '#db2777', '#ea580c', '#e11d48']
   let hash = 0
   for (let i = 0; i < memberId.length; i++) {
     hash = memberId.charCodeAt(i) + ((hash << 5) - hash)
@@ -361,198 +368,51 @@ function getMemberColor(memberId: string): string {
   return colors[Math.abs(hash) % colors.length]
 }
 
-function stockName(id: string) {
-  const s = stocks.value.find(s => s.id === id)
-  return s ? s.type : '-'
-}
-
-function hasPendingPurchase(memberId: string) {
-  return (localLinesByMember.value[memberId]?.length > 0)
-}
-
-function hasCompletedPurchase(memberId: string) {
-  if (memberRegisteredPurchases(memberId).length > 0) {
-    return true
-  }
-  return registeredOperations.value.some(op => {
-    return op.member_id === memberId
-  })
-}
-
-function memberRegisteredPurchases(memberId: string) {
-  return memberPurchasesByMember.value[memberId] || []
-}
-
-// Funciones para convertir compras a operaciones
-async function convertPurchasesToOperations(purchases: MemberPurchase[]): Promise<any[]> {
-  const operations = await Promise.all(
-    purchases.map(async (purchase) => {
-      try {
-        const operation = await operationsApi.getOperationById(purchase.operation_id)
-        return {
-          id: operation.id,
-          member_id: operation.member_id || selectedMember.value?.id || '',
-          meeting_id: operation.meeting_id,
-          type: operation.type,
-          description: operation.description || `Compra de ${purchase.stock_type} - ${purchase.quantity} uds`,
-          date: operation.date,
-          total_amount: purchase.total_value,
-          ledger_entries: operation.entries || []
-        }
-      } catch {
-        // Si falla obtener la operación, crear operación básica
-        return {
-          id: purchase.operation_id,
-          member_id: selectedMember.value?.id || '',
-          meeting_id: purchase.meeting_id,
-          type: 'STOCK_PURCHASE',
-          description: `Compra de ${purchase.stock_type} - ${purchase.quantity} uds`,
-          date: purchase.purchase_date,
-          total_amount: purchase.total_value,
-          ledger_entries: []
-        }
-      }
-    })
-  )
-  return operations
-}
-
-async function loadPurchaseOperations() {
-  if (!selectedMember.value) return
-  const purchases = memberRegisteredPurchases(selectedMember.value.id)
-  if (purchases.length > 0) {
-    isLoadingPurchaseOperations.value = true
-    try {
-      viewedPurchaseOperations.value = await convertPurchasesToOperations(purchases)
-    } catch (e) {
-      console.error('Error loading purchase operations:', e)
-      viewedPurchaseOperations.value = null
-    } finally {
-      isLoadingPurchaseOperations.value = false
-    }
-  } else {
-    viewedPurchaseOperations.value = null
-  }
-}
-
-// Funciones de selección de miembro
-async function selectMemberAndReset(member: Member) {
-  selectedMember.value = member
-  selectedOperation.value = null
-  // No resetear showPurchaseReceipt para mantener el estado global del toggle
-  await loadMemberPurchases(member.id)
-  await loadPurchaseOperations()
-}
-
-// Funciones de carga de datos
+// Fetch Functions
 async function loadRegisteredOperations() {
   if (!store.meetingId) return
-  
   try {
-    // Obtener todas las compras de la reunión (devuelve Operation[] con member_id y total_amount)
     const operations = await meetingsApi.getMeetingPurchases(store.meetingId)
-    
-    // Usar directamente los datos del backend sin necesidad de obtener ledger_entries
-    registeredOperations.value = operations.map((operation) => ({
-      id: operation.id,
-      member_id: operation.member_id,
-      meeting_id: operation.meeting_id,
-      type: operation.type,
-      description: operation.description,
-      date: operation.date,
-      total_amount: operation.total_amount || 0,
-    }))
+    registeredOperations.value = operations
   } catch (e) {
     console.error('Error loading registered operations:', e)
   }
 }
 
-async function loadMemberPurchases(memberId: string) {
-  if (!memberId || !store.meetingId) {
-    return
-  }
-  
-  memberPurchasesLoadingMemberId.value = memberId
-  memberPurchasesError.value = null
-  
-  try {
-    const purchases = await membersApi.getMemberPurchases(memberId, { meeting_id: store.meetingId })
-    memberPurchasesByMember.value = {
-      ...memberPurchasesByMember.value,
-      [memberId]: purchases,
-    }
-  } catch (e) {
-    const err = e as { message?: string }
-    memberPurchasesError.value = err.message || 'Error al cargar las compras del socio.'
-  } finally {
-    memberPurchasesLoadingMemberId.value = null
-  }
+async function loadAccumulatedShares() {
+  await Promise.all(
+    members.value.map(async (member) => {
+      try {
+        const subs = await membersApi.getMemberStockSubscriptions(member.id)
+        const total = subs.reduce((sum, sub) => sum + (sub.quantity || 0), 0)
+        accumulatedSharesByMember.value[member.id] = total
+      } catch (e) {
+        console.error(`Error loading subscriptions for member ${member.id}:`, e)
+        accumulatedSharesByMember.value[member.id] = 0
+      }
+    })
+  )
 }
 
-// Funciones del modal de compra
-function openBuyModal(idx: number | null = null) {
-  if (idx !== null) {
-    // Editar línea existente
-    const line = localLines.value[idx]
-    buyModalForm.value = {
-      id: line.id,
-      stockId: line.stockId,
-      quantity: line.quantity,
-      cashAmount: line.cashAmount,
-      creditAmount: line.creditAmount,
-      loanDetails: line.loanDetails
-    }
-    isEditingBuy.value = true
-    editingBuyIdx.value = idx
-  } else {
-    // Nueva compra
-    buyModalForm.value = {
-      id: '',
-      stockId: '',
-      quantity: 1,
-      cashAmount: 0,
-      creditAmount: 0
-    }
-    isEditingBuy.value = false
-    editingBuyIdx.value = null
+// Modal actions
+function openBuyModal(member: Member) {
+  selectedMember.value = member
+  buyModalForm.value = {
+    memberId: member.id,
+    stockId: '',
+    quantity: 1,
+    cashAmount: 0
   }
+  isEditingBuy.value = false
   showBuyModal.value = true
 }
 
 function closeBuyModal() {
   showBuyModal.value = false
-  editingBuyIdx.value = null
 }
 
-function handleBuyModalSave(line: Partial<LocalLine> & { stockId: string; quantity: number; cashAmount: number }) {
-  const stock_value = stocks.value.find(s => s.id === line.stockId)?.value || 0
-  const totalValue = stock_value * line.quantity
-  const creditAmount = totalValue - (line.cashAmount || 0)
-  
-  const newLine: LocalLine = {
-    id: (line as LocalLine).id || `${Date.now()}-${Math.random()}`,
-    stockId: line.stockId,
-    quantity: line.quantity,
-    cashAmount: line.cashAmount || 0,
-    creditAmount: creditAmount > 0 ? creditAmount : 0,
-    loanDetails: line.loanDetails || (creditAmount > 0 ? {
-      interest_rate: 0.02,
-      loan_type: 'accion',
-    } : undefined)
-  }
-  
-  if (isEditingBuy.value && editingBuyIdx.value !== null) {
-    const lines = [...localLines.value]
-    lines[editingBuyIdx.value] = newLine
-    localLines.value = lines
-  } else {
-    localLines.value = [...localLines.value, newLine]
-  }
-  closeBuyModal()
-}
-
-// Funciones del modal CDT
-function openCdtModal() {
+function openCdtModal(member: Member) {
+  selectedMember.value = member
   showCdtModal.value = true
 }
 
@@ -560,119 +420,109 @@ function closeCdtModal() {
   showCdtModal.value = false
 }
 
-function handleCdtModalSave(line: { isCdt: true; amount: number; termMonths: number; stockId: string; quantity: number }) {
-  const newLine: LocalLine = {
-    id: `${Date.now()}-${Math.random()}`,
-    stockId: line.stockId,
-    quantity: line.quantity,
-    cashAmount: line.amount,
-    creditAmount: 0,
-    isCdt: true,
-    termMonths: line.termMonths,
-  }
-  localLines.value = [...localLines.value, newLine]
-  closeCdtModal()
-}
-
-function removeLine(idx: number) {
-  const lines = [...localLines.value]
-  lines.splice(idx, 1)
-  localLines.value = lines
-}
-
-// Funciones de registro
-async function confirmLocalOperation() {
-  if (localLines.value.length === 0) return
-  if (!store.meetingId) {
-    alert('No hay reunión activa.')
-    return
-  }
-  const memberId = selectedMember.value?.id
-  if (!memberId) {
-    alert('Selecciona un socio antes de registrar compras.')
-    return
-  }
-  
-  isRegistering.value = true
-  
+async function handleBuyModalSave(line: any) {
+  if (!store.meetingId) return
+  loading.value = true
   try {
-    for (const line of localLines.value) {
-      if (line.isCdt) {
-        await stocksApi.createCdt({
-          member_id: memberId,
-          amount: line.cashAmount,
-          term_months: line.termMonths || 6,
-        })
-      } else {
-        const payload: PurchaseStockRequest = {
-          stock_id: line.stockId,
-          quantity: line.quantity,
-          cash_amount: line.cashAmount,
-          meeting_id: store.meetingId,
-        }
-        
-        if (line.creditAmount > 0 && line.loanDetails) {
-          payload.loan_details = {
-            interest_rate: line.loanDetails.interest_rate,
-            loan_type: line.loanDetails.loan_type,
-          }
-        }
-        
-        await membersApi.createStockPurchase(memberId, payload)
+    const payload: PurchaseStockRequest = {
+      stock_id: line.stockId,
+      quantity: line.quantity,
+      cash_amount: line.cashAmount,
+      meeting_id: store.meetingId,
+    }
+    
+    if (line.loanDetails) {
+      payload.loan_details = {
+        interest_rate: line.loanDetails.interest_rate,
+        loan_type: line.loanDetails.loan_type,
       }
     }
     
-    localLines.value = []
+    await membersApi.createStockPurchase(line.memberId, payload)
+    closeBuyModal()
     
-    // Recargar datos
-    await Promise.all([
-      loadMemberPurchases(memberId),
-      loadRegisteredOperations()
-    ])
-    
-    // Recargar operaciones de compras si hay compras
-    await loadPurchaseOperations()
-    
-    alert('Compra(s) registrada(s) exitosamente.')
+    await loadRegisteredOperations()
+    await loadAccumulatedShares()
+    alert('Compra registrada exitosamente.')
   } catch (e) {
-    const err = e as { message?: string }
-    alert(err.message || 'Error al registrar la(s) compra(s).')
+    alert(e instanceof Error ? e.message : 'Error al registrar la compra.')
   } finally {
-    isRegistering.value = false
+    loading.value = false
   }
 }
 
-// Funciones de vista de operaciones
-function closeOperationDetail() {
-  selectedOperation.value = null
-  operationDetailLoadingId.value = null
+async function handleCdtModalSave(line: any) {
+  loading.value = true
+  try {
+    await stocksApi.createCdt({
+      member_id: line.memberId,
+      amount: line.amount,
+      term_months: line.termMonths,
+    })
+    closeCdtModal()
+    
+    await loadRegisteredOperations()
+    await loadAccumulatedShares()
+    alert('CDT creado exitosamente.')
+  } catch (e) {
+    alert(e instanceof Error ? e.message : 'Error al crear el CDT.')
+  } finally {
+    loading.value = false
+  }
 }
 
-// Inicialización
+// Receipt Print View
+function viewReceiptForMember(member: Member) {
+  selectedMember.value = member
+  const memberOps = registeredOperations.value.filter(op => op.member_id === member.id)
+  if (memberOps.length === 0) return
+  purchasePrintDate.value = new Date(memberOps[0].date).toLocaleDateString()
+  viewedPurchaseOperations.value = memberOps.map(op => ({
+    id: op.id,
+    description: op.description || (op.description?.includes('CDT') ? 'Creación de CDT' : 'Compra de acciones'),
+    total_amount: op.total_amount
+  }))
+  purchaseTotal.value = memberOps.reduce((sum, op) => sum + op.total_amount, 0)
+  printReceipt.openPrintModal()
+}
+
+function saveDraft() {
+  alert('Borrador guardado exitosamente.')
+}
+
+// Initialization
 onMounted(async () => {
   loading.value = true
   try {
-    [members.value, stocks.value] = await Promise.all([
+    const [fetchedMembers, fetchedStocks] = await Promise.all([
       membersApi.getMembers(),
       stocksApi.getStocks()
     ])
+    members.value = fetchedMembers
+    stocks.value = fetchedStocks
     
     if (store.meetingId) {
-      await loadRegisteredOperations()
+      await Promise.all([
+        loadRegisteredOperations(),
+        loadAccumulatedShares()
+      ])
     }
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Error al cargar datos'
+    error.value = e instanceof Error ? e.message : 'Error al cargar los datos'
   } finally {
     loading.value = false
   }
 })
 
-// Watcher para cuando el meetingId cambie (similar a Step1Collection)
+// Watcher for meetingId
 watch(
   () => store.meetingId,
   async (newMeetingId) => {
     if (newMeetingId && members.value.length > 0) {
-      await loadRegisteredOperations()
+      await Promise.all([
+        loadRegisteredOperations(),
+        loadAccumulatedShares()
+      ])
     }
   }
 )

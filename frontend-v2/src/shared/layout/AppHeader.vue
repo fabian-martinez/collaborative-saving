@@ -20,17 +20,17 @@ const formattedMeetingDate = computed(() => {
 
 <template>
   <header
-    class="bg-base-100 shadow-md p-4 fixed top-0 right-0 left-0 z-10 transition-all duration-300"
+    class="bg-base-100 shadow-md h-12 px-4 fixed top-0 right-0 left-0 z-10 transition-all duration-300 flex items-center"
     :class="{
       'lg:left-72': !isCollapsed,
       'lg:left-20': isCollapsed
     }"
   >
-    <div class="flex items-center justify-between gap-4">
+    <div class="flex items-center justify-between gap-4 w-full">
       <!-- Botón hamburguesa (solo móvil) -->
       <button
         @click="toggleMobile"
-        class="btn btn-ghost btn-circle lg:hidden"
+        class="btn btn-ghost btn-circle btn-sm lg:hidden"
         :aria-label="isMobileOpen ? 'Cerrar menú' : 'Abrir menú'"
         :title="isMobileOpen ? 'Cerrar menú' : 'Abrir menú'"
         :aria-expanded="isMobileOpen"
@@ -41,7 +41,7 @@ const formattedMeetingDate = computed(() => {
       <!-- Reunión Activa -->
       <div
         v-if="hasActiveMeeting"
-        class="flex items-center gap-2 px-3 py-2 bg-primary/10 text-primary rounded-lg border border-primary/20"
+        class="flex items-center gap-2 px-2.5 py-1 bg-primary/10 text-primary rounded-lg border border-primary/20"
       >
         <Calendar class="w-5 h-5" />
         <div class="flex flex-col">
@@ -57,7 +57,7 @@ const formattedMeetingDate = computed(() => {
       <div class="flex items-center gap-4">
         <!-- Notifications -->
         <div class="relative">
-          <button class="btn btn-ghost btn-circle" aria-label="Notificaciones">
+          <button class="btn btn-ghost btn-circle btn-sm" aria-label="Notificaciones">
             <Bell class="w-6 h-6" />
             <span
               v-if="notifications > 0"
@@ -70,7 +70,7 @@ const formattedMeetingDate = computed(() => {
 
         <!-- User Avatar -->
         <div class="avatar placeholder">
-          <div class="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
+          <div class="bg-primary text-primary-content rounded-full w-8 h-8 flex items-center justify-center">
             <span class="text-sm font-semibold">{{ userInitials }}</span>
           </div>
         </div>

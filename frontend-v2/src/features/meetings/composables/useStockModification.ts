@@ -15,6 +15,7 @@ export interface StockSubscription {
 }
 
 export interface StockModificationForm {
+  memberId?: string
   // Transfer
   transferSubscriptionId?: string
   transferQuantity?: number
@@ -69,6 +70,7 @@ export function useStockModification() {
   const loanPaymentForm = ref<StockModificationForm>({})
   const modificationForm = ref<StockModificationForm>({})
   const cashLoanPaymentForm = ref<{
+    memberId?: string
     loanId?: string
     amount?: number
   }>({})
