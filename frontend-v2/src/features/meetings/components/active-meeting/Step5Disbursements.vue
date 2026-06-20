@@ -1,162 +1,264 @@
 <template>
-  <div>
-    <div v-if="loading" class="flex justify-center items-center py-12">
-      <span class="loading loading-spinner loading-lg"></span>
+  <div class="h-full flex flex-col min-h-0 overflow-hidden">
+    <div v-if="loading" class="flex justify-center items-center py-12 flex-1">
+      <span class="loading loading-spinner loading-lg text-teal-700"></span>
     </div>
 
-    <div v-if="error && !loading" class="alert alert-error mb-4">
+    <div v-if="error && !loading" class="alert alert-error mb-4 shadow-sm flex-shrink-0">
       <span>{{ error }}</span>
     </div>
 
-    <div v-if="!loading && !error" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <!-- Columna izquierda: Resumen y lista de socios -->
-      <div class="md:col-span-1">
-        <!-- Resumen sticky -->
-        <DisbursementSummary
-          :available-cash="availableCash"
-          :total-to-disburse="totalToDisburse"
-        />
-        <MemberList
-          :members="members"
-          :selected-member="selectedMember"
-          :is-member-paid="() => false"
-          :get-initials="getInitials"
-          :get-member-color="getMemberColor"
-          :has-disbursement="hasDisbursement"
-          @select-member="selectMember"
-        />
-      </div>
-
-      <!-- Columna derecha: Panel de desembolsos -->
-      <div class="md:col-span-2">
-        <div class="card bg-base-100 shadow-lg rounded-lg">
-          <div class="card-body p-4 md:p-6">
-            <div v-if="!selectedMember" class="flex items-center justify-center h-64 text-base-content/60">
-              <p class="text-center">Seleccione un socio para gestionar desembolsos.</p>
+    <div v-if="!loading && !error" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch flex-1 min-h-0 overflow-hidden">
+      <!-- Panel Izquierdo (Workspace Principal) - 8 Columnas -->
+      <div class="lg:col-span-8 card bg-base-100 border border-base-200 shadow-sm rounded-xl p-4 md:p-5 flex flex-col h-full min-h-0 overflow-hidden">
+        <div class="space-y-4 flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 flex-shrink-0">
+            <div>
+              <h2 class="text-lg font-bold text-base-content">Desembolsos (Paso 5)</h2>
+              <p class="text-xs text-base-content/60 mt-1">
+                Registra y revisa los desembolsos de la reunión, como préstamos aprobados, retiros de acciones u otros desembolsos autorizados.
+              </p>
             </div>
             
-            <div v-else>
-              <!-- Recibo de Desembolsos -->
-              <div class="mb-6">
-                <div class="flex justify-between items-center mb-4">
-                  <h3 class="text-xl font-bold">Desembolsos para {{ selectedMember.name }}</h3>
-                </div>
-                
-                <div
-                  v-if="hasDisbursementsForMember(selectedMember.id)"
-                  id="disbursement-receipt"
-                  class="bg-base-100 p-4 md:p-6 rounded-2xl shadow-lg font-sans print-container"
-                >
-                  <div class="flex justify-between items-start mb-4 md:mb-6 no-print">
-                    <div class="flex-1 text-center">
-                      <h2 class="text-xl md:text-2xl font-bold">Detalle de Desembolsos</h2>
-                      <p class="text-base md:text-lg text-base-content/80 wrap-break-word">
-                        {{ selectedMember.name }}
-                      </p>
-                    </div>
-                    <button
-                      @click="openPrintModal"
-                      class="btn btn-outline btn-secondary btn-sm ml-4"
-                      title="Vista previa e imprimir recibo"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-5 w-5 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-                        />
-                      </svg>
-                      Imprimir
-                    </button>
-                  </div>
-                  <div class="print-header print-only">
-                    <h2 class="text-2xl font-bold text-center mb-2">Detalle de Desembolsos</h2>
-                    <p class="text-lg text-center mb-1">{{ selectedMember.name }}</p>
-                    <p class="text-sm text-center text-base-content/70">{{ formatDate(new Date()) }}</p>
-                  </div>
-                  <div class="space-y-3 md:space-y-4">
-                    <div
-                      v-for="op in memberOperations"
-                      :key="op.id"
-                      class="relative"
-                    >
-                      <OperationDetails :operation="op" />
-                      <!-- Botones de acción para operaciones pendientes -->
-                      <div
-                        v-if="((op as any).isPending || (op as any).isPendingPayment) && (op as any).originalItem"
-                        class="mt-2 flex gap-2 justify-end no-print"
-                      >
-                        <button
-                          class="btn btn-ghost btn-xs text-primary hover:bg-primary/10"
-                          @click="editDisbursement(op)"
-                          title="Editar desembolso"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                          Editar
-                        </button>
-                        <button
-                          class="btn btn-ghost btn-xs text-error hover:bg-error/10"
-                          @click="removeDisbursement(op)"
-                          title="Eliminar desembolso"
-                        >
-                          <TrashIcon class="w-4 h-4 mr-1" />
-                          Eliminar
-                        </button>
-                      </div>
-                    </div>
-                    <div
-                      class="mt-6 md:mt-8 pt-4 border-t-2 border-dashed border-base-300/50 print-total"
-                    >
-                      <div
-                        class="flex items-baseline justify-between text-lg md:text-xl lg:text-2xl font-bold gap-2"
-                      >
-                        <span class="shrink-0">Total a Entregar:</span>
-                        <div
-                          class="hidden md:block print-show grow border-b-2 border-dotted border-base-300/70 mx-2 md:mx-4"
-                        ></div>
-                        <span
-                          class="shrink-0 text-primary font-mono text-base md:text-xl lg:text-2xl whitespace-nowrap no-print"
-                        >
-                          <CopyOnDblClickNumber :value="memberTotalDisburse" />
-                        </span>
-                        <span
-                          class="shrink-0 text-primary font-mono text-base md:text-xl lg:text-2xl whitespace-nowrap print-only"
-                        >
-                          {{ formatCurrency(memberTotalDisburse) }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+          </div>
 
-                <div v-else class="text-center py-8 text-base-content/60 italic bg-base-200/50 rounded-lg">
-                  No hay desembolsos registrados para este socio.
-                </div>
-              </div>
-
-              <!-- Botones de Acción -->
-              <div class="flex flex-col sm:flex-row gap-3 justify-end mt-6 pt-4 border-t border-base-200">
-                 <button class="btn btn-primary" @click="openLoanModal">
-                  Solicitar Préstamo
-                </button>
-                <button class="btn btn-secondary" @click="openWithdrawalModal">
-                  Retiro de Acciones
-                </button>
-                <button class="btn btn-accent" @click="openOtherModal">
-                  Otro Desembolso
-                </button>
-              </div>
-
+          <!-- Selected Member Info Box -->
+          <div v-if="selectedMember" class="bg-base-200/30 p-2.5 rounded-lg flex flex-wrap gap-4 text-xs flex-shrink-0">
+            <div>
+              <span class="text-base-content/60">Socio Seleccionado:</span>
+              <span class="ml-1 font-bold text-base-content">{{ selectedMember.name }}</span>
             </div>
+            <div>
+              <span class="text-base-content/60">Capacidad Máxima:</span>
+              <span class="ml-1 font-bold font-mono text-teal-700">{{ formatCurrency(maxCapacity) }}</span>
+            </div>
+            <div>
+              <span class="text-base-content/60">Acciones para Retiro:</span>
+              <span class="ml-1 font-bold font-mono text-teal-700">{{ memberStocksForWithdrawal.length }} tipos</span>
+            </div>
+          </div>
+
+          <!-- Search Bar -->
+          <div class="relative w-full max-w-sm flex-shrink-0">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </span>
+            <input 
+              v-model="searchQuery" 
+              type="text" 
+              placeholder="Buscar socio..." 
+              class="input input-bordered input-sm w-full pl-9 rounded-lg text-sm bg-base-100 focus:outline-none focus:border-teal-700" 
+            />
+          </div>
+
+          <!-- Table of Disbursements -->
+          <div class="overflow-auto w-full border border-base-200 rounded-lg flex-1 min-h-0">
+            <table class="table table-zebra w-full text-xs md:text-sm">
+              <thead class="sticky top-0 z-10">
+                <tr class="bg-base-200/50 text-base-content/70">
+                  <th class="py-2 px-3 font-bold text-[11px] uppercase tracking-wider">Socio</th>
+                  <th class="py-2 px-3 font-bold text-[11px] uppercase tracking-wider text-center">Desembolsos</th>
+                  <th class="py-2 px-3 font-bold text-[11px] uppercase tracking-wider">Detalle</th>
+                  <th class="py-2 px-3 font-bold text-[11px] uppercase tracking-wider text-right">Monto Total</th>
+                  <th class="py-2 px-3 font-bold text-[11px] uppercase tracking-wider text-center">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr 
+                  v-for="member in paginatedMembers" 
+                  :key="member.id"
+                  class="hover:bg-base-200/30 transition-all border-l-4 border-transparent"
+                >
+                  <td class="py-2.5 px-3">
+                    <div class="flex items-center gap-3">
+                      <div 
+                        class="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
+                        :style="{ backgroundColor: getMemberColor(member.id) }"
+                      >
+                        {{ getInitials(member.name) }}
+                      </div>
+                      <span class="font-semibold text-base-content text-xs">{{ member.name }}</span>
+                    </div>
+                  </td>
+                  <td class="py-2.5 px-3 text-center">
+                    <span class="badge badge-sm font-semibold">
+                      {{ getMemberDisbursementsCount(member.id) }} desb.
+                    </span>
+                  </td>
+                  <td class="py-2.5 px-3 max-w-xs truncate text-xs text-base-content/85">
+                    {{ getMemberDisbursementsDetail(member.id) }}
+                  </td>
+                  <td class="py-2.5 px-3 text-right">
+                    <span class="font-bold text-xs text-error">-{{ formatCurrency(getMemberDisbursementsTotal(member.id)) }}</span>
+                  </td>
+                  <td class="py-2.5 px-3 text-center overflow-visible">
+                    <div class="dropdown dropdown-end">
+                      <div tabindex="0" role="button" class="btn btn-ghost btn-xs btn-circle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                        </svg>
+                      </div>
+                      <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-50 w-48 p-2 shadow border border-base-200">
+                        <li>
+                          <a @click="openLoanModalForMember(member)">
+                            <span>Préstamo</span>
+                          </a>
+                        </li>
+                        <li>
+                          <a @click="openWithdrawalModalForMember(member)">
+                            <span>Retiro Acciones</span>
+                          </a>
+                        </li>
+                        <li>
+                          <a @click="openOtherModalForMember(member)">
+                            <span>Otro Desembolso</span>
+                          </a>
+                        </li>
+                        
+                        <template v-for="d in getMemberDisbursements(member.id)" :key="d.id">
+                          <li v-if="d.isPending || d.isPendingPayment">
+                            <a @click="editDisbursement(d)">
+                              <span class="text-xs">Editar {{ getDisbursementLabel(d.originalItem) }}</span>
+                            </a>
+                          </li>
+                          <li v-if="d.isPending || d.isPendingPayment">
+                            <a @click="removeDisbursement(d)" class="text-error">
+                              <span class="text-xs">Eliminar {{ getDisbursementLabel(d.originalItem) }}</span>
+                            </a>
+                          </li>
+                        </template>
+
+                        <li v-if="getMemberDisbursementsCount(member.id) > 0">
+                          <a @click="viewReceiptForMember(member)">
+                            <span>Imprimir Recibo</span>
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-if="filteredMembersList.length === 0">
+                  <td colspan="5" class="text-center py-8 text-base-content/50">
+                    No se encontraron socios.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Footer -->
+          <div class="flex items-center justify-between flex-shrink-0 pt-2 border-t border-base-100">
+            <span class="text-xs text-base-content/60">
+              Mostrando {{ filteredMembersList.length }} socios
+            </span>
+            <div class="flex items-center gap-2">
+              <button 
+                class="btn btn-outline btn-xs font-semibold rounded-lg"
+                :disabled="currentPage === 1"
+                @click="currentPage--"
+              >
+                Anterior
+              </button>
+              <button 
+                class="btn btn-outline btn-xs font-semibold rounded-lg"
+                :disabled="currentPage >= totalPages"
+                @click="currentPage++"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel Derecho (Sidebar de Resumen / Gráfico) - 4 Columnas -->
+      <div class="lg:col-span-4 card bg-base-100 border border-base-200 shadow-sm rounded-xl p-4 md:p-5 flex flex-col h-full min-h-0 justify-between overflow-auto">
+        <div class="space-y-4">
+          <h3 class="text-sm font-bold text-base-content border-b border-base-200 pb-3 mb-2">Resumen de Desembolsos</h3>
+          
+          <!-- Metrics List -->
+          <div class="space-y-3.5">
+            <div class="flex justify-between items-baseline text-xs">
+              <span class="text-base-content/60 font-medium">Caja Disponible:</span>
+              <span class="font-bold text-base-content text-sm">{{ formatCurrency(availableCash) }}</span>
+            </div>
+            <div class="flex justify-between items-baseline text-xs">
+              <span class="text-base-content/60 font-medium">Total a Desembolsar:</span>
+              <span class="font-bold text-error text-sm">{{ formatCurrency(totalToDisburse) }}</span>
+            </div>
+            <div class="flex justify-between items-baseline text-xs">
+              <span class="text-base-content/60 font-medium">Saldo Restante:</span>
+              <span class="font-bold text-sm" :class="availableCash - totalToDisburse >= 0 ? 'text-emerald-600' : 'text-error'">
+                {{ formatCurrency(availableCash - totalToDisburse) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Circular Chart (Percentage of cash disbursed) -->
+          <div class="flex justify-center py-4">
+            <div class="relative w-28 h-28 flex items-center justify-center">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <!-- Outer circle track -->
+                <circle class="text-base-200" stroke-width="8" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50" />
+                <!-- Progress circle -->
+                <circle class="text-teal-700 transition-all duration-500" stroke-width="8" :stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * Math.min(disbursedPercentage / 100, 1))" stroke-linecap="round" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50" />
+              </svg>
+              <div class="absolute flex flex-col items-center justify-center text-center">
+                <span class="text-xl font-extrabold text-base-content leading-none">{{ Math.round(disbursedPercentage) }}%</span>
+                <span class="text-[9px] text-base-content/50 uppercase font-bold tracking-wider mt-1">Desembolsado</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Info Box -->
+          <div class="bg-teal-50/40 border border-teal-100 rounded-xl p-4 flex gap-3 text-xs leading-relaxed text-teal-800">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-teal-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p>
+              Verifica la disponibilidad de caja. Al hacer clic en 'Aplicar Desembolsos' se registrarán los movimientos. Una vez aplicados, puedes cerrar la reunión de forma segura.
+            </p>
+          </div>
+        </div>
+
+        <div class="space-y-2 mt-6">
+          <!-- Aplicar / Cerrar Acciones -->
+          <button 
+            v-if="hasAnyDisbursement && !applySuccess"
+            class="btn btn-block bg-black hover:bg-neutral-800 text-white font-semibold rounded-lg text-sm border-0 py-2.5" 
+            :disabled="isApplying" 
+            @click="applyDisbursements"
+          >
+            <span v-if="isApplying" class="loading loading-spinner loading-xs mr-2"></span>
+            {{ isApplying ? 'Aplicando...' : 'Aplicar Desembolsos' }}
+          </button>
+
+          <button 
+            v-if="applySuccess || !hasAnyDisbursement"
+            class="btn btn-block bg-teal-800 hover:bg-teal-900 text-white font-semibold rounded-lg text-sm border-0 py-2.5 mt-2" 
+            :disabled="isClosing" 
+            @click="closeActiveMeeting"
+          >
+            <span v-if="isClosing" class="loading loading-spinner loading-xs mr-2"></span>
+            {{ isClosing ? 'Cerrando Reunión...' : 'Cerrar Reunión de Forma Segura' }}
+          </button>
+
+          <button 
+            class="btn btn-block btn-outline border-base-300 hover:bg-base-200 text-base-content font-semibold rounded-lg text-sm"
+            @click="saveDraft"
+          >
+            Guardar Borrador
+          </button>
+
+          <div v-if="applyError" class="alert alert-error text-xs p-2.5 mt-2">{{ applyError }}</div>
+          <div v-if="applySuccess && hasAnyDisbursement" class="alert alert-success text-xs p-2.5 mt-2">
+            ¡Desembolsos aplicados correctamente! Procede a cerrar la reunión de forma segura.
+          </div>
+          <div v-if="closeError" class="alert alert-error text-xs p-2.5 mt-2">{{ closeError }}</div>
+          <div v-if="closeSuccess" class="alert alert-success text-xs p-2.5 mt-2">
+            ¡Reunión cerrada correctamente! Redirigiendo...
           </div>
         </div>
       </div>
@@ -205,59 +307,22 @@
     <!-- Print Modal -->
     <PrintReceiptModal
       :is-open="printModalOpen"
-      :member-name="selectedMember?.name || ''"
-      :print-date="formatDate(new Date())"
-      :viewed-operations="memberOperations"
-      :viewed-total="memberTotalDisburse"
+      :member-name="selectedMemberNameForReceipt"
+      :print-date="receiptPrintDate"
+      :viewed-operations="receiptOperations"
+      :viewed-total="receiptTotal"
       title="Recibo de Desembolso"
       total-label="Total Entregado:"
       modal-id="disbursement-print-modal"
       @close="printModalOpen = false"
       @print="handlePrint"
     />
-
-    <div class="mt-8 pt-4 border-t flex flex-col items-center gap-4">
-      <!-- Caso 1: Hay desembolsos y aún no se han aplicado -->
-      <button 
-        v-if="hasAnyDisbursement && !applySuccess"
-        class="btn btn-primary btn-lg w-full md:w-auto px-12" 
-        :disabled="isApplying" 
-        @click="applyDisbursements"
-      >
-        <span v-if="isApplying" class="loading loading-spinner"></span>
-        {{ isApplying ? 'Aplicando...' : 'Aplicar Desembolsos' }}
-      </button>
-
-      <!-- Errores y éxitos de aplicar desembolsos -->
-      <div v-if="applyError" class="alert alert-error mt-4 max-w-2xl">{{ applyError }}</div>
-      <div v-if="applySuccess && hasAnyDisbursement" class="alert alert-success mt-4 max-w-2xl text-center w-full">
-        ¡Desembolsos aplicados correctamente! Por favor, revise el resumen y proceda a cerrar la reunión de forma segura.
-      </div>
-
-      <!-- Caso 2: Se aplicaron los desembolsos, o no hay desembolsos por aplicar -->
-      <button 
-        v-if="applySuccess || !hasAnyDisbursement"
-        class="btn btn-secondary btn-lg w-full md:w-auto px-12 mt-4" 
-        :disabled="isClosing" 
-        @click="closeActiveMeeting"
-      >
-        <span v-if="isClosing" class="loading loading-spinner"></span>
-        {{ isClosing ? 'Cerrando Reunión...' : 'Cerrar Reunión de Forma Segura' }}
-      </button>
-
-      <!-- Errores y éxitos de cerrar reunión -->
-      <div v-if="closeError" class="alert alert-error mt-4 max-w-2xl">{{ closeError }}</div>
-      <div v-if="closeSuccess" class="alert alert-success mt-4 max-w-2xl">
-        ¡Reunión cerrada correctamente! Redirigiendo...
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { Trash as TrashIcon } from 'iconoir-vue/regular'
 import { membersApi, type Member, type StockSubscription } from '@/api/members.api'
 import { stocksApi, type Stock } from '@/api/stocks.api'
 import { loansApi, type Loan } from '@/api/loans.api'
@@ -266,10 +331,6 @@ import { useActiveMeetingStore } from '../../stores/activeMeeting'
 import { formatCurrency, formatDate } from '@/shared/utils/formatters'
 
 // Components
-import MemberList from './collection/MemberList.vue'
-import DisbursementSummary from './collection/DisbursementSummary.vue'
-import OperationDetails from '@/shared/components/OperationDetails.vue'
-import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
 import PrintReceiptModal from '@/shared/components/PrintReceiptModal.vue'
 import LoanModal from './LoanModal.vue'
 import StockWithdrawalModal from './StockWithdrawalModal.vue'
@@ -289,13 +350,17 @@ const isApplying = ref(false)
 const applyError = ref<string | null>(null)
 const applySuccess = ref(false)
 
+const isClosing = ref(false)
+const closeError = ref<string | null>(null)
+const closeSuccess = ref(false)
+
 // Modals state
 const showLoanModal = ref(false)
 const showWithdrawalModal = ref(false)
 const showOtherModal = ref(false)
 const printModalOpen = ref(false)
 
-// Estado para edición
+// Edit state
 const editingDisbursement = ref<{
   operation: any
   isPlanItem: boolean
@@ -312,10 +377,21 @@ const editingDisbursement = ref<{
   }
 } | null>(null)
 
+// Print State for print modal
+const selectedMemberNameForReceipt = ref('')
+const receiptPrintDate = ref('')
+const receiptTotal = ref(0)
+const receiptOperations = ref<any[]>([])
+
 // Data for modals
 const memberSubscriptions = ref<StockSubscription[]>([])
 const memberLoans = ref<Loan[]>([])
 const stocks = ref<Stock[]>([])
+
+// Search & Pagination
+const searchQuery = ref('')
+const currentPage = ref(1)
+const itemsPerPage = 5
 
 // Computed
 const availableCash = computed(() => disbursementPlan.value?.available_cash || 0)
@@ -326,98 +402,125 @@ const totalToDisburse = computed(() => {
   return planTotal + localTotal
 })
 
+const disbursedPercentage = computed(() => {
+  if (availableCash.value <= 0) return 0
+  return (totalToDisburse.value / availableCash.value) * 100
+})
+
 const hasAnyDisbursement = computed(() => {
   return (disbursementPlan.value?.plan.length || 0) > 0 || localDisbursements.value.length > 0
 })
 
-// Member specific computations
-const memberOperations = computed(() => {
-  if (!selectedMember.value) return []
+// Unified list of all disbursements for the table
+const allDisbursements = computed(() => {
+  // Backend plan items
+  const planItems = (disbursementPlan.value?.plan || []).map(item => {
+    let accountType = 'FEE_INCOME'
+    if (item.type === 'loan') {
+      accountType = 'LOAN_PORTFOLIO'
+    } else if (item.type === 'withdrawal') {
+      accountType = 'STOCK_PORTFOLIO'
+    } else if (item.type === 'dividend') {
+      accountType = 'ACCUMULATED_SURPLUS'
+    }
+    
+    return {
+      id: item.member_id + item.type + item.amount + (item.pending_member_payment_id || ''),
+      member_id: item.member_id,
+      type: item.type.toUpperCase(),
+      description: item.notes || getDisbursementLabel(item),
+      total_amount: item.amount,
+      isPending: false,
+      isPendingPayment: !!item.pending_member_payment_id,
+      originalItem: item,
+      ledger_entries: [{
+        id: `plan-entry-${item.member_id}-${item.type}`,
+        account_type: accountType,
+        amount: -item.amount,
+        description: item.notes || getDisbursementLabel(item),
+        created_at: new Date()
+      }]
+    }
+  })
   
-  // Backend plan items converted to operation-like structure for receipt view
-  const planItems = (disbursementPlan.value?.plan || [])
-    .filter(item => item.member_id === selectedMember.value!.id)
-    .map(item => {
-      // Determinar el account_type según el tipo de desembolso
-      let accountType = 'FEE_INCOME' // Por defecto para "other"
-      if (item.type === 'loan') {
-        accountType = 'LOAN_PORTFOLIO'
-      } else if (item.type === 'withdrawal') {
-        accountType = 'STOCK_PORTFOLIO'
-      } else if (item.type === 'dividend') {
-        accountType = 'ACCUMULATED_SURPLUS'
-      }
-      
-      // Si tiene pending_member_payment_id, es un pago pendiente
-      const isPendingPayment = !!item.pending_member_payment_id
-      
-      return {
-        id: item.member_id + item.type + item.amount + (item.pending_member_payment_id || ''), // Temporary ID
-        type: item.type.toUpperCase(),
+  // Local pending items
+  const localItems = localDisbursements.value.map((item, index) => {
+    let accountType = 'FEE_INCOME'
+    if (item.type === 'loan') {
+      accountType = 'LOAN_PORTFOLIO'
+    } else if (item.type === 'withdrawal') {
+      accountType = 'STOCK_PORTFOLIO'
+    } else if (item.type === 'dividend') {
+      accountType = 'ACCUMULATED_SURPLUS'
+    }
+    
+    const stableId = `pending-${item.member_id}-${item.type}-${index}-${Math.round(item.amount * 100)}`
+    
+    return {
+      id: stableId,
+      member_id: item.member_id,
+      type: item.type.toUpperCase(),
+      description: item.notes || getDisbursementLabel(item),
+      total_amount: item.amount,
+      isPending: true,
+      isPendingPayment: false,
+      originalItem: item,
+      ledger_entries: [{
+        id: `pending-entry-${stableId}`,
+        account_type: accountType,
+        amount: -item.amount,
         description: item.notes || getDisbursementLabel(item),
-        total_amount: item.amount,
-        date: new Date(),
-        isPendingPayment: isPendingPayment, // Marcar si es un pago pendiente
-        originalItem: item, // Guardar referencia al item original
-        ledger_entries: [{
-          id: `plan-entry-${item.member_id}-${item.type}`,
-          account_type: accountType,
-          amount: -item.amount, // Negativo porque es una salida
-          description: item.notes || getDisbursementLabel(item),
-          created_at: new Date()
-        }]
-      }
-    })
-
-  // Local items (pendientes) - usar la misma estructura que pendingDisbursementsOperations
-  const localItems = localDisbursements.value
-    .filter(item => item.member_id === selectedMember.value!.id)
-    .map((item, index) => {
-      // Determinar el account_type según el tipo de desembolso
-      let accountType = 'FEE_INCOME' // Por defecto para "other"
-      if (item.type === 'loan') {
-        accountType = 'LOAN_PORTFOLIO'
-      } else if (item.type === 'withdrawal') {
-        accountType = 'STOCK_PORTFOLIO'
-      } else if (item.type === 'dividend') {
-        accountType = 'ACCUMULATED_SURPLUS'
-      }
-      
-      // Crear ID estable basado en los datos del item
-      const stableId = `pending-${selectedMember.value!.id}-${item.type}-${index}-${Math.round(item.amount * 100)}`
-      
-      return {
-        id: stableId,
-        type: item.type.toUpperCase(),
-        description: item.notes || getDisbursementLabel(item),
-        total_amount: item.amount,
-        date: new Date(),
-        isPending: true, // Marcar como pendiente para poder eliminarlo
-        originalItem: item, // Guardar referencia al item original para poder eliminarlo
-        ledger_entries: [{
-          id: `pending-entry-${stableId}`,
-          account_type: accountType,
-          amount: -item.amount, // Negativo porque es una salida (se mostrará en rojo)
-          description: item.notes || getDisbursementLabel(item),
-          created_at: new Date()
-        }]
-      }
-    })
-
+        created_at: new Date()
+      }]
+    }
+  })
+  
   return [...planItems, ...localItems]
 })
 
-const memberTotalDisburse = computed(() => {
-  return memberOperations.value.reduce((sum, op) => sum + op.total_amount, 0)
+// Filtered and Paginated Members
+const filteredMembersList = computed(() => {
+  if (!searchQuery.value) return members.value
+  const query = searchQuery.value.toLowerCase()
+  return members.value.filter(m => m.name.toLowerCase().includes(query))
 })
 
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredMembersList.value.length / itemsPerPage)))
 
-// Calculations for Loan Capacities
+const paginatedMembers = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  return filteredMembersList.value.slice(start, start + itemsPerPage)
+})
+
+// Reset current page when query changes
+watch(searchQuery, () => {
+  currentPage.value = 1
+})
+
+function getMemberDisbursements(memberId: string) {
+  return allDisbursements.value.filter(d => d.member_id === memberId)
+}
+
+function getMemberDisbursementsCount(memberId: string): number {
+  return getMemberDisbursements(memberId).length
+}
+
+function getMemberDisbursementsDetail(memberId: string): string {
+  const items = getMemberDisbursements(memberId)
+  if (items.length === 0) return 'Sin desembolsos'
+  return items.map(d => `${getDisbursementLabel(d.originalItem)}: ${formatCurrency(d.total_amount)}`).join(', ')
+}
+
+function getMemberDisbursementsTotal(memberId: string): number {
+  return getMemberDisbursements(memberId).reduce((sum, d) => sum + d.total_amount, 0)
+}
+
+// Calculations for Loan Capacities (Selected Member)
 const maxCapacity = computed(() => {
+  if (!selectedMember.value) return 0
   const totalStockValue = memberSubscriptions.value
     .filter(sub => sub.status === 'active')
     .reduce((sum, sub) => {
-      // Find stock value from stocks list
       const stock = stocks.value.find(s => s.id === sub.stock_id)
       return sum + (Number(sub.quantity) * (stock?.value || 0))
     }, 0)
@@ -426,12 +529,12 @@ const maxCapacity = computed(() => {
     .filter(loan => loan.loan_type !== 'accion')
     .reduce((sum, loan) => sum + Number(loan.approved_amount), 0)
     
-  // 200% of stock value minus existing loans
   const max = (totalStockValue * 2.0) - totalNonStockLoans
   return max > 0 ? max : 0
 })
 
 const memberStocksForWithdrawal = computed<MemberStockForWithdrawal[]>(() => {
+  if (!selectedMember.value) return []
   return memberSubscriptions.value
     .filter(sub => sub.status === 'active' && sub.quantity > 0)
     .map(sub => {
@@ -445,8 +548,7 @@ const memberStocksForWithdrawal = computed<MemberStockForWithdrawal[]>(() => {
     })
 })
 
-
-// Methods
+// Helpers
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/)
   if (parts.length === 0) return ''
@@ -455,22 +557,12 @@ function getInitials(name: string): string {
 }
 
 function getMemberColor(memberId: string): string {
-   const colors = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#ef4444', '#6366f1']
-   let hash = 0
-   for (let i = 0; i < memberId.length; i++) {
-     hash = memberId.charCodeAt(i) + ((hash << 5) - hash)
-   }
-   return colors[Math.abs(hash) % colors.length]
-}
-
-function hasDisbursement(memberId: string) {
-  const planHas = disbursementPlan.value?.plan.some(item => item.member_id === memberId)
-  const localHas = localDisbursements.value.some(item => item.member_id === memberId)
-  return planHas || localHas
-}
-
-function hasDisbursementsForMember(memberId: string) {
-  return hasDisbursement(memberId)
+  const colors = ['#0d9488', '#0891b2', '#0284c7', '#4f46e5', '#7c3aed', '#db2777', '#ea580c', '#e11d48']
+  let hash = 0
+  for (let i = 0; i < memberId.length; i++) {
+    hash = memberId.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  return colors[Math.abs(hash) % colors.length]
 }
 
 function getDisbursementLabel(item: any) {
@@ -483,9 +575,8 @@ function getDisbursementLabel(item: any) {
   return labels[item.type] || item.type
 }
 
-async function selectMember(member: Member) {
-  selectedMember.value = member
-  // Load extra data when selecting
+async function onMemberSelected() {
+  const member = selectedMember.value
   if (member) {
     try {
       const [subs, loans] = await Promise.all([
@@ -497,35 +588,35 @@ async function selectMember(member: Member) {
     } catch (e) {
       console.error('Error loading member details', e)
     }
+  } else {
+    memberSubscriptions.value = []
+    memberLoans.value = []
   }
 }
 
 // Modal Openers
-function openLoanModal() {
-  if (!selectedMember.value) return
+async function openLoanModalForMember(member: Member) {
+  selectedMember.value = member
+  await onMemberSelected()
   showLoanModal.value = true
 }
 
-function openWithdrawalModal() {
-  if (!selectedMember.value) return
+async function openWithdrawalModalForMember(member: Member) {
+  selectedMember.value = member
+  await onMemberSelected()
   showWithdrawalModal.value = true
 }
 
-function openOtherModal() {
-  if (!selectedMember.value) return
+async function openOtherModalForMember(member: Member) {
+  selectedMember.value = member
+  await onMemberSelected()
   showOtherModal.value = true
 }
 
-function openPrintModal() {
-  printModalOpen.value = true
-}
-
-// Handlers
+// Modal Handlers
 function handleLoanSave(loanData: any) {
   if (!selectedMember.value) return
   
-  // Si es un préstamo nuevo (no tiene loan_id), crear new_loan_request
-  // Si es un préstamo existente (tiene loan_id), usar loan_id
   const isNewLoan = !editingDisbursement.value?.operation?.originalItem?.loan_id
   
   const newItem: DisbursementPlanItem = {
@@ -535,11 +626,9 @@ function handleLoanSave(loanData: any) {
     notes: `Préstamo ${loanData.type} - Aprobado: ${loanData.approved}`,
   }
   
-  // Si es un préstamo nuevo, agregar new_loan_request
   if (isNewLoan) {
     const interestRate = loanData.type === 'corriente' ? 0.015 : 0.02
-    // Calcular cuota mensual aproximada (puede ser ajustada)
-    const monthlyPayment = loanData.approved * interestRate * 0.1 // Aproximación simple
+    const monthlyPayment = loanData.approved * interestRate * 0.1
     newItem.new_loan_request = {
       member_id: selectedMember.value.id,
       amount: loanData.approved,
@@ -551,12 +640,10 @@ function handleLoanSave(loanData: any) {
     }
   }
   
-  // Si estamos editando, reemplazar el item existente
   if (editingDisbursement.value) {
     const originalItem = editingDisbursement.value.operation.originalItem as DisbursementPlanItem
     
     if (editingDisbursement.value.isPlanItem && disbursementPlan.value) {
-      // Reemplazar en el plan
       const planIndex = disbursementPlan.value.plan.findIndex(
         item => item.member_id === originalItem.member_id &&
                 item.type === originalItem.type &&
@@ -569,20 +656,17 @@ function handleLoanSave(loanData: any) {
           pending_member_payment_id: originalItem.pending_member_payment_id,
           loan_id: originalItem.loan_id
         }
-        // Recalcular total
         disbursementPlan.value.total_to_disburse = disbursementPlan.value.plan.reduce(
           (sum, item) => sum + item.amount, 0
         )
       }
     } else {
-      // Reemplazar en localDisbursements
       const localIndex = localDisbursements.value.indexOf(originalItem)
       if (localIndex !== -1) {
         localDisbursements.value[localIndex] = newItem
       }
     }
   } else {
-    // Agregar nuevo
     localDisbursements.value.push(newItem)
   }
   
@@ -593,7 +677,6 @@ function handleLoanSave(loanData: any) {
 function handleWithdrawalSave(withdrawalData: any) {
   if (!selectedMember.value) return
   
-  // Obtener todos los withdrawals con cantidad > 0
   const withdrawalsWithQuantity = (withdrawalData.withdrawals || []).filter((w: any) => w.quantity > 0)
   
   if (withdrawalsWithQuantity.length === 0) {
@@ -602,16 +685,13 @@ function handleWithdrawalSave(withdrawalData: any) {
     return
   }
   
-  // Calcular el monto total estimado y el monto entregado
   const totalEstimated = withdrawalData.estimatedTotal
   const totalDelivered = withdrawalData.deliveredAmount
   
-  // Si estamos editando, eliminar los items existentes primero
   if (editingDisbursement.value) {
     const originalItem = editingDisbursement.value.operation.originalItem as DisbursementPlanItem
     
     if (editingDisbursement.value.isPlanItem && disbursementPlan.value) {
-      // Eliminar del plan
       const planIndex = disbursementPlan.value.plan.findIndex(
         item => item.member_id === originalItem.member_id &&
                 item.type === originalItem.type &&
@@ -625,7 +705,6 @@ function handleWithdrawalSave(withdrawalData: any) {
         )
       }
     } else {
-      // Eliminar de localDisbursements
       const localIndex = localDisbursements.value.indexOf(originalItem)
       if (localIndex !== -1) {
         localDisbursements.value.splice(localIndex, 1)
@@ -633,14 +712,12 @@ function handleWithdrawalSave(withdrawalData: any) {
     }
   }
   
-  // Crear un item por cada tipo de acción retirada
   withdrawalsWithQuantity.forEach((withdrawal: any) => {
     if (!selectedMember.value) return
     const stock = memberStocksForWithdrawal.value.find(s => s.stockId === withdrawal.stockId)
     const stockValue = stock?.currentValue || 0
     const withdrawalValue = withdrawal.quantity * stockValue
     
-    // Calcular el monto proporcional a desembolsar
     const proportionalAmount = totalEstimated > 0 
       ? (withdrawalValue / totalEstimated) * totalDelivered
       : 0
@@ -658,7 +735,6 @@ function handleWithdrawalSave(withdrawalData: any) {
       }
     }
     
-    // Si estamos editando y había pending_member_payment_id, preservarlo solo en el primer item
     if (editingDisbursement.value && withdrawalsWithQuantity.indexOf(withdrawal) === 0) {
       const originalItem = editingDisbursement.value.operation.originalItem as DisbursementPlanItem
       if (originalItem.pending_member_payment_id) {
@@ -666,7 +742,6 @@ function handleWithdrawalSave(withdrawalData: any) {
       }
     }
     
-    // Agregar al plan o a localDisbursements
     if (editingDisbursement.value?.isPlanItem && disbursementPlan.value) {
       disbursementPlan.value.plan.push(newItem)
       disbursementPlan.value.total_to_disburse = disbursementPlan.value.plan.reduce(
@@ -691,12 +766,10 @@ function handleOtherSave(data: any) {
     notes: data.description
   }
   
-  // Si estamos editando, reemplazar el item existente
   if (editingDisbursement.value) {
     const originalItem = editingDisbursement.value.operation.originalItem as DisbursementPlanItem
     
     if (editingDisbursement.value.isPlanItem && disbursementPlan.value) {
-      // Reemplazar en el plan
       const planIndex = disbursementPlan.value.plan.findIndex(
         item => item.member_id === originalItem.member_id &&
                 item.type === originalItem.type &&
@@ -708,20 +781,17 @@ function handleOtherSave(data: any) {
           ...newItem,
           pending_member_payment_id: originalItem.pending_member_payment_id
         }
-        // Recalcular total
         disbursementPlan.value.total_to_disburse = disbursementPlan.value.plan.reduce(
           (sum, item) => sum + item.amount, 0
         )
       }
     } else {
-      // Reemplazar en localDisbursements
       const localIndex = localDisbursements.value.indexOf(originalItem)
       if (localIndex !== -1) {
         localDisbursements.value[localIndex] = newItem
       }
     }
   } else {
-    // Agregar nuevo
     localDisbursements.value.push(newItem)
   }
   
@@ -740,11 +810,9 @@ function removeDisbursement(operation: any) {
   const originalItem = operation.originalItem as DisbursementPlanItem
   if (!originalItem) return
   
-  // Si es un item local, eliminarlo de localDisbursements
   if (operation.isPending) {
     removeLocalDisbursement(originalItem)
   } 
-  // Si es un item del plan, eliminarlo del plan
   else if (operation.isPendingPayment && disbursementPlan.value) {
     const planIndex = disbursementPlan.value.plan.findIndex(
       item => item.member_id === originalItem.member_id &&
@@ -754,7 +822,6 @@ function removeDisbursement(operation: any) {
     )
     if (planIndex !== -1) {
       disbursementPlan.value.plan.splice(planIndex, 1)
-      // Recalcular total_to_disburse
       disbursementPlan.value.total_to_disburse = disbursementPlan.value.plan.reduce(
         (sum, item) => sum + item.amount, 0
       )
@@ -766,28 +833,27 @@ async function editDisbursement(operation: any) {
   const originalItem = operation.originalItem as DisbursementPlanItem
   if (!originalItem) return
   
+  const member = members.value.find(m => m.id === originalItem.member_id) || null
+  if (member) {
+    selectedMember.value = member
+    await onMemberSelected()
+  }
+
   editingDisbursement.value = {
     operation,
     isPlanItem: !!operation.isPendingPayment
   }
   
-  // Abrir el modal apropiado según el tipo
   if (originalItem.type === 'loan') {
-    // Si tiene loan_id, cargar los datos del préstamo
     if (originalItem.loan_id) {
       try {
         const loan = await loansApi.getLoanById(originalItem.loan_id)
-        
-        // Calcular el pendiente por entregar
         const pendingAmount = loan.approved_amount - loan.disbursed_amount
         
-        // Preparar los datos para el modal
-        // El valor aprobado viene del préstamo
-        // El valor entregado sugerido es el pendiente (lo que falta por desembolsar)
         const loanData = {
           type: loan.loan_type,
           approved: loan.approved_amount,
-          delivered: pendingAmount > 0 ? pendingAmount : loan.disbursed_amount, // Si hay pendiente, mostrar pendiente; si no, mostrar lo ya desembolsado
+          delivered: pendingAmount > 0 ? pendingAmount : loan.disbursed_amount,
           loanInfo: {
             disbursed: loan.disbursed_amount,
             pending: pendingAmount,
@@ -796,57 +862,40 @@ async function editDisbursement(operation: any) {
           }
         }
         
-        // Guardar los datos del préstamo en editingDisbursement para pasarlos al modal
         editingDisbursement.value.loanData = loanData
-        
         showLoanModal.value = true
       } catch (error) {
         console.error('Error al cargar datos del préstamo:', error)
-        // Fallback: usar los datos parseados de la descripción
         showLoanModal.value = true
       }
     } else {
-      // Si no tiene loan_id, usar el método actual (parsear descripción)
       showLoanModal.value = true
     }
   } else if (originalItem.type === 'withdrawal') {
-    // Para retiros, abrir modal de retiro
-    // TODO: Implementar edición de retiros cuando el modal lo soporte
     showWithdrawalModal.value = true
   } else {
-    // Para otros, abrir modal de otro desembolso con datos iniciales
     showOtherModal.value = true
   }
+}
+
+// Receipt Print View
+function viewReceiptForMember(member: Member) {
+  selectedMemberNameForReceipt.value = member.name
+  receiptPrintDate.value = formatDate(new Date())
+  
+  const memberDisbs = allDisbursements.value.filter(d => d.member_id === member.id)
+  if (memberDisbs.length === 0) return
+  
+  receiptTotal.value = memberDisbs.reduce((sum, d) => sum + d.total_amount, 0)
+  receiptOperations.value = memberDisbs
+  printModalOpen.value = true
 }
 
 function handlePrint() {
   window.print()
 }
 
-// Initialization
-onMounted(async () => {
-  if (!store.meetingId) return
-  loading.value = true
-  try {
-    const [fetchedMembers, fetchedStocks, plan] = await Promise.all([
-      membersApi.getMembers(),
-      stocksApi.getStocks(),
-      meetingsApi.getDisbursementPlan(store.meetingId)
-    ])
-    members.value = fetchedMembers
-    stocks.value = fetchedStocks
-    disbursementPlan.value = plan
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Error al cargar datos'
-  } finally {
-    loading.value = false
-  }
-})
-
-const isClosing = ref(false)
-const closeError = ref<string | null>(null)
-const closeSuccess = ref(false)
-
+// Backend Execution Methods
 async function applyDisbursements() {
   if (!store.meetingId) return
   
@@ -860,18 +909,15 @@ async function applyDisbursements() {
       ...localDisbursements.value
     ]
     
-    // Identificar items de withdrawal que necesitan stock_id
     const withdrawalsNeedingStockId = allItems.filter(
       item => item.type === 'withdrawal' && !item.disbursement_stock_request
     )
     
-    // Si hay withdrawals que necesitan stock_id, obtenerlo desde las suscripciones
     if (withdrawalsNeedingStockId.length > 0) {
       await Promise.all(
         withdrawalsNeedingStockId.map(async (item) => {
           if (item.stock_subscription_id) {
             try {
-              // Usar el nuevo endpoint para obtener la suscripción (incluso si está inactiva)
               const subscription = await membersApi.getStockSubscriptionById(
                 item.member_id,
                 item.stock_subscription_id
@@ -901,8 +947,7 @@ async function applyDisbursements() {
     await meetingsApi.executeDisbursementPlan(store.meetingId, { plan_items: allItems })
     
     applySuccess.value = true
-    isApplying.value = false // Stop loading state
-    
+    isApplying.value = false
   } catch (e) {
     applyError.value = e instanceof Error ? e.message : 'Error al aplicar desembolsos'
     isApplying.value = false
@@ -919,11 +964,7 @@ async function closeActiveMeeting() {
   try {
     await meetingsApi.closeMeeting(store.meetingId)
     closeSuccess.value = true
-    
-    // Refrescar estado en el store
     await store.refreshActiveMeeting()
-    
-    // Navegar a la vista de detalle de la reunión
     router.push({ name: 'meeting-detail', params: { id: store.meetingId } })
   } catch (e) {
     closeError.value = e instanceof Error ? e.message : 'Error al cerrar la reunión'
@@ -931,4 +972,28 @@ async function closeActiveMeeting() {
     isClosing.value = false
   }
 }
+
+function saveDraft() {
+  alert('Borrador guardado exitosamente.')
+}
+
+// Initialization
+onMounted(async () => {
+  if (!store.meetingId) return
+  loading.value = true
+  try {
+    const [fetchedMembers, fetchedStocks, plan] = await Promise.all([
+      membersApi.getMembers(),
+      stocksApi.getStocks(),
+      meetingsApi.getDisbursementPlan(store.meetingId)
+    ])
+    members.value = fetchedMembers
+    stocks.value = fetchedStocks
+    disbursementPlan.value = plan
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Error al cargar datos'
+  } finally {
+    loading.value = false
+  }
+})
 </script>

@@ -1,18 +1,26 @@
 <template>
   <dialog v-if="visible" class="modal" :class="{ 'modal-open': visible }">
-    <div class="modal-box">
+    <div class="modal-box relative overflow-visible">
       <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="$emit('cancel')" aria-label="Cerrar modal">✕</button>
       <h3 class="font-bold text-2xl mb-2 text-center">{{ isEditing ? 'Editar compra de acción' : 'Agregar compra de acción' }}</h3>
       <p class="mb-6 text-base-content/70 text-center">
         {{ isEditing ? 'Modifica los datos de la compra de acción seleccionada.' : 'Completa los datos para registrar una nueva compra de acción.' }}
       </p>
       <form @submit.prevent="handleSave" class="space-y-4">
+        <!-- Socio (Solo lectura) -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text text-lg">Socio</span>
+          </label>
+          <input :value="memberName" type="text" class="input input-bordered input-lg w-full" disabled />
+        </div>
+
         <!-- Tipo de acción -->
         <div class="form-control">
           <label class="label">
             <span class="label-text text-lg">Tipo de acción</span>
           </label>
-          <select v-model="form.stockId" class="select select-bordered select-lg w-full">
+          <select v-model="form.stockId" class="select select-bordered select-lg w-full" required>
             <option disabled value="">Selecciona tipo de acción</option>
             <option v-for="stock in stocks" :key="stock.id" :value="stock.id">
               {{ stock.type }} (Valor actual: <CopyOnDblClickNumber :value="stock.value" />)
@@ -69,7 +77,7 @@
           </div>
         </div>
         <!-- Acciones -->
-        <div class="modal-action flex justify-end gap-2">
+        <div class="modal-action flex justify-end gap-2 text-xs">
           <button type="button" class="btn btn-ghost" @click="$emit('cancel')">Cancelar</button>
           <button type="submit" class="btn btn-primary" :disabled="!canSave">
             {{ isEditing ? 'Guardar Cambios' : 'Agregar' }}
@@ -86,10 +94,12 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import type { Stock } from '@/api/stocks.api'
+import type { Member } from '@/api/members.api'
 import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
 import { formatMoneyInput, parseMoneyInput } from '@/shared/utils/formatters'
 
 interface LocalLine {
+  memberId?: string
   stockId: string
   quantity: number
   cashAmount: number
@@ -104,6 +114,7 @@ const props = defineProps<{
   isEditing: boolean
   initialData: LocalLine
   stocks: Stock[]
+  members: Member[]
 }>()
 
 const emit = defineEmits<{
@@ -112,11 +123,13 @@ const emit = defineEmits<{
 }>()
 
 const form = ref<{
+  memberId: string
   stockId: string
   quantity: number
   cashAmount: number
   paymentMethod: 'cash' | 'mixed'
 }>({
+  memberId: props.initialData.memberId || '',
   stockId: props.initialData.stockId || '',
   quantity: props.initialData.quantity || 1,
   cashAmount: props.initialData.cashAmount || 0,
@@ -126,10 +139,16 @@ const form = ref<{
 const cashAmountDisplay = ref('')
 const errorMsg = ref('')
 
+const memberName = computed(() => {
+  const m = props.members.find(member => member.id === form.value.memberId)
+  return m ? m.name : 'Socio desconocido'
+})
+
 watch(() => props.initialData, (val) => {
   const stockValue = props.stocks.find(s => s.id === val.stockId)?.value || 0
   const totalValue = val.quantity * stockValue
   form.value = {
+    memberId: val.memberId || '',
     stockId: val.stockId || '',
     quantity: val.quantity || 1,
     cashAmount: val.cashAmount || 0,
@@ -172,6 +191,7 @@ const totalAmount = computed(() => {
 
 const canSave = computed(() => {
   return (
+    form.value.memberId &&
     form.value.stockId &&
     form.value.quantity > 0 &&
     Number.isInteger(form.value.quantity) &&
@@ -203,12 +223,12 @@ function handleSave() {
   }
   
   const line: LocalLine = {
+    memberId: form.value.memberId,
     stockId: form.value.stockId,
     quantity: form.value.quantity,
     cashAmount: cash,
   }
   
-  // Solo agregar loanDetails si hay crédito (pago mixto)
   if (form.value.paymentMethod === 'mixed' && cash < totalAmount.value) {
     line.loanDetails = {
       interest_rate: 0.02,
@@ -219,4 +239,3 @@ function handleSave() {
   emit('save', line)
 }
 </script>
-
