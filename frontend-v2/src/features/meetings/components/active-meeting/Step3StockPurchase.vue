@@ -86,26 +86,22 @@
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                         </svg>
                       </div>
-                      <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-50 w-48 p-2 shadow border border-base-200">
+                      <ul tabindex="0" class="dropdown-content menu menu-xs bg-base-100 rounded-box z-50 w-44 p-1.5 shadow border border-base-200">
                         <li>
-                          <a @click="openBuyModal(member)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-teal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                            </svg>
+                          <a @click="openBuyModal(member)" class="text-xs gap-2">
+                            <PlusCircle class="h-3.5 w-3.5 text-teal-700 shrink-0" />
                             <span>Agregar Compra</span>
                           </a>
                         </li>
                         <li>
-                          <a @click="openCdtModal(member)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-teal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+                          <a @click="openCdtModal(member)" class="text-xs gap-2">
+                            <Coins class="h-3.5 w-3.5 text-teal-700 shrink-0" />
                             <span>Crear CDT</span>
                           </a>
                         </li>
                         <li v-if="getMemberTotalInvestment(member.id) > 0">
-                          <a @click="viewReceiptForMember(member)">
-                            <Printer class="h-4 w-4 text-teal-700" />
+                          <a @click="viewReceiptForMember(member)" class="text-xs gap-2">
+                            <Printer class="h-3.5 w-3.5 text-teal-700 shrink-0" />
                             <span>Imprimir Recibo</span>
                           </a>
                         </li>
@@ -246,7 +242,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { WarningTriangle, Search, InfoCircle, Printer } from 'iconoir-vue/regular'
+import { WarningTriangle, Search, InfoCircle, Printer, PlusCircle, Coins } from 'iconoir-vue/regular'
 import { membersApi, type Member, type PurchaseStockRequest } from '@/api/members.api'
 import { stocksApi, type Stock } from '@/api/stocks.api'
 import { useActiveMeetingStore } from '../../stores/activeMeeting'

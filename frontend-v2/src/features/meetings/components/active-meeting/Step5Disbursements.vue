@@ -41,9 +41,7 @@
           <!-- Search Bar -->
           <div class="relative w-full max-w-sm flex-shrink-0">
             <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+              <Search class="h-4 w-4 text-base-content/40" />
             </span>
             <input 
               v-model="searchQuery" 
@@ -100,38 +98,44 @@
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                         </svg>
                       </div>
-                      <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-50 w-48 p-2 shadow border border-base-200">
+                      <ul tabindex="0" class="dropdown-content menu menu-xs bg-base-100 rounded-box z-50 w-48 p-1.5 shadow border border-base-200">
                         <li>
-                          <a @click="openLoanModalForMember(member)">
+                          <a @click="openLoanModalForMember(member)" class="text-xs gap-2">
+                            <HandCash class="h-3.5 w-3.5 text-teal-700 shrink-0" />
                             <span>Préstamo</span>
                           </a>
                         </li>
                         <li>
-                          <a @click="openWithdrawalModalForMember(member)">
+                          <a @click="openWithdrawalModalForMember(member)" class="text-xs gap-2">
+                            <Coins class="h-3.5 w-3.5 text-teal-700 shrink-0" />
                             <span>Retiro Acciones</span>
                           </a>
                         </li>
                         <li>
-                          <a @click="openOtherModalForMember(member)">
+                          <a @click="openOtherModalForMember(member)" class="text-xs gap-2">
+                            <PlusCircle class="h-3.5 w-3.5 text-teal-700 shrink-0" />
                             <span>Otro Desembolso</span>
                           </a>
                         </li>
                         
                         <template v-for="d in getMemberDisbursements(member.id)" :key="d.id">
                           <li v-if="d.isPending || d.isPendingPayment">
-                            <a @click="editDisbursement(d)">
+                            <a @click="editDisbursement(d)" class="text-xs gap-2">
+                              <EditPencil class="h-3.5 w-3.5 text-teal-700 shrink-0" />
                               <span class="text-xs">Editar {{ getDisbursementLabel(d.originalItem) }}</span>
                             </a>
                           </li>
                           <li v-if="d.isPending || d.isPendingPayment">
-                            <a @click="removeDisbursement(d)" class="text-error">
+                            <a @click="removeDisbursement(d)" class="text-error text-xs gap-2">
+                              <Trash class="h-3.5 w-3.5 shrink-0" />
                               <span class="text-xs">Eliminar {{ getDisbursementLabel(d.originalItem) }}</span>
                             </a>
                           </li>
                         </template>
 
                         <li v-if="getMemberDisbursementsCount(member.id) > 0">
-                          <a @click="viewReceiptForMember(member)">
+                          <a @click="viewReceiptForMember(member)" class="text-xs gap-2">
+                            <Printer class="h-3.5 w-3.5 text-teal-700 shrink-0" />
                             <span>Imprimir Recibo</span>
                           </a>
                         </li>
@@ -214,9 +218,7 @@
 
           <!-- Info Box -->
           <div class="bg-teal-50/40 border border-teal-100 rounded-xl p-4 flex gap-3 text-xs leading-relaxed text-teal-800">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-teal-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <InfoCircle class="h-5 w-5 text-teal-600 shrink-0" />
             <p>
               Verifica la disponibilidad de caja. Al hacer clic en 'Aplicar Desembolsos' se registrarán los movimientos. Una vez aplicados, puedes cerrar la reunión de forma segura.
             </p>
@@ -323,6 +325,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { HandCash, Coins, PlusCircle, EditPencil, Trash, Printer, InfoCircle, Search } from 'iconoir-vue/regular'
 import { membersApi, type Member, type StockSubscription } from '@/api/members.api'
 import { stocksApi, type Stock } from '@/api/stocks.api'
 import { loansApi, type Loan } from '@/api/loans.api'

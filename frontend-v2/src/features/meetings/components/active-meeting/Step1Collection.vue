@@ -116,13 +116,17 @@
                     <span class="font-bold text-xs text-emerald-600">{{ formatCurrency(getMemberCollected(member.name)) }}</span>
                   </td>
                   <td class="py-2.5 px-3 text-right">
-                    <button 
-                      @click="handleSelectMember(member)"
-                      class="btn btn-sm text-xs font-semibold rounded-lg animate-none"
-                      :class="paymentCollection.isMemberPaid(member.id) ? 'btn-ghost text-teal-750 bg-transparent hover:bg-base-200' : (selectedMemberValue?.id === member.id ? 'btn-neutral' : 'btn-primary')"
-                    >
-                      {{ paymentCollection.isMemberPaid(member.id) ? 'Ver Recibo' : (selectedMemberValue?.id === member.id ? 'Editando...' : 'Registrar Pago') }}
-                    </button>
+                    <div class="tooltip tooltip-left" :data-tip="paymentCollection.isMemberPaid(member.id) ? 'Ver Recibo' : (selectedMemberValue?.id === member.id ? 'Editando...' : 'Registrar Pago')">
+                      <button 
+                        @click="handleSelectMember(member)"
+                        class="btn btn-sm btn-square animate-none"
+                        :class="paymentCollection.isMemberPaid(member.id) ? 'btn-ghost text-teal-700 bg-transparent hover:bg-base-200' : (selectedMemberValue?.id === member.id ? 'btn-neutral' : 'btn-primary')"
+                      >
+                        <span v-if="selectedMemberValue?.id === member.id && !paymentCollection.isMemberPaid(member.id)" class="loading loading-spinner loading-xs"></span>
+                        <Printer v-else-if="paymentCollection.isMemberPaid(member.id)" class="h-4 w-4" />
+                        <Wallet v-else class="h-4 w-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
                 <tr v-if="filteredMembers.length === 0">
@@ -294,7 +298,7 @@
 <script setup lang="ts">
 // 1. Imports
 import { ref, computed, onMounted, watch } from 'vue'
-import { WarningTriangle, NavArrowLeft, Printer, Search, InfoCircle } from 'iconoir-vue/regular'
+import { WarningTriangle, NavArrowLeft, Printer, Search, InfoCircle, Wallet } from 'iconoir-vue/regular'
 import { useActiveMeetingStore } from '../../stores/activeMeeting'
 import { usePaymentCollection } from '../../composables/usePaymentCollection'
 import { useMemberSelection } from '../../composables/useMemberSelection'

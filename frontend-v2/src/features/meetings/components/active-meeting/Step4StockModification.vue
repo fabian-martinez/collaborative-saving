@@ -321,33 +321,34 @@
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                         </svg>
                       </div>
-                      <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-50 w-48 p-2 shadow border border-base-200">
+                      <ul tabindex="0" class="dropdown-content menu menu-xs bg-base-100 rounded-box z-50 w-48 p-1.5 shadow border border-base-200">
                         <li>
-                          <a @click="openTransferModalWrapper(member)">
+                          <a @click="openTransferModalWrapper(member)" class="text-xs gap-2">
+                            <ArrowRight class="h-3.5 w-3.5 text-teal-700 shrink-0" />
                             <span>Transferir</span>
                           </a>
                         </li>
                         <li>
-                          <a @click="openLoanPaymentModalWrapper(member)">
+                          <a @click="openLoanPaymentModalWrapper(member)" class="text-xs gap-2">
+                            <Coins class="h-3.5 w-3.5 text-teal-700 shrink-0" />
                             <span>Pago Crédito (Acciones)</span>
                           </a>
                         </li>
                         <li>
-                          <a @click="openCashLoanPaymentModalWrapper(member)">
+                          <a @click="openCashLoanPaymentModalWrapper(member)" class="text-xs gap-2">
+                            <HandCash class="h-3.5 w-3.5 text-teal-700 shrink-0" />
                             <span>Abono Efectivo</span>
                           </a>
                         </li>
                         <li>
-                          <a @click="openModificationModalWrapper(member)">
+                          <a @click="openModificationModalWrapper(member)" class="text-xs gap-2">
+                            <EditPencil class="h-3.5 w-3.5 text-teal-700 shrink-0" />
                             <span>Modificar Acciones</span>
                           </a>
                         </li>
                         <li v-if="getMemberOperationsCount(member.id) > 0">
-                          <a @click="showMemberOperationsDetail(member)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-teal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
+                          <a @click="showMemberOperationsDetail(member)" class="text-xs gap-2">
+                            <Eye class="h-3.5 w-3.5 text-teal-700 shrink-0" />
                             <span>Ver Detalles</span>
                           </a>
                         </li>
@@ -889,7 +890,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { Search, InfoCircle, WarningTriangle } from 'iconoir-vue/regular'
+import { Search, InfoCircle, WarningTriangle, ArrowRight, Coins, HandCash, EditPencil, Eye } from 'iconoir-vue/regular'
 import { useActiveMeetingStore } from '../../stores/activeMeeting'
 import { useStockModification } from '../../composables/useStockModification'
 import { usePaymentCollection } from '../../composables/usePaymentCollection'
