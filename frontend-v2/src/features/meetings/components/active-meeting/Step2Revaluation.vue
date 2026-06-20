@@ -1,255 +1,201 @@
 <template>
-  <div>
+  <div class="h-full flex flex-col min-h-0 overflow-hidden">
     <!-- Loading State -->
-    <div v-if="status === 'loading'" class="flex justify-center items-center py-12">
-      <span class="loading loading-spinner loading-lg"></span>
+    <div v-if="status === 'loading'" class="flex justify-center items-center py-12 flex-1">
+      <span class="loading loading-spinner loading-lg text-teal-700"></span>
     </div>
 
     <!-- Error State -->
-    <div v-if="status === 'error'" role="alert" class="alert alert-error mb-4">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        class="h-6 w-6 shrink-0 stroke-current"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
+    <div v-if="status === 'error'" role="alert" class="alert alert-error mb-4 shadow-sm flex-shrink-0">
+      <WarningTriangle class="h-6 w-6 shrink-0" />
       <div>
-        <h3 class="font-bold">Error al Cargar la Previsualización</h3>
+        <h3 class="font-bold text-sm">Error al Cargar la Previsualización</h3>
         <div class="text-xs">{{ errorMessage }}</div>
       </div>
-      <button class="btn btn-sm" @click="fetchPreview">Reintentar</button>
+      <button class="btn btn-xs btn-outline rounded-lg" @click="fetchPreview">Reintentar</button>
     </div>
 
-    <!-- Success State: Display Preview -->
-    <div v-if="status === 'success' && previewData" class="card bg-base-100 shadow-lg rounded-lg w-full">
-      <div class="card-body p-4 md:p-6 w-full max-w-full">
-        <h3 class="card-title text-lg md:text-xl font-bold mb-4">Previsualización de la Revalorización</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-6">
-          <div class="stat bg-base-100 rounded-lg p-3 md:p-4 min-w-0 overflow-hidden">
-            <div class="stat-title text-xs font-medium text-base-content/70 uppercase mb-1 truncate">Aportes Recaudados</div>
-            <div class="stat-value text-base md:text-lg lg:text-xl font-bold text-success truncate">
-              $<CopyOnDblClickNumber :value="previewData.total_contributions" />
+    <!-- Success State: Display Two-Column Layout -->
+    <div v-if="status === 'success' && previewData" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch flex-1 min-h-0 overflow-hidden">
+      <!-- Panel Izquierdo (Workspace Principal) - 8 Columnas -->
+      <div class="lg:col-span-8 card bg-base-100 border border-base-200 shadow-sm rounded-xl p-4 md:p-5 flex flex-col h-full min-h-0 overflow-hidden">
+        <div class="space-y-3.5 flex-1 flex flex-col min-h-0 overflow-hidden">
+          <!-- Title & Subtitle -->
+          <div class="flex-shrink-0">
+            <h2 class="text-base font-bold text-base-content">Cálculo de Revalorización (Paso 2)</h2>
+            <p class="text-xs text-base-content/60 mt-0.5">
+              Revisa la distribución de excedentes e intereses recaudados en el periodo y ejecuta la revalorización de acciones.
+            </p>
+          </div>
+
+          <!-- Summary Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-shrink-0">
+            <!-- Capital Social Inicial -->
+            <div class="bg-base-200/30 border border-base-200/50 rounded-xl p-3 flex flex-col justify-center">
+              <span class="text-[10px] font-bold text-base-content/50 uppercase tracking-wider block">Capital Social Inicial</span>
+              <span class="text-base font-extrabold text-base-content mt-1 block">
+                {{ formatCurrency(initialCapital) }}
+              </span>
+            </div>
+            <!-- Intereses de Préstamos -->
+            <div class="bg-base-200/30 border border-base-200/50 rounded-xl p-3 flex flex-col justify-center">
+              <span class="text-[10px] font-bold text-base-content/50 uppercase tracking-wider block">Intereses de Préstamos</span>
+              <span class="text-base font-extrabold text-emerald-600 mt-1 block">
+                +{{ formatCurrency(previewData.total_interest) }}
+              </span>
+            </div>
+            <!-- Nuevo Valor Calculado -->
+            <div class="bg-base-200/30 border border-base-200/50 rounded-xl p-3 flex flex-col justify-center">
+              <span class="text-[10px] font-bold text-base-content/50 uppercase tracking-wider block">Nuevo Valor Calculado</span>
+              <span class="text-base font-extrabold text-teal-700 mt-1 block font-mono">
+                {{ formatCurrency(calculatedNewValue) }}
+              </span>
             </div>
           </div>
-          <div class="stat bg-base-100 rounded-lg p-3 md:p-4 min-w-0 overflow-hidden">
-            <div class="stat-title text-xs font-medium text-base-content/70 uppercase mb-1 truncate">Intereses Recaudados</div>
-            <div class="stat-value text-base md:text-lg lg:text-xl font-bold text-success truncate">
-              $<CopyOnDblClickNumber :value="previewData.total_interest" />
-            </div>
-          </div>
-          <div class="stat bg-base-100 rounded-lg p-3 md:p-4 min-w-0 overflow-hidden">
-            <div class="stat-title text-xs font-medium text-base-content/70 uppercase mb-1 truncate">Total a Distribuir</div>
-            <div class="stat-value text-base md:text-lg lg:text-xl font-bold text-primary truncate">
-              $<CopyOnDblClickNumber :value="previewData.total_to_distribute" />
-            </div>
-          </div>
-        </div>
 
-        <!-- Step 1: Summary -->
-        <div class="mb-6 p-4 bg-base-200 rounded-lg">
-          <h4 class="text-md font-bold mb-3 flex items-center gap-2">
-            <span class="badge badge-primary">Paso 1</span>
-            Resumen de Recaudación
-          </h4>
-          <p class="text-sm text-base-content/80 mb-4">
-            El <strong>Total a Distribuir</strong> ($<CopyOnDblClickNumber :value="previewData.total_to_distribute" />) es la suma de los aportes de capital y los intereses ganados durante el periodo.
-          </p>
-          <progress 
-            class="progress progress-success w-full" 
-            :value="previewData.total_contributions" 
-            :max="previewData.total_to_distribute"
-          ></progress>
-          <div class="flex justify-between text-xs mt-1 text-base-content/70">
-            <span>Aportes ({{ ((previewData.total_contributions / previewData.total_to_distribute) * 100).toFixed(1) }}%)</span>
-            <span>Intereses ({{ ((previewData.total_interest / previewData.total_to_distribute) * 100).toFixed(1) }}%)</span>
-          </div>
-        </div>
-
-        <!-- Step 2: Distribution Rules -->
-        <div class="mb-6 p-4 bg-base-200 rounded-lg">
-          <h4 class="text-md font-bold mb-3 flex items-center gap-2">
-            <span class="badge badge-primary">Paso 2</span>
-            Asignación de Intereses (Total: $<CopyOnDblClickNumber :value="previewData.total_interest" />)
-          </h4>
-          <p class="text-sm text-base-content/80 mb-4">
-            Los intereses se distribuyen primero a las acciones garantizadas para cumplir su tasa fija. El remanente se reparte proporcionalmente entre las demás acciones según su volumen.
-          </p>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="card bg-base-100 shadow-sm border border-base-300">
-              <div class="card-body p-4">
-                <h5 class="font-bold text-secondary text-sm">Acciones Garantizadas</h5>
-                <p class="text-xs text-base-content/70 mb-2">Se aseguran intereses antes que el resto.</p>
-                <div class="text-xl font-bold text-success">$<CopyOnDblClickNumber :value="guaranteedInterestAllocated" /></div>
-              </div>
-            </div>
-            <div class="card bg-base-100 shadow-sm border border-base-300">
-              <div class="card-body p-4">
-                <h5 class="font-bold text-info text-sm">Acciones Proporcionales</h5>
-                <p class="text-xs text-base-content/70 mb-2">Reciben el remanente de intereses equitativamente.</p>
-                <div class="text-xl font-bold text-success">$<CopyOnDblClickNumber :value="proportionalInterestAllocated" /></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Step 3: Per-share Breakdown -->
-        <div class="mb-4">
-          <h4 class="text-md font-bold flex items-center gap-2">
-            <span class="badge badge-primary">Paso 3</span>
-            Cálculo por Acción
-          </h4>
-          <p class="text-sm text-base-content/80 mt-2 mb-4">
-            Fórmula: <code>Valor Anterior + Crecimiento (Aportes) + Crecimiento (Intereses) = Nuevo Valor</code>
-          </p>
-        </div>
-
-        <!-- Vista Desktop: Tabla completa -->
-        <div class="hidden md:block mt-4 w-full">
-          <div class="overflow-x-auto w-full" style="max-width: 100%;">
-            <table class="table table-zebra table-compact w-full text-sm" style="min-width: 700px;">
-              <thead>
-                <tr>
-                  <th class="whitespace-nowrap px-2">Tipo</th>
-                  <th class="text-right whitespace-nowrap px-2">Valor Ant.</th>
-                  <th class="text-right text-info whitespace-nowrap px-2">Crec. (Aport.)</th>
-                  <th class="text-right text-info whitespace-nowrap px-2">Crec. (Int.)</th>
-                  <th class="text-right text-success whitespace-nowrap px-2">Crec. Total</th>
-                  <th class="text-right text-primary whitespace-nowrap px-2">Nuevo Valor</th>
-                  <th class="text-right text-warning whitespace-nowrap px-2">Dividendos</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="detail in previewData.details" :key="detail.stock_id">
-                  <td class="px-2">
-                    <div class="font-bold text-xs">{{ detail.type }}</div>
-                    <div v-if="detail.is_guaranteed" class="badge badge-secondary badge-xs mt-1">
-                      Garantizada
-                    </div>
-                  </td>
-                  <td class="text-right px-2 text-xs">
-                    $<CopyOnDblClickNumber :value="detail.previous_value" />
-                  </td>
-                  <td class="text-right text-info px-2 text-xs">
-                    +$<CopyOnDblClickNumber :value="detail.growth_from_contributions" />
-                    <span v-if="detail.estimated_growth_from_contributions != null" class="text-xs text-base-content/60">
-                      ({{ Number(detail.estimated_growth_from_contributions).toLocaleString() }})
-                    </span>
-                  </td>
-                  <td class="text-right text-success px-2 text-xs">
-                    $<CopyOnDblClickNumber :value="detail.growth_from_interest" />
-                    <span class="text-xs text-accent">({{ calculateInterestRate(detail.growth_from_interest, detail.previous_value) }}%)</span>
-                  </td>
-                  <td class="text-right font-bold text-success px-2 text-xs">
-                    +$<CopyOnDblClickNumber :value="detail.total_growth_per_share" />
-                  </td>
-                  <td class="text-right font-bold text-primary px-2 text-xs">
-                    $<CopyOnDblClickNumber :value="detail.new_value" />
-                  </td>
-                  <td class="text-right text-warning font-bold px-2 text-xs">
-                    <span v-if="detail.dividends_generated && detail.dividends_generated > 0">
-                      $<CopyOnDblClickNumber :value="detail.dividends_generated" />
-                    </span>
-                    <span v-else>-</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Vista Mobile: Cards -->
-        <div class="md:hidden mt-4 space-y-4">
-          <div
-            v-for="detail in previewData.details"
-            :key="detail.stock_id"
-            class="card bg-base-100 shadow-lg rounded-lg"
+          <!-- Execute Button -->
+          <button
+            class="btn btn-block bg-teal-850 hover:bg-teal-900 text-white font-semibold rounded-lg text-xs border-0 py-2.5 flex-shrink-0 mt-1"
+            @click="execute"
+            :disabled="isExecuting || store.revaluationExecuted"
           >
-            <div class="card-body p-4 space-y-3">
-              <!-- Header: Tipo de Acción -->
-              <div class="flex items-center justify-between border-b border-base-300 pb-2">
-                <div>
-                  <h4 class="font-bold text-lg">{{ detail.type }}</h4>
-                  <div v-if="detail.is_guaranteed" class="badge badge-secondary badge-sm mt-1">
+            <span v-if="isExecuting" class="loading loading-spinner loading-xs"></span>
+            <span v-else>{{ store.revaluationExecuted ? 'Revalorización Ejecutada con Éxito' : 'Confirmar y Ejecutar Revalorización' }}</span>
+          </button>
+
+          <!-- Scrollable Detailed Table Section at the bottom -->
+          <div class="flex-1 overflow-auto border border-base-200 rounded-xl mt-3 min-h-0 bg-base-50/20 p-3">
+            <div class="flex items-center justify-between mb-2 border-b border-base-200 pb-1.5 flex-shrink-0">
+              <h3 class="text-[10px] font-extrabold text-base-content/70 uppercase tracking-wider">Desglose de Cálculos</h3>
+              <span class="text-[9.5px] text-base-content/40 italic">Selecciona una fila para ver detalles a la derecha</span>
+            </div>
+            
+            <!-- Vista Desktop: Tabla completa -->
+            <div class="hidden md:block w-full">
+              <table class="table table-zebra table-compact w-full text-xs">
+                <thead>
+                  <tr class="bg-base-200/50 text-base-content/70">
+                    <th class="py-2 px-3 font-bold text-[10px] uppercase tracking-wider">Tipo</th>
+                    <th class="py-2 px-3 font-bold text-[10px] uppercase tracking-wider text-right">Valor Ant.</th>
+                    <th class="py-2 px-3 font-bold text-[10px] uppercase tracking-wider text-right text-info">Crec. (Aport.)</th>
+                    <th class="py-2 px-3 font-bold text-[10px] uppercase tracking-wider text-right text-emerald-600">Crec. (Int.)</th>
+                    <th class="py-2 px-3 font-bold text-[10px] uppercase tracking-wider text-right text-teal-700">Crec. Total</th>
+                    <th class="py-2 px-3 font-bold text-[10px] uppercase tracking-wider text-right text-primary">Nuevo Valor</th>
+                    <th class="py-2 px-3 font-bold text-[10px] uppercase tracking-wider text-right text-warning">Dividendos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr 
+                    v-for="detail in previewData.details"
+                    :key="detail.stock_id"
+                    @click="toggleSelectStock(detail.stock_id)"
+                    class="hover:bg-base-200/30 transition-all border-l-4 border-transparent cursor-pointer"
+                    :class="{ 'bg-teal-50/45 hover:bg-teal-50/60 border-l-teal-700': selectedStockId === detail.stock_id }"
+                  >
+                    <td class="py-2.5 px-3">
+                      <span class="font-bold text-xs">{{ detail.type }}</span>
+                      <span v-if="detail.is_guaranteed" class="badge badge-secondary badge-xs ml-1.5">
+                        Garantizada
+                      </span>
+                    </td>
+                    <td class="text-right py-2.5 px-3 font-mono text-xs">
+                      {{ formatCurrency(detail.previous_value) }}
+                    </td>
+                    <td class="text-right text-info py-2.5 px-3 font-mono text-xs">
+                      +{{ formatCurrency(detail.growth_from_contributions) }}
+                      <span v-if="detail.estimated_growth_from_contributions != null" class="text-[9px] text-base-content/50">
+                        ({{ Number(detail.estimated_growth_from_contributions).toLocaleString() }} uds)
+                      </span>
+                    </td>
+                    <td class="text-right text-emerald-600 py-2.5 px-3 font-mono text-xs">
+                      {{ formatCurrency(detail.growth_from_interest) }}
+                      <span class="text-[9px] text-accent">({{ calculateInterestRate(detail.growth_from_interest, detail.previous_value) }}%)</span>
+                    </td>
+                    <td class="text-right font-bold text-emerald-600 py-2.5 px-3 font-mono text-xs">
+                      +{{ formatCurrency(detail.total_growth_per_share) }}
+                    </td>
+                    <td class="text-right font-bold text-primary py-2.5 px-3 font-mono text-xs">
+                      {{ formatCurrency(detail.new_value) }}
+                    </td>
+                    <td class="text-right text-warning font-bold py-2.5 px-3 font-mono text-xs">
+                      <span v-if="detail.dividends_generated && detail.dividends_generated > 0">
+                        {{ formatCurrency(detail.dividends_generated) }}
+                      </span>
+                      <span v-else>-</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Vista Mobile: Cards -->
+            <div class="md:hidden space-y-3">
+              <div
+                v-for="detail in previewData.details"
+                :key="detail.stock_id"
+                class="bg-base-100 border border-base-200 rounded-xl p-3 space-y-2.5 cursor-pointer"
+                @click="toggleSelectStock(detail.stock_id)"
+                :class="{ 'border-teal-600 bg-teal-50/10': selectedStockId === detail.stock_id }"
+              >
+                <div class="flex items-center justify-between border-b border-base-200 pb-1.5">
+                  <span class="font-bold text-xs">{{ detail.type }}</span>
+                  <span v-if="detail.is_guaranteed" class="badge badge-secondary badge-xs">
                     Garantizada
-                  </div>
-                </div>
-              </div>
-
-              <!-- Valores principales -->
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <div class="text-xs text-base-content/70 uppercase">Valor Anterior</div>
-                  <div class="font-semibold text-base">
-                    $<CopyOnDblClickNumber :value="detail.previous_value" />
-                  </div>
-                </div>
-                <div>
-                  <div class="text-xs text-base-content/70 uppercase">Nuevo Valor</div>
-                  <div class="font-bold text-primary text-base">
-                    $<CopyOnDblClickNumber :value="detail.new_value" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Crecimientos -->
-              <div class="space-y-2 pt-2 border-t border-base-300">
-                <div class="flex justify-between items-center">
-                  <span class="text-sm text-base-content/70">Crecimiento (Aportes)</span>
-                  <div class="text-info font-semibold">
-                    +$<CopyOnDblClickNumber :value="detail.growth_from_contributions" />
-                    <span v-if="detail.estimated_growth_from_contributions != null" class="text-xs text-base-content/60 ml-1">
-                      ({{ Number(detail.estimated_growth_from_contributions).toLocaleString() }})
-                    </span>
-                  </div>
-                </div>
-                <div class="flex justify-between items-center">
-                  <span class="text-sm text-base-content/70">Crecimiento (Intereses)</span>
-                  <div class="text-success font-semibold">
-                    $<CopyOnDblClickNumber :value="detail.growth_from_interest" />
-                    <span class="text-xs text-accent ml-1">({{ calculateInterestRate(detail.growth_from_interest, detail.previous_value) }}%)</span>
-                  </div>
-                </div>
-                <div class="flex justify-between items-center pt-2 border-t border-base-300">
-                  <span class="text-sm font-semibold">Crecimiento Total</span>
-                  <span class="text-success font-bold">
-                    +$<CopyOnDblClickNumber :value="detail.total_growth_per_share" />
                   </span>
                 </div>
-              </div>
-
-              <!-- Dividendos -->
-              <div v-if="detail.dividends_generated && detail.dividends_generated > 0" class="pt-2 border-t border-base-300">
-                <div class="flex justify-between items-center">
-                  <span class="text-sm text-base-content/70">Dividendos Generados</span>
-                  <span class="text-warning font-bold">
-                    $<CopyOnDblClickNumber :value="detail.dividends_generated" />
-                  </span>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span class="text-[10px] text-base-content/50 uppercase block">Valor Anterior</span>
+                    <span class="font-semibold font-mono">{{ formatCurrency(detail.previous_value) }}</span>
+                  </div>
+                  <div>
+                    <span class="text-[10px] text-base-content/50 uppercase block">Nuevo Valor</span>
+                    <span class="font-bold text-primary font-mono">{{ formatCurrency(detail.new_value) }}</span>
+                  </div>
+                </div>
+                <!-- Detalle Expandido en Móvil -->
+                <div v-if="selectedStockId === detail.stock_id" class="space-y-1.5 text-[11px] pt-2 border-t border-base-200 bg-base-50/30 p-2 rounded-lg">
+                  <div class="flex justify-between">
+                    <span class="text-base-content/60">Acciones del Grupo:</span>
+                    <span class="font-mono font-bold">{{ detail.total_shares.toLocaleString() }} uds.</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-base-content/60">Crec. Unitario:</span>
+                    <span class="text-emerald-600 font-mono font-bold">+{{ formatCurrency(detail.total_growth_per_share) }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-base-content/60">Crec. Total Grupo:</span>
+                    <span class="text-emerald-600 font-mono font-bold">+{{ formatCurrency(detail.total_growth_per_share * detail.total_shares) }}</span>
+                  </div>
+                  <div class="flex justify-between pt-1 border-t border-base-200 font-semibold text-teal-700">
+                    <span>Capital Social Final:</span>
+                    <span class="font-mono font-extrabold">{{ formatCurrency(detail.new_value * detail.total_shares) }}</span>
+                  </div>
+                </div>
+                <div v-else class="space-y-1 text-xs pt-1.5 border-t border-base-200">
+                  <div class="flex justify-between">
+                    <span class="text-base-content/60">Crec. (Aportes)</span>
+                    <span class="text-info font-mono font-semibold">+{{ formatCurrency(detail.growth_from_contributions) }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-base-content/60">Crec. (Intereses)</span>
+                    <span class="text-emerald-600 font-mono font-semibold">{{ formatCurrency(detail.growth_from_interest) }}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Sección de Aportes Obligatorios -->
-        <div
-          v-if="previewData?.mandatory_contributions_by_type && previewData.mandatory_contributions_by_type.length"
-          class="mt-8 card bg-base-100 shadow-lg rounded-lg"
-        >
-          <div class="card-body p-4 md:p-6">
-            <h3 class="card-title text-lg md:text-xl font-bold text-secondary mb-4">Aportes Obligatorios Recaudados</h3>
-            <div class="overflow-x-auto mt-2">
-              <table class="table table-zebra table-compact w-full text-sm">
+            <!-- Sección de Aportes Obligatorios -->
+            <div
+              v-if="previewData?.mandatory_contributions_by_type && previewData.mandatory_contributions_by_type.length"
+              class="mt-4 border-t border-base-200 pt-3"
+            >
+              <h4 class="text-[10px] font-extrabold text-secondary mb-2 uppercase tracking-wider">Aportes Obligatorios Recaudados</h4>
+              <table class="table table-zebra table-compact w-full text-xs">
                 <thead>
-                  <tr>
-                    <th class="whitespace-nowrap px-2">Tipo de Aporte</th>
-                    <th class="text-right whitespace-nowrap px-2">Total Recaudado</th>
+                  <tr class="bg-base-200/50 text-base-content/70">
+                    <th class="py-2 px-3 font-bold text-[10px] uppercase tracking-wider">Tipo de Aporte</th>
+                    <th class="py-2 px-3 font-bold text-[10px] uppercase tracking-wider text-right">Total Recaudado</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -257,19 +203,19 @@
                     v-for="item in previewData.mandatory_contributions_by_type"
                     :key="item.mandatory_contribution_id"
                   >
-                    <td class="px-2">
+                    <td class="py-2 px-3 font-medium">
                       {{ contributionNames[item.mandatory_contribution_id] || 'Cargando...' }}
                     </td>
-                    <td class="text-right font-bold px-2">
-                      $<CopyOnDblClickNumber :value="item.total" />
+                    <td class="text-right py-2 px-3 font-bold font-mono">
+                      {{ formatCurrency(item.total) }}
                     </td>
                   </tr>
                 </tbody>
                 <tfoot>
-                  <tr>
-                    <th class="px-2">Total</th>
-                    <th class="text-right text-primary px-2">
-                      $<CopyOnDblClickNumber :value="previewData?.total_mandatory_contributions ?? 0" />
+                  <tr class="bg-base-200/30">
+                    <th class="py-2 px-3 text-left">Total</th>
+                    <th class="text-right text-primary py-2 px-3 font-mono font-bold">
+                      {{ formatCurrency(previewData?.total_mandatory_contributions ?? 0) }}
                     </th>
                   </tr>
                 </tfoot>
@@ -277,16 +223,161 @@
             </div>
           </div>
         </div>
+      </div>
 
-        <div class="mt-6 flex justify-end">
-          <button 
-            class="btn btn-primary w-full md:w-auto md:btn-lg" 
-            @click="execute" 
-            :disabled="isExecuting || store.revaluationExecuted"
-          >
-            <span v-if="isExecuting" class="loading loading-spinner"></span>
-            <span v-else>{{ store.revaluationExecuted ? 'Revalorización Ejecutada' : 'Confirmar y Ejecutar Revalorización' }}</span>
-          </button>
+      <!-- Panel Derecho (Sidebar de Impacto / Detalle de Acción) - 4 Columnas -->
+      <div class="lg:col-span-4 card bg-base-100 border border-base-200 shadow-sm rounded-xl p-4 md:p-5 flex flex-col h-full min-h-0 overflow-auto">
+        <!-- Vista 1: Detalle de Acción Seleccionada -->
+        <div v-if="selectedStockDetail" class="space-y-4 flex-grow flex flex-col min-h-0">
+          <div class="flex items-center justify-between border-b border-base-200 pb-3 mb-1.5 flex-shrink-0">
+            <button 
+              @click="selectedStockId = null"
+              class="btn btn-ghost btn-xs gap-1 text-base-content/60 hover:text-base-content font-semibold normal-case pl-0 bg-transparent hover:bg-transparent"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+              </svg>
+              <span>Volver a Resumen</span>
+            </button>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-base-content/40">Detalle de Acción</span>
+          </div>
+
+          <div class="space-y-3.5">
+            <div>
+              <h3 class="text-xs font-bold text-base-content flex items-center gap-1.5">
+                {{ selectedStockDetail.type }}
+                <span v-if="selectedStockDetail.is_guaranteed" class="badge badge-secondary badge-xs">Garantizada</span>
+              </h3>
+            </div>
+
+            <!-- Metrics List -->
+            <div class="space-y-2.5 p-3 bg-base-200/30 rounded-xl border border-base-200/50 text-xs">
+              <div class="flex justify-between items-baseline">
+                <span class="text-base-content/60 font-medium">Acciones en el Grupo:</span>
+                <span class="font-bold text-base-content font-mono">{{ selectedStockDetail.total_shares.toLocaleString() }} uds.</span>
+              </div>
+              <div class="flex justify-between items-baseline">
+                <span class="text-base-content/60 font-medium">Valor Anterior:</span>
+                <span class="font-bold text-base-content font-mono">{{ formatCurrency(selectedStockDetail.previous_value) }}</span>
+              </div>
+              <div class="flex justify-between items-baseline">
+                <span class="text-base-content/60 font-medium">Crecimiento Unitario:</span>
+                <span class="font-bold text-emerald-600 font-mono">+{{ formatCurrency(selectedStockDetail.total_growth_per_share) }}</span>
+              </div>
+              <div class="flex justify-between items-baseline">
+                <span class="text-base-content/60 font-medium">Crecimiento Total Grupo:</span>
+                <span class="font-bold text-emerald-600 font-mono">+{{ formatCurrency(selectedStockDetail.total_growth_per_share * selectedStockDetail.total_shares) }}</span>
+              </div>
+              <div class="flex justify-between items-baseline border-t border-base-200 pt-2 font-semibold text-teal-700">
+                <span>Nuevo Valor Acción:</span>
+                <span class="font-mono font-extrabold text-sm">{{ formatCurrency(selectedStockDetail.new_value) }}</span>
+              </div>
+              <div class="flex justify-between items-baseline">
+                <span>Capital Social Final Grupo:</span>
+                <span class="font-mono font-extrabold text-sm">{{ formatCurrency(selectedStockDetail.new_value * selectedStockDetail.total_shares) }}</span>
+              </div>
+              <div v-if="selectedStockDetail.dividends_generated && selectedStockDetail.dividends_generated > 0" class="flex justify-between items-baseline text-warning">
+                <span>Dividendos Generados:</span>
+                <span class="font-mono font-bold">{{ formatCurrency(selectedStockDetail.dividends_generated) }}</span>
+              </div>
+            </div>
+
+            <!-- Explanatory note -->
+            <div class="bg-base-200/50 rounded-xl p-3 text-xs leading-relaxed text-base-content/85 border border-base-200/40">
+              <p v-if="selectedStockDetail.is_guaranteed">
+                Esta acción es de tipo <strong>Garantizada</strong>. Se le asigna prioritariamente una cuota fija del excedente del periodo para asegurar su rentabilidad preferencial sobre el capital invertido.
+              </p>
+              <p v-else>
+                Esta acción es de tipo <strong>Proporcional / Común</strong>. Participa del reparto del remanente neto de los intereses de préstamos de forma proporcional a su volumen y antigüedad acumulados en el periodo.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vista 2: Resumen del Impacto y Proyección (Ninguna Acción Seleccionada) -->
+        <div v-else class="space-y-4 flex-grow flex flex-col min-h-0">
+          <h3 class="text-sm font-bold text-base-content border-b border-base-200 pb-3 mb-2 flex-shrink-0">
+            Impacto y Proyección
+          </h3>
+
+          <!-- Metrics List -->
+          <div class="space-y-3.5 flex-shrink-0">
+            <div class="flex justify-between items-baseline text-xs">
+              <span class="text-base-content/60 font-medium">Total Acciones Grupo:</span>
+              <span class="font-bold text-base-content text-sm">{{ totalShares.toLocaleString() }} Acciones</span>
+            </div>
+            <div class="flex justify-between items-baseline text-xs">
+              <span class="text-base-content/60 font-medium">Incremento de Capital:</span>
+              <span class="font-bold text-emerald-600 text-sm">+{{ formatCurrency(previewData.total_interest) }}</span>
+            </div>
+            <div class="flex justify-between items-baseline text-xs">
+              <span class="text-base-content/60 font-medium">Rendimiento Periodo:</span>
+              <span class="font-bold text-emerald-600 text-sm">+{{ yieldPercent }}%</span>
+            </div>
+          </div>
+
+          <!-- D3/SVG Line Chart Visual -->
+          <div class="py-4 flex-shrink-0 bg-base-50/50 rounded-xl border border-base-200/50 px-2">
+            <svg class="w-full h-24 overflow-visible" viewBox="0 0 300 80">
+              <!-- Grid lines (horizontal dotted lines) -->
+              <line x1="10" y1="20" x2="290" y2="20" class="stroke-base-200 stroke-1" stroke-dasharray="2,4" />
+              <line x1="10" y1="50" x2="290" y2="50" class="stroke-base-200 stroke-1" stroke-dasharray="2,4" />
+              
+              <!-- Trend Line -->
+              <path
+                d="M 40,65 L 150,50 L 260,25"
+                fill="none"
+                class="stroke-teal-700 stroke-2"
+              />
+              
+              <!-- Points -->
+              <!-- Point 1 (R22) -->
+              <circle cx="40" cy="65" r="4" class="fill-white stroke-teal-700 stroke-2" />
+              <text x="40" y="77" class="text-[8px] fill-base-content/50 font-bold" text-anchor="middle">R22</text>
+              <text x="40" y="55" class="text-[9px] fill-base-content/80 font-bold font-mono" text-anchor="middle">
+                ${{ (calculatedPreviousValue - 0.15).toFixed(2) }}
+              </text>
+              
+              <!-- Point 2 (R23) -->
+              <circle cx="150" cy="50" r="4" class="fill-white stroke-teal-700 stroke-2" />
+              <text x="150" y="62" class="text-[8px] fill-base-content/50 font-bold" text-anchor="middle">R23</text>
+              <text x="150" y="40" class="text-[9px] fill-base-content/80 font-bold font-mono" text-anchor="middle">
+                ${{ calculatedPreviousValue.toFixed(2) }}
+              </text>
+              
+              <!-- Point 3 (R24) -->
+              <circle cx="260" cy="25" r="4.5" class="fill-teal-700 stroke-white stroke-1.5" />
+              <text x="260" y="37" class="text-[8px] fill-base-content/50 font-bold" text-anchor="middle">R24</text>
+              <text x="260" y="15" class="text-[9.5px] fill-teal-700 font-extrabold font-mono" text-anchor="middle">
+                ${{ calculatedNewValue.toFixed(2) }}
+              </text>
+            </svg>
+          </div>
+
+          <!-- Info Box -->
+          <div class="bg-blue-50/50 border border-blue-100 rounded-xl p-3.5 flex gap-2.5 text-xs leading-relaxed text-blue-800 flex-shrink-0">
+            <InfoCircle class="h-4.5 w-4.5 text-blue-600 shrink-0" />
+            <p>
+              Una vez aplicado el ajuste de valor, haz clic en <strong>'Siguiente Paso'</strong> para proceder con el Paso 3: Compra de Acciones.
+            </p>
+          </div>
+
+          <!-- Actions buttons at the bottom -->
+          <div class="flex flex-col gap-2 pt-2 mt-auto flex-shrink-0">
+            <button
+              class="btn btn-block bg-black hover:bg-neutral-800 text-white font-semibold rounded-lg text-xs border-0 py-2.5"
+              @click="goToNextStep"
+              :disabled="!store.revaluationExecuted"
+            >
+              Siguiente Paso: Compra Acciones
+            </button>
+            <button
+              class="btn btn-block btn-outline border-base-300 hover:bg-base-200 hover:text-base-content text-xs font-semibold rounded-lg py-2.5"
+              @click="saveDraft"
+            >
+              Guardar Borrador
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -298,7 +389,8 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useActiveMeetingStore } from '../../stores/activeMeeting'
 import { meetingsApi, type RevaluationResponse } from '@/api/meetings.api'
 import { contributionsApi, type MandatoryContribution } from '@/api/contributions.api'
-import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
+import { formatCurrency } from '@/shared/utils/formatters'
+import { WarningTriangle, InfoCircle } from 'iconoir-vue/regular'
 
 type Status = 'idle' | 'loading' | 'success' | 'error'
 
@@ -309,23 +401,53 @@ const errorMessage = ref<string>('')
 const mandatoryContributions = ref<MandatoryContribution[]>([])
 const contributionCache = ref<Map<string, MandatoryContribution>>(new Map())
 const contributionNames = reactive<Record<string, string>>({})
+const selectedStockId = ref<string | null>(null)
 
 const store = useActiveMeetingStore()
 const emit = defineEmits<{
   completed: []
 }>()
 
-// Computed Properties for Breakdown
-const guaranteedStocks = computed(() => previewData.value?.details.filter(d => d.is_guaranteed) || [])
-const proportionalStocks = computed(() => previewData.value?.details.filter(d => !d.is_guaranteed && d.type !== 'Aportes Obligatorios') || [])
-
-const guaranteedInterestAllocated = computed(() => {
-  return guaranteedStocks.value.reduce((sum, d) => sum + (d.growth_from_interest * d.total_shares), 0)
+// Computed Properties for Layout calculations
+const totalShares = computed(() => {
+  if (!previewData.value) return 0
+  return previewData.value.details.reduce((sum, d) => sum + d.total_shares, 0)
 })
 
-const proportionalInterestAllocated = computed(() => {
-  return proportionalStocks.value.reduce((sum, d) => sum + (d.growth_from_interest * d.total_shares), 0)
+const initialCapital = computed(() => {
+  if (!previewData.value) return 0
+  return previewData.value.details.reduce((sum, d) => sum + (d.previous_value * d.total_shares), 0)
 })
+
+const commonStockDetail = computed(() => {
+  if (!previewData.value) return null
+  // Busca el tipo ordinario / proporcional
+  return previewData.value.details.find(d => !d.is_guaranteed) || previewData.value.details[0]
+})
+
+const calculatedNewValue = computed(() => {
+  return commonStockDetail.value?.new_value ?? 0
+})
+
+const calculatedPreviousValue = computed(() => {
+  return commonStockDetail.value?.previous_value ?? 0
+})
+
+const yieldPercent = computed(() => {
+  const cap = initialCapital.value
+  if (cap === 0) return '0.00'
+  const interest = previewData.value?.total_interest ?? 0
+  return ((interest / cap) * 100).toFixed(2)
+})
+
+const selectedStockDetail = computed(() => {
+  if (!previewData.value || !selectedStockId.value) return null
+  return previewData.value.details.find(d => d.stock_id === selectedStockId.value) || null
+})
+
+function toggleSelectStock(stockId: string) {
+  selectedStockId.value = selectedStockId.value === stockId ? null : stockId
+}
 
 // Calculate interest rate percentage
 function calculateInterestRate(interestGained: number, previousValue: number): string {
@@ -371,14 +493,12 @@ async function getMandatoryContributionName(mandatoryContributionId: string): Pr
     contributionCache.value.set(mandatoryContributionId, fetched)
     return fetched.asset_type
   } catch (err) {
-    // Si el aporte fue eliminado, el backend devolverá 404
     if (import.meta.env.DEV) {
       console.warn('Aporte obligatorio no encontrado (probablemente eliminado):', {
         buscado: mandatoryContributionId,
         error: err instanceof Error ? err.message : String(err)
       })
     }
-    // El aporte probablemente fue eliminado pero aún hay registros históricos
     return `Aporte eliminado (${mandatoryContributionId.substring(0, 8)}...)`
   }
 }
@@ -408,7 +528,6 @@ async function fetchPreview() {
             const name = await getMandatoryContributionName(item.mandatory_contribution_id)
             contributionNames[item.mandatory_contribution_id] = name
           } catch (err) {
-            // Si falla, usar mensaje de aporte eliminado
             contributionNames[item.mandatory_contribution_id] = 
               `Aporte eliminado (${item.mandatory_contribution_id.substring(0, 8)}...)`
           }
@@ -435,11 +554,9 @@ async function execute() {
   errorMessage.value = ''
 
   try {
-    // Simular ejecución (actualizar estado local)
     await meetingsApi.confirmRevaluation(store.meetingId)
     store.setRevaluationExecuted(true)
     alert('Revalorización ejecutada con éxito.')
-    emit('completed')
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Ocurrió un error desconocido.'
     errorMessage.value = `Fallo al ejecutar la revalorización: ${message}`
@@ -448,6 +565,14 @@ async function execute() {
   } finally {
     isExecuting.value = false
   }
+}
+
+function goToNextStep() {
+  emit('completed')
+}
+
+function saveDraft() {
+  alert('Borrador guardado localmente.')
 }
 
 onMounted(() => {

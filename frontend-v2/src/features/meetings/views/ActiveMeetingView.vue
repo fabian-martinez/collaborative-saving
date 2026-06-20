@@ -1,42 +1,42 @@
 <template>
-  <div class="active-meeting-view bg-base-200 min-h-screen">
+  <div class="active-meeting-view bg-base-200 h-full max-h-full flex flex-col overflow-hidden">
     <!-- Header Superior -->
-    <div class="bg-base-100 shadow-sm mb-4">
-      <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="bg-base-100 border-b border-base-200 flex-shrink-0">
+      <div class="max-w-7xl mx-auto px-4 py-1 flex items-center justify-between">
         <button 
           @click="goBackToMeetings"
-          class="btn btn-ghost btn-sm gap-2 text-base-content/70 hover:text-base-content"
+          class="btn btn-ghost btn-sm gap-2 text-base-content/60 hover:text-base-content font-medium text-sm normal-case p-0 bg-transparent hover:bg-transparent"
         >
           <NavArrowLeft class="w-5 h-5" />
-          <span class="hidden sm:inline">Volver a Reuniones</span>
-          <span class="sm:hidden">Volver</span>
+          <span>Volver a Reuniones</span>
         </button>
         
         <div class="flex items-center gap-2">
-          <div class="flex items-center gap-2 px-3 py-1.5 bg-base-100 rounded-lg border border-base-300 shadow-sm">
-            <div class="relative">
-              <div class="w-2 h-2 bg-error rounded-full"></div>
-              <div class="absolute inset-0 w-2 h-2 bg-error rounded-full animate-ping opacity-75"></div>
-            </div>
-            <span class="text-sm font-medium text-base-content">En Curso</span>
+          <div class="flex items-center gap-2 px-3 py-1 bg-error/5 border border-error/30 rounded-full text-error text-xs font-bold">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-error opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-error"></span>
+            </span>
+            <span>Reunión #{{ store.meeting?.id || '' }} En Curso</span>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="max-w-7xl mx-auto p-2 md:p-4 lg:p-6">
+    <div class="max-w-7xl mx-auto px-4 md:px-6 py-1.5 w-full flex-1 flex flex-col overflow-hidden min-h-0">
       <LoadingSpinner :loading="store.loading" />
       <ErrorMessage :error="store.error" />
       
-      <div v-if="store.meeting && !store.loading">
-        <MeetingSummaryCard :summary="store.summary" />
+      <div v-if="store.meeting && !store.loading" class="flex-1 flex flex-col overflow-hidden min-h-0">
+        <MeetingSummaryCard :summary="store.summary" class="flex-shrink-0" />
         <StepNavigator 
           :current-step="store.currentStep"
           @step-change="handleStepChange"
+          class="flex-shrink-0 mt-2"
         />
         
         <!-- Contenido de los pasos -->
-        <div class="mt-4 md:mt-8">
+        <div class="mt-2.5 flex-1 overflow-hidden min-h-0">
           <Step1Collection 
             v-if="store.currentStep === 1" 
             @completed="handleStepCompleted" 
@@ -59,7 +59,7 @@
         </div>
       </div>
       
-      <div v-else-if="!store.loading && !store.meeting" class="text-center py-12">
+      <div v-else-if="!store.loading && !store.meeting" class="text-center py-12 flex-shrink-0">
         <p class="text-base-content/60">No hay reunión activa</p>
       </div>
     </div>
