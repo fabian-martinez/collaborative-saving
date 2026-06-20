@@ -54,10 +54,12 @@ const mockMeetings: Meeting[] = [
     summary: {
       total_cash: 3500000,
       total_interest: 420000,
-      total_collected: 3500000,
+      total_collected: 6050000,
+      total_stock_investment: 4250000,
+      total_loans: 1800000,
       final_cash_balance: 2120000,
       total_disbursed: 1800000,
-      participants_count: 18,
+      participants_count: 12,
       duration: '2h 15m'
     }
   },

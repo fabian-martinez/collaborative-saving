@@ -3,15 +3,15 @@
     <div 
       v-for="entry in creditEntries" 
       :key="entry.id || entry.account_type" 
-      class="bg-base-100/50 p-3 rounded-md border border-base-300/30"
+      class="bg-base-100/50 p-2 rounded-md border border-base-300/30"
     >
       <!-- Título: account_type mapeado a español -->
-      <div class="flex justify-between items-baseline mb-2">
-        <span class="text-base-content/90 font-bold text-xl md:text-2xl">
+      <div class="flex justify-between items-baseline mb-1">
+        <span class="text-base-content/90 font-bold text-xs md:text-sm">
           {{ getAccountName(entry.account_type || '') || entry.account_type || 'Sin nombre' }}
         </span>
         <span 
-          class="font-mono font-bold text-xl md:text-2xl lg:text-3xl ml-2"
+          class="font-mono font-bold text-xs md:text-sm lg:text-base ml-2"
           :class="{
             'text-error': Number(entry.amount) < 0,
             'text-info': Number(entry.amount) > 0 && entry.account_type !== 'CASH',
@@ -22,7 +22,7 @@
         </span>
       </div>
       <!-- Mostrar descripción de la entrada siempre que exista -->
-      <p v-if="entry.description && entry.description.trim()" class="text-sm text-base-content/70 mt-1 leading-relaxed wrap-break-word">
+      <p v-if="entry.description && entry.description.trim()" class="text-[10px] md:text-xs text-base-content/70 mt-0.5 leading-relaxed wrap-break-word">
         {{ entry.description }}
       </p>
     </div>

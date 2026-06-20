@@ -4,51 +4,51 @@
       <span class="loading loading-spinner loading-lg"></span>
     </div>
 
-    <div v-else id="payment-form-receipt" class="bg-base-100 p-4 md:p-6 rounded-2xl shadow-lg font-sans relative overflow-hidden">
+    <div v-else id="payment-form-receipt" class="bg-base-100 p-3 md:p-4 rounded-xl shadow-md font-sans relative overflow-hidden">
       <!-- Watermark for Draft -->
       <div class="watermark-draft">BORRADOR</div>
 
-      <div class="text-center mb-4 md:mb-6 relative z-10">
-        <h2 class="text-xl md:text-2xl font-bold">Recibo de Pago</h2>
-        <p class="text-base md:text-lg text-base-content/80 wrap-break-word">
+      <div class="text-center mb-2 md:mb-3 relative z-10">
+        <h2 class="text-sm md:text-base font-bold">Recibo de Pago</h2>
+        <p class="text-xs text-base-content/80 wrap-break-word font-semibold mt-0.5">
           {{ memberName }}
         </p>
-        <p class="text-sm text-center text-base-content/70 print-only">
+        <p class="text-[10px] text-center text-base-content/70 print-only">
           {{ printDate }}
         </p>
       </div>
 
-      <form @submit.prevent="$emit('submit')" class="space-y-4 md:space-y-6 relative z-10">
+      <form @submit.prevent="$emit('submit')" class="space-y-3 relative z-10">
         <!-- Acciones -->
         <div v-if="stockDues.length > 0">
           <h2
-            class="text-lg md:text-2xl font-semibold mb-2 md:mb-3 pb-2 border-b-2 border-base-300/70"
+            class="text-xs md:text-sm font-bold mb-1 pb-1 border-b border-base-200"
           >
             Acciones
           </h2>
           <div
             v-for="due in stockDues"
             :key="due.originalIndex"
-            class="flex items-baseline py-2 md:py-3 gap-2"
+            class="flex items-baseline py-1 gap-2"
           >
             <div class="flex-1 min-w-0">
-              <p class="font-semibold text-base md:text-xl wrap-break-word">
+               <p class="font-semibold text-xs wrap-break-word">
                 {{ due.description }}
               </p>
               <p
                 v-if="due.stock_quantity"
-                class="text-xs md:text-sm text-base-content/70 wrap-break-word"
+                class="text-[10px] text-base-content/60 wrap-break-word"
               >
                 {{ formatNumber(Number(due.stock_quantity || 0)) }} uds. x
                 {{ formatCurrency(due.monthly_contribution || 0) }} c/u
               </p>
             </div>
             <div
-              class="hidden md:block grow border-b-2 border-dotted border-base-300/70 mx-2 md:mx-4"
+              class="hidden md:block grow border-b border-dotted border-base-200 mx-2"
             ></div>
             <div class="shrink-0">
               <p
-                class="text-right font-mono text-base md:text-xl lg:text-2xl whitespace-nowrap"
+                class="text-right font-mono text-xs md:text-sm whitespace-nowrap font-bold"
               >
                 {{ formatCurrency(getPaymentAmountForDue(due) || 0) }}
               </p>
@@ -59,34 +59,34 @@
         <!-- Préstamos -->
         <div v-if="loanDues.length > 0">
           <h4
-            class="text-lg md:text-2xl font-semibold mb-2 md:mb-3 pb-2 border-b-2 border-base-300/70"
+            class="text-xs md:text-sm font-bold mb-1 pb-1 border-b border-base-200"
           >
             Préstamos
           </h4>
           <div
             v-for="due in loanDues"
             :key="due.originalIndex"
-            class="py-2 md:py-3"
+            class="py-1"
           >
             <div class="flex items-baseline gap-2">
               <p
-                class="font-semibold text-base md:text-xl flex-1 min-w-0 wrap-break-word"
+                class="font-semibold text-xs flex-1 min-w-0 wrap-break-word"
               >
                 {{ due.description }}
               </p>
               <div
-                class="hidden md:block grow border-b-2 border-dotted border-base-300/70 mx-2 md:mx-4"
+                class="hidden md:block grow border-b border-dotted border-base-200 mx-2"
               ></div>
-              <div class="shrink-0 flex items-center gap-1 md:gap-2">
+              <div class="shrink-0 flex items-center gap-1.5">
                 <button
                   type="button"
                   @click="$emit('edit-payment', due.originalIndex)"
-                  class="btn btn-ghost btn-xs no-print"
+                  class="btn btn-ghost btn-xs no-print text-[10px] h-auto min-h-0 py-0.5 px-1 bg-base-200 hover:bg-base-300 rounded font-semibold"
                 >
                   Editar
                 </button>
                 <p
-                  class="text-right font-mono text-base md:text-xl lg:text-2xl whitespace-nowrap"
+                  class="text-right font-mono text-xs md:text-sm whitespace-nowrap font-bold"
                 >
                   {{ formatCurrency(getPaymentAmountForDue(due) || 0) }}
                 </p>
@@ -94,7 +94,7 @@
             </div>
             <div
               v-if="due.details"
-              class="w-full pl-2 md:pl-4 mt-2 space-y-1 text-sm md:text-base text-base-content/80 border-l-2 border-base-300/80"
+              class="w-full pl-2 mt-1 space-y-0.5 text-[11px] text-base-content/75 border-l-2 border-base-200"
             >
               <div class="flex justify-between gap-2">
                 <span class="shrink-0">Saldo actual:</span>
@@ -117,8 +117,7 @@
                   class="font-semibold text-accent font-mono text-right"
                   >{{
                     formatCurrency(due.details.interest || 0)
-                  }}</span
-                >
+                  }}</span>
               </div>
             </div>
           </div>
@@ -128,14 +127,14 @@
         <div>
           <div class="flex justify-between items-center flex-wrap gap-2">
             <h4
-              class="text-lg md:text-2xl font-semibold mb-2 md:mb-3 pb-2 border-b-2 border-base-300/70"
+              class="text-xs md:text-sm font-bold mb-1 pb-1 border-b border-base-200"
             >
               Otros Aportes
             </h4>
             <button
               type="button"
               @click="$emit('add-fine')"
-              class="btn btn-sm btn-outline btn-accent no-print"
+              class="btn btn-xs btn-outline btn-accent no-print rounded font-semibold"
             >
               + Otro pago
             </button>
@@ -144,80 +143,60 @@
             <div
               v-for="due in otherDues"
               :key="due.originalIndex"
-              class="flex items-baseline py-2 md:py-3 gap-2"
+              class="flex items-baseline py-1 gap-2"
             >
               <p
-                class="font-semibold text-base md:text-xl flex-1 min-w-0 wrap-break-word"
+                class="font-semibold text-xs flex-1 min-w-0 wrap-break-word"
               >
                 {{ due.description }}
               </p>
               <div
-                class="hidden md:block grow border-b-2 border-dotted border-base-300/70 mx-2 md:mx-4"
+                class="hidden md:block grow border-b border-dotted border-base-200 mx-2"
               ></div>
-              <div class="shrink-0 flex items-center gap-1 md:gap-2">
-                <div class="hidden md:block text-right">
+              <div class="shrink-0 flex items-center gap-1.5">
+                <div class="flex gap-1">
                   <template v-if="due.type === 'fee'">
                     <button
                       type="button"
                       @click="$emit('edit-payment', due.originalIndex)"
-                      class="btn btn-ghost btn-xs no-print"
+                      class="btn btn-ghost btn-xs no-print text-[10px] h-auto min-h-0 py-0.5 px-1 bg-base-200 hover:bg-base-300 rounded font-semibold"
                     >
                       Editar
                     </button>
                     <button
                       type="button"
                       @click="$emit('delete-payment', due.originalIndex)"
-                      class="btn btn-ghost btn-xs text-error no-print"
+                      class="btn btn-ghost btn-xs text-error no-print text-[10px] h-auto min-h-0 py-0.5 px-1 bg-red-50 hover:bg-red-100 rounded font-semibold"
                     >
                       Borrar
                     </button>
                   </template>
                 </div>
-                <div class="md:hidden flex gap-1">
-                  <template v-if="due.type === 'fee'">
-                    <button
-                      type="button"
-                      @click="$emit('edit-payment', due.originalIndex)"
-                      class="btn btn-ghost btn-xs p-1 no-print"
-                      aria-label="Editar pago"
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      type="button"
-                      @click="$emit('delete-payment', due.originalIndex)"
-                      class="btn btn-ghost btn-xs text-error p-1 no-print"
-                      aria-label="Eliminar pago"
-                    >
-                      🗑️
-                    </button>
-                  </template>
-                </div>
                 <p
-                  class="text-right font-mono text-base md:text-xl lg:text-2xl whitespace-nowrap"
+                  class="text-right font-mono text-xs md:text-sm whitespace-nowrap font-bold"
                 >
                   {{ formatCurrency(getPaymentAmountForDue(due) || 0) }}
                 </p>
               </div>
             </div>
           </div>
-          <p v-else class="text-xs md:text-sm text-base-content/50 italic mt-2">
+          <p v-else class="text-[10px] md:text-xs text-base-content/50 italic mt-1">
             Sin aportes adicionales.
           </p>
         </div>
 
         <!-- Novedades -->
-        <div class="mt-4 md:mt-8">
+        <div class="mt-2 md:mt-4">
           <div class="flex justify-between items-center flex-wrap gap-2">
             <h4
-              class="text-lg md:text-2xl font-semibold mb-2 md:mb-3 pb-2 border-b-2 border-base-300/70 text-error"
+              class="text-xs md:text-sm font-bold mb-1 pb-1 border-b border-base-200 text-error"
             >
               Novedades
             </h4>
             <button
               type="button"
               @click="$emit('add-novelty')"
-              class="btn btn-sm btn-outline btn-error no-print"
+              class="btn btn-xs btn-outline btn-error no-print rounded font-semibold"
             >
               + Novedad
             </button>
@@ -226,45 +205,45 @@
             <div
               v-for="(novelty, idx) in noveltyPayments"
               :key="idx"
-              class="flex items-baseline py-2 md:py-3 text-error gap-2"
+              class="flex items-baseline py-1 text-error gap-2"
             >
               <div class="flex-1 min-w-0">
-                <p class="font-semibold text-base md:text-xl wrap-break-word">
+                <p class="font-semibold text-xs wrap-break-word">
                   {{ novelty.description }}
                 </p>
                 <p
                   v-if="novelty.noveltyComment"
-                  class="text-xs md:text-sm italic wrap-break-word"
+                  class="text-[10px] italic wrap-break-word"
                 >
                   {{ novelty.noveltyComment }}
                 </p>
                 <p
                   v-if="novelty.affectedPaymentType"
-                  class="text-xs text-error/70 mt-1 wrap-break-word"
+                  class="text-[10px] text-error/70 mt-0.5 wrap-break-word"
                 >
                   Afecta: {{ getAffectedPaymentTypeLabel(novelty.affectedPaymentType) }}
                 </p>
               </div>
               <div
-                class="hidden md:block grow border-b-2 border-dotted border-error/40 mx-2 md:mx-4"
+                class="hidden md:block grow border-b border-dotted border-error/30 mx-2"
               ></div>
-              <div class="shrink-0 flex items-center gap-1 md:gap-2">
+              <div class="shrink-0 flex items-center gap-1.5">
                 <button
                   type="button"
                   @click="$emit('delete-novelty', idx)"
-                  class="btn btn-ghost btn-xs text-error no-print"
+                  class="btn btn-ghost btn-xs text-error no-print text-[10px] h-auto min-h-0 py-0.5 px-1 bg-red-50 hover:bg-red-100 rounded font-semibold"
                 >
                   Borrar
                 </button>
                 <p
-                  class="text-right font-mono text-base md:text-xl lg:text-2xl whitespace-nowrap"
+                  class="text-right font-mono text-xs md:text-sm whitespace-nowrap font-bold"
                 >
                   -{{ formatCurrency(novelty.amount) }}
                 </p>
               </div>
             </div>
           </div>
-          <p v-else class="text-xs md:text-sm text-error/50 italic mt-2">
+          <p v-else class="text-[10px] md:text-xs text-error/50 italic mt-1">
             Sin novedades registradas.
           </p>
         </div>
@@ -280,43 +259,43 @@
 
         <!-- Totales -->
         <div
-          class="mt-6 md:mt-8 pt-4 border-t-2 border-dashed border-base-300/50 space-y-2 md:space-y-3"
+          class="mt-4 pt-3 border-t border-dashed border-base-300 space-y-1.5"
         >
           <div
-            class="flex items-baseline text-lg md:text-xl lg:text-2xl font-bold gap-2"
+            class="flex items-baseline text-xs md:text-sm font-bold gap-2"
           >
             <span class="shrink-0">Total a Pagar:</span>
             <div
-              class="hidden md:block grow border-b-2 border-dotted border-base-300/70 mx-2 md:mx-4"
+              class="hidden md:block grow border-b border-dotted border-base-200 mx-2"
             ></div>
             <span
-              class="shrink-0 text-primary font-mono text-base md:text-xl lg:text-2xl whitespace-nowrap"
+              class="shrink-0 text-primary font-mono text-sm md:text-base whitespace-nowrap font-extrabold"
               >{{ formatCurrency(totalToPay) }}</span
             >
           </div>
           <div
             v-if="totalInterest > 0"
-            class="flex items-baseline text-base md:text-lg text-base-content/80 gap-2"
+            class="flex items-baseline text-[11px] text-base-content/80 gap-2"
           >
             <span class="shrink-0">Total Intereses:</span>
             <div
-              class="hidden md:block grow border-b-2 border-dotted border-base-300/70 mx-2 md:mx-4"
+              class="hidden md:block grow border-b border-dotted border-base-200 mx-2"
             ></div>
             <span
-              class="shrink-0 font-mono text-sm md:text-base whitespace-nowrap"
+              class="shrink-0 font-mono text-[11px] whitespace-nowrap font-semibold"
               >{{ formatCurrency(totalInterest) }}</span
             >
           </div>
         </div>
 
-        <div class="mt-8 flex justify-end gap-4 no-print">
+        <div class="mt-4 flex justify-end gap-2.5 no-print">
           <button
             type="button"
-            class="btn btn-outline btn-lg"
+            class="btn btn-outline btn-sm font-semibold rounded-lg"
             @click="$emit('print')"
             :disabled="payments.length === 0"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
             </svg>
             Imprimir Recibo
@@ -324,10 +303,10 @@
 
           <button
             type="submit"
-            class="btn btn-success btn-lg"
+            class="btn btn-success btn-sm font-semibold rounded-lg text-white"
             :disabled="isSubmitting || payments.length === 0"
           >
-            <span v-if="isSubmitting" class="loading loading-spinner"></span>
+            <span v-if="isSubmitting" class="loading loading-spinner loading-xs"></span>
             <span v-else>Confirmar Pago</span>
           </button>
         </div>
