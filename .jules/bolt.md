@@ -22,3 +22,6 @@
 ## 2026-06-15 - Resolving N+1 in GetMemberPaymentScheduleQueryHandler
 **Learning:** Repositories might lack multi-ID fetch methods for complex relationships (like `LoanTransactionDetailRepository.findByLoans`). Loop-based fetching introduces severe N+1 queries.
 **Action:** When iterating to fetch nested data, implement and use `findBy...s(ids)` in the repository layer using `In(ids)`, fetch everything in one query, and group it locally. Ensure temporary script files used for modifications are deleted before committing to avoid codebase pollution.
+## 2024-06-29 - Resolve N+1 query in RecordRevaluationUseCase using custom batched queries
+**Learning:** Found an N+1 query bottleneck inside a loop handling dividend generations, where the `StockSubscriptionRepository` was being queried individually using `findByStock` for each stock detail. Creating a batched query method `findByStocks(stockIds)` inside the interface, TypeORM implementation and use case fixes this issue without affecting logic.
+**Action:** Always batch fetching operations when dealing with lists or arrays of IDs. Add `findByStocks` (or `findByIds`) batch methods to TypeORM repository ports and implementations (using the SQL `IN` operator) to resolve N+1 bottlenecks and structure the returned data in a `Map`.
