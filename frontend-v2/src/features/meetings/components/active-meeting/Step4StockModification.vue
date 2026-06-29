@@ -457,7 +457,7 @@
     <!-- Modal de Transferencia -->
     <dialog v-if="stockModification.showTransferModal.value" class="modal modal-open">
       <div class="modal-box max-w-2xl rounded-xl relative overflow-visible">
-        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="stockModification.closeTransferModal()">✕</button>
+        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="stockModification.closeTransferModal()" aria-label="Cerrar modal">✕</button>
         <h3 class="font-bold text-xl mb-4 text-center">Transferir Acciones</h3>
         
         <div class="space-y-4">
@@ -545,7 +545,7 @@
     <!-- Modal de Pago de Crédito con Acciones -->
     <dialog v-if="stockModification.showLoanPaymentModal.value" class="modal modal-open">
       <div class="modal-box max-w-2xl rounded-xl relative overflow-visible">
-        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="stockModification.closeLoanPaymentModal()">✕</button>
+        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="stockModification.closeLoanPaymentModal()" aria-label="Cerrar modal">✕</button>
         <h3 class="font-bold text-xl mb-4 text-center">Usar Acciones para Pago de Créditos</h3>
         
         <div class="space-y-4">
@@ -636,7 +636,7 @@
     <!-- Modal de Pago de Crédito con Efectivo -->
     <dialog v-if="stockModification.showCashLoanPaymentModal.value" class="modal modal-open">
       <div class="modal-box max-w-2xl rounded-xl relative overflow-visible">
-        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="stockModification.closeCashLoanPaymentModal()">✕</button>
+        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="stockModification.closeCashLoanPaymentModal()" aria-label="Cerrar modal">✕</button>
         <h3 class="font-bold text-xl mb-4 text-center">Abonar a Crédito con Efectivo</h3>
         
         <div class="space-y-4">
@@ -704,7 +704,7 @@
     <!-- Modal de Modificación de Acciones -->
     <dialog v-if="stockModification.showModificationModal.value" class="modal modal-open">
       <div class="modal-box max-w-4xl rounded-xl relative overflow-visible">
-        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="stockModification.closeModificationModal()">✕</button>
+        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="stockModification.closeModificationModal()" aria-label="Cerrar modal">✕</button>
         <h3 class="font-bold text-xl mb-4 text-center">Modificar Acciones</h3>
         
         <div class="space-y-6">

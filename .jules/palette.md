@@ -9,3 +9,6 @@
 ## 2024-06-01 - Add aria-label to DaisyUI modal backdrop close buttons
 **Learning:** In DaisyUI modals, the common pattern `<form method="dialog" class="modal-backdrop"><button>close</button></form>` provides an accessible way to close the modal when clicking outside of it. However, the inner button text ("close") is visually hidden and may not be sufficiently localized or descriptive for screen reader users in a non-English application.
 **Action:** When using the DaisyUI modal backdrop pattern, always ensure the inner button has a descriptive and localized `aria-label` (e.g., `aria-label="Cerrar modal"`) to provide clear context for assistive technologies.
+## 2024-06-29 - Add aria-label to DaisyUI modal top-right close buttons
+**Learning:** In frontend-v2 DaisyUI modals, explicit top-right '✕' close buttons (typically utilizing `btn-circle`) lack accessible names by default. Screen readers will typically just announce "times" or "button".
+**Action:** Always add an explicit `aria-label` (e.g., `aria-label="Cerrar modal"`) to these buttons to ensure screen reader accessibility.
