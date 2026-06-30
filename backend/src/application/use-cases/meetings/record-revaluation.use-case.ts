@@ -4,6 +4,7 @@ import { MeetingRepository } from '@domain/ports/repositories/meeting-repository
 import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-subscription-repository.port';
+import { StockSubscription } from '@domain/entities/stock-subscription.entity';
 import { StockValueHistoryRepository } from '@domain/ports/repositories/stock-value-history-repository.port';
 import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pending-member-payment-repository.port';
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
@@ -186,6 +187,28 @@ export class RecordRevaluationUseCase {
       }> = [];
       const pendingPayments: PendingMemberPayment[] = [];
 
+      // ⚡ Bolt: Fetch all relevant subscriptions for dividend processing in a single query
+      // instead of performing an N+1 query inside the loop.
+      const dividendYieldStockIds = Array.from(
+        new Set(
+          details
+            .filter((d) => d.dividendsGenerated && d.dividendsGenerated > 0)
+            .map((d) => d.stockId),
+        ),
+      );
+
+      const allDividendSubscriptions =
+        await this.stockSubscriptionRepository.findByStocks(
+          dividendYieldStockIds,
+        );
+      const dividendSubscriptionsMap = new Map<string, StockSubscription[]>();
+
+      for (const sub of allDividendSubscriptions) {
+        const subs = dividendSubscriptionsMap.get(sub.stockId) || [];
+        subs.push(sub);
+        dividendSubscriptionsMap.set(sub.stockId, subs);
+      }
+
       for (const detail of details) {
         const stock = stockMap.get(detail.stockId);
         if (!stock) continue;
@@ -196,9 +219,7 @@ export class RecordRevaluationUseCase {
           // Generar dividendos
           if (detail.dividendsGenerated && detail.dividendsGenerated > 0) {
             const subscriptions =
-              await this.stockSubscriptionRepository.findByStock(
-                detail.stockId,
-              );
+              dividendSubscriptionsMap.get(detail.stockId) || [];
             const activeSubscriptions = subscriptions.filter((sub) =>
               sub.isActive(),
             );
