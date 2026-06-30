@@ -12,3 +12,6 @@
 ## 2024-06-29 - Add aria-label to DaisyUI modal top-right close buttons
 **Learning:** In frontend-v2 DaisyUI modals, explicit top-right '✕' close buttons (typically utilizing `btn-circle`) lack accessible names by default. Screen readers will typically just announce "times" or "button".
 **Action:** Always add an explicit `aria-label` (e.g., `aria-label="Cerrar modal"`) to these buttons to ensure screen reader accessibility.
+## 2024-06-22 - Keyboard accessibility for custom div buttons
+**Learning:** When using custom `div` elements as interactive buttons (e.g., mobile swipeable row components), they lack default keyboard accessibility, meaning screen reader users and keyboard-only users cannot activate them.
+**Action:** Ensure full keyboard accessibility by adding `role="button"`, `tabindex="0"`, `:aria-expanded` (if they toggle content), and explicit `@keydown.enter.prevent` and `@keydown.space.prevent` event handlers pointing to the exact same function as the `@click` handler.
