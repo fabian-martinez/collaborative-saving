@@ -170,7 +170,12 @@
                 <!-- Contenido principal (se desliza hacia la izquierda) -->
                 <div
                   class="mobile-row-content"
+                  role="button"
+                  tabindex="0"
+                  :aria-expanded="expandedMeetingId === meeting.id"
                   @click="toggleMeetingActions(meeting.id)"
+                  @keydown.enter.prevent="toggleMeetingActions(meeting.id)"
+                  @keydown.space.prevent="toggleMeetingActions(meeting.id)"
                 >
                   <div class="flex items-center justify-between p-4">
                     <div class="flex flex-col">
@@ -189,6 +194,7 @@
                     @click.stop="handleViewMeetingMobile(meeting.id)"
                     class="action-btn action-btn-view"
                     title="Ver detalles"
+                    aria-label="Ver detalles de la reunión"
                   >
                     <Eye class="w-5 h-5" />
                     <span class="text-xs mt-1">Ver</span>
@@ -198,6 +204,7 @@
                     @click.stop="handleContinueMeetingMobile()"
                     class="action-btn action-btn-continue"
                     title="Continuar reunión"
+                    aria-label="Continuar reunión activa"
                   >
                     <ArrowRight class="w-5 h-5" />
                     <span class="text-xs mt-1">Continuar</span>

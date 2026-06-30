@@ -9,3 +9,6 @@
 ## 2024-06-01 - Add aria-label to DaisyUI modal backdrop close buttons
 **Learning:** In DaisyUI modals, the common pattern `<form method="dialog" class="modal-backdrop"><button>close</button></form>` provides an accessible way to close the modal when clicking outside of it. However, the inner button text ("close") is visually hidden and may not be sufficiently localized or descriptive for screen reader users in a non-English application.
 **Action:** When using the DaisyUI modal backdrop pattern, always ensure the inner button has a descriptive and localized `aria-label` (e.g., `aria-label="Cerrar modal"`) to provide clear context for assistive technologies.
+## 2024-06-22 - Keyboard accessibility for custom div buttons
+**Learning:** When using custom `div` elements as interactive buttons (e.g., mobile swipeable row components), they lack default keyboard accessibility, meaning screen reader users and keyboard-only users cannot activate them.
+**Action:** Ensure full keyboard accessibility by adding `role="button"`, `tabindex="0"`, `:aria-expanded` (if they toggle content), and explicit `@keydown.enter.prevent` and `@keydown.space.prevent` event handlers pointing to the exact same function as the `@click` handler.
