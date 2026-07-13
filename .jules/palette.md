@@ -15,3 +15,6 @@
 ## 2024-06-22 - Keyboard accessibility for custom div buttons
 **Learning:** When using custom `div` elements as interactive buttons (e.g., mobile swipeable row components), they lack default keyboard accessibility, meaning screen reader users and keyboard-only users cannot activate them.
 **Action:** Ensure full keyboard accessibility by adding `role="button"`, `tabindex="0"`, `:aria-expanded` (if they toggle content), and explicit `@keydown.enter.prevent` and `@keydown.space.prevent` event handlers pointing to the exact same function as the `@click` handler.
+## 2024-07-13 - Add aria-label to DaisyUI icon-only dropdown triggers
+**Learning:** DaisyUI dropdown triggers often use an icon-only `<div role="button">` (like 3 vertical dots) that lacks an accessible name by default. Screen readers will just announce "button" without context of what it does.
+**Action:** When using icon-only generic elements as buttons or dropdown triggers, always add an explicit `aria-label` (e.g., `aria-label="Opciones"`) to provide context for screen reader users.
