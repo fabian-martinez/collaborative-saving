@@ -1088,30 +1088,30 @@ const selectedLoanForCashPayment = computed(() => {
 // Dialog openers wrappers to set member and fetch data
 async function openTransferModalWrapper(member: Member) {
   selectedMember.value = member
+  stockModification.openTransferModal()
   stockModification.transferForm.value.memberId = member.id
   await onTransferMemberChange(member.id)
-  stockModification.openTransferModal()
 }
 
 async function openLoanPaymentModalWrapper(member: Member) {
   selectedMember.value = member
+  stockModification.openLoanPaymentModal()
   stockModification.loanPaymentForm.value.memberId = member.id
   await onLoanPaymentMemberChange(member.id)
-  stockModification.openLoanPaymentModal()
 }
 
 async function openCashLoanPaymentModalWrapper(member: Member) {
   selectedMember.value = member
+  stockModification.openCashLoanPaymentModal()
   stockModification.cashLoanPaymentForm.value.memberId = member.id
   await onCashLoanPaymentMemberChange(member.id)
-  stockModification.openCashLoanPaymentModal()
 }
 
 async function openModificationModalWrapper(member: Member) {
   selectedMember.value = member
+  stockModification.openModificationModal()
   stockModification.modificationForm.value.memberId = member.id
   await onModificationMemberChange(member.id)
-  stockModification.openModificationModal()
 }
 
 async function onTransferMemberChange(memberId: string) {
