@@ -1,6 +1,6 @@
 import type { Member, MemberDue, MemberPayment, MemberPurchase } from '../members.api'
 import type { Meeting, Operation as MeetingOperation } from '../meetings.api'
-import type { Loan } from '../loans.api'
+import type { Loan, LoanTransaction } from '../loans.api'
 import type { Stock } from '../stocks.api'
 import type { MandatoryContribution } from '../contributions.api'
 import type { LedgerEntry, AccountTypeOption, AccountsSummary } from '../ledger.api'
@@ -98,6 +98,49 @@ const mockLoans: Loan[] = [
     term: 8,
     status: 'active',
     creation_date: '2024-07-01T10:00:00Z'
+  }
+]
+
+const mockLoanTransactions: LoanTransaction[] = [
+  {
+    id: 'tx-1',
+    loan_id: '1',
+    transaction_type: 'disbursement',
+    amount: 2000000,
+    transaction_date: '2024-06-01T10:00:00Z',
+    notes: 'Desembolso inicial del préstamo'
+  },
+  {
+    id: 'tx-2',
+    loan_id: '1',
+    transaction_type: 'principal_payment',
+    amount: 150000,
+    transaction_date: '2024-07-01T10:30:00Z',
+    notes: 'Abono de cuota 1'
+  },
+  {
+    id: 'tx-3',
+    loan_id: '1',
+    transaction_type: 'interest_payment',
+    amount: 50000,
+    transaction_date: '2024-07-01T10:30:00Z',
+    notes: 'Intereses cuota 1'
+  },
+  {
+    id: 'tx-4',
+    loan_id: '1',
+    transaction_type: 'principal_payment',
+    amount: 180000,
+    transaction_date: '2024-08-01T11:00:00Z',
+    notes: 'Abono de cuota 2'
+  },
+  {
+    id: 'tx-5',
+    loan_id: '1',
+    transaction_type: 'interest_payment',
+    amount: 20000,
+    transaction_date: '2024-08-01T11:00:00Z',
+    notes: 'Intereses cuota 2'
   }
 ]
 
@@ -613,6 +656,19 @@ export const mockApi = {
         total_payment: 2000000
       },
       scenarios: []
+    }
+  },
+
+  async getLoanTransactions(id: string, params?: any): Promise<PaginatedResponse<LoanTransaction>> {
+    await delay()
+    const page = params?.page || 1
+    const limit = params?.limit || 10
+    const filtered = mockLoanTransactions.filter(t => t.loan_id === id)
+    return {
+      data: filtered.slice((page - 1) * limit, page * limit),
+      page,
+      limit,
+      total: filtered.length
     }
   },
 

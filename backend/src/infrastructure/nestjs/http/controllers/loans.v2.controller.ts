@@ -5,6 +5,7 @@ import {
   Patch,
   Param,
   Body,
+  Query,
   ParseUUIDPipe,
   UsePipes,
   ValidationPipe,
@@ -25,6 +26,7 @@ import { GetLoanDetailQueryHandler } from '@application/queries/loans/get-loan-d
 import { UpdateLoanTermsUseCase } from '@application/use-cases/loans/update-loan-terms.use-case';
 import { GetPaymentPlanSimulationQueryHandler } from '@application/queries/loans/get-payment-plan-simulation.query-handler';
 import { SimulateLoanPaymentPlanUseCase } from '@application/use-cases/loans/simulate-loan-payment-plan.use-case';
+import { GetLoanTransactionsQueryHandler } from '@application/queries/loans/get-loan-transactions.query-handler';
 import { LoanResponseDto } from '@application/dto/loans/loan-response.dto';
 import { PaymentPlanRequestDto } from '@application/dto/loans/payment-plan-request.dto';
 import { SimulateLoanScenariosRequestDto } from '@application/dto/loans/simulate-loan-scenarios-request.dto';
@@ -36,6 +38,9 @@ import { UpdateLoanTermsDto } from '@application/dto/loans/update-loan-terms.dto
 import { UpdateLoanApprovedAmountUseCase } from '@application/use-cases/loans/update-loan-approved-amount.use-case';
 import { UpdateLoanApprovedAmountHttpDto } from '../dto/update-loan-approved-amount-http.dto';
 import { UpdateLoanApprovedAmountDto } from '@application/dto/loans/update-loan-approved-amount.dto';
+import { GetLoanTransactionsQueryHttpDto } from '../dto/get-loan-transactions-query-http.dto';
+import { LoanTransactionResponseHttpDto } from '../dto/loan-transaction-response-http.dto';
+import { PaginatedResponseHttpDto } from '../dto/paginated-response-http.dto';
 
 @ApiTags('Loans V2')
 @Controller('v2/loans')
@@ -47,6 +52,7 @@ export class LoansV2Controller {
     private readonly getPaymentPlanSimulationQuery: GetPaymentPlanSimulationQueryHandler,
     private readonly simulateLoanPaymentPlanUseCase: SimulateLoanPaymentPlanUseCase,
     private readonly updateLoanApprovedAmountUseCase: UpdateLoanApprovedAmountUseCase,
+    private readonly getLoanTransactionsQuery: GetLoanTransactionsQueryHandler,
   ) {}
 
   @Get()
@@ -238,6 +244,55 @@ export class LoansV2Controller {
       changedBy: undefined,
     };
     await this.updateLoanApprovedAmountUseCase.execute(updateDto);
+  }
+
+  @Get(':id/transactions')
+  @ApiOperation({
+    summary: 'Get loan transaction history',
+    description:
+      'Returns a paginated list of transaction history (payments/disbursements) for a specific loan',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The unique identifier of the loan',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Transaction history retrieved successfully',
+    type: PaginatedResponseHttpDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Loan not found',
+  })
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  async getTransactions(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: GetLoanTransactionsQueryHttpDto,
+  ): Promise<PaginatedResponseHttpDto<LoanTransactionResponseHttpDto>> {
+    const result = await this.getLoanTransactionsQuery.execute({
+      loanId: id,
+      page: query.page,
+      limit: query.limit,
+    });
+
+    return {
+      data: result.data.map((t) => ({
+        id: t.id,
+        loan_id: t.loanId,
+        transaction_type: t.transactionType,
+        amount: t.amount,
+        transaction_date: t.transactionDate,
+        notes: t.notes,
+        operation_id: t.operationId,
+      })),
+      pagination: {
+        page: result.pagination.page,
+        limit: result.pagination.limit,
+        total: result.pagination.total,
+        totalPages: result.pagination.totalPages,
+      },
+    };
   }
 
   private mapLoanToHttp(loan: LoanResponseDto): LoanResponseHttpDto {

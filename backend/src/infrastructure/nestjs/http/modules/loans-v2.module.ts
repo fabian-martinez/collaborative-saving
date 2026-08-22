@@ -10,6 +10,7 @@ import { GetLoanDetailQueryHandler } from '@application/queries/loans/get-loan-d
 import { GetMemberLoansQueryHandler } from '@application/queries/loans/get-member-loans.query-handler';
 import { GetPaymentPlanSimulationQueryHandler } from '@application/queries/loans/get-payment-plan-simulation.query-handler';
 import { SimulateLoanPaymentPlanUseCase } from '@application/use-cases/loans/simulate-loan-payment-plan.use-case';
+import { GetLoanTransactionsQueryHandler } from '@application/queries/loans/get-loan-transactions.query-handler';
 import { LoansV2Controller } from '../controllers/loans.v2.controller';
 import { TypeOrmMemberRepository } from '@infrastructure/typeorm/repositories/typeorm-member.repository';
 import { TypeOrmMeetingRepository } from '@infrastructure/typeorm/repositories/typeorm-meeting.repository';
@@ -131,6 +132,18 @@ import {
       useFactory: (amortizationService: AmortizationCalculatorService) =>
         new GetPaymentPlanSimulationQueryHandler(amortizationService),
       inject: [AmortizationCalculatorService],
+    },
+    {
+      provide: GetLoanTransactionsQueryHandler,
+      useFactory: (
+        loanRepo: LoanRepository,
+        loanTransactionDetailRepo: LoanTransactionDetailRepository,
+      ) =>
+        new GetLoanTransactionsQueryHandler(
+          loanRepo,
+          loanTransactionDetailRepo,
+        ),
+      inject: [LOAN_REPOSITORY, LOAN_TRANSACTION_DETAIL_REPOSITORY],
     },
     // Use cases
     {
