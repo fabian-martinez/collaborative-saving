@@ -1,3 +1,43 @@
+## 2026-03-02 - NestJS Overly Permissive CORS Configuration
+**Vulnerability:** The NestJS `main.ts` entry point used `app.enableCors()` with no arguments, which defaults to allowing requests from any origin (`Access-Control-Allow-Origin: *`). This is an overly permissive configuration that opens the API to unauthorized cross-origin requests.
+**Learning:** Default configuration for CORS in NestJS exposes the application to unnecessary security risks, particularly when cookies or authentication headers are involved. It should always be explicitly bounded.
+**Prevention:** Always restrict CORS origins using a predefined list or an environment variable (`process.env.ALLOWED_ORIGINS`). Configure `methods` and `credentials` appropriately instead of relying on defaults.
+## 2024-05-22 - [Missing RBAC Architecture]
+**Vulnerability:** Core write operations were completely unprotected by role checks, relying only on authentication.
+**Learning:** Symbols used for Dependency Injection (like `MEMBER_REPOSITORY`) were encapsulated within modules, making them inaccessible to Guards which need them for authorization checks.
+**Prevention:** Always define DI tokens in shared constants files to ensure they can be injected into Guards, Interceptors, and other global enhancers.
+## 2026-02-01 - Missing Role-Based Access Control
+**Vulnerability:** Core write operations in `MembersV2Controller` were accessible to any authenticated user, lacking role verification.
+**Learning:** RBAC was documented but completely missing in the codebase. Authentication guards (`FirebaseAuthGuard`) were present but insufficient for authorization.
+**Prevention:** Always verify that `@UseGuards(RolesGuard)` is applied and functional, not just assume it based on documentation.
+## 2024-03-30 - Fix Information Leakage in Exception Filter
+**Vulnerability:** The NestJS `GlobalExceptionFilter` was leaking internal stack traces and application details by returning the original error messages of generic unhandled exceptions (like `Error` objects or strings) directly to the client in HTTP responses instead of sanitizing them.
+**Learning:** Default exception handlers often fallback to passing `error.message` to clients for debugging, which exposes internals when unhandled exceptions occur in production, violating the "Fail securely" principle and aiding reconnaissance.
+**Prevention:** Generic/unhandled errors must always be mapped to a generic message like "Internal server error" for external HTTP responses, while their details (e.g., stack traces, original messages) must be securely logged server-side to prevent data leakage while maintaining observability.
+## 2024-05-24 - Frontend Security Dependency Updates (Vanguard)
+ **Vulnerability:** Multiple critical and high severity vulnerabilities in `frontend-v2` dependencies (e.g., Axios SSRF/metadata exfiltration, Vite dev server path traversal, minimatch ReDoS, and Rollup path traversal).
+ **Learning:** Regularly updating dependencies is crucial to prevent supply chain attacks and known exploit vectors. However, blindly updating packages (especially ESLint, TypeScript, and related plugins) can quickly break local tooling (`pnpm lint`, `pnpm build`), leading to TS6133 (unused variable) errors or runtime tool errors (`TypeError: Cannot set properties of undefined (setting 'defaultMeta')` in ESLint due to Ajv version mismatch).
+ **Prevention:** Use targeted updates (`pnpm update <package>`) instead of blind latest upgrades. Always run `pnpm test` and `pnpm build` after updates. Pin problematic tooling versions (like `eslint@8.57.1`, `ajv@^6.12.6`, `@eslint/eslintrc@^2.1.4`) to maintain build/lint stability while patching the actual vulnerable libraries. If updates introduce strict TS compilation errors (like unused variables in Vue components or API mocks), address them systematically by prefixing with an underscore or removing the dead code.
+## 2025-02-24 - Do not leak internal server details to users in controllers
+**Vulnerability:** Controller layer was leaking internal server details (e.g. `error.message` of generic exceptions like database connection errors) to end-users by manually returning them as HTTP 500 error messages instead of letting the `GlobalExceptionFilter` sanitize them.
+**Learning:** Generic errors in controllers should be directly thrown to rely on a centralized exception filter (`GlobalExceptionFilter`) that ensures uniform handling and prevents leaking internal details (like query syntax, sensitive configurations, etc.) to potential attackers.
+**Prevention:** In NestJS controllers, manually mapping `error instanceof Error ? error.message : 'Internal server error'` for 500 statuses should be avoided. Any unhandled or generic exception should be simply re-thrown, relying on a global filter to log the error and return a sanitized "Internal server error" message.
+## 2026-05-04 - Backend Security Dependency Updates (Vanguard)
+**Vulnerability:** A critical vulnerability existed in `protobufjs < 7.5.5` allowing arbitrary code execution (CVE-2023-36665).
+**Learning:** In projects where direct dependency updates break lockfile configurations or tests, the `overrides` field in `package.json` (for npm, similar to `resolutions` in pnpm) is an effective way to force safe versions of deeply nested dependencies without needing to upgrade their direct parents to potentially breaking versions.
+**Prevention:** Proactively scan dependencies using `npm audit`. Apply targeted overrides for critical nested dependencies if a safe, non-breaking parent update is unavailable.
+## 2026-10-25 - Supply Chain Security Updates (Vanguard)
+**Vulnerability:** Multiple vulnerabilities identified across frontend and backend dependencies, including `js-cookie` (High: Per-instance prototype hijack in assign() enables cookie-attribute injection), `brace-expansion` (Moderate: Large numeric range defeats documented max DoS protection), `protobufjs` (Moderate: DoS via unbounded recursive JSON descriptor expansion), and `qs` (Moderate: Remotely triggerable DoS).
+**Learning:** Vulnerabilities in transitive dependencies (sub-dependencies) can be effectively remediated without breaking their parent packages by utilizing the `overrides` section in both `pnpm` (`package.json > pnpm > overrides`) and `npm` (`package.json > overrides`).
+**Prevention:** Regularly run `pnpm audit` and `npm audit` across all workspaces. Prioritize targeted overrides to update vulnerable sub-dependencies to the nearest safe version over blindly updating parent packages, which may introduce breaking changes or compatibility issues. Always verify with tests and builds after patching.
+## 2026-05-25 - Missing Security Headers
+**Vulnerability:** The NestJS application lacked essential HTTP security headers (like Content-Security-Policy, X-Frame-Options, Strict-Transport-Security, X-Content-Type-Options, etc.), leaving it vulnerable to various attacks like clickjacking, cross-site scripting (XSS), and MIME sniffing.
+**Learning:** Default NestJS or Express configurations do not automatically set standard security headers. These headers must be explicitly configured using middleware like `helmet` to provide defense-in-depth at the HTTP layer.
+**Prevention:** Always integrate and enable `helmet` (or equivalent middleware) in the main entry point (e.g., `main.ts`) of the application early in the middleware stack to ensure standard security headers are applied to all responses.
+## 2026-06-25 - Blind Updates Bypass Issue Constraints
+**Vulnerability:** A generic lockfile update via `npm audit fix` technically resolves vulnerabilities but violates strict roleplay constraints (e.g., fixing exactly ONE issue, keeping changes under 50 lines, and documenting the fix in code with comments).
+**Learning:** Automated package managers lack the context to apply targeted, minimal fixes and often produce "shotgun" updates that update dozens of packages and change hundreds of lines in lockfiles, directly violating explicit limits set for isolated security assignments.
+**Prevention:** Always identify a single vulnerability, apply a targeted fix via `overrides` or a specific package update command (e.g., `npm install <package>@<version>`), and explain it in comments or documentation rather than relying on bulk automated fixes.
 ## 2024-05-31 - TypeORM SQL Injection via OrderBy
 **Vulnerability:** Moderate severity vulnerability in typeorm versions 0.1.12 - 0.3.28 where SQL Injection is possible in UpdateQueryBuilder/SoftDeleteQueryBuilder orderBy (MySQL/MariaDB).
 **Learning:** Typeorm vulnerabilities in older versions should be patched via version bump, which can happen through transitive dependencies or direct.
