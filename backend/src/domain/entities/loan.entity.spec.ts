@@ -452,4 +452,68 @@ describe('Loan Entity', () => {
       expect(loan.isActive()).toBe(false);
     });
   });
+
+  describe('updateApprovedAmount method', () => {
+    let loan: Loan;
+
+    beforeEach(() => {
+      loan = Loan.create({
+        memberId: 'member-1',
+        loanType: 'corriente',
+        approvedAmount: 10000,
+        monthlyPaymentAmount: 500,
+        interestRate: 0.02,
+        term: 24,
+      });
+    });
+
+    it('should update approvedAmount and outstandingBalance when disbursedAmount is 0', () => {
+      loan.updateApprovedAmount(8000);
+      expect(loan.approvedAmount).toBe(8000);
+      expect(loan.outstandingBalance).toBe(8000);
+      expect(loan.status).toBe('pending');
+    });
+
+    it('should update approvedAmount but keep outstandingBalance when disbursedAmount > 0', () => {
+      loan.update({
+        disbursedAmount: 3000,
+        outstandingBalance: 3000,
+        status: LoanStatus.PENDING,
+      });
+      loan.updateApprovedAmount(8000);
+      expect(loan.approvedAmount).toBe(8000);
+      expect(loan.disbursedAmount).toBe(3000);
+      expect(loan.outstandingBalance).toBe(3000);
+      expect(loan.status).toBe('pending');
+    });
+
+    it('should transition status to active when approvedAmount equals disbursedAmount', () => {
+      loan.update({
+        disbursedAmount: 5000,
+        outstandingBalance: 5000,
+        status: LoanStatus.PENDING,
+      });
+      loan.updateApprovedAmount(5000);
+      expect(loan.approvedAmount).toBe(5000);
+      expect(loan.disbursedAmount).toBe(5000);
+      expect(loan.status).toBe('active');
+    });
+
+    it('should throw error when newApprovedAmount is less than disbursedAmount', () => {
+      loan.update({
+        disbursedAmount: 5000,
+        outstandingBalance: 5000,
+        status: LoanStatus.PENDING,
+      });
+      expect(() => loan.updateApprovedAmount(4000)).toThrow(
+        'Cannot reduce approved amount ($4000) below disbursed amount ($5000)',
+      );
+    });
+
+    it('should throw error when newApprovedAmount is negative', () => {
+      expect(() => loan.updateApprovedAmount(-1000)).toThrow(
+        'Approved amount cannot be negative',
+      );
+    });
+  });
 });

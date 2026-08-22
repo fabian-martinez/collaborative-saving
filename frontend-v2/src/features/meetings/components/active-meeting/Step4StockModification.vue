@@ -316,7 +316,7 @@
                   </td>
                   <td class="py-2.5 px-3 text-center overflow-visible">
                     <div class="dropdown dropdown-end">
-                      <div tabindex="0" role="button" class="btn btn-ghost btn-xs btn-circle">
+                      <div tabindex="0" role="button" class="btn btn-ghost btn-xs btn-circle" aria-label="Opciones">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                         </svg>
@@ -457,7 +457,7 @@
     <!-- Modal de Transferencia -->
     <dialog v-if="stockModification.showTransferModal.value" class="modal modal-open">
       <div class="modal-box max-w-2xl rounded-xl relative overflow-visible">
-        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="stockModification.closeTransferModal()">✕</button>
+        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="stockModification.closeTransferModal()" aria-label="Cerrar modal">✕</button>
         <h3 class="font-bold text-xl mb-4 text-center">Transferir Acciones</h3>
         
         <div class="space-y-4">
@@ -538,14 +538,14 @@
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
-        <button @click.prevent="stockModification.closeTransferModal()">Cerrar</button>
+        <button aria-label="Cerrar modal" @click.prevent="stockModification.closeTransferModal()">Cerrar</button>
       </form>
     </dialog>
 
     <!-- Modal de Pago de Crédito con Acciones -->
     <dialog v-if="stockModification.showLoanPaymentModal.value" class="modal modal-open">
       <div class="modal-box max-w-2xl rounded-xl relative overflow-visible">
-        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="stockModification.closeLoanPaymentModal()">✕</button>
+        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="stockModification.closeLoanPaymentModal()" aria-label="Cerrar modal">✕</button>
         <h3 class="font-bold text-xl mb-4 text-center">Usar Acciones para Pago de Créditos</h3>
         
         <div class="space-y-4">
@@ -629,14 +629,14 @@
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
-        <button @click.prevent="stockModification.closeLoanPaymentModal()">Cerrar</button>
+        <button aria-label="Cerrar modal" @click.prevent="stockModification.closeLoanPaymentModal()">Cerrar</button>
       </form>
     </dialog>
 
     <!-- Modal de Pago de Crédito con Efectivo -->
     <dialog v-if="stockModification.showCashLoanPaymentModal.value" class="modal modal-open">
       <div class="modal-box max-w-2xl rounded-xl relative overflow-visible">
-        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="stockModification.closeCashLoanPaymentModal()">✕</button>
+        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="stockModification.closeCashLoanPaymentModal()" aria-label="Cerrar modal">✕</button>
         <h3 class="font-bold text-xl mb-4 text-center">Abonar a Crédito con Efectivo</h3>
         
         <div class="space-y-4">
@@ -697,14 +697,14 @@
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
-        <button @click.prevent="stockModification.closeCashLoanPaymentModal()">Cerrar</button>
+        <button aria-label="Cerrar modal" @click.prevent="stockModification.closeCashLoanPaymentModal()">Cerrar</button>
       </form>
     </dialog>
 
     <!-- Modal de Modificación de Acciones -->
     <dialog v-if="stockModification.showModificationModal.value" class="modal modal-open">
       <div class="modal-box max-w-4xl rounded-xl relative overflow-visible">
-        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="stockModification.closeModificationModal()">✕</button>
+        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="stockModification.closeModificationModal()" aria-label="Cerrar modal">✕</button>
         <h3 class="font-bold text-xl mb-4 text-center">Modificar Acciones</h3>
         
         <div class="space-y-6">
@@ -868,7 +868,7 @@
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
-        <button @click.prevent="stockModification.closeModificationModal()">Cerrar</button>
+        <button aria-label="Cerrar modal" @click.prevent="stockModification.closeModificationModal()">Cerrar</button>
       </form>
     </dialog>
 

@@ -90,6 +90,7 @@ describe('RecordRevaluationUseCase', () => {
       save: jest.fn(),
       saveMany: jest.fn(),
       findByStock: jest.fn(),
+      findByStocks: jest.fn().mockResolvedValue([]),
     } as unknown as jest.Mocked<StockSubscriptionRepository>;
 
     stockValueHistoryRepository = {
@@ -659,6 +660,10 @@ describe('RecordRevaluationUseCase', () => {
     stockRepository.save.mockResolvedValue(dividendStock);
     stockRepository.saveMany.mockResolvedValue([dividendStock]);
     stockSubscriptionRepository.findByStock.mockResolvedValue([
+      subscription1,
+      subscription2,
+    ]);
+    stockSubscriptionRepository.findByStocks.mockResolvedValue([
       subscription1,
       subscription2,
     ]);

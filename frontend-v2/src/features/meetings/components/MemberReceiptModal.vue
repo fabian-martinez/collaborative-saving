@@ -158,7 +158,7 @@
       </div>
     </div>
     <form method="dialog" class="modal-backdrop" @submit.prevent="$emit('close')">
-      <button type="submit">cerrar</button>
+      <button aria-label="Cerrar modal" type="submit">cerrar</button>
     </form>
   </dialog>
 </template>

@@ -4,6 +4,7 @@ import { CreateLoanUseCase } from '@application/use-cases/loans/create-loan.use-
 import { RecordLoanPaymentUseCase } from '@application/use-cases/loans/record-loan-payment.use-case';
 import { UpdateLoanTermsUseCase } from '@application/use-cases/loans/update-loan-terms.use-case';
 import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
+import { UpdateLoanApprovedAmountUseCase } from '@application/use-cases/loans/update-loan-approved-amount.use-case';
 import { GetLoansQueryHandler } from '@application/queries/loans/get-loans.query-handler';
 import { GetLoanDetailQueryHandler } from '@application/queries/loans/get-loan-detail.query-handler';
 import { GetMemberLoansQueryHandler } from '@application/queries/loans/get-member-loans.query-handler';
@@ -217,6 +218,30 @@ import {
         amortizationService: AmortizationCalculatorService,
       ) => new SimulateLoanPaymentPlanUseCase(loanRepo, amortizationService),
       inject: [LOAN_REPOSITORY, AmortizationCalculatorService],
+    },
+    {
+      provide: UpdateLoanApprovedAmountUseCase,
+      useFactory: (
+        loanRepo: LoanRepository,
+        pendingMemberPaymentRepo: PendingMemberPaymentRepository,
+        meetingRepo: MeetingRepository,
+        transactionMgr: TransactionManager,
+        eventBus: EventBus,
+      ) =>
+        new UpdateLoanApprovedAmountUseCase(
+          loanRepo,
+          pendingMemberPaymentRepo,
+          meetingRepo,
+          transactionMgr,
+          eventBus,
+        ),
+      inject: [
+        LOAN_REPOSITORY,
+        PENDING_MEMBER_PAYMENT_REPOSITORY,
+        MEETING_REPOSITORY,
+        TRANSACTION_MANAGER,
+        EventBus,
+      ],
     },
   ],
   controllers: [LoansV2Controller],

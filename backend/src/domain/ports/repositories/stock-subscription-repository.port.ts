@@ -24,4 +24,5 @@ export interface StockSubscriptionRepository {
     stockSubscriptions: StockSubscription[],
   ): Promise<StockSubscription[]>;
   findByStock(stockId: string): Promise<StockSubscription[]>;
+  findByStocks(stockIds: string[]): Promise<StockSubscription[]>;
 }

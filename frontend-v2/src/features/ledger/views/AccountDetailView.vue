@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <!-- Header -->
     <div class="flex items-center gap-4 border-b pb-4">
-      <button class="btn btn-circle btn-sm btn-ghost" @click="router.back()">
+      <button aria-label="Volver" class="btn btn-circle btn-sm btn-ghost" @click="router.back()">
         <ArrowLeft class="w-5 h-5" />
       </button>
       <div>
