@@ -84,13 +84,14 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
     loanTransactionDetailRepository = {
       findById: jest.fn(),
       findByLoan: jest.fn(),
+      findByLoanWithPagination: jest.fn(),
       findByLoans: jest.fn(),
       findByLoanAndMeeting: jest.fn(),
       findByLoansAndMeeting: jest.fn(),
       findByOperationIds: jest.fn(),
       save: jest.fn(),
       saveMany: jest.fn(),
-    };
+    } as unknown as jest.Mocked<LoanTransactionDetailRepository>;
 
     stockRepository = {
       findById: jest.fn(),

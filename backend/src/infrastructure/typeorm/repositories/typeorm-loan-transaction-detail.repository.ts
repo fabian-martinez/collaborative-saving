@@ -6,6 +6,10 @@ import { LoanTransactionDetail as LoanTransactionDetailDomain } from '@domain/en
 import { LoanTransactionDetail as LoanTransactionDetailEntity } from '../entities/loan-transaction-detail.entity';
 import { LoanTransactionDetailMapper } from '../mappers/loan-transaction-detail.mapper';
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
+import {
+  PaginationOptions,
+  PaginatedResult,
+} from '@domain/ports/repositories/operation-repository.port';
 
 @Injectable()
 export class TypeOrmLoanTransactionDetailRepository implements LoanTransactionDetailRepository {
@@ -38,6 +42,29 @@ export class TypeOrmLoanTransactionDetailRepository implements LoanTransactionDe
     const repo = this.getRepository();
     const entities = await repo.find({ where: { loanId } });
     return entities.map((e) => LoanTransactionDetailMapper.toDomain(e));
+  }
+
+  async findByLoanWithPagination(
+    loanId: string,
+    pagination: PaginationOptions,
+  ): Promise<PaginatedResult<LoanTransactionDetailDomain>> {
+    const repo = this.getRepository();
+    const qb = repo.createQueryBuilder('loan_transaction_detail');
+
+    qb.where('loan_transaction_detail.loan_id = :loanId', { loanId });
+
+    const total = await qb.getCount();
+
+    const skip = (pagination.page - 1) * pagination.limit;
+    qb.skip(skip).take(pagination.limit);
+    qb.orderBy('loan_transaction_detail.transaction_date', 'DESC');
+
+    const entities = await qb.getMany();
+
+    return {
+      data: entities.map((e) => LoanTransactionDetailMapper.toDomain(e)),
+      total,
+    };
   }
 
   async findByLoans(loanIds: string[]): Promise<LoanTransactionDetailDomain[]> {

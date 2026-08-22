@@ -1,7 +1,18 @@
 import apiClient from './client'
 import { mockApi } from './mocks'
+import type { PaginatedResponse } from './types'
 
 const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
+
+export interface LoanTransaction {
+  id: string
+  loan_id: string
+  transaction_type: 'disbursement' | 'principal_payment' | 'interest_payment'
+  amount: number
+  transaction_date: string | Date
+  notes?: string | null
+  operation_id?: string | null
+}
 
 // Tipos en snake_case según respuestas del backend
 export interface Loan {
@@ -128,6 +139,26 @@ export const loansApi = {
       data
     )
     return response.data
+  },
+
+  async getLoanTransactions(
+    id: string,
+    params?: { page?: number; limit?: number }
+  ): Promise<PaginatedResponse<LoanTransaction>> {
+    if (USE_MOCKS) {
+      return mockApi.getLoanTransactions(id, params)
+    }
+    const response = await apiClient.get<{
+      data: LoanTransaction[]
+      pagination: { page: number; limit: number; total: number; totalPages: number }
+    }>(`/v2/loans/${id}/transactions`, { params })
+
+    return {
+      data: response.data.data,
+      page: response.data.pagination.page,
+      limit: response.data.pagination.limit,
+      total: response.data.pagination.total
+    }
   }
 }
 
