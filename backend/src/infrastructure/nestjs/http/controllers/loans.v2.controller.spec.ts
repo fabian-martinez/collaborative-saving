@@ -5,6 +5,7 @@ import { GetLoanDetailQueryHandler } from '@application/queries/loans/get-loan-d
 import { UpdateLoanTermsUseCase } from '@application/use-cases/loans/update-loan-terms.use-case';
 import { GetPaymentPlanSimulationQueryHandler } from '@application/queries/loans/get-payment-plan-simulation.query-handler';
 import { SimulateLoanPaymentPlanUseCase } from '@application/use-cases/loans/simulate-loan-payment-plan.use-case';
+import { GetLoanTransactionsQueryHandler } from '@application/queries/loans/get-loan-transactions.query-handler';
 import { LoanResponseDto } from '@application/dto/loans/loan-response.dto';
 import { LoanNotFoundException } from '@application/exceptions/loan-not-found.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
@@ -19,6 +20,7 @@ describe('LoansV2Controller', () => {
   let getPaymentPlanSimulationQuery: jest.Mocked<GetPaymentPlanSimulationQueryHandler>;
   let simulateLoanPaymentPlanUseCase: jest.Mocked<SimulateLoanPaymentPlanUseCase>;
   let updateLoanApprovedAmountUseCase: jest.Mocked<UpdateLoanApprovedAmountUseCase>;
+  let getLoanTransactionsQuery: jest.Mocked<GetLoanTransactionsQueryHandler>;
 
   let getLoansQueryExecuteSpy: jest.SpyInstance;
   let getLoanDetailQueryExecuteSpy: jest.SpyInstance;
@@ -26,6 +28,7 @@ describe('LoansV2Controller', () => {
   let getPaymentPlanSimulationQueryExecuteSpy: jest.SpyInstance;
   let simulateLoanPaymentPlanUseCaseExecuteSpy: jest.SpyInstance;
   let updateLoanApprovedAmountUseCaseExecuteSpy: jest.SpyInstance;
+  let getLoanTransactionsQueryExecuteSpy: jest.SpyInstance;
 
   const mockLoanResponse: LoanResponseDto = {
     id: 'loan-id-1',
@@ -67,6 +70,10 @@ describe('LoansV2Controller', () => {
       execute: jest.fn(),
     } as unknown as jest.Mocked<UpdateLoanApprovedAmountUseCase>;
 
+    getLoanTransactionsQuery = {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<GetLoanTransactionsQueryHandler>;
+
     getLoansQueryExecuteSpy = jest.spyOn(getLoansQuery, 'execute');
     getLoanDetailQueryExecuteSpy = jest.spyOn(getLoanDetailQuery, 'execute');
     updateLoanTermsUseCaseExecuteSpy = jest.spyOn(
@@ -83,6 +90,10 @@ describe('LoansV2Controller', () => {
     );
     updateLoanApprovedAmountUseCaseExecuteSpy = jest.spyOn(
       updateLoanApprovedAmountUseCase,
+      'execute',
+    );
+    getLoanTransactionsQueryExecuteSpy = jest.spyOn(
+      getLoanTransactionsQuery,
       'execute',
     );
 
@@ -112,6 +123,10 @@ describe('LoansV2Controller', () => {
         {
           provide: UpdateLoanApprovedAmountUseCase,
           useValue: updateLoanApprovedAmountUseCase,
+        },
+        {
+          provide: GetLoanTransactionsQueryHandler,
+          useValue: getLoanTransactionsQuery,
         },
       ],
     }).compile();
@@ -531,6 +546,63 @@ describe('LoansV2Controller', () => {
       await expect(
         controller.updateApprovedAmount(loanId, dto),
       ).rejects.toThrow(error);
+    });
+  });
+
+  describe('getTransactions', () => {
+    it('should return paginated transactions', async () => {
+      const loanId = 'loan-id-1';
+      const query = { page: 1, limit: 10 };
+      const date = new Date('2024-01-15T10:30:00Z');
+      const mockResult = {
+        data: [
+          {
+            id: 'tx-1',
+            loanId: 'loan-id-1',
+            transactionType: 'principal_payment',
+            amount: 200000,
+            transactionDate: date,
+            notes: 'Abono extra',
+            operationId: 'op-1',
+          },
+        ],
+        pagination: {
+          page: 1,
+          limit: 10,
+          total: 1,
+          totalPages: 1,
+        },
+      };
+
+      getLoanTransactionsQueryExecuteSpy.mockResolvedValue(mockResult);
+
+      const result = await controller.getTransactions(loanId, query);
+
+      expect(getLoanTransactionsQueryExecuteSpy).toHaveBeenCalledWith({
+        loanId,
+        page: 1,
+        limit: 10,
+      });
+
+      expect(result).toEqual({
+        data: [
+          {
+            id: 'tx-1',
+            loan_id: 'loan-id-1',
+            transaction_type: 'principal_payment',
+            amount: 200000,
+            transaction_date: date,
+            notes: 'Abono extra',
+            operation_id: 'op-1',
+          },
+        ],
+        pagination: {
+          page: 1,
+          limit: 10,
+          total: 1,
+          totalPages: 1,
+        },
+      });
     });
   });
 });

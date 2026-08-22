@@ -16,8 +16,8 @@
 
     <div v-if="loan && !loading && !error" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Resumen General -->
-      <div class="col-span-1 lg:col-span-3">
-        <div class="card bg-base-100 shadow-sm border border-base-200">
+      <div class="col-span-1 lg:col-span-2">
+        <div class="card bg-base-100 shadow-sm border border-base-200 h-full">
           <div class="card-body">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
               <div>
@@ -77,23 +77,57 @@
         </div>
       </div>
 
-      <!-- Plan de Pagos -->
+      <!-- Gráfica de Amortización -->
+      <div class="col-span-1">
+        <div class="card bg-base-100 shadow-sm border border-base-200 h-full">
+          <div class="card-body flex flex-col">
+            <h3 class="card-title text-lg mb-2">Histórico de Pagos</h3>
+            <div class="flex-1 min-h-[220px] relative">
+              <LoadingSpinner :loading="loadingChartData" class="absolute inset-0 flex items-center justify-center" />
+              <Bar v-if="chartData && !loadingChartData" :data="chartData" :options="chartOptions" />
+              <div v-else-if="!loadingChartData" class="absolute inset-0 flex items-center justify-center text-sm text-base-content/50">
+                No hay pagos registrados para graficar.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Historial de Pagos -->
       <div class="col-span-1 lg:col-span-3 mt-4">
-        <h3 class="text-xl font-semibold mb-4">Plan de Pagos</h3>
+        <h3 class="text-xl font-semibold mb-4">Historial de Pagos</h3>
         <div class="card bg-base-100 shadow-sm border border-base-200">
           <div class="card-body p-0 overflow-hidden">
-            <LoadingSpinner :loading="loadingPlan" class="p-8" />
-            <ErrorMessage :error="planError" class="m-4" />
+            <LoadingSpinner :loading="loadingHistory" class="p-8" />
+            <ErrorMessage :error="historyError" class="m-4" />
             
             <DataTable
-              v-if="!loadingPlan && !planError && paymentPlan.length > 0"
-              :data="paymentPlan"
-              :columns="planColumns"
-              row-key="month"
-              empty-message="No hay plan de pagos disponible"
-            />
-            <div v-else-if="!loadingPlan && !planError" class="p-8 text-center text-base-content/60">
-              No se pudo generar el plan de pagos automáticamente.
+              v-if="!loadingHistory && !historyError && transactions.length > 0"
+              :data="transactions"
+              :columns="transactionColumns"
+              row-key="id"
+              empty-message="No hay transacciones registradas para este préstamo"
+            >
+              <template #cell-transaction_type="{ value }">
+                <span class="font-medium text-base-content">
+                  {{ formatTransactionType(String(value)) }}
+                </span>
+              </template>
+            </DataTable>
+            <div v-else-if="!loadingHistory && !historyError" class="p-8 text-center text-base-content/60">
+              No hay transacciones registradas para este préstamo.
+            </div>
+
+            <!-- Paginación -->
+            <div class="p-4 border-t border-base-200 flex justify-end" v-if="transactionsTotal > 0">
+              <Pagination
+                :page="page"
+                :total-pages="totalPages"
+                :total="transactionsTotal"
+                :start-index="(page - 1) * limit + 1"
+                :end-index="Math.min(page * limit, transactionsTotal)"
+                @page-change="handlePageChange"
+              />
             </div>
           </div>
         </div>
@@ -142,11 +176,31 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, Edit } from 'iconoir-vue/regular'
-import { loansApi, type Loan, type PaymentPlanItem } from '@/api/loans.api'
+import { loansApi, type Loan, type LoanTransaction } from '@/api/loans.api'
 import { formatCurrency, formatPercentage, formatDate } from '@/shared/utils/formatters'
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import ErrorMessage from '@/shared/components/ErrorMessage.vue'
 import DataTable, { type Column } from '@/shared/components/DataTable.vue'
+import Pagination from '@/shared/components/Pagination.vue'
+import { Bar } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js'
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+)
 
 const route = useRoute()
 const router = useRouter()
@@ -154,10 +208,133 @@ const loan = ref<Loan | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-// Payment Plan State
-const paymentPlan = ref<PaymentPlanItem[]>([])
-const loadingPlan = ref(false)
-const planError = ref<string | null>(null)
+// Payment History State
+const transactions = ref<LoanTransaction[]>([])
+const loadingHistory = ref(false)
+const historyError = ref<string | null>(null)
+const page = ref(1)
+const limit = ref(10)
+const transactionsTotal = ref(0)
+const totalPages = computed(() => Math.ceil(transactionsTotal.value / limit.value))
+
+// Chart State
+const allTransactions = ref<LoanTransaction[]>([])
+const loadingChartData = ref(false)
+
+const chartData = computed(() => {
+  if (!loan.value || allTransactions.value.length === 0) return null
+
+  // Filtrar solo pagos de capital e intereses
+  const payments = allTransactions.value.filter(
+    tx => tx.transaction_type === 'principal_payment' || tx.transaction_type === 'interest_payment'
+  )
+
+  if (payments.length === 0) return null
+
+  // Agrupar por operation_id (o por id si no tiene operation_id) para mantener las operaciones separadas
+  const groups: Record<string, { date: Date; principal: number; interest: number }> = {}
+
+  payments.forEach((tx) => {
+    const key = tx.operation_id || tx.id
+    if (!groups[key]) {
+      groups[key] = {
+        date: new Date(tx.transaction_date),
+        principal: 0,
+        interest: 0
+      }
+    }
+    if (tx.transaction_type === 'principal_payment') {
+      groups[key].principal += tx.amount
+    } else if (tx.transaction_type === 'interest_payment') {
+      groups[key].interest += tx.amount
+    }
+  })
+
+  // Ordenar las operaciones cronológicamente
+  const sortedKeys = Object.keys(groups).sort((a, b) => {
+    return groups[a].date.getTime() - groups[b].date.getTime()
+  })
+
+  // Contar ocurrencias de cada fecha formateada para detectar duplicados
+  const dateCounts: Record<string, number> = {}
+  const dateIndices: Record<string, number> = {}
+
+  sortedKeys.forEach((key) => {
+    const formattedDate = formatDate(groups[key].date)
+    dateCounts[formattedDate] = (dateCounts[formattedDate] || 0) + 1
+  })
+
+  // Generar etiquetas únicas de fecha
+  const labels = sortedKeys.map((key) => {
+    const formattedDate = formatDate(groups[key].date)
+    if (dateCounts[formattedDate] > 1) {
+      dateIndices[formattedDate] = (dateIndices[formattedDate] || 0) + 1
+      return `${formattedDate} (#${dateIndices[formattedDate]})`
+    }
+    return formattedDate
+  })
+
+  const principalData = sortedKeys.map(key => groups[key].principal)
+  const interestData = sortedKeys.map(key => groups[key].interest)
+
+  return {
+    labels,
+    datasets: [
+      {
+        label: 'Abono a Capital',
+        backgroundColor: '#6366f1',
+        hoverBackgroundColor: '#4f46e5',
+        data: principalData,
+        borderRadius: 4
+      },
+      {
+        label: 'Pago de Intereses',
+        backgroundColor: '#a5b4fc',
+        hoverBackgroundColor: '#818cf8',
+        data: interestData,
+        borderRadius: 4
+      }
+    ]
+  }
+})
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      display: true,
+      position: 'top' as const,
+      labels: {
+        color: '#64748b',
+        boxWidth: 12
+      }
+    },
+    tooltip: {
+      callbacks: {
+        label: (context: any) => {
+          return ` ${context.dataset.label}: ${formatCurrency(context.raw)}`
+        }
+      }
+    }
+  },
+  scales: {
+    x: {
+      stacked: true,
+      grid: {
+        display: false
+      }
+    },
+    y: {
+      stacked: true,
+      ticks: {
+        callback: (value: any) => {
+          return formatCurrency(value)
+        }
+      }
+    }
+  }
+}
 
 // Update Modal State
 const updateModal = ref<HTMLDialogElement | null>(null)
@@ -168,12 +345,11 @@ const updateForm = ref({
   monthly_payment_amount: 0
 })
 
-const planColumns: Column[] = [
-  { key: 'month', label: 'Mes' },
-  { key: 'payment', label: 'Cuota', format: 'currency' },
-  { key: 'principal', label: 'Capital', format: 'currency' },
-  { key: 'interest', label: 'Interés', format: 'currency' },
-  { key: 'balance', label: 'Saldo', format: 'currency' }
+const transactionColumns: Column[] = [
+  { key: 'transaction_date', label: 'Fecha', format: 'date' },
+  { key: 'transaction_type', label: 'Concepto' },
+  { key: 'amount', label: 'Monto', format: 'currency' },
+  { key: 'notes', label: 'Notas' }
 ]
 
 const paidAmount = computed(() => {
@@ -202,23 +378,56 @@ function getStatusBadgeClass(status: string) {
   }
 }
 
-async function loadPaymentPlan() {
-  if (!loan.value) return
-  loadingPlan.value = true
-  planError.value = null
-  try {
-    const plan = await loansApi.simulatePaymentPlan({
-      principal: loan.value.outstanding_balance || loan.value.approved_amount,
-      rate: loan.value.interest_rate,
-      term: loan.value.term,
-      amortization_type: 'french'
-    })
-    paymentPlan.value = plan.schedule
-  } catch (e) {
-    planError.value = 'No se pudo simular el plan de pagos actual'
-  } finally {
-    loadingPlan.value = false
+function formatTransactionType(type: string) {
+  switch (type) {
+    case 'disbursement':
+      return 'Desembolso'
+    case 'principal_payment':
+      return 'Abono a Capital'
+    case 'interest_payment':
+      return 'Pago de Intereses'
+    default:
+      return type
   }
+}
+
+async function loadTransactionHistory() {
+  if (!loan.value) return
+  loadingHistory.value = true
+  historyError.value = null
+  try {
+    const result = await loansApi.getLoanTransactions(loan.value.id, {
+      page: page.value,
+      limit: limit.value
+    })
+    transactions.value = result.data
+    transactionsTotal.value = result.total
+  } catch (e) {
+    historyError.value = 'No se pudo cargar el historial de pagos del préstamo'
+  } finally {
+    loadingHistory.value = false
+  }
+}
+
+async function loadAllTransactionsForChart() {
+  if (!loan.value) return
+  loadingChartData.value = true
+  try {
+    const result = await loansApi.getLoanTransactions(loan.value.id, {
+      page: 1,
+      limit: 1000
+    })
+    allTransactions.value = result.data
+  } catch (e) {
+    console.error('Error al cargar transacciones para el gráfico:', e)
+  } finally {
+    loadingChartData.value = false
+  }
+}
+
+function handlePageChange(newPage: number) {
+  page.value = newPage
+  loadTransactionHistory()
 }
 
 async function loadLoan() {
@@ -226,7 +435,10 @@ async function loadLoan() {
   error.value = null
   try {
     loan.value = await loansApi.getLoanById(route.params.id as string)
-    await loadPaymentPlan()
+    await Promise.all([
+      loadTransactionHistory(),
+      loadAllTransactionsForChart()
+    ])
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Error al cargar préstamo'
   } finally {
