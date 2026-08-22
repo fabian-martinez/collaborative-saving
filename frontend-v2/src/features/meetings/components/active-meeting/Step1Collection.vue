@@ -121,6 +121,7 @@
                         @click="handleSelectMember(member)"
                         class="btn btn-sm btn-square animate-none"
                         :class="paymentCollection.isMemberPaid(member.id) ? 'btn-ghost text-teal-700 bg-transparent hover:bg-base-200' : (selectedMemberValue?.id === member.id ? 'btn-neutral' : 'btn-primary')"
+                        :aria-label="paymentCollection.isMemberPaid(member.id) ? 'Ver Recibo' : (selectedMemberValue?.id === member.id ? 'Editando...' : 'Registrar Pago')"
                       >
                         <span v-if="selectedMemberValue?.id === member.id && !paymentCollection.isMemberPaid(member.id)" class="loading loading-spinner loading-xs"></span>
                         <Printer v-else-if="paymentCollection.isMemberPaid(member.id)" class="h-4 w-4" />
