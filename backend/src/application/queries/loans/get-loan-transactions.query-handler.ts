@@ -24,10 +24,11 @@ export class GetLoanTransactionsQueryHandler {
       limit: query.limit || 10,
     };
 
-    const result = await this.loanTransactionDetailRepository.findByLoanWithPagination(
-      query.loanId,
-      pagination,
-    );
+    const result =
+      await this.loanTransactionDetailRepository.findByLoanWithPagination(
+        query.loanId,
+        pagination,
+      );
 
     const data: LoanTransactionResponseDto[] = result.data.map((t) => ({
       id: t.id,
