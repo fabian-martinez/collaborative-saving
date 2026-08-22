@@ -9,9 +9,9 @@
             <Wallet class="w-4.5 h-4.5 text-teal-700" />
           </div>
           <div class="min-w-0">
-            <div class="text-[10px] font-bold text-base-content/50 uppercase tracking-wider">Ahorro Cobrado</div>
+            <div class="text-[10px] font-bold text-base-content/50 uppercase tracking-wider">Total Cobrado</div>
             <div class="text-base md:text-[17px] font-bold text-base-content mt-0.5">
-              {{ formatCurrency(summary?.total_stock_investment || 0) }}
+              {{ formatCurrency(summary?.total_collected || 0) }}
             </div>
           </div>
         </div>
@@ -23,9 +23,9 @@
             <ArrowUpRight class="w-4.5 h-4.5 text-teal-700" />
           </div>
           <div class="min-w-0">
-            <div class="text-[10px] font-bold text-base-content/50 uppercase tracking-wider">Préstamos Cobrados</div>
+            <div class="text-[10px] font-bold text-base-content/50 uppercase tracking-wider">Intereses Cobrados</div>
             <div class="text-base md:text-[17px] font-bold text-base-content mt-0.5">
-              {{ formatCurrency(summary?.total_loans || 0) }}
+              {{ formatCurrency(summary?.total_interest || 0) }}
             </div>
           </div>
         </div>
@@ -53,7 +53,7 @@
           <div class="min-w-0">
             <div class="text-[10px] font-bold text-base-content/50 uppercase tracking-wider">Asistencia de Socios</div>
             <div class="text-base md:text-[17px] font-bold text-base-content mt-0.5">
-              {{ summary?.participants_count || 12 }} / 15
+              {{ summary?.participants_count || 0 }}
             </div>
           </div>
         </div>

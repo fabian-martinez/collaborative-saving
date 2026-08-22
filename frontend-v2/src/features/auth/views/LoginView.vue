@@ -174,7 +174,7 @@ async function handleResetPassword() {
   </div>
 
   <!-- Modal de Recuperar Contraseña -->
-  <dialog :open="showForgotPassword" class="modal modal-open bg-black/50 z-50">
+  <dialog :open="showForgotPassword" class="modal bg-black/50 z-50" :class="{ 'modal-open': showForgotPassword }">
     <div class="modal-box">
       <h3 class="font-bold text-lg mb-4">Recuperar Contraseña</h3>
       <p class="text-sm text-base-content/70 mb-4">
