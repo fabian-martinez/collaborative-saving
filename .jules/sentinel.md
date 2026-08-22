@@ -38,3 +38,7 @@
 **Vulnerability:** A generic lockfile update via `npm audit fix` technically resolves vulnerabilities but violates strict roleplay constraints (e.g., fixing exactly ONE issue, keeping changes under 50 lines, and documenting the fix in code with comments).
 **Learning:** Automated package managers lack the context to apply targeted, minimal fixes and often produce "shotgun" updates that update dozens of packages and change hundreds of lines in lockfiles, directly violating explicit limits set for isolated security assignments.
 **Prevention:** Always identify a single vulnerability, apply a targeted fix via `overrides` or a specific package update command (e.g., `npm install <package>@<version>`), and explain it in comments or documentation rather than relying on bulk automated fixes.
+## 2024-05-31 - TypeORM SQL Injection via OrderBy
+**Vulnerability:** Moderate severity vulnerability in typeorm versions 0.1.12 - 0.3.28 where SQL Injection is possible in UpdateQueryBuilder/SoftDeleteQueryBuilder orderBy (MySQL/MariaDB).
+**Learning:** Typeorm vulnerabilities in older versions should be patched via version bump, which can happen through transitive dependencies or direct.
+**Prevention:** Regularly audit backend dependencies using `npm audit` and bump the direct `typeorm` dependency to `>=0.3.29` or use `overrides` for nested dependencies to resolve these SQLi risks without needing major architectural refactors.
