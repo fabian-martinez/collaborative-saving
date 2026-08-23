@@ -58,8 +58,13 @@ function getBranchName() {
   }
 }
 
+const isPreCommit = process.argv.includes('--pre-commit');
+
 function getGitDiff() {
   try {
+    if (isPreCommit) {
+      return execSync('git diff --cached', { encoding: 'utf8' }).trim();
+    }
     // 1. Try to get diff between origin/main and HEAD
     return execSync('git diff origin/main...HEAD', { encoding: 'utf8' }).trim();
   } catch (e) {
@@ -80,15 +85,18 @@ function getGitDiff() {
 const branchName = getBranchName();
 const diffContent = getGitDiff();
 
-// Skip if there are no changes on the branch
+// Skip if there are no changes on the branch or staged
 if (!diffContent) {
-  console.log(`${GREEN}✅ No changes detected compared to main. Skipping AI review.${RESET}\n`);
+  const skipMsg = isPreCommit 
+    ? 'No staged changes detected. Skipping AI review.'
+    : 'No changes detected compared to main. Skipping AI review.';
+  console.log(`${GREEN}✅ ${skipMsg}${RESET}\n`);
   process.exit(0);
 }
 
-// Check if trying to push directly to main
+// Check if trying to commit/push directly to main
 if (branchName === 'main' || branchName === 'master') {
-  console.log(`${RED}${BOLD}❌ VIOLATION DETECTED:${RESET} Pushing directly to 'main' branch is prohibited.`);
+  console.log(`${RED}${BOLD}❌ VIOLATION DETECTED:${RESET} Committing/Pushing directly to 'main' branch is prohibited.`);
   console.log(`${RED}Please follow CONTRIBUTING.md, create a feature branch, and open a PR.${RESET}\n`);
   process.exit(1);
 }
@@ -205,6 +213,17 @@ async function performAiReview() {
 
     // 5. Append to Local History File (.agent/reviews/review-history.md)
     logReviewToHistory(reviewData);
+
+    // If running as pre-commit and approved, stage the history file so it is included in the commit
+    if (isPreCommit && reviewData.approved) {
+      try {
+        const historyFile = path.join(__dirname, '../reviews/review-history.md');
+        execSync(`git add "${historyFile}"`);
+        console.log(`${GREEN}✅ Staged review history for this commit.${RESET}`);
+      } catch (addError) {
+        console.error(`${RED}⚠️ Failed to stage review-history.md:${RESET}`, addError.message);
+      }
+    }
 
     // 6. Output beautiful styled report
     printReviewResult(reviewData);
