@@ -20,11 +20,11 @@ pre-commit:
       glob: "src/**/*.ts"
       # Ejecuta solo tests relacionados y mide cobertura solo de los archivos en el commit
       run: npx jest --findRelatedTests {staged_files} --coverage --collectCoverageFrom="{staged_files}" --passWithNoTests
+    ai-review:
+      run: node .agent/scripts/review-agent.js --pre-commit
 
 pre-push:
   commands:
     backend-tests-coverage:
       root: "backend/"
       run: npm run test:ci -- --coverageReporters="text-summary"
-    ai-review:
-      run: node .agent/scripts/review-agent.js
