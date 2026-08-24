@@ -33,6 +33,7 @@ describe('GetPendingPaymentsQueryHandler', () => {
 
     memberRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByEmail: jest.fn(),
       findActive: jest.fn(),
       save: jest.fn(),
@@ -90,7 +91,7 @@ describe('GetPendingPaymentsQueryHandler', () => {
       } as unknown as Member;
 
       findWithFiltersSpy.mockResolvedValue([paymentDomain]);
-      findByIdSpy.mockResolvedValue(member);
+      memberRepository.findByIds.mockResolvedValue([member]);
 
       const query: GetPendingPaymentsQueryDto = {
         status: PendingMemberPaymentStatus.PENDING,
@@ -125,8 +126,8 @@ describe('GetPendingPaymentsQueryHandler', () => {
         meetingId: undefined,
         type: undefined,
       });
-      expect(findByIdSpy).toHaveBeenCalledWith('m-1');
-      expect(findByIdSpy).toHaveBeenCalledTimes(1);
+      expect(memberRepository.findByIds).toHaveBeenCalledWith(['m-1']);
+      expect(memberRepository.findByIds).toHaveBeenCalledTimes(1);
     });
 
     it('should handle member not found gracefully', async () => {
@@ -139,7 +140,7 @@ describe('GetPendingPaymentsQueryHandler', () => {
       });
 
       findWithFiltersSpy.mockResolvedValue([paymentDomain]);
-      findByIdSpy.mockResolvedValue(null);
+      memberRepository.findByIds.mockResolvedValue([]);
 
       // Act
       const result = await queryHandler.execute({});

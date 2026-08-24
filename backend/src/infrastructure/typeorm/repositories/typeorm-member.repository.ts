@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository, IsNull, In } from 'typeorm';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
 import { Member as MemberDomain } from '@domain/entities/member.entity';
 import { Member as MemberEntity } from '../entities/member.entity';
@@ -31,6 +31,15 @@ export class TypeOrmMemberRepository implements MemberRepository {
     });
     if (!m) return null;
     return MemberMapper.toDomain(m);
+  }
+
+  async findByIds(ids: string[]): Promise<MemberDomain[]> {
+    if (!ids.length) return [];
+
+    const members = await this.repo.find({
+      where: { id: In(ids), deletedAt: IsNull() },
+    });
+    return members.map((m) => MemberMapper.toDomain(m));
   }
 
   async findByEmail(email: string): Promise<MemberDomain | null> {
