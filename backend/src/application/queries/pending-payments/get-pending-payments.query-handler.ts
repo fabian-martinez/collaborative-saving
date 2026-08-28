@@ -25,21 +25,19 @@ export class GetPendingPaymentsQueryHandler {
 
     const dtos: PendingMemberPaymentResponseDto[] = [];
 
-    // Pre-fetch member names optionally to avoid N+1 if we needed them,
-    // but the MemberRepository doesn't have findByIds yet. We'll fetch them individually for now or skip.
+    // Pre-fetch member names to avoid N+1 queries.
+    // ⚡ Bolt: Cache members for O(1) lookups instead of N+1 database queries
     // For simplicity and considering member names are useful in UI:
-    // We'll collect unique member IDs and fetch them.
+    // We collect unique member IDs and fetch them.
     const memberIds = [...new Set(domainEntities.map((e) => e.memberId))];
     const memberMap = new Map<string, Member>();
 
-    await Promise.all(
-      memberIds.map(async (id) => {
-        const member = await this.memberRepository.findById(id);
-        if (member) {
-          memberMap.set(id, member);
-        }
-      }),
-    );
+    if (memberIds.length > 0) {
+      const members = await this.memberRepository.findByIds(memberIds);
+      for (const member of members) {
+        memberMap.set(member.id, member);
+      }
+    }
 
     for (const entity of domainEntities) {
       const member = memberMap.get(entity.memberId);

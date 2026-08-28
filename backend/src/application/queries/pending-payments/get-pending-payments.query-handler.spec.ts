@@ -15,6 +15,7 @@ describe('GetPendingPaymentsQueryHandler', () => {
   let memberRepository: jest.Mocked<MemberRepository>;
   let findWithFiltersSpy: jest.SpyInstance;
   let findByIdSpy: jest.SpyInstance;
+  let findByIdsSpy: jest.SpyInstance;
 
   beforeEach(() => {
     pendingMemberPaymentRepository = {
@@ -33,6 +34,7 @@ describe('GetPendingPaymentsQueryHandler', () => {
 
     memberRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByEmail: jest.fn(),
       findActive: jest.fn(),
       save: jest.fn(),
@@ -44,6 +46,7 @@ describe('GetPendingPaymentsQueryHandler', () => {
       'findWithFilters',
     );
     findByIdSpy = jest.spyOn(memberRepository, 'findById');
+    findByIdsSpy = jest.spyOn(memberRepository, 'findByIds');
 
     queryHandler = new GetPendingPaymentsQueryHandler(
       pendingMemberPaymentRepository,
@@ -90,7 +93,7 @@ describe('GetPendingPaymentsQueryHandler', () => {
       } as unknown as Member;
 
       findWithFiltersSpy.mockResolvedValue([paymentDomain]);
-      findByIdSpy.mockResolvedValue(member);
+      findByIdsSpy.mockResolvedValue([member]);
 
       const query: GetPendingPaymentsQueryDto = {
         status: PendingMemberPaymentStatus.PENDING,
@@ -125,8 +128,8 @@ describe('GetPendingPaymentsQueryHandler', () => {
         meetingId: undefined,
         type: undefined,
       });
-      expect(findByIdSpy).toHaveBeenCalledWith('m-1');
-      expect(findByIdSpy).toHaveBeenCalledTimes(1);
+      expect(findByIdsSpy).toHaveBeenCalledWith(['m-1']);
+      expect(findByIdsSpy).toHaveBeenCalledTimes(1);
     });
 
     it('should handle member not found gracefully', async () => {
@@ -139,7 +142,7 @@ describe('GetPendingPaymentsQueryHandler', () => {
       });
 
       findWithFiltersSpy.mockResolvedValue([paymentDomain]);
-      findByIdSpy.mockResolvedValue(null);
+      findByIdsSpy.mockResolvedValue([]);
 
       // Act
       const result = await queryHandler.execute({});
