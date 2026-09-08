@@ -1,0 +1,290 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Collaborative Saving - Runtime Architecture",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/fabian-martinez/collaborative-saving",
+      "revision": "aa1f872def2b9126804844f4d1aa3a80dd9f81c4"
+    },
+    "viewBox": [1350, 460],
+    "views": [
+      {
+        "id": "primary-path",
+        "label": "Primary transaction path",
+        "focus": ["browser", "frontend_app", "api_gateway", "app_services", "accounting_engine", "typeorm_repo", "postgres_db"],
+        "note": "Trace an authenticated transaction through ingress, application orchestration, zero-sum invariant check, and PostgreSQL commit."
+      },
+      {
+        "id": "security-identity",
+        "label": "Authentication & trust boundaries",
+        "focus": ["browser", "frontend_app", "firebase_auth", "api_gateway"],
+        "note": "Inspect token issuance by Firebase Auth, bearer transmission, and guard-level verification at the backend boundary."
+      },
+      {
+        "id": "domain-core",
+        "label": "Hexagonal domain & persistence",
+        "focus": ["app_services", "domain_core", "accounting_engine", "tx_manager", "typeorm_repo"],
+        "note": "Isolate the pure business domain, double-entry ledger validator, and transaction-coordinated persistence adapters."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "browser",
+      "type": "external",
+      "label": "Client Browser",
+      "sublabel": "Web & Mobile",
+      "pos": [36, 180],
+      "size": [120, 60]
+    },
+    {
+      "id": "frontend_app",
+      "type": "frontend",
+      "brand": "vue",
+      "label": "Vue 3 SPA",
+      "sublabel": "Pinia & Axios",
+      "tag": "Feature UI",
+      "sources": [
+        { "path": "frontend-v2/src/api/client.ts", "line": 1, "label": "Axios HTTP Client" }
+      ],
+      "pos": [226, 180],
+      "size": [120, 60]
+    },
+    {
+      "id": "firebase_auth",
+      "type": "security",
+      "brand": "firebase",
+      "label": "Firebase",
+      "sublabel": "Auth & JWT",
+      "tag": "External IdP",
+      "sources": [
+        { "path": "backend/src/infrastructure/services/auth/firebase-identity.service.ts", "line": 9, "label": "Firebase Identity Service" }
+      ],
+      "pos": [416, 40],
+      "size": [120, 60]
+    },
+    {
+      "id": "api_gateway",
+      "type": "backend",
+      "label": "NestJS HTTP",
+      "sublabel": "Guards & Routes",
+      "tag": "Throttler+RBAC",
+      "sources": [
+        { "path": "backend/src/infrastructure/nestjs/auth/guards/firebase-auth.guard.ts", "line": 12, "label": "Firebase Auth Guard" }
+      ],
+      "pos": [416, 180],
+      "size": [120, 60]
+    },
+    {
+      "id": "app_services",
+      "type": "backend",
+      "label": "Application",
+      "sublabel": "Use Cases",
+      "tag": "RecordOperation",
+      "sources": [
+        { "path": "backend/src/application/use-cases/accounting/record-operation.use-case.ts", "line": 21, "label": "Record Operation Use Case" }
+      ],
+      "pos": [606, 180],
+      "size": [120, 60]
+    },
+    {
+      "id": "domain_core",
+      "type": "backend",
+      "label": "Domain Core",
+      "sublabel": "Loans & Shares",
+      "tag": "Entities",
+      "sources": [
+        { "path": "backend/src/domain/entities/loan.entity.ts", "line": 1, "label": "Loan Entity" }
+      ],
+      "pos": [606, 320],
+      "size": [120, 60]
+    },
+    {
+      "id": "accounting_engine",
+      "type": "backend",
+      "label": "Accounting",
+      "sublabel": "Ledger Core",
+      "tag": "Zero-Sum",
+      "sources": [
+        { "path": "backend/src/domain/services/operation-balance-validator.service.ts", "line": 1, "label": "Balance Validator" }
+      ],
+      "pos": [796, 180],
+      "size": [120, 60]
+    },
+    {
+      "id": "tx_manager",
+      "type": "backend",
+      "label": "Transaction Mgr",
+      "sublabel": "Unit of Work",
+      "tag": "ACID Coord",
+      "sources": [
+        { "path": "backend/src/infrastructure/services/transaction-manager/typeorm-transaction-manager.service.ts", "line": 1, "label": "TypeORM Transaction Manager" }
+      ],
+      "pos": [796, 320],
+      "size": [120, 60]
+    },
+    {
+      "id": "typeorm_repo",
+      "type": "backend",
+      "label": "Persistence",
+      "sublabel": "TypeORM Adapters",
+      "tag": "Outbound Port",
+      "sources": [
+        { "path": "backend/src/infrastructure/typeorm/repositories/typeorm-operation.repository.ts", "line": 1, "label": "Operation Repository" }
+      ],
+      "pos": [986, 180],
+      "size": [120, 60]
+    },
+    {
+      "id": "postgres_db",
+      "type": "database",
+      "brand": "postgresql",
+      "label": "PostgreSQL",
+      "sublabel": "Supabase DB",
+      "tag": "Ledger State",
+      "sources": [
+        { "path": "infra/database/migrations/0001_initial_tables.sql", "line": 1, "label": "Database Schema" }
+      ],
+      "pos": [1176, 180],
+      "size": [120, 60]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Public Client Environment",
+      "wraps": ["browser", "frontend_app"],
+      "pad": 16
+    },
+    {
+      "kind": "region",
+      "label": "Identity Provider",
+      "wraps": ["firebase_auth"],
+      "pad": 16
+    },
+    {
+      "kind": "region",
+      "label": "Trusted Backend Runtime (Hexagonal Core)",
+      "wraps": ["api_gateway", "app_services", "accounting_engine", "typeorm_repo", "domain_core", "tx_manager"],
+      "pad": 20
+    },
+    {
+      "kind": "region",
+      "label": "Supabase Database",
+      "wraps": ["postgres_db"],
+      "pad": 16
+    }
+  ],
+  "connections": [
+    {
+      "id": "user-action",
+      "from": "browser",
+      "to": "frontend_app",
+      "label": "User action",
+      "variant": "emphasis"
+    },
+    {
+      "id": "api-request",
+      "from": "frontend_app",
+      "to": "api_gateway",
+      "label": "HTTPS / JWT",
+      "variant": "emphasis"
+    },
+    {
+      "id": "auth-verify",
+      "from": "api_gateway",
+      "to": "firebase_auth",
+      "label": "Verify JWT",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "straight",
+      "labelDy": -35
+    },
+    {
+      "id": "dispatch-usecase",
+      "from": "api_gateway",
+      "to": "app_services",
+      "label": "Use cases",
+      "variant": "emphasis"
+    },
+    {
+      "id": "domain-rules",
+      "from": "app_services",
+      "to": "domain_core",
+      "label": "Rules",
+      "variant": "default",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight",
+      "labelDy": 24
+    },
+    {
+      "id": "record-operation",
+      "from": "app_services",
+      "to": "accounting_engine",
+      "label": "Operations",
+      "variant": "emphasis"
+    },
+    {
+      "id": "enforce-uow",
+      "from": "accounting_engine",
+      "to": "tx_manager",
+      "label": "Atomic UoW",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight",
+      "labelDy": 24
+    },
+    {
+      "id": "persist-entries",
+      "from": "accounting_engine",
+      "to": "typeorm_repo",
+      "label": "Ledger",
+      "variant": "emphasis"
+    },
+    {
+      "id": "sql-commit",
+      "from": "typeorm_repo",
+      "to": "postgres_db",
+      "label": "SQL / ACID",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Primary Financial Runtime Path",
+      "items": [
+        "Vue 3 SPA attaches Firebase Bearer JWT to Axios API requests against NestJS REST endpoints",
+        "NestJS global guards (Throttler & FirebaseAuthGuard) authenticate identity before controller dispatch",
+        "Application use cases orchestrate domain entities and invoke RecordOperationUseCase",
+        "Accounting Engine strictly validates the double-entry bookkeeping zero-sum balance (debits = credits)",
+        "TypeORM TransactionManager executes an atomic Unit of Work to commit Operation and Ledger records"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Trust Boundaries & Ingress Security",
+      "items": [
+        "Public Client Zone: Untrusted browser environment running Vue 3 SPA + Pinia state",
+        "External Identity: Firebase Auth manages credentials, MFA, and JWT signing outside backend servers",
+        "Strict Hexagonal Isolation: Pure Domain layer has zero dependencies on application or infrastructure",
+        "Managed Cloud Persistence: Isolated PostgreSQL instance hosted on Supabase accessed over SSL"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Architectural Invariants",
+      "items": [
+        "Hexagonal Dependency Rule: Dependencies point strictly inward (Infrastructure → Application → Domain)",
+        "Double-Entry Accounting: All financial operations register balanced zero-sum ledger entries",
+        "Financial Immutability: Historical entries are never edited or deleted; adjustments require compensating entries",
+        "Centralized Dependency Injection: All NestJS Symbol() tokens are centralized in injection-tokens.ts"
+      ]
+    }
+  ]
+}
