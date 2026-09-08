@@ -57,6 +57,8 @@ flowchart LR
   be -->|Auth| fb[Firebase Auth]
 ```
 
+> 🔍 **Diagrama de Arquitectura de Ejecución (Runtime):** Para un diagrama detallado de componentes, límites de confianza e invariantes transaccionales, consulta el diagrama visual en [`runtime-architecture.dark.png`](./runtime-architecture.dark.png) / [`runtime-architecture.light.png`](./runtime-architecture.light.png) o abre la versión interactiva en [`runtime-architecture.html`](./runtime-architecture.html).
+
 ## Reglas clave
 
 - **Aislamiento del Dominio:** El dominio no puede importar nada de `infrastructure`.
@@ -67,6 +69,7 @@ flowchart LR
 ## Docs relacionados
 
 - [Decisiones](./adrs/) — Por qué la arquitectura se ve así.
+- [Arquitectura de Ejecución (HTML)](./runtime-architecture.html) — Diagrama interactivo de arquitectura runtime.
 - [Arquitectura del Frontend](./frontend/ARCHITECTURE.md) — Detalles técnicos y patrones del cliente (Vue 3, Pinia).
 - [Guías de Frontend](./frontend/README.md) — Convenciones y estilos generales.
 - [Modelo de datos](./data-model.md) — Esquema + relaciones.

@@ -136,3 +136,15 @@ The provided Git Diff enhances the pre-commit and pre-push hooks by integrating 
 - *No architectural violations or issues found. Excellent work!*
 
 ---
+
+## Review Session: 9/7/2026, 7:46:59 PM (Colombia)
+- **Branch:** `feat/182-add-readme-and-runtime-architecture`
+- **Verdict:** ✅ **APPROVED**
+
+### Explanation
+The changes introduce comprehensive documentation and an interactive runtime architecture diagram. The new files (`README.md`, `docs/architecture.md`, `docs/runtime-architecture.html`, `docs/runtime-architecture.json`, and associated images) clearly articulate the project's adherence to core principles, including Strict Hexagonal Architecture and Double-Entry Bookkeeping. No code changes are present in this diff that could introduce violations of the project rules. This is a highly valuable contribution to project clarity and understanding.
+
+### Issues / Suggested Improvements
+- *No architectural violations or issues found. Excellent work!*
+
+---
