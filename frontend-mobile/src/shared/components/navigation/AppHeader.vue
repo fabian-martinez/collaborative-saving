@@ -1,47 +1,55 @@
 <script setup lang="ts">
+import { Eye, EyeClosed, SunLight, HalfMoon } from 'iconoir-vue/regular';
 import { usePrivacyMode } from '@/shared/composables/usePrivacyMode';
+import { useThemeMode } from '@/shared/composables/useThemeMode';
 import { useAuthStore } from '@/features/auth/stores/authStore';
 
 const { isHidden, togglePrivacy } = usePrivacyMode();
+const { isDark, toggleTheme } = useThemeMode();
 const authStore = useAuthStore();
 </script>
 
 <template>
-  <header class="sticky top-0 z-40 w-full bg-slate-950/80 backdrop-blur-xl border-b border-slate-900 pt-safe px-4 pb-3">
+  <header class="sticky top-0 z-40 w-full bg-white/90 dark:bg-[#080e22]/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-[#162348] pt-safe px-4.5 sm:px-5 pb-3 transition-colors duration-200">
     <div class="flex items-center justify-between">
       <!-- User Info & Greeting -->
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-400 p-0.5 shadow-md shadow-emerald-950/50">
-          <div class="w-full h-full bg-slate-900 rounded-full flex items-center justify-center font-bold text-emerald-400 text-sm">
+        <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 p-0.5 shadow-sm shadow-emerald-500/20">
+          <div class="w-full h-full bg-slate-100 dark:bg-[#0e1838] rounded-full flex items-center justify-center font-bold text-emerald-600 dark:text-emerald-400 text-sm">
             {{ authStore.memberProfile?.name?.[0] || 'S' }}
           </div>
         </div>
         <div>
-          <span class="text-xs text-slate-400 block font-medium">Bienvenido</span>
-          <h2 class="text-sm font-bold text-white tracking-tight line-clamp-1">
+          <span class="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">Bienvenido</span>
+          <h2 class="text-sm font-bold text-slate-900 dark:text-white tracking-tight line-clamp-1">
             {{ authStore.memberProfile?.name || 'Socio' }}
           </h2>
         </div>
       </div>
 
-      <!-- Right Action: Privacy Toggle -->
+      <!-- Right Actions: Theme Toggle + Privacy Toggle -->
       <div class="flex items-center gap-2">
+        <!-- Theme Toggle (Modo Luminoso / Oscuro) -->
         <button
           type="button"
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-medium text-slate-300 active:scale-95 transition-all hover:border-slate-700"
-          :class="{ 'border-emerald-500/30 text-emerald-400': !isHidden }"
+          class="p-2 rounded-full bg-slate-100 dark:bg-[#0e1838] border border-slate-200 dark:border-[#1a2750] text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-[#2b3e7a] active:scale-95 transition-all"
+          :title="isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+          @click="toggleTheme"
+        >
+          <SunLight v-if="isDark" class="w-4 h-4 text-amber-400" />
+          <HalfMoon v-else class="w-4 h-4 text-slate-700" />
+        </button>
+
+        <!-- Master Privacy Toggle -->
+        <button
+          type="button"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-[#0e1838] border border-slate-200 dark:border-[#1a2750] text-xs font-semibold text-slate-700 dark:text-slate-300 active:scale-95 transition-all hover:border-slate-300 dark:hover:border-[#2b3e7a]"
+          :class="{ '!border-emerald-500/40 text-emerald-600 dark:text-emerald-400': !isHidden }"
           :title="isHidden ? 'Mostrar saldos' : 'Ocultar saldos'"
           @click="togglePrivacy"
         >
-          <!-- Eye Icon -->
-          <svg v-if="!isHidden" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-          </svg>
-          <!-- Eye Off Icon -->
-          <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-          </svg>
+          <Eye v-if="!isHidden" class="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <EyeClosed v-else class="w-4 h-4 text-slate-400" />
           <span>{{ isHidden ? 'Mostrar' : 'Ocultar' }}</span>
         </button>
       </div>

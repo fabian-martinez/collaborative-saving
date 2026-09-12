@@ -6,6 +6,32 @@
     --sab: env(safe-area-inset-bottom, 0px);
     --sal: env(safe-area-inset-left, 0px);
     --sar: env(safe-area-inset-right, 0px);
+
+    /* Light Theme (Modo Luminoso) */
+    --color-app-bg: #f4f6fa;
+    --color-card-bg: #ffffff;
+    --color-card-subtle: #f8fafc;
+    --color-card-border: #e2e8f0;
+    --color-text-main: #0f172a;
+    --color-text-muted: #64748b;
+    --color-header-bg: rgba(255, 255, 255, 0.88);
+    --color-nav-bg: rgba(255, 255, 255, 0.94);
+    --color-card-highlight: #ecfdf5;
+    --color-highlight-border: #a7f3d0;
+  }
+
+  /* Dark Theme (Azul marino saturado y profundo) */
+  :root.dark, html.dark {
+    --color-app-bg: #080e22;
+    --color-card-bg: #0e1838;
+    --color-card-subtle: #091129;
+    --color-card-border: #1a2750;
+    --color-text-main: #ffffff;
+    --color-text-muted: #94a3b8;
+    --color-header-bg: rgba(8, 14, 34, 0.88);
+    --color-nav-bg: rgba(8, 14, 34, 0.94);
+    --color-card-highlight: #0b1c2b;
+    --color-highlight-border: #059669;
   }
 
   html, body {
@@ -14,6 +40,9 @@
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
+    background-color: var(--color-app-bg);
+    color: var(--color-text-main);
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
 
@@ -27,7 +56,7 @@
 }
 
 .pb-safe-nav {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 76px);
 }
 
 /* Hide scrollbars for clean native feel */

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { watch, onUnmounted } from 'vue';
+import { Xmark } from 'iconoir-vue/regular';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -43,7 +44,7 @@ onUnmounted(() => {
     >
       <div
         v-if="modelValue"
-        class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
+        class="fixed inset-0 z-50 bg-black/60 dark:bg-black/80 backdrop-blur-sm"
         @click="close"
       />
     </Transition>
@@ -58,25 +59,23 @@ onUnmounted(() => {
     >
       <div
         v-if="modelValue"
-        class="fixed inset-x-0 bottom-0 z-50 flex max-h-[90vh] flex-col rounded-t-3xl border-t border-slate-800 bg-slate-900 shadow-2xl pb-safe"
+        class="fixed inset-x-0 bottom-0 z-50 flex max-h-[90vh] flex-col rounded-t-3xl border-t border-slate-200 dark:border-[#1a2750] bg-white dark:bg-[#0c1532] shadow-2xl pb-safe text-slate-900 dark:text-slate-100 transition-colors duration-200"
       >
         <!-- Pull Handle -->
         <div class="pt-3 pb-2 cursor-grab active:cursor-grabbing" @click="close">
-          <div class="mx-auto h-1.5 w-12 rounded-full bg-slate-700" />
+          <div class="mx-auto h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-700" />
         </div>
 
         <!-- Header -->
-        <div v-if="title || $slots.header" class="flex items-center justify-between px-5 pb-3 border-b border-slate-800/80">
+        <div v-if="title || $slots.header" class="flex items-center justify-between px-5 pb-3 border-b border-slate-200 dark:border-[#1a2750]">
           <slot name="header">
-            <h3 class="text-lg font-bold text-white tracking-tight">{{ title }}</h3>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white tracking-tight">{{ title }}</h3>
             <button
               type="button"
-              class="rounded-full p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white active:scale-95 transition-all"
+              class="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-[#16244e] hover:text-slate-700 dark:hover:text-white active:scale-95 transition-all"
               @click="close"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <Xmark class="h-5 w-5" />
             </button>
           </slot>
         </div>
@@ -87,7 +86,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Footer / Action bar -->
-        <div v-if="$slots.footer" class="border-t border-slate-800/80 p-4">
+        <div v-if="$slots.footer" class="border-t border-slate-200 dark:border-[#1a2750] p-4">
           <slot name="footer" />
         </div>
       </div>
