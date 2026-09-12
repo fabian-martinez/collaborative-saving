@@ -28,6 +28,7 @@
             <option value="corriente">Corriente (1.5%)</option>
             <option value="agil">Ágil (2%)</option>
             <option value="prioritario">Prioritario (2%)</option>
+            <option value="accion">Acción (1.5%)</option>
           </select>
         </div>
         <div class="mb-4">
@@ -86,6 +87,7 @@
 import { ref, watch, computed } from 'vue'
 import type { Member } from '@/api/members.api'
 import { formatCurrency, formatMoneyInput, parseMoneyInput, formatDate } from '@/shared/utils/formatters'
+import { getDefaultInterestPercentage } from '@/features/loans/constants/loan-rates'
 
 const props = defineProps<{
   show: boolean,
@@ -118,7 +120,7 @@ const autoMatchAmount = ref(true)
 
 const formError = ref('')
 
-const interestRate = computed(() => form.value.type === 'corriente' ? 1.5 : 2)
+const interestRate = computed(() => getDefaultInterestPercentage(form.value.type))
 
 watch(
   () => [props.show, props.prevLoan, props.member],

@@ -32,9 +32,11 @@ import {
   LoanTransactionType,
 } from '@domain/entities/loan-transaction-detail.entity';
 import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
+import { LOAN_CONSTANTS } from '@domain/constants/business-rules.constants';
 
-const DEFAULT_DIFFERENCE_LOAN_INTEREST = 0.02;
-const DEFAULT_DIFFERENCE_LOAN_TERM = 24;
+const DEFAULT_DIFFERENCE_LOAN_INTEREST =
+  LOAN_CONSTANTS.DEFAULT_INTEREST_RATE_ACTION;
+const DEFAULT_DIFFERENCE_LOAN_TERM = LOAN_CONSTANTS.DEFAULT_TERM_MONTHS;
 
 interface LoanDetails {
   loanId: string;

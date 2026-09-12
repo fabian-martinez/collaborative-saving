@@ -332,6 +332,7 @@ import { loansApi, type Loan } from '@/api/loans.api'
 import { meetingsApi, type DisbursementPlanItem, type DisbursementPlanPreview } from '@/api/meetings.api'
 import { useActiveMeetingStore } from '../../stores/activeMeeting'
 import { formatCurrency, formatDate } from '@/shared/utils/formatters'
+import { getDefaultInterestRate } from '@/features/loans/constants/loan-rates'
 
 // Components
 import PrintReceiptModal from '@/shared/components/PrintReceiptModal.vue'
@@ -630,7 +631,7 @@ function handleLoanSave(loanData: any) {
   }
   
   if (isNewLoan) {
-    const interestRate = loanData.type === 'corriente' ? 0.015 : 0.02
+    const interestRate = getDefaultInterestRate(loanData.type)
     const monthlyPayment = loanData.approved * interestRate * 0.1
     newItem.new_loan_request = {
       member_id: selectedMember.value.id,

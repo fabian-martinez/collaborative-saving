@@ -849,8 +849,8 @@
                     {{ loan.loan_type }} - Saldo: {{ formatCurrency(loan.outstanding_balance) }}
                   </option>
                 </template>
-                <option v-if="modificationDifference < 0" value="new_action_loan">Crédito de Acción (2% interés)</option>
-                <option v-if="modificationDifference < 0" value="new_current_loan">Crédito Corriente (2% interés)</option>
+                <option v-if="modificationDifference < 0" value="new_action_loan">Crédito de Acción (1.5% interés)</option>
+                <option v-if="modificationDifference < 0" value="new_current_loan">Crédito Corriente (1.5% interés)</option>
               </select>
             </div>
           </div>
