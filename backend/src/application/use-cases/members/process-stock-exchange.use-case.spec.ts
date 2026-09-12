@@ -276,6 +276,7 @@ describe('ProcessStockExchangeUseCase', () => {
         loanType: 'accion',
         approvedAmount: 600000, // absolute difference
         disbursedAmount: 600000,
+        interestRate: 0.015,
       }),
     );
     // Stock modification operation should include LOANS_RECEIVABLE_ACCOUNT entry (financing)
