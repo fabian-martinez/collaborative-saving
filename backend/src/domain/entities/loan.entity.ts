@@ -183,7 +183,7 @@ export class Loan {
    * @returns The interest amount due for the current period
    */
   calculateInterestDue(): number {
-    return this._outstandingBalance * this._interestRate;
+    return Number((this._outstandingBalance * this._interestRate).toFixed(2));
   }
 
   recordPayment(principalAmount: number, interestAmount: number): void {
@@ -197,7 +197,9 @@ export class Loan {
       throw new Error('Can only record payments for active or pending loans');
     }
 
-    const newBalance = this._outstandingBalance - principalAmount;
+    const newBalance = Number(
+      (this._outstandingBalance - principalAmount).toFixed(2),
+    );
     if (newBalance < 0) {
       throw new Error('Payment cannot result in negative outstanding balance');
     }
