@@ -370,6 +370,33 @@ describe('Loan Entity', () => {
         'Can only record payments for active or pending loans',
       );
     });
+
+    it('should handle floating-point precision when reducing balance', () => {
+      loan.update({ outstandingBalance: 100.2 });
+      loan.recordPayment(100.1, 0);
+      expect(loan.outstandingBalance).toBe(0.1);
+    });
+  });
+
+  describe('calculateInterestDue method', () => {
+    it('should calculate and round interest due to 2 decimal places', () => {
+      const loan = Loan.create({
+        memberId: 'member-1',
+        loanType: 'corriente',
+        approvedAmount: 50000000,
+        monthlyPaymentAmount: 500000,
+        interestRate: 0.015,
+        term: 24,
+      });
+      loan.update({
+        disbursedAmount: 45698609,
+        outstandingBalance: 45698609,
+        status: LoanStatus.ACTIVE,
+      });
+
+      // 45,698,609.00 * 0.015 = 685,479.135 -> rounded to 685479.14
+      expect(loan.calculateInterestDue()).toBe(685479.14);
+    });
   });
 
   describe('markAsDefaulted method', () => {

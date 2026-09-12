@@ -49,8 +49,9 @@ export class RecordLoanPaymentUseCase {
         throw new LoanNotFoundException(dto.loanId);
       }
 
-      // 2. Validate payment amount
-      if (dto.totalPaymentAmount <= 0) {
+      // 2. Validate and normalize payment amount
+      const totalPaymentAmount = Number(dto.totalPaymentAmount.toFixed(2));
+      if (totalPaymentAmount <= 0) {
         throw new InvalidRequestError(
           'Payment amount must be greater than zero',
         );
@@ -65,32 +66,39 @@ export class RecordLoanPaymentUseCase {
         dto.forcedPrincipalAmount !== undefined
       ) {
         // Use forced amounts (for special cases like stock-based payments)
-        interestPaid = dto.forcedInterestAmount;
-        principalPaid = dto.forcedPrincipalAmount;
+        interestPaid = Number(dto.forcedInterestAmount.toFixed(2));
+        principalPaid = Number(dto.forcedPrincipalAmount.toFixed(2));
 
         // Validate forced amounts match total
-        const forcedTotal = interestPaid + principalPaid;
-        if (Math.abs(forcedTotal - dto.totalPaymentAmount) > 0.01) {
+        const forcedTotal = Number((interestPaid + principalPaid).toFixed(2));
+        if (Math.abs(forcedTotal - totalPaymentAmount) > 0.01) {
           throw new InvalidRequestError(
-            `Forced amounts (${forcedTotal}) do not match total payment (${dto.totalPaymentAmount})`,
+            `Forced amounts (${forcedTotal}) do not match total payment (${totalPaymentAmount})`,
           );
         }
       } else if (dto.forcedPrincipalAmount !== undefined) {
         // Only principal forced (e.g., stock-based payment where all goes to principal)
-        principalPaid = dto.forcedPrincipalAmount;
-        interestPaid = dto.totalPaymentAmount - principalPaid;
+        principalPaid = Number(dto.forcedPrincipalAmount.toFixed(2));
+        interestPaid = Math.max(
+          0,
+          Number((totalPaymentAmount - principalPaid).toFixed(2)),
+        );
       } else if (dto.forcedInterestAmount !== undefined) {
         // Only interest forced
-        interestPaid = dto.forcedInterestAmount;
-        principalPaid = dto.totalPaymentAmount - interestPaid;
+        interestPaid = Number(dto.forcedInterestAmount.toFixed(2));
+        principalPaid = Math.max(
+          0,
+          Number((totalPaymentAmount - interestPaid).toFixed(2)),
+        );
       } else {
         // Calculate based on loan interest due (standard behavior)
-        const interestDue = loan.calculateInterestDue();
+        const interestDue = Number(loan.calculateInterestDue().toFixed(2));
         interestPaid = Number(
-          Math.min(dto.totalPaymentAmount, interestDue).toFixed(2),
+          Math.min(totalPaymentAmount, interestDue).toFixed(2),
         );
-        principalPaid = Number(
-          (dto.totalPaymentAmount - interestPaid).toFixed(2),
+        principalPaid = Math.max(
+          0,
+          Number((totalPaymentAmount - interestPaid).toFixed(2)),
         );
       }
 
@@ -101,13 +109,16 @@ export class RecordLoanPaymentUseCase {
         );
       }
 
-      // 5. Build ledger entries
+      // 5. Update loan state using domain method (validates domain invariants before persistence)
+      loan.recordPayment(principalPaid, interestPaid);
+
+      // 6. Build ledger entries
       const ledgerEntries: RecordOperationDto['entries'] = [];
 
       // Cash entry (debit - money received)
       ledgerEntries.push({
         accountType: CASH_ACCOUNT,
-        amount: dto.totalPaymentAmount,
+        amount: totalPaymentAmount,
         description: this.buildCashDescription(
           principalPaid,
           interestPaid,
@@ -138,7 +149,7 @@ export class RecordLoanPaymentUseCase {
         });
       }
 
-      // 6. Record accounting operation
+      // 7. Record accounting operation
       const operationDto: RecordOperationDto = {
         memberId: loan.memberId,
         meetingId: dto.meetingId,
@@ -152,11 +163,10 @@ export class RecordLoanPaymentUseCase {
       const operationResult =
         await this.recordOperationUseCase.execute(operationDto);
 
-      // 7. Update loan state using domain method
-      loan.recordPayment(principalPaid, interestPaid);
+      // 8. Persist updated loan
       await this.loanRepository.save(loan);
 
-      // 7.5. If loan is fully paid, release subscriptions
+      // 8.5. If loan is fully paid, release subscriptions
       if (
         loan.outstandingBalance === 0 &&
         loan.status === (LoanStatus.PAID as string)
