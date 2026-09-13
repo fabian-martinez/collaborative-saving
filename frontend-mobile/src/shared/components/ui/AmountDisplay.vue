@@ -6,7 +6,7 @@ import { usePrivacyMode } from '@/shared/composables/usePrivacyMode';
 const props = withDefaults(
   defineProps<{
     amount: number | string | null | undefined;
-    size?: 'sm' | 'md' | 'lg' | 'xl' | 'hero';
+    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'hero';
     variant?: 'default' | 'primary' | 'success' | 'danger' | 'warning' | 'muted';
     customClass?: string;
   }>(),
@@ -23,43 +23,49 @@ const formattedAmount = computed(() => formatCurrency(props.amount));
 
 const sizeClasses = computed(() => {
   switch (props.size) {
+    case 'xs':
+      return 'text-xs font-semibold';
     case 'sm':
-      return 'text-sm font-semibold';
+      return 'text-xs sm:text-sm font-semibold';
     case 'md':
-      return 'text-base font-bold';
+      return 'text-sm sm:text-base font-bold';
     case 'lg':
-      return 'text-xl font-bold tracking-tight';
+      return 'text-base sm:text-lg font-extrabold';
     case 'xl':
-      return 'text-2xl font-extrabold tracking-tight';
+      return 'text-lg sm:text-xl font-black';
     case 'hero':
-      return 'text-3xl sm:text-4xl font-black tracking-tight';
+      // Tamaño grande responsivo que no desborda pantallas móviles de 360-390px
+      return 'text-2xl sm:text-3xl font-black';
     default:
-      return 'text-base font-bold';
+      return 'text-sm sm:text-base font-bold';
   }
 });
 
 const variantClasses = computed(() => {
   switch (props.variant) {
-    case 'primary':
-      return 'text-emerald-400';
     case 'success':
-      return 'text-emerald-400';
+      return 'text-emerald-500 dark:text-emerald-400';
     case 'danger':
-      return 'text-rose-400';
+      return 'text-rose-500 dark:text-rose-400';
     case 'warning':
-      return 'text-amber-400';
+      return 'text-amber-500 dark:text-amber-400';
     case 'muted':
-      return 'text-slate-400';
+      return 'text-slate-500 dark:text-slate-400';
+    case 'default':
     default:
-      return 'text-white';
+      // Números principales en blanco en modo oscuro / negro-pizarra en modo luminoso
+      return 'text-slate-900 dark:text-white';
   }
 });
 </script>
 
 <template>
-  <span :class="[sizeClasses, variantClasses, customClass]" class="inline-flex items-center tabular-nums transition-all">
+  <span
+    :class="[sizeClasses, variantClasses, customClass]"
+    class="inline-flex items-center whitespace-nowrap tabular-nums shrink-0 tracking-tight transition-all"
+  >
     <template v-if="isHidden">
-      <span class="tracking-widest font-mono select-none opacity-80">••••••</span>
+      <span class="tracking-widest font-mono select-none opacity-70">••••••</span>
     </template>
     <template v-else>
       {{ formattedAmount }}
