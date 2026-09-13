@@ -36,19 +36,23 @@ describe('RecordLoanPaymentUseCase', () => {
       outstandingBalance?: number;
       interestRate?: number;
       status?: LoanStatus;
+      approvedAmount?: number;
     } = {},
   ): Loan => {
+    const amount =
+      options.approvedAmount ??
+      Math.max(10000, options.outstandingBalance ?? 10000);
     const loan = Loan.create({
       memberId: mockMemberId,
       loanType: 'corriente',
-      approvedAmount: 10000,
+      approvedAmount: amount,
       monthlyPaymentAmount: 500,
       interestRate: options.interestRate ?? 0.02,
       term: 24,
     });
     loan.update({
-      disbursedAmount: 10000,
-      outstandingBalance: options.outstandingBalance ?? 10000,
+      disbursedAmount: amount,
+      outstandingBalance: options.outstandingBalance ?? amount,
       status: options.status ?? LoanStatus.ACTIVE,
     });
     return loan;
@@ -278,6 +282,70 @@ describe('RecordLoanPaymentUseCase', () => {
       // Should only create 1 transaction detail (interest only)
       expect(loanTransactionDetailSaveSpy).toHaveBeenCalledTimes(1);
     });
+
+    it('should handle fractional interest-only payment with 3+ decimal places without precision errors', async () => {
+      // $45,698,609.00 * 0.015 = $685,479.135
+      const mockLoan = createMockLoan({
+        outstandingBalance: 45698609,
+        interestRate: 0.015,
+      });
+      loanFindByIdSpy.mockResolvedValue(mockLoan);
+      loanSaveSpy.mockResolvedValue(mockLoan);
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
+
+      // Payment with 3 decimal places matching unrounded calculated interest
+      const dto: RecordLoanPaymentDto = {
+        loanId: mockLoan.id,
+        meetingId: mockMeetingId,
+        totalPaymentAmount: 685479.135,
+      };
+
+      const result = await useCase.execute(dto);
+
+      expect(result.interestPaid).toBe(685479.14);
+      expect(result.principalPaid).toBe(0);
+      expect(result.newOutstandingBalance).toBe(45698609);
+
+      // Cash entry should be normalized to 685479.14
+      expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          entries: expect.arrayContaining([
+            expect.objectContaining({
+              accountType: CASH_ACCOUNT,
+              amount: 685479.14,
+            }),
+            expect.objectContaining({
+              accountType: INTEREST_INCOME_ACCOUNT,
+              amount: -685479.14,
+            }),
+          ]),
+        }),
+      );
+    });
+
+    it('should handle interest-only payment when paid amount is slightly less due to rounding down', async () => {
+      // When user/client pays 685,479.13 (rounded down from 685,479.135)
+      const mockLoan = createMockLoan({
+        outstandingBalance: 45698609,
+        interestRate: 0.015,
+      });
+      loanFindByIdSpy.mockResolvedValue(mockLoan);
+      loanSaveSpy.mockResolvedValue(mockLoan);
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
+
+      const dto: RecordLoanPaymentDto = {
+        loanId: mockLoan.id,
+        meetingId: mockMeetingId,
+        totalPaymentAmount: 685479.13,
+      };
+
+      const result = await useCase.execute(dto);
+
+      expect(result.interestPaid).toBe(685479.13);
+      expect(result.principalPaid).toBe(0);
+      expect(result.newOutstandingBalance).toBe(45698609);
+    });
   });
 
   describe('Error handling', () => {
@@ -347,6 +415,27 @@ describe('RecordLoanPaymentUseCase', () => {
       };
 
       await expect(useCase.execute(dto)).rejects.toThrow(InvalidRequestError);
+    });
+
+    it('should not record accounting operation if loan domain validation fails', async () => {
+      const mockLoan = createMockLoan({
+        status: LoanStatus.DEFAULTED,
+      });
+      loanFindByIdSpy.mockResolvedValue(mockLoan);
+
+      const dto: RecordLoanPaymentDto = {
+        loanId: mockLoan.id,
+        meetingId: mockMeetingId,
+        totalPaymentAmount: 500,
+      };
+
+      await expect(useCase.execute(dto)).rejects.toThrow(
+        'Can only record payments for active or pending loans',
+      );
+
+      // Verify accounting operation was never executed or persisted
+      expect(recordOperationExecuteSpy).not.toHaveBeenCalled();
+      expect(loanSaveSpy).not.toHaveBeenCalled();
     });
   });
 

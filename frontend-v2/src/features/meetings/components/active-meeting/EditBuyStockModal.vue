@@ -54,7 +54,7 @@
             />
           </div>
           <div v-if="form.paymentMethod === 'mixed'" class="mt-2 text-warning text-sm flex items-center gap-1">
-            <span class="font-bold">2% interés fijo</span> sobre el monto a crédito.
+            <span class="font-bold">1.5% interés fijo</span> sobre el monto a crédito.
           </div>
         </div>
         <!-- Feedback de error -->
@@ -97,6 +97,7 @@ import type { Stock } from '@/api/stocks.api'
 import type { Member } from '@/api/members.api'
 import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
 import { formatMoneyInput, parseMoneyInput } from '@/shared/utils/formatters'
+import { getDefaultInterestRate } from '@/features/loans/constants/loan-rates'
 
 interface LocalLine {
   memberId?: string
@@ -231,7 +232,7 @@ function handleSave() {
   
   if (form.value.paymentMethod === 'mixed' && cash < totalAmount.value) {
     line.loanDetails = {
-      interest_rate: 0.02,
+      interest_rate: getDefaultInterestRate('accion'),
       loan_type: 'accion',
     }
   }
