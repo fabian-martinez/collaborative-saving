@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import BottomSheet from '@/shared/components/overlays/BottomSheet.vue';
 import AmountDisplay from '@/shared/components/ui/AmountDisplay.vue';
-import Badge from '@/shared/components/ui/Badge.vue';
 
 defineProps<{
   modelValue: boolean;
@@ -19,12 +18,9 @@ const emit = defineEmits<{
     @update:model-value="emit('update:modelValue', $event)"
   >
     <div class="space-y-4">
-      <div class="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-[#091129] border border-slate-200/80 dark:border-[#17254e]">
-        <div>
-          <span class="text-xs text-slate-500 dark:text-slate-400 block">Fecha de la asamblea</span>
-          <span class="text-sm font-bold text-slate-900 dark:text-white">Sábado, 15 de Octubre 2026</span>
-        </div>
-        <Badge variant="warning">Efectivo en mano</Badge>
+      <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-[#091129] border border-slate-200/80 dark:border-[#17254e]">
+        <span class="text-xs text-slate-500 dark:text-slate-400 block">Fecha de la asamblea</span>
+        <span class="text-sm font-bold text-slate-900 dark:text-white">Sábado, 15 de Octubre 2026</span>
       </div>
 
       <!-- Itemized Breakdown -->

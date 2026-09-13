@@ -17,8 +17,6 @@ const emit = defineEmits<{
   <SummaryCard
     highlighted
     title="Próxima Reunión"
-    badge-text="Efectivo en vivo"
-    badge-variant="warning"
     :amount="totalDue ?? 185000"
     amount-label="Total a pagar este mes"
   >
