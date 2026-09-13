@@ -23,7 +23,11 @@ const members = ref<MemberSummary[]>([
   { id: 'm-3', name: 'Juan Gómez', role: 'Socio', sharesCount: 5, capitalAmount: 1500000, hasLoan: true, debtAmount: 1200000, status: 'active' },
   { id: 'm-4', name: 'Ana Morales', role: 'Secretaria', sharesCount: 4, capitalAmount: 1200000, hasLoan: false, debtAmount: 0, status: 'active' },
   { id: 'm-5', name: 'Pedro Sánchez', role: 'Socio', sharesCount: 3, capitalAmount: 900000, hasLoan: true, debtAmount: 450000, status: 'active' },
-  { id: 'm-6', name: 'Laura Vargas', role: 'Presidente', sharesCount: 5, capitalAmount: 1500000, hasLoan: false, debtAmount: 0, status: 'active' }
+  { id: 'm-6', name: 'Laura Vargas', role: 'Presidente', sharesCount: 5, capitalAmount: 1500000, hasLoan: false, debtAmount: 0, status: 'active' },
+  { id: 'm-7', name: 'Diego Torres', role: 'Fiscal', sharesCount: 4, capitalAmount: 1200000, hasLoan: true, debtAmount: 950000, status: 'active' },
+  { id: 'm-8', name: 'Camila Ríos', role: 'Socia', sharesCount: 3, capitalAmount: 900000, hasLoan: true, debtAmount: 300000, status: 'active' },
+  { id: 'm-9', name: 'Andrés Castro', role: 'Socio', sharesCount: 4, capitalAmount: 1200000, hasLoan: false, debtAmount: 0, status: 'active' },
+  { id: 'm-10', name: 'Valentina Peña', role: 'Socia', sharesCount: 2, capitalAmount: 600000, hasLoan: false, debtAmount: 0, status: 'active' }
 ]);
 
 const searchQuery = ref('');

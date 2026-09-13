@@ -14,13 +14,19 @@ const mockDistribution = [
   { name: 'María Rodríguez', sharesCount: 6, total: 1800000 },
   { name: 'Juan Gómez', sharesCount: 5, total: 1500000 },
   { name: 'Ana Morales', sharesCount: 4, total: 1200000 },
-  { name: 'Pedro Sánchez', sharesCount: 3, total: 900000 }
+  { name: 'Pedro Sánchez', sharesCount: 3, total: 900000 },
+  { name: 'Laura Vargas', sharesCount: 5, total: 1500000 },
+  { name: 'Diego Torres', sharesCount: 4, total: 1200000 },
+  { name: 'Camila Ríos', sharesCount: 3, total: 900000 }
 ];
 
 const mockDebtors = [
   { name: 'Carlos Martínez', loanType: 'Corriente + Ágil', totalDebt: 800000, status: 'Al día' },
   { name: 'Juan Gómez', loanType: 'Corriente', totalDebt: 1200000, status: 'Al día' },
-  { name: 'Pedro Sánchez', loanType: 'Ágil', totalDebt: 450000, status: 'Al día' }
+  { name: 'Pedro Sánchez', loanType: 'Ágil', totalDebt: 450000, status: 'Al día' },
+  { name: 'Diego Torres', loanType: 'Corriente', totalDebt: 950000, status: 'Al día' },
+  { name: 'Camila Ríos', loanType: 'Ágil', totalDebt: 300000, status: 'Al día' },
+  { name: 'Ana Morales', loanType: 'Corriente', totalDebt: 600000, status: 'Al día' }
 ];
 </script>
 
