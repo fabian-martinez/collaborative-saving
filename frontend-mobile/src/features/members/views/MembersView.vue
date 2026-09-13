@@ -115,10 +115,10 @@ function openMemberDetail(member: MemberSummary) {
           </div>
         </div>
 
-        <div class="text-right shrink-0">
+        <div class="flex flex-col items-end shrink-0 gap-1">
           <AmountDisplay :amount="member.capitalAmount" size="sm" variant="default" />
-          <Badge v-if="member.hasLoan" variant="warning" class="mt-0.5 !text-[10px] !py-0 block">Crédito activo</Badge>
-          <Badge v-else variant="success" class="mt-0.5 !text-[10px] !py-0 block">Al día</Badge>
+          <Badge v-if="member.hasLoan" variant="warning" class="!text-[10px] !py-0.5 !px-2">Crédito activo</Badge>
+          <Badge v-else variant="success" class="!text-[10px] !py-0.5 !px-2">Al día</Badge>
         </div>
       </div>
     </Card>

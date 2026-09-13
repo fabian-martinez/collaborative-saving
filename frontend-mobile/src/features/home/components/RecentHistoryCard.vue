@@ -57,9 +57,9 @@ const emit = defineEmits<{
         </div>
       </div>
 
-      <div class="text-right shrink-0">
+      <div class="flex flex-col items-end shrink-0 gap-1">
         <AmountDisplay :amount="item.amount" size="sm" variant="default" />
-        <Badge variant="success" class="mt-0.5 !text-[10px] !py-0 block">Registrado ✅</Badge>
+        <Badge variant="success" class="!text-[10px] !py-0.5 !px-2">Registrado ✅</Badge>
       </div>
     </div>
   </SummaryCard>

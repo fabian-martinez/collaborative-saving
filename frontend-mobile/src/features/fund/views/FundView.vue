@@ -162,9 +162,9 @@ const mockDebtors = [
             <span class="font-semibold text-slate-900 dark:text-white block">{{ debtor.name }}</span>
             <span class="text-slate-500 dark:text-slate-400">{{ debtor.loanType }}</span>
           </div>
-          <div class="text-right">
+          <div class="flex flex-col items-end shrink-0 gap-1">
             <AmountDisplay :amount="debtor.totalDebt" size="sm" variant="default" />
-            <Badge variant="success" class="mt-0.5 !text-[10px] !py-0">{{ debtor.status }}</Badge>
+            <Badge variant="success" class="!text-[10px] !py-0.5 !px-2">{{ debtor.status }}</Badge>
           </div>
         </div>
       </div>

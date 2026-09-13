@@ -76,9 +76,9 @@ function openReceipt(receipt: HistoryItem) {
           </div>
         </div>
 
-        <div class="text-right shrink-0">
+        <div class="flex flex-col items-end shrink-0 gap-1">
           <AmountDisplay :amount="receipt.amount" size="sm" variant="default" />
-          <Badge variant="success" class="mt-0.5 !text-[10px] !py-0 block">Pagado ✅</Badge>
+          <Badge variant="success" class="!text-[10px] !py-0.5 !px-2">Pagado ✅</Badge>
         </div>
       </div>
     </Card>
