@@ -16,8 +16,8 @@ import { useTextScale, type TextScaleLevel } from '@/shared/composables/useTextS
 import { useAuthStore } from '@/features/auth/stores/authStore';
 
 const { isHidden, togglePrivacy } = usePrivacyMode();
-const { isDark, toggleTheme, setTheme } = useThemeMode();
-const { currentScale, isScaled, cycleScale, setScale, options } = useTextScale();
+const { isDark, setTheme } = useThemeMode();
+const { currentScale, setScale, options } = useTextScale();
 const authStore = useAuthStore();
 
 const isUserMenuOpen = ref(false);
@@ -211,33 +211,8 @@ onUnmounted(() => {
         </transition>
       </div>
 
-      <!-- Right Actions: Text Scale (Direct Cycle) + Theme Toggle + Privacy Toggle -->
-      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-        <!-- Text Scale Direct Cycle Button (100% -> 115% -> 130% -> 145% -> 100%) -->
-        <button
-          type="button"
-          class="h-8 px-2.5 rounded-full bg-slate-100 dark:bg-[#0e1838] border border-slate-200 dark:border-[#1a2750] text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-[#2b3e7a] active:scale-95 transition-all flex items-center justify-center gap-1 font-bold font-mono text-xs cursor-pointer"
-          :class="{ '!border-emerald-500 !text-emerald-600 dark:!text-emerald-400 bg-emerald-500/10': isScaled }"
-          :title="`Aumentar tamaño de texto (actual: ${currentScale}%). Toca para agrandar.`"
-          aria-label="Aumentar tamaño de texto"
-          @click="cycleScale"
-        >
-          <span class="tracking-tighter text-[11px] leading-none font-sans">aA</span>
-          <span v-if="isScaled" class="text-[9px] font-mono text-emerald-600 dark:text-emerald-400 font-extrabold leading-none">{{ currentScale }}%</span>
-        </button>
-
-        <!-- Theme Toggle (Modo Luminoso / Oscuro) -->
-        <button
-          type="button"
-          class="p-2 rounded-full bg-slate-100 dark:bg-[#0e1838] border border-slate-200 dark:border-[#1a2750] text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-[#2b3e7a] active:scale-95 transition-all cursor-pointer"
-          :title="isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
-          @click="toggleTheme"
-        >
-          <SunLight v-if="isDark" class="w-4 h-4 text-amber-400" />
-          <HalfMoon v-else class="w-4 h-4 text-slate-700" />
-        </button>
-
-        <!-- Master Privacy Toggle -->
+      <!-- Right Action: Master Privacy Toggle -->
+      <div class="flex items-center shrink-0">
         <button
           type="button"
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-[#0e1838] border border-slate-200 dark:border-[#1a2750] text-xs font-semibold text-slate-700 dark:text-slate-300 active:scale-95 transition-all hover:border-slate-300 dark:hover:border-[#2b3e7a] cursor-pointer"
