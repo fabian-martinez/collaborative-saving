@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { NavArrowLeft } from 'iconoir-vue/regular';
 import Card from '@/shared/components/ui/Card.vue';
 import AmountDisplay from '@/shared/components/ui/AmountDisplay.vue';
 import Badge from '@/shared/components/ui/Badge.vue';
@@ -31,53 +32,53 @@ function openReceipt(receipt: HistoryItem) {
 
 <template>
   <div class="space-y-4">
-    <!-- Header with Back Button -->
+    <!-- Header with Back Button using NavArrowLeft from Iconoir -->
     <div class="flex items-center gap-3 pt-1">
       <button
         type="button"
-        class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 active:scale-95 transition-all"
+        class="p-2 rounded-xl bg-white dark:bg-[#0e1838] border border-slate-200 dark:border-[#1a2750] text-slate-700 dark:text-slate-300 active:scale-95 transition-all"
         @click="router.back()"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
+        <NavArrowLeft class="w-5 h-5" />
       </button>
       <div>
-        <h2 class="text-base font-bold text-white tracking-tight">Historial de Transacciones</h2>
-        <span class="text-xs text-slate-400">Recibos de pagos entregados en efectivo</span>
+        <h2 class="text-base font-bold text-slate-900 dark:text-white tracking-tight">Historial de Transacciones</h2>
+        <span class="text-xs text-slate-500 dark:text-slate-400">Recibos de pagos entregados en efectivo</span>
       </div>
     </div>
 
     <!-- Summary Box -->
-    <div class="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 flex items-center justify-between">
-      <div>
-        <span class="text-xs text-slate-400 block font-medium">Total aportado este ciclo</span>
-        <span class="text-xs text-emerald-400 font-bold">8 reuniones cumplidas</span>
+    <div class="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-slate-100 to-white dark:from-[#0e1838] dark:to-[#080e22] border border-slate-200 dark:border-[#1a2750] shadow-sm dark:shadow-md dark:shadow-[#05091a]/60 space-y-3">
+      <div class="flex items-center justify-between">
+        <span class="text-xs uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">Total aportado este ciclo</span>
+        <Badge variant="success">8 reuniones cumplidas</Badge>
       </div>
-      <AmountDisplay :amount="1340000" size="xl" variant="success" />
+      <div>
+        <AmountDisplay :amount="1340000" size="hero" variant="default" />
+      </div>
     </div>
 
     <!-- Receipts List -->
-    <Card class="space-y-2 !p-3">
+    <Card class="space-y-2.5">
       <div
         v-for="receipt in receipts"
         :key="receipt.id"
-        class="flex items-center justify-between p-3 rounded-xl bg-slate-950/40 border border-slate-800/60 hover:border-slate-700 active:scale-[0.99] transition-all cursor-pointer"
+        class="flex items-center justify-between p-3.5 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#091129] border border-slate-200/70 dark:border-[#17254e] hover:border-slate-300 dark:hover:border-[#22356a] active:scale-[0.99] transition-all cursor-pointer gap-3"
         @click="openReceipt(receipt)"
       >
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-slate-800/80 border border-slate-700/50 flex items-center justify-center font-mono font-bold text-xs text-slate-200">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-slate-200 dark:bg-[#15234c] border border-slate-300 dark:border-[#22356a] flex items-center justify-center font-mono font-bold text-xs text-slate-700 dark:text-slate-200 shrink-0">
             #{{ receipt.meetingNumber }}
           </div>
-          <div>
-            <span class="text-xs font-semibold text-white block">Reunión #{{ receipt.meetingNumber }}</span>
-            <span class="text-[11px] text-slate-400">{{ receipt.date }}</span>
+          <div class="min-w-0">
+            <span class="text-xs font-semibold text-slate-900 dark:text-white block truncate">Reunión #{{ receipt.meetingNumber }}</span>
+            <span class="text-[11px] text-slate-500 dark:text-slate-400">{{ receipt.date }}</span>
           </div>
         </div>
 
-        <div class="text-right">
-          <AmountDisplay :amount="receipt.amount" size="sm" />
-          <Badge variant="success" class="mt-0.5 !text-[10px] !py-0">Pagado ✅</Badge>
+        <div class="flex flex-col items-end shrink-0 gap-1">
+          <AmountDisplay :amount="receipt.amount" size="sm" variant="default" />
+          <Badge variant="success" class="!text-[10px] !py-0.5 !px-2">Pagado ✅</Badge>
         </div>
       </div>
     </Card>
