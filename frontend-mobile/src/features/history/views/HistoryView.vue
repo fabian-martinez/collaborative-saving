@@ -48,20 +48,22 @@ function openReceipt(receipt: HistoryItem) {
     </div>
 
     <!-- Summary Box -->
-    <div class="p-4 rounded-2xl bg-gradient-to-br from-slate-100 to-white dark:from-[#0b1638] dark:to-[#080e22] border border-slate-200 dark:border-[#1a2750] flex items-center justify-between gap-3 shadow-sm">
-      <div class="min-w-0">
-        <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Total aportado este ciclo</span>
-        <span class="text-xs text-emerald-600 dark:text-emerald-400 font-bold">8 reuniones cumplidas</span>
+    <div class="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-slate-100 to-white dark:from-[#0e1838] dark:to-[#080e22] border border-slate-200 dark:border-[#1a2750] shadow-sm dark:shadow-md dark:shadow-[#05091a]/60 space-y-3">
+      <div class="flex items-center justify-between">
+        <span class="text-xs uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">Total aportado este ciclo</span>
+        <Badge variant="success">8 reuniones cumplidas</Badge>
       </div>
-      <AmountDisplay :amount="1340000" size="xl" variant="default" />
+      <div>
+        <AmountDisplay :amount="1340000" size="hero" variant="default" />
+      </div>
     </div>
 
     <!-- Receipts List -->
-    <Card class="space-y-2 !p-3">
+    <Card class="space-y-2.5">
       <div
         v-for="receipt in receipts"
         :key="receipt.id"
-        class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[#091129] border border-slate-200/70 dark:border-[#17254e] hover:border-slate-300 dark:hover:border-[#22356a] active:scale-[0.99] transition-all cursor-pointer gap-3"
+        class="flex items-center justify-between p-3.5 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#091129] border border-slate-200/70 dark:border-[#17254e] hover:border-slate-300 dark:hover:border-[#22356a] active:scale-[0.99] transition-all cursor-pointer gap-3"
         @click="openReceipt(receipt)"
       >
         <div class="flex items-center gap-3 min-w-0">

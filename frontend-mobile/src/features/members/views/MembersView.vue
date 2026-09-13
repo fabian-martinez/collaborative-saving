@@ -96,11 +96,11 @@ function openMemberDetail(member: MemberSummary) {
     </div>
 
     <!-- Members List -->
-    <Card class="space-y-2 !p-3">
+    <Card class="space-y-2.5">
       <div
         v-for="member in filteredMembers"
         :key="member.id"
-        class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[#091129] border border-slate-200/70 dark:border-[#17254e] hover:border-slate-300 dark:hover:border-[#22356a] active:scale-[0.99] transition-all cursor-pointer gap-3"
+        class="flex items-center justify-between p-3.5 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#091129] border border-slate-200/70 dark:border-[#17254e] hover:border-slate-300 dark:hover:border-[#22356a] active:scale-[0.99] transition-all cursor-pointer gap-3"
         @click="openMemberDetail(member)"
       >
         <div class="flex items-center gap-3 min-w-0">

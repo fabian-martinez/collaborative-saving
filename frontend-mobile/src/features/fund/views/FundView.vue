@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Coins, CreditCard } from 'iconoir-vue/regular';
-import Card from '@/shared/components/ui/Card.vue';
+import { Coins, CreditCard, ShieldCheck } from 'iconoir-vue/regular';
+import SummaryCard from '@/shared/components/ui/SummaryCard.vue';
 import AmountDisplay from '@/shared/components/ui/AmountDisplay.vue';
 import Badge from '@/shared/components/ui/Badge.vue';
 import BottomSheet from '@/shared/components/overlays/BottomSheet.vue';
@@ -27,119 +27,112 @@ const mockDebtors = [
 <template>
   <div class="space-y-4">
     <!-- Header Summary of the Fund -->
-    <div class="p-4.5 rounded-2xl bg-gradient-to-br from-slate-100 to-white dark:from-[#0b1638] dark:to-[#080e22] border border-slate-200 dark:border-[#1a2750] shadow-sm">
-      <div class="flex items-center gap-2 mb-1">
-        <span class="w-2 h-2 rounded-full bg-emerald-500" />
-        <span class="text-xs uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">Estado Global del Fondo</span>
-      </div>
-      <div class="flex items-baseline justify-between mt-2 gap-2">
-        <div class="min-w-0">
-          <span class="text-xs text-slate-500 dark:text-slate-400 block mb-0.5">Patrimonio Total en Circulación</span>
-          <!-- Hero amount in pure white (dark) / dark slate (light) -->
-          <AmountDisplay :amount="45200000" size="xl" variant="default" />
+    <div class="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-slate-100 to-white dark:from-[#0e1838] dark:to-[#080e22] border border-slate-200 dark:border-[#1a2750] shadow-sm dark:shadow-md dark:shadow-[#05091a]/60 space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+          <span class="text-xs uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">Estado Global del Fondo</span>
         </div>
         <Badge variant="success">100% Solvente</Badge>
+      </div>
+      <div>
+        <span class="text-xs text-slate-500 dark:text-slate-400 block mb-0.5 font-medium">Patrimonio Total en Circulación</span>
+        <AmountDisplay :amount="45200000" size="hero" variant="default" />
       </div>
     </div>
 
     <!-- 2.1 Capital Global del Fondo -->
-    <Card class="space-y-3.5">
-      <div class="flex items-center justify-between gap-3">
-        <div class="flex items-center gap-2.5 min-w-0">
-          <div class="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
-            <Coins class="w-5 h-5" />
-          </div>
-          <div class="min-w-0">
-            <h3 class="text-xs uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider truncate">Capital Social</h3>
-            <span class="text-xs text-slate-500 dark:text-slate-400 truncate block">Total acciones suscritas</span>
-          </div>
-        </div>
-        <AmountDisplay :amount="28500000" size="lg" variant="default" />
-      </div>
-
-      <!-- Action items -->
-      <div class="space-y-2 pt-2 border-t border-slate-200/80 dark:border-[#17254e]">
-        <div class="p-3 rounded-xl bg-slate-50 dark:bg-[#091129] border border-slate-200/70 dark:border-[#17254e]">
-          <div class="flex justify-between items-center mb-1 gap-2">
+    <SummaryCard
+      :icon="Coins"
+      icon-color="emerald"
+      title="Capital Social"
+      subtitle="Total acciones suscritas"
+      badge-text="91 acciones"
+      badge-variant="success"
+      :amount="28500000"
+      amount-label="Total ahorrado en el fondo"
+    >
+      <div class="space-y-2.5">
+        <div class="p-3.5 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#091129] border border-slate-200/70 dark:border-[#17254e] space-y-1.5">
+          <div class="flex justify-between items-center gap-2">
             <span class="text-xs font-semibold text-slate-900 dark:text-white truncate">Acciones Grandes (Tipo 1)</span>
             <AmountDisplay :amount="18000000" size="sm" variant="default" />
           </div>
-          <div class="flex justify-between text-[11px] text-slate-500 dark:text-slate-400">
+          <div class="flex justify-between items-center text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200/50 dark:border-[#152042]">
             <span>36 emitidas ($ 500.000 c/u)</span>
-            <button class="text-emerald-600 dark:text-emerald-400 font-semibold" @click="isOwnersSheetOpen = true">Ver aportantes →</button>
+            <button class="text-emerald-600 dark:text-emerald-400 font-semibold active:scale-95" @click="isOwnersSheetOpen = true">Ver aportantes →</button>
           </div>
         </div>
 
-        <div class="p-3 rounded-xl bg-slate-50 dark:bg-[#091129] border border-slate-200/70 dark:border-[#17254e]">
-          <div class="flex justify-between items-center mb-1 gap-2">
+        <div class="p-3.5 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#091129] border border-slate-200/70 dark:border-[#17254e] space-y-1.5">
+          <div class="flex justify-between items-center gap-2">
             <span class="text-xs font-semibold text-slate-900 dark:text-white truncate">Acciones Pequeñas (Tipo 2)</span>
             <AmountDisplay :amount="10500000" size="sm" variant="default" />
           </div>
-          <div class="flex justify-between text-[11px] text-slate-500 dark:text-slate-400">
+          <div class="flex justify-between items-center text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200/50 dark:border-[#152042]">
             <span>55 emitidas ($ 190.000 c/u)</span>
-            <button class="text-emerald-600 dark:text-emerald-400 font-semibold" @click="isOwnersSheetOpen = true">Ver aportantes →</button>
+            <button class="text-emerald-600 dark:text-emerald-400 font-semibold active:scale-95" @click="isOwnersSheetOpen = true">Ver aportantes →</button>
           </div>
         </div>
       </div>
-    </Card>
+    </SummaryCard>
 
     <!-- 2.2 Deuda y Cartera Global -->
-    <Card class="space-y-3.5">
-      <div class="flex items-center justify-between gap-3">
-        <div class="flex items-center gap-2.5 min-w-0">
-          <div class="p-2 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 shrink-0">
-            <CreditCard class="w-5 h-5" />
-          </div>
-          <div class="min-w-0">
-            <h3 class="text-xs uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider truncate">Cartera de Préstamos</h3>
-            <span class="text-xs text-slate-500 dark:text-slate-400 truncate block">Total colocado entre los socios</span>
-          </div>
-        </div>
-        <AmountDisplay :amount="16700000" size="lg" variant="default" />
-      </div>
-
-      <div class="space-y-2 pt-2 border-t border-slate-200/80 dark:border-[#17254e]">
-        <div class="p-3 rounded-xl bg-slate-50 dark:bg-[#091129] border border-slate-200/70 dark:border-[#17254e]">
-          <div class="flex justify-between items-center mb-1 gap-2">
+    <SummaryCard
+      :icon="CreditCard"
+      icon-color="rose"
+      title="Cartera de Préstamos"
+      subtitle="Total colocado entre los socios"
+      badge-text="13 préstamos"
+      badge-variant="warning"
+      :amount="16700000"
+      amount-label="Saldo total colocado"
+    >
+      <div class="space-y-2.5">
+        <div class="p-3.5 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#091129] border border-slate-200/70 dark:border-[#17254e] space-y-1.5">
+          <div class="flex justify-between items-center gap-2">
             <span class="text-xs font-semibold text-slate-900 dark:text-white truncate">Préstamos Corrientes</span>
             <AmountDisplay :amount="12200000" size="sm" variant="default" />
           </div>
-          <div class="flex justify-between text-[11px] text-slate-500 dark:text-slate-400">
-            <span>Tasa: 1.5% mensual (8 activos)</span>
-            <button class="text-rose-600 dark:text-rose-400 font-semibold" @click="isDebtorsSheetOpen = true">Ver deudores →</button>
+          <div class="flex justify-between items-center text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200/50 dark:border-[#152042]">
+            <span>1.5% mensual (8 activos)</span>
+            <button class="text-rose-600 dark:text-rose-400 font-semibold active:scale-95" @click="isDebtorsSheetOpen = true">Ver deudores →</button>
           </div>
         </div>
 
-        <div class="p-3 rounded-xl bg-slate-50 dark:bg-[#091129] border border-slate-200/70 dark:border-[#17254e]">
-          <div class="flex justify-between items-center mb-1 gap-2">
+        <div class="p-3.5 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#091129] border border-slate-200/70 dark:border-[#17254e] space-y-1.5">
+          <div class="flex justify-between items-center gap-2">
             <span class="text-xs font-semibold text-slate-900 dark:text-white truncate">Préstamos Ágiles</span>
             <AmountDisplay :amount="4500000" size="sm" variant="default" />
           </div>
-          <div class="flex justify-between text-[11px] text-slate-500 dark:text-slate-400">
-            <span>Tasa: 2.0% mensual (5 activos)</span>
-            <button class="text-rose-600 dark:text-rose-400 font-semibold" @click="isDebtorsSheetOpen = true">Ver deudores →</button>
+          <div class="flex justify-between items-center text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200/50 dark:border-[#152042]">
+            <span>2.0% mensual (5 activos)</span>
+            <button class="text-rose-600 dark:text-rose-400 font-semibold active:scale-95" @click="isDebtorsSheetOpen = true">Ver deudores →</button>
           </div>
         </div>
       </div>
-    </Card>
+    </SummaryCard>
 
     <!-- 2.3 Fondos & Actividades Globales -->
-    <Card class="space-y-2.5">
-      <div class="flex items-center justify-between">
-        <h3 class="text-xs uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">Fondos de Reserva y Solidaridad</h3>
-        <AmountDisplay :amount="1250000" size="sm" variant="default" />
-      </div>
+    <SummaryCard
+      :icon="ShieldCheck"
+      icon-color="indigo"
+      title="Fondos de Reserva"
+      subtitle="Solidaridad y eventos comunitarios"
+      :amount="1250000"
+      amount-label="Total fondos comunitarios"
+    >
       <div class="grid grid-cols-2 gap-2.5 text-xs">
-        <div class="p-3 rounded-xl bg-slate-50 dark:bg-[#091129] border border-slate-200/70 dark:border-[#17254e]">
-          <span class="text-[11px] text-slate-500 dark:text-slate-400 block mb-0.5">Fondo de Seguros</span>
+        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-[#091129] border border-slate-200/70 dark:border-[#17254e]">
+          <span class="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">Fondo de Seguros</span>
           <AmountDisplay :amount="750000" size="sm" variant="default" />
         </div>
-        <div class="p-3 rounded-xl bg-slate-50 dark:bg-[#091129] border border-slate-200/70 dark:border-[#17254e]">
-          <span class="text-[11px] text-slate-400 block mb-0.5">Fondo de Eventos</span>
+        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-[#091129] border border-slate-200/70 dark:border-[#17254e]">
+          <span class="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">Fondo de Eventos</span>
           <AmountDisplay :amount="500000" size="sm" variant="default" />
         </div>
       </div>
-    </Card>
+    </SummaryCard>
 
     <!-- BottomSheets for Owners and Debtors -->
     <BottomSheet v-model="isOwnersSheetOpen" title="Socios Aportantes">
