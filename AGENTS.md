@@ -9,7 +9,7 @@ Este archivo solo captura lo que no es obvio leyendo el código. Para arquitectu
 - [Negocio](./docs/business.md) — Qué es Collaborative Saving y por qué existe.
 - [Arquitectura](./docs/architecture.md) — Stack técnico (NestJS, Vue 3) y patrones (Hexagonal).
 - [Modelo de datos](./docs/data-model.md) — Esquema de PostgreSQL (`infra/database`) y contabilidad.
-- [Infraestructura](./docs/infrastructure.md) — Despliegue en Supabase y CI/CD.
+- [Infraestructura](./docs/infrastructure.md) — Despliegue en Neon Postgres, Firebase Auth y CI/CD.
 - [Decisiones](./docs/adrs/README.md) — Registro de decisiones arquitectónicas (ADRs).
 - [Diseño](./docs/design.md) — Sistema de diseño y UI/UX.
 - [Usuario objetivo](./docs/target-user.md) — Quién usa la plataforma.

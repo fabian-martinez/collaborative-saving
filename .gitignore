@@ -170,3 +170,6 @@ infra/backups/
 # Agent and CLI artifacts
 .antigravitycli/
 ui_design.pen
+.neon
+.agents/
+skills-lock.json
