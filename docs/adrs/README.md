@@ -16,6 +16,8 @@ Este directorio contiene **ADRs** — registros cortos y fechados de decisiones 
 - [ADR-0010: Migración arquitectura hexagonal](./0010-migracion-arquitectura-hexagonal.md)
 - [ADR-0011: Implementación de value objects members](./0011-implementacion-value-objects-members.md)
 - [ADR-0012: Sistema transversal registro operaciones](./0012-sistema-transversal-registro-operaciones.md)
+- [ADR-0013: Decisiones técnicas frontend v2](./0013-decisiones-tecnicas-frontend-v2.md)
+- [ADR-0014: Selección Neon Postgres para producción](./0014-seleccion-neon-postgres-produccion.md)
 
 ## Cómo escribir uno nuevo
 

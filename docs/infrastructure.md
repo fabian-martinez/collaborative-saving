@@ -37,7 +37,10 @@ npm run dev
 
 ### Objetivo de despliegue
 
-Supabase (BD + Auth) y Host de Node.js (Vercel/Render/Docker).
+- **Base de Datos:** Neon Serverless Postgres (PostgreSQL 15+, SSL obligatorio, Connection Pooling con PgBouncer).
+- **Autenticación:** Firebase Auth.
+- **Backend:** NestJS en PaaS / Container (Render / Cloud Run).
+- **Frontend:** SPA Vue 3 en CDN (Cloudflare Pages / Vercel).
 
 ### CI/CD
 
@@ -47,7 +50,7 @@ Supabase (BD + Auth) y Host de Node.js (Vercel/Render/Docker).
 
 ## Observabilidad
 
-Se utilizan los logs de NestJS y las herramientas de monitoreo de Supabase.
+Se utilizan los logs estructurados de NestJS y la consola de monitoreo de Neon / Cloud Logging.
 
 ## Gestión de Base de Datos
 
