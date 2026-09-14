@@ -15,6 +15,7 @@ TRUNCATE TABLE
   public.operations,
   public.ledger_entries,
   public.meetings,
+  public.loan_types,
   public.loans,
   public.loan_transaction_details,
   public.stock_value_history
@@ -23,6 +24,14 @@ RESTART IDENTITY CASCADE;
 -- ----------------------------------------------------------------
 -- ▤ Catalog Data
 -- ----------------------------------------------------------------
+-- Insertar tipos de préstamo
+INSERT INTO public.loan_types (id, code, name, interest_rate, description) VALUES
+('681c73c5-0f84-449e-9571-a685462e256f', 'corriente', 'Corriente', 0.0150, 'Préstamo corriente estándar con tasa del 1.5% mensual'),
+('71e9aa90-84c2-4f6e-a9b5-f340d5a6362d', 'agil', 'Ágil', 0.0200, 'Préstamo ágil con tasa del 2.0% mensual'),
+('01f640d4-9557-4169-9349-91b03f9abfbe', 'prioritario', 'Prioritario', 0.0200, 'Préstamo prioritario para emergencias con tasa del 2.0% mensual'),
+('f2bdfc87-cdcc-42ee-b941-d435d0489448', 'accion', 'Acción', 0.0150, 'Préstamo para financiación de acciones con tasa del 1.5% mensual')
+ON CONFLICT (code) DO NOTHING;
+
 -- Insertar tipos de acciones
 INSERT INTO public.stocks (id, type, value, monthly_contribution, is_guaranteed, guaranteed_yield) VALUES
 ('f47ac10b-58cc-4372-a567-0e02b2c3d478', 'Acción Preferencial', 1000.00, 100.00, true, 0.02), -- Acción con rendimiento garantizado del 2%

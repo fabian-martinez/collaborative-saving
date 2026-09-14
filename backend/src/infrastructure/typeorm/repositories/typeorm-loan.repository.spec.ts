@@ -10,6 +10,7 @@ describe('TypeOrmLoanRepository', () => {
   let repository: TypeOrmLoanRepository;
   let typeOrmRepo: jest.Mocked<Repository<LoanEntity>>;
   let updateSpy: jest.SpyInstance;
+  let countSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -17,6 +18,7 @@ describe('TypeOrmLoanRepository', () => {
       find: jest.fn(),
       save: jest.fn(),
       update: jest.fn(),
+      count: jest.fn(),
     };
 
     const mockTransactionManager = {
@@ -43,6 +45,7 @@ describe('TypeOrmLoanRepository', () => {
 
     // Create spies to avoid 'this' scoping issues
     updateSpy = jest.spyOn(typeOrmRepo, 'update');
+    countSpy = jest.spyOn(typeOrmRepo, 'count');
   });
 
   describe('findById', () => {
@@ -320,6 +323,36 @@ describe('TypeOrmLoanRepository', () => {
       const result = await repository.findByIds(loanIds);
       expect(result).toHaveLength(1);
       expect(result[0]).toBeInstanceOf(LoanDomain);
+    });
+  });
+
+  describe('hasActiveLoansByType', () => {
+    it('should return true when count of active/pending loans is greater than 0', async () => {
+      // ARRANGE
+      typeOrmRepo.count.mockResolvedValue(2);
+
+      // ACT
+      const result = await repository.hasActiveLoansByType('corriente');
+
+      // ASSERT
+      expect(result).toBe(true);
+      expect(countSpy).toHaveBeenCalledWith({
+        where: {
+          loanType: 'corriente',
+          status: expect.anything() as unknown,
+        },
+      });
+    });
+
+    it('should return false when count of active/pending loans is 0', async () => {
+      // ARRANGE
+      typeOrmRepo.count.mockResolvedValue(0);
+
+      // ACT
+      const result = await repository.hasActiveLoansByType('inactivo');
+
+      // ASSERT
+      expect(result).toBe(false);
     });
   });
 });

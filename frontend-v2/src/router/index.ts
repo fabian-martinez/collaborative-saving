@@ -81,6 +81,11 @@ const routes: RouteRecordRaw[] = [
     path: '/pending-payments',
     name: 'pending-payments',
     component: () => import('@/features/pending-payments/views/PendingPaymentsView.vue')
+  },
+  {
+    path: '/settings',
+    name: 'settings',
+    component: () => import('@/features/settings/views/SettingsView.vue')
   }
 ]
 
