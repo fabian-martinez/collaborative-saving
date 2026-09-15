@@ -567,5 +567,47 @@ describe('TypeOrmStockRepository', () => {
       // Assert
       expect(result).toBe(false);
     });
+
+    it('should check stock_type_id when stockType is a valid UUID', async () => {
+      // Arrange
+      const uuid = 'e1a1b1c1-1111-4444-9999-000000000001';
+      typeOrmRepo.count.mockResolvedValue(1);
+
+      // Act
+      const result = await repository.hasActiveStocksByType(uuid);
+
+      // Assert
+      expect(result).toBe(true);
+      expect(countSpy).toHaveBeenCalledWith({
+        where: [
+          { type: uuid, deleted_at: IsNull() },
+          { stock_type_id: uuid, deleted_at: IsNull() },
+        ],
+      });
+    });
+
+    it('should check ILike pattern with spaces when stockType has underscores', async () => {
+      // Arrange
+      typeOrmRepo.count.mockResolvedValue(1);
+
+      // Act
+      const result = await repository.hasActiveStocksByType('acciones_grandes');
+
+      // Assert
+      expect(result).toBe(true);
+      expect(countSpy).toHaveBeenCalled();
+    });
+
+    it('should check cdt wildcard ILike pattern when stockType is cdt', async () => {
+      // Arrange
+      typeOrmRepo.count.mockResolvedValue(1);
+
+      // Act
+      const result = await repository.hasActiveStocksByType('cdt');
+
+      // Assert
+      expect(result).toBe(true);
+      expect(countSpy).toHaveBeenCalled();
+    });
   });
 });

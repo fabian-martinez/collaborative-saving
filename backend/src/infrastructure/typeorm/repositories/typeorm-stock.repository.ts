@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, In } from 'typeorm';
+import { Repository, IsNull, In, ILike } from 'typeorm';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { Stock as StockDomain } from '@domain/entities/stock.entity';
 import { Stock as StockEntity } from '../entities/stock.entity';
@@ -103,11 +103,30 @@ export class TypeOrmStockRepository implements StockRepository {
   }
 
   async hasActiveStocksByType(stockType: string): Promise<boolean> {
-    const count = await this.repo.count({
-      where: {
-        type: stockType,
+    const isCdt = stockType.toLowerCase() === 'cdt';
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        stockType,
+      );
+
+    const conditions: Array<Record<string, unknown>> = [
+      { type: stockType, deleted_at: IsNull() },
+    ];
+    if (isUuid) {
+      conditions.push({ stock_type_id: stockType, deleted_at: IsNull() });
+    }
+    if (stockType.includes('_')) {
+      conditions.push({
+        type: ILike(stockType.replace(/_/g, ' ')),
         deleted_at: IsNull(),
-      },
+      });
+    }
+    if (isCdt) {
+      conditions.push({ type: ILike('cdt%'), deleted_at: IsNull() });
+    }
+
+    const count = await this.repo.count({
+      where: conditions.length === 1 ? conditions[0] : conditions,
     });
     return count > 0;
   }
