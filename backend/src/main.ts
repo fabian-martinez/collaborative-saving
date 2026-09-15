@@ -13,11 +13,26 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
 
-  // Use Helmet for security headers
-  app.use(helmet());
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  // Use Helmet for security headers, configuring CSP to allow Swagger UI
+  app.use(
+    helmet({
+      contentSecurityPolicy: isProduction
+        ? {
+            directives: {
+              defaultSrc: [`'self'`],
+              styleSrc: [`'self'`, `'unsafe-inline'`],
+              imgSrc: [`'self'`, 'data:', 'validator.swagger.io'],
+              scriptSrc: [`'self'`, `'unsafe-inline'`, `'unsafe-eval'`],
+            },
+          }
+        : false,
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
 
   // Configure explicitly bounded CORS using the ALLOWED_ORIGINS environment variable
-  const isProduction = process.env.NODE_ENV === 'production';
   const allowedOrigins = resolveCorsOrigins(
     process.env.ALLOWED_ORIGINS,
     isProduction,
@@ -46,9 +61,14 @@ async function bootstrap() {
       .setTitle('Collaborative Saving API')
       .setDescription('The API for the Collaborative Saving application.')
       .setVersion('1.0')
+      .addBearerAuth()
       .build();
     const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('api', app, document);
+    SwaggerModule.setup('api', app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+      },
+    });
     logger.log('Swagger documentation enabled at /api');
   } else {
     logger.log(
