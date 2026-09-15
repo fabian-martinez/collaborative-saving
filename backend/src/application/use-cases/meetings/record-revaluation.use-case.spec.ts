@@ -73,12 +73,14 @@ describe('RecordRevaluationUseCase', () => {
     stockRepository = {
       findById: jest.fn(),
       findByIds: jest.fn(),
+      findByName: jest.fn(),
       findByType: jest.fn(),
       findAll: jest.fn(),
       findActive: jest.fn(),
       save: jest.fn(),
       saveMany: jest.fn(),
       findGuaranteed: jest.fn(),
+      softDelete: jest.fn(),
     };
 
     stockSubscriptionRepository = {
