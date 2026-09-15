@@ -27,18 +27,12 @@ RESTART IDENTITY CASCADE;
 -- ----------------------------------------------------------------
 -- Insertar tipos de acciones (catálogo)
 INSERT INTO public.stock_types (id, code, name, behavior, is_guaranteed, guaranteed_yield, description) VALUES
-('e1a1b1c1-1111-4444-9999-000000000001', 'acciones_grandes', 'Acciones Grandes', 'CAPITAL_APPRECIATION', false, null, 'Acción de alta denominación con apreciación de capital'),
-('e1a1b1c1-1111-4444-9999-000000000002', 'acciones_medianas', 'Acciones Medianas', 'CAPITAL_APPRECIATION', false, null, 'Acción de mediana denominación'),
-('e1a1b1c1-1111-4444-9999-000000000003', 'acciones_pequenas', 'Acciones Pequeñas', 'CAPITAL_APPRECIATION', false, null, 'Acción de baja denominación'),
-('e1a1b1c1-1111-4444-9999-000000000004', 'acciones_super', 'Acciones Super', 'DIVIDEND_YIELD', false, null, 'Acción especial con distribución periódica directa de rendimientos por dividendo'),
-('e1a1b1c1-1111-4444-9999-000000000005', 'bono_navideno', 'Bono Navideño', 'CAPITAL_APPRECIATION', true, 0.0200, 'Bono navideño con rendimiento pactado garantizado del 2% mensual'),
-('e1a1b1c1-1111-4444-9999-000000000006', 'bono_navideno_2026', 'Bono Navideño 2026', 'CAPITAL_APPRECIATION', true, 0.0200, 'Bono navideño emisión 2026 con rendimiento pactado garantizado del 2% mensual'),
-('e1a1b1c1-1111-4444-9999-000000000007', 'cdt', 'Certificado de Depósito a Término', 'CAPITAL_APPRECIATION', true, 0.0150, 'Instrumento de ahorro a plazo fijo con rendimiento garantizado del 1.5% mensual'),
-('e1a1b1c1-1111-4444-9999-000000000008', 'accion_fenix', 'Accion Fenix', 'CAPITAL_APPRECIATION', false, null, 'Acción Serie Fénix'),
-('e1a1b1c1-1111-4444-9999-000000000009', 'accion_mini', 'Accion Mini', 'CAPITAL_APPRECIATION', false, null, 'Acción de denominación reducida'),
-('e1a1b1c1-1111-4444-9999-000000000010', 'seguro', 'Seguro', 'CAPITAL_APPRECIATION', false, null, 'Fondo de seguro colectivo mutual'),
-('e1a1b1c1-1111-4444-9999-000000000011', 'ordinaria', 'Acción Ordinaria', 'CAPITAL_APPRECIATION', false, null, 'Acción estándar con participación en valorización de activos'),
-('e1a1b1c1-1111-4444-9999-000000000012', 'preferencial', 'Acción Preferencial', 'CAPITAL_APPRECIATION', true, 0.0200, 'Acción con rendimiento preferencial garantizado del 2% mensual')
+('e1a1b1c1-1111-4444-9999-000000000001', 'ordinaria', 'Acción Ordinaria', 'CAPITAL_APPRECIATION', false, null, 'Acción estándar con participación en valorización de activos (Mini, Fénix, Pequeña, Mediana, Grande)'),
+('e1a1b1c1-1111-4444-9999-000000000002', 'bono_navideno', 'Bono Navideño', 'CAPITAL_APPRECIATION', true, 0.0200, 'Bono navideño con rendimiento pactado garantizado del 2% mensual'),
+('e1a1b1c1-1111-4444-9999-000000000003', 'cdt', 'Certificado de Depósito a Término', 'CAPITAL_APPRECIATION', true, 0.0150, 'Instrumento de ahorro a plazo fijo con rendimiento garantizado del 1.5% mensual'),
+('e1a1b1c1-1111-4444-9999-000000000004', 'super', 'Acción Super', 'DIVIDEND_YIELD', false, null, 'Acción especial con distribución periódica directa de rendimientos por dividendo'),
+('e1a1b1c1-1111-4444-9999-000000000005', 'seguro', 'Seguro', 'CAPITAL_APPRECIATION', false, null, 'Fondo de seguro colectivo mutual'),
+('e1a1b1c1-1111-4444-9999-000000000006', 'preferencial', 'Acción Preferencial', 'CAPITAL_APPRECIATION', true, 0.0200, 'Acción con rendimiento preferencial garantizado del 2% mensual')
 ON CONFLICT (code) DO NOTHING;
 
 -- Insertar tipos de préstamo
@@ -49,12 +43,12 @@ INSERT INTO public.loan_types (id, code, name, interest_rate, description) VALUE
 ('f2bdfc87-cdcc-42ee-b941-d435d0489448', 'accion', 'Acción', 0.0150, 'Préstamo para financiación de acciones con tasa del 1.5% mensual')
 ON CONFLICT (code) DO NOTHING;
 
--- Insertar tipos de acciones
+-- Insertar tipos de acciones (instancias)
 INSERT INTO public.stocks (id, name, value, monthly_contribution, is_guaranteed, guaranteed_yield, stock_type_id) VALUES
-('f47ac10b-58cc-4372-a567-0e02b2c3d478', 'Acción Preferencial', 1000.00, 100.00, true, 0.02, 'e1a1b1c1-1111-4444-9999-000000000012'), -- Acción con rendimiento garantizado del 2%
-('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'Acción Grande', 1000.00, 100.00, false, null, 'e1a1b1c1-1111-4444-9999-000000000001'),
-('f47ac10b-58cc-4372-a567-0e02b2c3d480', 'Acción Mediana', 500.00, 50.00, false, null, 'e1a1b1c1-1111-4444-9999-000000000002'),
-('f47ac10b-58cc-4372-a567-0e02b2c3d481', 'Acción Pequeña', 250.00, 25.00, false, null, 'e1a1b1c1-1111-4444-9999-000000000003');
+('f47ac10b-58cc-4372-a567-0e02b2c3d478', 'Acción Preferencial', 1000.00, 100.00, true, 0.02, 'e1a1b1c1-1111-4444-9999-000000000006'), -- Tipo preferencial
+('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'Acción Grande', 1000.00, 100.00, false, null, 'e1a1b1c1-1111-4444-9999-000000000001'), -- Tipo ordinaria
+('f47ac10b-58cc-4372-a567-0e02b2c3d480', 'Acción Mediana', 500.00, 50.00, false, null, 'e1a1b1c1-1111-4444-9999-000000000001'), -- Tipo ordinaria
+('f47ac10b-58cc-4372-a567-0e02b2c3d481', 'Acción Pequeña', 250.00, 25.00, false, null, 'e1a1b1c1-1111-4444-9999-000000000001'); -- Tipo ordinaria
 
 -- Insertar contribuciones obligatorias
 INSERT INTO public.mandatory_contributions (asset_type, value) VALUES
