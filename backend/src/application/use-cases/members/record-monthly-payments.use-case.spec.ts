@@ -260,6 +260,47 @@ describe('RecordMonthlyPaymentsUseCase', () => {
       expect(result.totalAmount).toBe(500);
     });
 
+    it('should delegate loan payment with isFullPayoff flag', async () => {
+      // ARRANGE
+      const loanId = 'loan-id-full-payoff';
+      const loanDto: RecordMonthlyPaymentsDto = {
+        memberId: 'member-id',
+        payments: [
+          {
+            type: PaymentType.LOAN_PAYMENT,
+            amount: 500,
+            description: 'Liquidación total',
+            referenceId: loanId,
+            isFullPayoff: true,
+          },
+        ],
+      };
+
+      findByIdSpy.mockResolvedValue(mockMember);
+      findActiveSpy.mockResolvedValue(mockMeeting);
+      recordLoanPaymentExecuteSpy.mockResolvedValue({
+        loanId,
+        operationId: 'loan-operation-id',
+        interestPaid: 50,
+        principalPaid: 450,
+        newOutstandingBalance: 0,
+        loanStatus: 'PAID',
+        transactionDetailIds: ['detail-1'],
+      });
+
+      // ACT
+      await useCase.execute(loanDto);
+
+      // ASSERT
+      expect(recordLoanPaymentExecuteSpy).toHaveBeenCalledWith({
+        loanId,
+        meetingId: mockMeeting.id,
+        totalPaymentAmount: 500,
+        notes: 'Liquidación total',
+        isFullPayoff: true,
+      });
+    });
+
     it('should process both loan and non-loan payments', async () => {
       // ARRANGE
       const mixedDto: RecordMonthlyPaymentsDto = {

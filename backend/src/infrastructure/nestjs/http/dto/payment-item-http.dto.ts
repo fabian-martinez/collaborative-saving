@@ -7,6 +7,7 @@ import {
   IsString,
   IsUUID,
   IsNotEmpty,
+  IsBoolean,
 } from 'class-validator';
 import { PaymentType } from '@application/dto/members/payment-item.dto';
 
@@ -69,4 +70,13 @@ export class PaymentItemHttpDto {
   @IsOptional()
   @IsEnum(PaymentType)
   affected_payment_type?: PaymentType;
+
+  @ApiPropertyOptional({
+    description:
+      'Flag indicating whether this payment is intended to fully liquidate the loan (for loan_payment).',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  is_full_payoff?: boolean;
 }

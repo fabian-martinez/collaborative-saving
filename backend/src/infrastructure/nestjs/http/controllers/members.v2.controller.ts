@@ -249,6 +249,7 @@ export class MembersV2Controller {
       forcedPrincipalAmount: body.amount,
       forcedInterestAmount: 0,
       notes: body.notes || `Abono extraordinario a capital prestamo`,
+      isFullPayoff: body.isFullPayoff,
     });
     return {
       ...result,
@@ -766,6 +767,9 @@ export class MembersV2Controller {
       }
       if (payment.affected_payment_type) {
         paymentDto.affectedPaymentType = payment.affected_payment_type;
+      }
+      if (payment.is_full_payoff !== undefined) {
+        paymentDto.isFullPayoff = payment.is_full_payoff;
       }
       return paymentDto;
     });

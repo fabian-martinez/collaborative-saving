@@ -346,6 +346,100 @@ describe('RecordLoanPaymentUseCase', () => {
       expect(result.principalPaid).toBe(0);
       expect(result.newOutstandingBalance).toBe(45698609);
     });
+
+    it('should automatically complete payoff and mark loan as paid when residual balance is within tolerance (<= 1.00 COP)', async () => {
+      // Real case scenario: Loan with balance 6,307,142.11 and payment of 6,307,141.47 (leaving 0.64 COP)
+      const mockLoan = createMockLoan({
+        outstandingBalance: 6307142.11,
+        approvedAmount: 6307142.11,
+        interestRate: 0,
+      });
+      loanFindByIdSpy.mockResolvedValue(mockLoan);
+      loanSaveSpy.mockResolvedValue(mockLoan);
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
+      jest
+        .spyOn(stockSubscriptionRepository, 'findByFinancingLoan')
+        .mockResolvedValue([]);
+
+      const dto: RecordLoanPaymentDto = {
+        loanId: mockLoan.id,
+        meetingId: mockMeetingId,
+        totalPaymentAmount: 6307141.47,
+        forcedInterestAmount: 0,
+        forcedPrincipalAmount: 6307141.47,
+      };
+
+      const result = await useCase.execute(dto);
+
+      // Value completed before operation: principal covered is full 6307142.11
+      expect(result.principalPaid).toBe(6307142.11);
+      expect(result.newOutstandingBalance).toBe(0);
+      expect(result.loanStatus).toBe(LoanStatus.PAID);
+
+      // Ledger entries must balance to zero with no extra adjustment entries
+      expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entries: [
+            expect.objectContaining({
+              accountType: CASH_ACCOUNT,
+              amount: 6307142.11,
+            }),
+            expect.objectContaining({
+              accountType: LOANS_RECEIVABLE_ACCOUNT,
+              amount: -6307142.11,
+            }),
+          ],
+        }),
+      );
+    });
+
+    it('should fully liquidate loan when isFullPayoff is true', async () => {
+      const mockLoan = createMockLoan({
+        outstandingBalance: 5000000,
+        approvedAmount: 5000000,
+        interestRate: 0.015,
+      });
+      loanFindByIdSpy.mockResolvedValue(mockLoan);
+      loanSaveSpy.mockResolvedValue(mockLoan);
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
+      jest
+        .spyOn(stockSubscriptionRepository, 'findByFinancingLoan')
+        .mockResolvedValue([]);
+
+      // interest = 5000000 * 0.015 = 75000
+      const dto: RecordLoanPaymentDto = {
+        loanId: mockLoan.id,
+        meetingId: mockMeetingId,
+        totalPaymentAmount: 0,
+        isFullPayoff: true,
+      };
+
+      const result = await useCase.execute(dto);
+
+      expect(result.principalPaid).toBe(5000000);
+      expect(result.interestPaid).toBe(75000);
+      expect(result.newOutstandingBalance).toBe(0);
+      expect(result.loanStatus).toBe(LoanStatus.PAID);
+
+      expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entries: [
+            expect.objectContaining({
+              accountType: CASH_ACCOUNT,
+              amount: 5075000,
+            }),
+            expect.objectContaining({
+              accountType: INTEREST_INCOME_ACCOUNT,
+              amount: -75000,
+            }),
+            expect.objectContaining({
+              accountType: LOANS_RECEIVABLE_ACCOUNT,
+              amount: -5000000,
+            }),
+          ],
+        }),
+      );
+    });
   });
 
   describe('Error handling', () => {
