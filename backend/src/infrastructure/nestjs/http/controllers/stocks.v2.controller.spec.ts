@@ -5,6 +5,7 @@ import { GetStocksQueryHandler } from '@application/queries/stocks/get-stocks.qu
 import { GetStockDetailQueryHandler } from '@application/queries/stocks/get-stock-detail.query-handler';
 import { CreateStockUseCase } from '@application/use-cases/stocks/create-stock.use-case';
 import { UpdateStockUseCase } from '@application/use-cases/stocks/update-stock.use-case';
+import { DeleteStockUseCase } from '@application/use-cases/stocks/delete-stock.use-case';
 import { CreateCdtUseCase } from '@application/use-cases/stocks/create-cdt.use-case';
 import { CloseCdtUseCase } from '@application/use-cases/stocks/close-cdt.use-case';
 import { StockBehavior } from '@domain/entities/stock.entity';
@@ -20,15 +21,19 @@ describe('StocksV2Controller', () => {
   let getStockDetailQuery: jest.Mocked<GetStockDetailQueryHandler>;
   let createStockUseCase: jest.Mocked<CreateStockUseCase>;
   let updateStockUseCase: jest.Mocked<UpdateStockUseCase>;
+  let deleteStockUseCase: jest.Mocked<DeleteStockUseCase>;
 
   let getStocksQueryExecuteSpy: jest.SpyInstance;
   let getStockDetailQueryExecuteSpy: jest.SpyInstance;
   let createStockUseCaseExecuteSpy: jest.SpyInstance;
   let updateStockUseCaseExecuteSpy: jest.SpyInstance;
+  let deleteStockUseCaseExecuteSpy: jest.SpyInstance;
 
   const mockStockResponse: StockResponseDto = {
     id: '550e8400-e29b-41d4-a716-446655440000',
+    name: 'preferential',
     type: 'preferential',
+    stockTypeId: null,
     value: 100,
     monthlyContribution: 50,
     isGuaranteed: false,
@@ -39,7 +44,9 @@ describe('StocksV2Controller', () => {
 
   const mockStockResponseHttpDto: StockResponseHttpDto = {
     id: '550e8400-e29b-41d4-a716-446655440000',
+    name: 'preferential',
     type: 'preferential',
+    stock_type_id: null,
     value: 100,
     monthly_contribution: 50,
     is_guaranteed: false,
@@ -77,6 +84,12 @@ describe('StocksV2Controller', () => {
           },
         },
         {
+          provide: DeleteStockUseCase,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
+        {
           provide: CreateCdtUseCase,
           useValue: {
             execute: jest.fn(),
@@ -96,11 +109,13 @@ describe('StocksV2Controller', () => {
     getStockDetailQuery = module.get(GetStockDetailQueryHandler);
     createStockUseCase = module.get(CreateStockUseCase);
     updateStockUseCase = module.get(UpdateStockUseCase);
+    deleteStockUseCase = module.get(DeleteStockUseCase);
 
     getStocksQueryExecuteSpy = jest.spyOn(getStocksQuery, 'execute');
     getStockDetailQueryExecuteSpy = jest.spyOn(getStockDetailQuery, 'execute');
     createStockUseCaseExecuteSpy = jest.spyOn(createStockUseCase, 'execute');
     updateStockUseCaseExecuteSpy = jest.spyOn(updateStockUseCase, 'execute');
+    deleteStockUseCaseExecuteSpy = jest.spyOn(deleteStockUseCase, 'execute');
   });
 
   it('should be defined', () => {
@@ -114,6 +129,7 @@ describe('StocksV2Controller', () => {
         {
           ...mockStockResponse,
           id: '550e8400-e29b-41d4-a716-446655440001',
+          name: 'guaranteed',
           type: 'guaranteed',
           value: 150,
           monthlyContribution: 75,
@@ -128,6 +144,7 @@ describe('StocksV2Controller', () => {
         {
           ...mockStockResponseHttpDto,
           id: '550e8400-e29b-41d4-a716-446655440001',
+          name: 'guaranteed',
           type: 'guaranteed',
           value: 150,
           monthly_contribution: 75,
@@ -198,7 +215,9 @@ describe('StocksV2Controller', () => {
       const result = await controller.create(createDto);
 
       expect(createStockUseCaseExecuteSpy).toHaveBeenCalledWith({
+        name: 'preferential',
         type: 'preferential',
+        stockTypeId: undefined,
         value: 100,
         monthlyContribution: 50,
         isGuaranteed: undefined,
@@ -210,6 +229,7 @@ describe('StocksV2Controller', () => {
 
     it('should create a stock with all fields', async () => {
       const createDto: CreateStockHttpDto = {
+        name: 'guaranteed',
         type: 'guaranteed',
         value: 150,
         monthly_contribution: 75,
@@ -220,6 +240,7 @@ describe('StocksV2Controller', () => {
 
       const fullResponse: StockResponseDto = {
         ...mockStockResponse,
+        name: 'guaranteed',
         type: 'guaranteed',
         value: 150,
         monthlyContribution: 75,
@@ -229,6 +250,7 @@ describe('StocksV2Controller', () => {
       };
       const fullResponseHttpDto: StockResponseHttpDto = {
         ...mockStockResponseHttpDto,
+        name: 'guaranteed',
         type: 'guaranteed',
         value: 150,
         monthly_contribution: 75,
@@ -242,7 +264,9 @@ describe('StocksV2Controller', () => {
       const result = await controller.create(createDto);
 
       expect(createStockUseCaseExecuteSpy).toHaveBeenCalledWith({
+        name: 'guaranteed',
         type: 'guaranteed',
+        stockTypeId: undefined,
         value: 150,
         monthlyContribution: 75,
         isGuaranteed: true,
@@ -303,7 +327,9 @@ describe('StocksV2Controller', () => {
       const result = await controller.update(stockId, updateDto);
 
       expect(updateStockUseCaseExecuteSpy).toHaveBeenCalledWith(stockId, {
+        name: undefined,
         type: undefined,
+        stockTypeId: undefined,
         value: 150,
         monthlyContribution: undefined,
         isGuaranteed: undefined,
@@ -315,6 +341,7 @@ describe('StocksV2Controller', () => {
 
     it('should update stock with all fields', async () => {
       const updateDto: UpdateStockDto = {
+        name: 'new-type',
         type: 'new-type',
         value: 200,
         monthlyContribution: 100,
@@ -323,6 +350,7 @@ describe('StocksV2Controller', () => {
         behavior: StockBehavior.DIVIDEND_YIELD,
       };
       const updateDtoHttpDto: UpdateStockHttpDto = {
+        name: 'new-type',
         type: 'new-type',
         value: 200,
         monthly_contribution: 100,
@@ -334,6 +362,8 @@ describe('StocksV2Controller', () => {
       const updatedResponse: StockResponseDto = {
         ...mockStockResponse,
         ...updateDto,
+        name: 'new-type',
+        type: 'new-type',
         isGuaranteed: true,
         guaranteedYield: 0.03,
         behavior: StockBehavior.DIVIDEND_YIELD,
@@ -341,6 +371,8 @@ describe('StocksV2Controller', () => {
       const updatedResponseHttpDto: StockResponseHttpDto = {
         ...mockStockResponseHttpDto,
         ...updateDtoHttpDto,
+        name: 'new-type',
+        type: 'new-type',
         value: 200,
         monthly_contribution: 100,
         is_guaranteed: true,
@@ -353,7 +385,9 @@ describe('StocksV2Controller', () => {
       const result = await controller.update(stockId, updateDtoHttpDto);
 
       expect(updateStockUseCaseExecuteSpy).toHaveBeenCalledWith(stockId, {
+        name: 'new-type',
         type: 'new-type',
+        stockTypeId: undefined,
         value: 200,
         monthlyContribution: 100,
         isGuaranteed: false,
@@ -377,6 +411,33 @@ describe('StocksV2Controller', () => {
       await expect(controller.update(stockId, updateDto)).rejects.toThrow();
       await expect(controller.update(stockId, updateDto)).rejects.toThrow(
         `Stock with ID ${stockId} not found`,
+      );
+    });
+  });
+
+  describe('delete', () => {
+    const stockId = '550e8400-e29b-41d4-a716-446655440000';
+
+    it('should delete a stock successfully', async () => {
+      deleteStockUseCaseExecuteSpy.mockResolvedValue(undefined);
+
+      const result = await controller.delete(stockId);
+
+      expect(deleteStockUseCaseExecuteSpy).toHaveBeenCalledWith(stockId);
+      expect(result).toEqual({
+        success: true,
+        message: 'Stock deleted successfully',
+      });
+    });
+
+    it('should propagate errors from deleteStockUseCase', async () => {
+      const error = new Error(
+        'Cannot delete stock because it has active subscriptions',
+      );
+      deleteStockUseCaseExecuteSpy.mockRejectedValue(error);
+
+      await expect(controller.delete(stockId)).rejects.toThrow(
+        'Cannot delete stock because it has active subscriptions',
       );
     });
   });

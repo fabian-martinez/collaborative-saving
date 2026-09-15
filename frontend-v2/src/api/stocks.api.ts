@@ -1,12 +1,16 @@
 import apiClient from './client'
 import { mockApi } from './mocks'
+import type { StockType } from './settings.api'
 
 const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
 
 // Tipos en snake_case según respuestas del backend
 export interface Stock {
   id: string
+  name: string
   type: string
+  stock_type_id?: string | null
+  stock_type?: StockType | null
   value: number
   monthly_contribution: number
   is_guaranteed: boolean
@@ -15,7 +19,19 @@ export interface Stock {
   created_at: string | Date
 }
 
+export interface CreateStockRequest {
+  name: string
+  stock_type_id?: string | null
+  value: number
+  monthly_contribution: number
+  is_guaranteed?: boolean
+  guaranteed_yield?: number | null
+  behavior?: string
+}
+
 export interface UpdateStockRequest {
+  name?: string
+  stock_type_id?: string | null
   value?: number
   monthly_contribution?: number
   is_guaranteed?: boolean
@@ -47,12 +63,27 @@ export const stocksApi = {
     return response.data
   },
 
+  async createStock(data: CreateStockRequest): Promise<Stock> {
+    if (USE_MOCKS) {
+      return mockApi.createStock(data)
+    }
+    const response = await apiClient.post<Stock>('/v2/stocks', data)
+    return response.data
+  },
+
   async updateStock(id: string, data: UpdateStockRequest): Promise<Stock> {
     if (USE_MOCKS) {
       return mockApi.updateStock(id, data)
     }
     const response = await apiClient.patch<Stock>(`/v2/stocks/${id}`, data)
     return response.data
+  },
+
+  async deleteStock(id: string): Promise<void> {
+    if (USE_MOCKS) {
+      return mockApi.deleteStock(id)
+    }
+    await apiClient.delete<void>(`/v2/stocks/${id}`)
   },
 
   async createCdt(data: CreateCdtRequest): Promise<void> {

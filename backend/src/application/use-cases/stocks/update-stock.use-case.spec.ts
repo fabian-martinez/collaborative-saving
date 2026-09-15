@@ -112,10 +112,31 @@ describe('UpdateStockUseCase', () => {
     ).rejects.toThrow(InvalidRequestError);
     await expect(
       useCase.execute(stockId, { type: 'new-type' }),
-    ).rejects.toThrow('Stock with type "new-type" already exists');
+    ).rejects.toThrow('Stock with name "new-type" already exists');
 
     expect(findByTypeSpy).toHaveBeenCalledWith('new-type');
     expect(saveSpy).not.toHaveBeenCalled();
+  });
+
+  it('should update name and stockTypeId successfully', async () => {
+    const stockId = '550e8400-e29b-41d4-a716-446655440000';
+    const existingStock = Stock.create({
+      name: 'preferential',
+      value: 100,
+      monthlyContribution: 50,
+    });
+
+    stockRepository.findById.mockResolvedValue(existingStock);
+    existingStock.update({ name: 'updated-name', stockTypeId: 'st-uuid-2' });
+    stockRepository.save.mockResolvedValue(existingStock);
+
+    const result = await useCase.execute(stockId, {
+      name: 'updated-name',
+      stockTypeId: 'st-uuid-2',
+    });
+
+    expect(result.name).toBe('updated-name');
+    expect(result.stockTypeId).toBe('st-uuid-2');
   });
 
   it('should allow updating type to same value', async () => {

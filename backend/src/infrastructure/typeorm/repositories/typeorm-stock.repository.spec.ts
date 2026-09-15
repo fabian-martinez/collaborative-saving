@@ -21,6 +21,7 @@ describe('TypeOrmStockRepository', () => {
       save: jest.fn(),
       update: jest.fn(),
       count: jest.fn(),
+      softDelete: jest.fn(),
       merge: jest.fn(
         (
           entity: StockEntity,
@@ -321,6 +322,43 @@ describe('TypeOrmStockRepository', () => {
 
       // Assert
       expect(result).toBeNull();
+    });
+  });
+
+  describe('findByName', () => {
+    it('should return Stock when found by name', async () => {
+      const stockName = 'Acción Ordinaria';
+      const entity: StockEntity = {
+        id: 'stock-123',
+        name: stockName,
+        type: stockName,
+        value: 100,
+        monthly_contribution: 50,
+        is_guaranteed: false,
+        guaranteed_yield: null,
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        deleted_at: null,
+      };
+
+      findOneSpy.mockResolvedValue(entity);
+
+      const result = await repository.findByName(stockName);
+
+      expect(findOneSpy).toHaveBeenCalled();
+      expect(result).toBeInstanceOf(StockDomain);
+      expect(result?.name).toBe(stockName);
+    });
+  });
+
+  describe('softDelete', () => {
+    it('should call typeOrmRepo.softDelete with id', async () => {
+      const softDeleteSpy = jest
+        .spyOn(typeOrmRepo, 'softDelete')
+        .mockResolvedValue({ generatedMaps: [], raw: [] });
+
+      await repository.softDelete('stock-123');
+
+      expect(softDeleteSpy).toHaveBeenCalledWith('stock-123');
     });
   });
 

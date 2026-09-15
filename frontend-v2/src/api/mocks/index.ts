@@ -147,7 +147,9 @@ const mockLoanTransactions: LoanTransaction[] = [
 const mockStocks: Stock[] = [
   {
     id: '1',
+    name: 'Acción A',
     type: 'Acción A',
+    stock_type_id: null,
     value: 100000,
     monthly_contribution: 50000,
     is_guaranteed: true,
@@ -157,7 +159,9 @@ const mockStocks: Stock[] = [
   },
   {
     id: '2',
+    name: 'Acción B',
     type: 'Acción B',
+    stock_type_id: null,
     value: 200000,
     monthly_contribution: 75000,
     is_guaranteed: false,
@@ -685,12 +689,38 @@ export const mockApi = {
     return { ...stock }
   },
 
+  async createStock(data: any): Promise<Stock> {
+    await delay()
+    const newStock: Stock = {
+      id: String(mockStocks.length + 1),
+      name: data.name,
+      type: data.name,
+      value: data.value,
+      monthly_contribution: data.monthly_contribution,
+      is_guaranteed: data.is_guaranteed ?? false,
+      guaranteed_yield: data.guaranteed_yield ?? null,
+      behavior: data.behavior ?? 'CAPITAL_APPRECIATION',
+      stock_type_id: data.stock_type_id ?? null,
+      created_at: new Date().toISOString()
+    }
+    mockStocks.push(newStock)
+    return { ...newStock }
+  },
+
   async updateStock(id: string, data: any): Promise<Stock> {
     await delay()
     const stock = mockStocks.find(s => s.id === id)
     if (!stock) throw new Error('Stock not found')
     Object.assign(stock, data)
+    if (data.name) stock.type = data.name
     return { ...stock }
+  },
+
+  async deleteStock(id: string): Promise<void> {
+    await delay()
+    const index = mockStocks.findIndex(s => s.id === id)
+    if (index === -1) throw new Error('Stock not found')
+    mockStocks.splice(index, 1)
   },
 
   // Contributions

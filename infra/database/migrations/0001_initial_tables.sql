@@ -87,16 +87,17 @@ comment on table public.stock_types is 'Defines the types and behavior of stocks
 -- Defines the types of stocks available in the fund.
 create table public.stocks (
     id uuid default uuid_generate_v4() primary key,
-    type text not null unique,
+    name text not null unique,
     value numeric(12, 2) not null,
     monthly_contribution numeric(12, 2) default 0 not null,
     is_guaranteed boolean default false not null,
     guaranteed_yield numeric(5, 4),
     behavior text not null default 'CAPITAL_APPRECIATION',
     stock_type_id uuid references public.stock_types(id) on delete set null,
+    created_at timestamp with time zone default now() not null,
     deleted_at timestamp with time zone
 );
-comment on table public.stocks is 'Defines the types of stocks available in the fund.';
+comment on table public.stocks is 'Defines the stocks available in the fund.';
 
 -- Defines the types of loans available in the fund and their default interest rates.
 create table public.loan_types (

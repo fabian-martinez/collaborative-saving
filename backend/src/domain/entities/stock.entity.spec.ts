@@ -91,7 +91,19 @@ describe('Stock Entity', () => {
           value: 100,
           monthlyContribution: 50,
         });
-      }).toThrow('Stock type is required');
+      }).toThrow('Stock name is required');
+    });
+
+    it('should create Stock with name and stockTypeId', () => {
+      const stock = Stock.create({
+        name: 'Acción Ordinaria',
+        stockTypeId: 'st-uuid-1',
+        value: 100,
+        monthlyContribution: 50,
+      });
+      expect(stock.name).toBe('Acción Ordinaria');
+      expect(stock.type).toBe('Acción Ordinaria');
+      expect(stock.stockTypeId).toBe('st-uuid-1');
     });
   });
 

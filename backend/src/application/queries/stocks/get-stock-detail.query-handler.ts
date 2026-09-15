@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Collaborative Saving Project.
+ * All rights reserved.
+ */
+
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { StockResponseDto } from '@application/dto/stocks/stock-response.dto';
 import { StockNotFoundException } from '@application/exceptions/stock-not-found.exception';
@@ -12,7 +17,9 @@ export class GetStockDetailQueryHandler {
     }
     return {
       id: stock.id,
-      type: stock.type,
+      name: stock.name,
+      type: stock.name,
+      stockTypeId: stock.stockTypeId,
       value: stock.value,
       monthlyContribution: stock.monthlyContribution,
       isGuaranteed: stock.isGuaranteed,

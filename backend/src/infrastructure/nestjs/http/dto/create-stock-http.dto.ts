@@ -11,11 +11,33 @@ import { StockBehavior } from '@domain/entities/stock.entity';
 
 export class CreateStockHttpDto {
   @ApiProperty({
-    description: 'The type or name of the stock',
-    example: 'preferential',
+    description: 'The descriptive name of the stock',
+    example: 'Acción Ordinaria',
+    required: false,
   })
   @IsString()
-  type: string;
+  @IsOptional()
+  name?: string;
+
+  @ApiProperty({
+    description:
+      'The legacy type or name of the stock (backward compatibility)',
+    example: 'preferential',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  type?: string;
+
+  @ApiProperty({
+    description: 'UUID referencing the StockType catalog entity',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+    required: false,
+    nullable: true,
+  })
+  @IsString()
+  @IsOptional()
+  stock_type_id?: string | null;
 
   @ApiProperty({
     description: 'The initial value of one stock unit',

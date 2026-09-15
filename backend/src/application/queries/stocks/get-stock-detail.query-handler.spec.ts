@@ -42,7 +42,9 @@ describe('GetStockDetailQueryHandler', () => {
     expect(findByIdSpy).toHaveBeenCalledTimes(1);
     expect(result).toEqual({
       id: stock.id,
+      name: stock.name,
       type: stock.type,
+      stockTypeId: null,
       value: stock.value,
       monthlyContribution: stock.monthlyContribution,
       isGuaranteed: stock.isGuaranteed,
