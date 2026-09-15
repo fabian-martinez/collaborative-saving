@@ -19,6 +19,7 @@ import {
   LOANS_RECEIVABLE_ACCOUNT,
   INTEREST_INCOME_ACCOUNT,
 } from '@domain/constants/account-types';
+import { LOAN_CONSTANTS } from '@domain/constants/business-rules.constants';
 
 /**
  * Record Loan Payment Use Case
@@ -50,8 +51,8 @@ export class RecordLoanPaymentUseCase {
       }
 
       // 2. Validate and normalize payment amount
-      const totalPaymentAmount = Number(dto.totalPaymentAmount.toFixed(2));
-      if (totalPaymentAmount <= 0) {
+      let totalPaymentAmount = Number(dto.totalPaymentAmount.toFixed(2));
+      if (totalPaymentAmount <= 0 && !dto.isFullPayoff) {
         throw new InvalidRequestError(
           'Payment amount must be greater than zero',
         );
@@ -61,7 +62,16 @@ export class RecordLoanPaymentUseCase {
       let interestPaid: number;
       let principalPaid: number;
 
-      if (
+      if (dto.isFullPayoff) {
+        // Full payoff requested: principal covers entire outstanding balance
+        principalPaid = loan.outstandingBalance;
+        if (dto.forcedInterestAmount !== undefined) {
+          interestPaid = Number(dto.forcedInterestAmount.toFixed(2));
+        } else {
+          interestPaid = Number(loan.calculateInterestDue().toFixed(2));
+        }
+        totalPaymentAmount = Number((principalPaid + interestPaid).toFixed(2));
+      } else if (
         dto.forcedInterestAmount !== undefined &&
         dto.forcedPrincipalAmount !== undefined
       ) {
@@ -100,6 +110,16 @@ export class RecordLoanPaymentUseCase {
           0,
           Number((totalPaymentAmount - interestPaid).toFixed(2)),
         );
+      }
+
+      // Auto-complete payoff if residual balance is within tolerance (<= PAYOFF_TOLERANCE_COP)
+      // This closes the loan automatically without generating an additional accounting adjustment entry
+      const residual = Number(
+        (loan.outstandingBalance - principalPaid).toFixed(2),
+      );
+      if (residual > 0 && residual <= LOAN_CONSTANTS.PAYOFF_TOLERANCE_COP) {
+        principalPaid = loan.outstandingBalance;
+        totalPaymentAmount = Number((principalPaid + interestPaid).toFixed(2));
       }
 
       // 4. Validate principal doesn't exceed outstanding balance

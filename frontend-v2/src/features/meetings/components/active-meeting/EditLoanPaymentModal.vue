@@ -9,9 +9,19 @@
         <div class="space-y-4">
           <!-- Abono a Capital (Editable) -->
           <div class="form-control">
-            <label class="label">
-              <span class="label-text text-lg">Abono a Capital</span>
-            </label>
+            <div class="flex justify-between items-center mb-1">
+              <label class="label p-0">
+                <span class="label-text text-lg">Abono a Capital</span>
+              </label>
+              <button
+                type="button"
+                @click="liquidateTotal"
+                class="btn btn-xs btn-outline btn-secondary font-semibold"
+                :disabled="editablePrincipal >= originalOutstandingBalance"
+              >
+                Liquidar saldo total
+              </button>
+            </div>
             <input
               type="text"
               :value="principalDisplay"
@@ -30,8 +40,29 @@
           </div>
         </div>
 
+        <!-- Alerta de saldo residual insignificante -->
+        <div
+          v-if="hasInsignificantResidual"
+          class="alert alert-warning text-xs py-2 px-3 flex justify-between items-center mt-3 shadow-sm"
+        >
+          <div class="flex items-center gap-1.5">
+            <span>⚠️</span>
+            <span>
+              Quedará un saldo residual de
+              <strong>{{ formatCurrency(newOutstandingBalance) }}</strong>.
+            </span>
+          </div>
+          <button
+            type="button"
+            class="btn btn-xs btn-warning font-semibold shrink-0"
+            @click="liquidateTotal"
+          >
+            Liquidar total
+          </button>
+        </div>
+
         <!-- Recalculo -->
-        <div class="mt-8 p-4 bg-primary/10 rounded-box text-center">
+        <div class="mt-6 p-4 bg-primary/10 rounded-box text-center">
           <p class="text-sm opacity-70">El nuevo saldo del préstamo será:</p>
           <p class="font-bold text-2xl font-mono text-primary">{{ formatCurrency(newOutstandingBalance) }}</p>
         </div>
@@ -129,6 +160,15 @@ const newOutstandingBalance = computed(() => {
   if (!due.value || !due.value.details) return 0
   return originalOutstandingBalance.value - (Number(editablePrincipal.value) || 0)
 })
+
+const hasInsignificantResidual = computed(() => {
+  return newOutstandingBalance.value > 0.001 && newOutstandingBalance.value <= 10
+})
+
+function liquidateTotal() {
+  editablePrincipal.value = originalOutstandingBalance.value
+  principalDisplay.value = formatMoneyInput(originalOutstandingBalance.value)
+}
 
 function closeModal() {
   emit('close')

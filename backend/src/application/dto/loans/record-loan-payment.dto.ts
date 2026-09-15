@@ -29,4 +29,10 @@ export interface RecordLoanPaymentDto {
    * When provided, this amount will be used for principal payment.
    */
   forcedPrincipalAmount?: number;
+
+  /**
+   * Optional: Flag indicating whether this payment is intended to fully liquidate the loan.
+   * When true, principalPaid will cover the entire outstandingBalance.
+   */
+  isFullPayoff?: boolean;
 }

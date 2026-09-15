@@ -158,6 +158,7 @@ export class RecordMonthlyPaymentsUseCase {
         meetingId: activeMeeting.id,
         totalPaymentAmount: loanPayment.amount,
         notes: loanPayment.description,
+        isFullPayoff: loanPayment.isFullPayoff,
       });
 
       loanPaymentResults.push({

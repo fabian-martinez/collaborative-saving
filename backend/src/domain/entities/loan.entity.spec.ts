@@ -376,6 +376,13 @@ describe('Loan Entity', () => {
       loan.recordPayment(100.1, 0);
       expect(loan.outstandingBalance).toBe(0.1);
     });
+
+    it('should mark loan as paid when remaining balance is negligible floating point residue (<= 0.001)', () => {
+      loan.update({ outstandingBalance: 100.0001 });
+      loan.recordPayment(100.0, 0);
+      expect(loan.outstandingBalance).toBe(0);
+      expect(loan.status).toBe(LoanStatus.PAID);
+    });
   });
 
   describe('calculateInterestDue method', () => {

@@ -5,6 +5,7 @@ import {
   IsPositive,
   IsString,
   IsOptional,
+  IsBoolean,
 } from 'class-validator';
 
 export class RecordExtraordinaryLoanPaymentHttpDto {
@@ -31,4 +32,12 @@ export class RecordExtraordinaryLoanPaymentHttpDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiProperty({
+    description: 'Optional flag to fully liquidate the loan',
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isFullPayoff?: boolean;
 }
