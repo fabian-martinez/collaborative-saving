@@ -22,6 +22,7 @@ drop table if exists "public"."stock_subscriptions" cascade;
 drop table if exists "public"."mandatory_contributions" cascade;
 drop table if exists "public"."loan_transaction_details" cascade;
 drop table if exists "public"."loans" cascade;
+drop table if exists "public"."loan_types" cascade;
 drop table if exists "public"."stock_value_history" cascade;
 drop type if exists "public"."member_due" cascade;
 
@@ -79,6 +80,19 @@ create table public.stocks (
     deleted_at timestamp with time zone
 );
 comment on table public.stocks is 'Defines the types of stocks available in the fund.';
+
+-- Defines the types of loans available in the fund and their default interest rates.
+create table public.loan_types (
+    id uuid default uuid_generate_v4() primary key,
+    code text not null unique,
+    name text not null,
+    interest_rate numeric(5, 4) not null,
+    description text,
+    created_at timestamp with time zone default now() not null,
+    updated_at timestamp with time zone default now() not null,
+    deleted_at timestamp with time zone
+);
+comment on table public.loan_types is 'Defines the types of loans available in the fund and their default interest rates.';
 
 -- Stores information about loans granted to members.
 create table public.loans (

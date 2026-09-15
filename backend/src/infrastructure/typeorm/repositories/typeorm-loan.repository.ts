@@ -152,4 +152,15 @@ export class TypeOrmLoanRepository implements LoanRepository {
 
     return validLoans;
   }
+
+  async hasActiveLoansByType(loanType: string): Promise<boolean> {
+    const repo = this.getRepository();
+    const count = await repo.count({
+      where: {
+        loanType,
+        status: In(['pending', 'active']),
+      },
+    });
+    return count > 0;
+  }
 }

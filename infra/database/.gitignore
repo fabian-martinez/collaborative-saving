@@ -1,5 +1,7 @@
 # Backups
 *.sql
+!migrations/*.sql
+!scripts/*.sql
 
 # Supabase
 .branches
