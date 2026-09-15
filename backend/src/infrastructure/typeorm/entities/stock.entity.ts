@@ -48,6 +48,13 @@ export class Stock {
   })
   behavior: StockBehavior;
 
+  @Column({
+    type: 'uuid',
+    nullable: true,
+    name: 'stock_type_id',
+  })
+  stock_type_id?: string | null;
+
   @DeleteDateColumn({ name: 'deleted_at' })
   deleted_at: Date | null;
 }

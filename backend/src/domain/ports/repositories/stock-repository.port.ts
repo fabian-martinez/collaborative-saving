@@ -10,4 +10,5 @@ export interface StockRepository {
   saveMany(stocks: Stock[]): Promise<Stock[]>;
 
   findGuaranteed(): Promise<Stock[]>;
+  hasActiveStocksByType?(stockType: string): Promise<boolean>;
 }

@@ -60,13 +60,16 @@ echo -e "\n${YELLOW}🚀 Paso 4: Migrando datos desde Docker a la base remota...
 docker exec "$DOCKER_CONTAINER" pg_dump -U "$DOCKER_USER" -d "$DOCKER_DB" --no-owner --no-privileges | psql "$TARGET_URL" -v ON_ERROR_STOP=1 > /dev/null
 echo -e "${GREEN}✅ Datos y esquema restaurados con éxito.${NC}"
 
-# 5. Aplicar alineaciones (0002_align_with_entities.sql) si existe
-MIGRATION_2="${REPO_ROOT}/infra/database/migrations/0002_align_with_entities.sql"
-if [ -f "$MIGRATION_2" ]; then
-  echo -e "\n${YELLOW}🔧 Paso 5: Aplicando 0002_align_with_entities.sql...${NC}"
-  psql "$TARGET_URL" -v ON_ERROR_STOP=1 -f "$MIGRATION_2" > /dev/null
-  echo -e "${GREEN}✅ Índices y tipos alineados.${NC}"
-fi
+# 5. Aplicar migraciones posteriores al volcado
+echo -e "\n${YELLOW}🔧 Paso 5: Aplicando migraciones incrementales pendientes...${NC}"
+for migration in "${REPO_ROOT}"/infra/database/migrations/0*.sql; do
+  mig_name=$(basename "$migration")
+  if [ "$mig_name" != "0001_initial_tables.sql" ]; then
+    echo -e "  - Aplicando ${mig_name}..."
+    psql "$TARGET_URL" -v ON_ERROR_STOP=1 -f "$migration" > /dev/null
+  fi
+done
+echo -e "${GREEN}✅ Migraciones aplicadas con éxito.${NC}"
 
 # 6. Resumen de filas en destino
 echo -e "\n${YELLOW}📊 Paso 6: Verificando conteo de registros en la base remota...${NC}"
@@ -76,7 +79,9 @@ SELECT
 UNION ALL SELECT 'meetings', count(*) FROM public.meetings
 UNION ALL SELECT 'operations', count(*) FROM public.operations
 UNION ALL SELECT 'ledger_entries', count(*) FROM public.ledger_entries
+UNION ALL SELECT 'stock_types', count(*) FROM public.stock_types
 UNION ALL SELECT 'stocks', count(*) FROM public.stocks
+UNION ALL SELECT 'loan_types', count(*) FROM public.loan_types
 UNION ALL SELECT 'loans', count(*) FROM public.loans
 UNION ALL SELECT 'loan_transaction_details', count(*) FROM public.loan_transaction_details
 UNION ALL SELECT 'mandatory_contributions', count(*) FROM public.mandatory_contributions

@@ -12,6 +12,7 @@ describe('TypeOrmStockRepository', () => {
   let findSpy: jest.SpyInstance;
   let findOneSpy: jest.SpyInstance;
   let mergeSpy: jest.SpyInstance;
+  let countSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -19,6 +20,7 @@ describe('TypeOrmStockRepository', () => {
       find: jest.fn(),
       save: jest.fn(),
       update: jest.fn(),
+      count: jest.fn(),
       merge: jest.fn(
         (
           entity: StockEntity,
@@ -48,6 +50,7 @@ describe('TypeOrmStockRepository', () => {
     findSpy = jest.spyOn(typeOrmRepo, 'find');
     findOneSpy = jest.spyOn(typeOrmRepo, 'findOne');
     mergeSpy = jest.spyOn(typeOrmRepo, 'merge');
+    countSpy = jest.spyOn(typeOrmRepo, 'count');
   });
 
   describe('findByIds', () => {
@@ -533,6 +536,78 @@ describe('TypeOrmStockRepository', () => {
 
       // Assert
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('hasActiveStocksByType', () => {
+    it('should return true when count of active stocks with given type is greater than 0', async () => {
+      // Arrange
+      typeOrmRepo.count.mockResolvedValue(2);
+
+      // Act
+      const result = await repository.hasActiveStocksByType('ordinaria');
+
+      // Assert
+      expect(result).toBe(true);
+      expect(countSpy).toHaveBeenCalledWith({
+        where: {
+          type: 'ordinaria',
+          deleted_at: IsNull(),
+        },
+      });
+    });
+
+    it('should return false when no active stocks with given type exist', async () => {
+      // Arrange
+      typeOrmRepo.count.mockResolvedValue(0);
+
+      // Act
+      const result = await repository.hasActiveStocksByType('inexistente');
+
+      // Assert
+      expect(result).toBe(false);
+    });
+
+    it('should check stock_type_id when stockType is a valid UUID', async () => {
+      // Arrange
+      const uuid = 'e1a1b1c1-1111-4444-9999-000000000001';
+      typeOrmRepo.count.mockResolvedValue(1);
+
+      // Act
+      const result = await repository.hasActiveStocksByType(uuid);
+
+      // Assert
+      expect(result).toBe(true);
+      expect(countSpy).toHaveBeenCalledWith({
+        where: [
+          { type: uuid, deleted_at: IsNull() },
+          { stock_type_id: uuid, deleted_at: IsNull() },
+        ],
+      });
+    });
+
+    it('should check ILike pattern with spaces when stockType has underscores', async () => {
+      // Arrange
+      typeOrmRepo.count.mockResolvedValue(1);
+
+      // Act
+      const result = await repository.hasActiveStocksByType('acciones_grandes');
+
+      // Assert
+      expect(result).toBe(true);
+      expect(countSpy).toHaveBeenCalled();
+    });
+
+    it('should check cdt wildcard ILike pattern when stockType is cdt', async () => {
+      // Arrange
+      typeOrmRepo.count.mockResolvedValue(1);
+
+      // Act
+      const result = await repository.hasActiveStocksByType('cdt');
+
+      // Assert
+      expect(result).toBe(true);
+      expect(countSpy).toHaveBeenCalled();
     });
   });
 });
