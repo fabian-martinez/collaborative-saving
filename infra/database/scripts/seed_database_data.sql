@@ -50,7 +50,7 @@ INSERT INTO public.loan_types (id, code, name, interest_rate, description) VALUE
 ON CONFLICT (code) DO NOTHING;
 
 -- Insertar tipos de acciones
-INSERT INTO public.stocks (id, type, value, monthly_contribution, is_guaranteed, guaranteed_yield, stock_type_id) VALUES
+INSERT INTO public.stocks (id, name, value, monthly_contribution, is_guaranteed, guaranteed_yield, stock_type_id) VALUES
 ('f47ac10b-58cc-4372-a567-0e02b2c3d478', 'Acción Preferencial', 1000.00, 100.00, true, 0.02, 'e1a1b1c1-1111-4444-9999-000000000012'), -- Acción con rendimiento garantizado del 2%
 ('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'Acción Grande', 1000.00, 100.00, false, null, 'e1a1b1c1-1111-4444-9999-000000000001'),
 ('f47ac10b-58cc-4372-a567-0e02b2c3d480', 'Acción Mediana', 500.00, 50.00, false, null, 'e1a1b1c1-1111-4444-9999-000000000002'),
