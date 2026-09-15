@@ -20,12 +20,33 @@ describe('StockMapper', () => {
 
       expect(domain).toBeInstanceOf(Stock);
       expect(domain.id).toBe(entity.id);
+      expect(domain.name).toBe(entity.type);
       expect(domain.type).toBe(entity.type);
       expect(domain.value).toBe(100);
       expect(domain.monthlyContribution).toBe(50);
       expect(domain.isGuaranteed).toBe(false);
       expect(domain.guaranteedYield).toBeNull();
       expect(domain.behavior).toBe(StockBehavior.CAPITAL_APPRECIATION);
+    });
+
+    it('should map StockEntity with name and stock_type_id', () => {
+      const entity: Partial<StockEntity> = {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        name: 'Acción Ordinaria',
+        stock_type_id: 'st-uuid-1',
+        value: 100,
+        monthly_contribution: 50,
+        is_guaranteed: false,
+        guaranteed_yield: null,
+        behavior: StockBehavior.CAPITAL_APPRECIATION,
+        deleted_at: null,
+      };
+
+      const domain = StockMapper.toDomain(entity as StockEntity);
+
+      expect(domain.name).toBe('Acción Ordinaria');
+      expect(domain.type).toBe('Acción Ordinaria');
+      expect(domain.stockTypeId).toBe('st-uuid-1');
     });
 
     it('should handle guaranteed stock', () => {

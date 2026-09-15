@@ -4,6 +4,7 @@ import { Stock } from '@infrastructure/typeorm/entities/stock.entity';
 import { StocksV2Controller } from '../controllers/stocks.v2.controller';
 import { CreateStockUseCase } from '@application/use-cases/stocks/create-stock.use-case';
 import { UpdateStockUseCase } from '@application/use-cases/stocks/update-stock.use-case';
+import { DeleteStockUseCase } from '@application/use-cases/stocks/delete-stock.use-case';
 import { GetStocksQueryHandler } from '@application/queries/stocks/get-stocks.query-handler';
 import { GetStockDetailQueryHandler } from '@application/queries/stocks/get-stock-detail.query-handler';
 import { TypeOrmStockRepository } from '../../../typeorm/repositories/typeorm-stock.repository';
@@ -84,6 +85,14 @@ import { OperationBalanceValidator } from '@domain/services/operation-balance-va
       provide: UpdateStockUseCase,
       useFactory: (repo: StockRepository) => new UpdateStockUseCase(repo),
       inject: [STOCK_REPOSITORY],
+    },
+    {
+      provide: DeleteStockUseCase,
+      useFactory: (
+        stockRepo: StockRepository,
+        stockSubscriptionRepo: StockSubscriptionRepository,
+      ) => new DeleteStockUseCase(stockRepo, stockSubscriptionRepo),
+      inject: [STOCK_REPOSITORY, STOCK_SUBSCRIPTION_REPOSITORY],
     },
     {
       provide: STOCK_SUBSCRIPTION_REPOSITORY,

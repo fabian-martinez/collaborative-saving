@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Collaborative Saving Project.
+ * All rights reserved.
+ */
+
 import { CreateStockDto } from '@application/dto/stocks/create-stock.dto';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { StockResponseDto } from '@application/dto/stocks/stock-response.dto';
@@ -8,16 +13,26 @@ export class CreateStockUseCase {
   constructor(private readonly stockRepository: StockRepository) {}
 
   async execute(dto: CreateStockDto): Promise<StockResponseDto> {
-    // Validar que no exista un stock con el mismo tipo
-    const existing = await this.stockRepository.findByType(dto.type);
+    const name = dto.name || dto.type;
+    if (!name) {
+      throw new InvalidRequestError('Stock name is required');
+    }
+
+    // Validar que no exista un stock con el mismo nombre o tipo
+    let existing: Stock | null = null;
+    if (this.stockRepository.findByName) {
+      existing = await this.stockRepository.findByName(name);
+    } else {
+      existing = await this.stockRepository.findByType(name);
+    }
+
     if (existing && !existing.isDeleted()) {
-      throw new InvalidRequestError(
-        `Stock with type "${dto.type}" already exists`,
-      );
+      throw new InvalidRequestError(`Stock with name "${name}" already exists`);
     }
 
     const stock = Stock.create({
-      type: dto.type,
+      name,
+      stockTypeId: dto.stockTypeId,
       value: dto.value,
       monthlyContribution: dto.monthlyContribution,
       isGuaranteed: dto.isGuaranteed,
@@ -29,7 +44,9 @@ export class CreateStockUseCase {
 
     return {
       id: saved.id,
-      type: saved.type,
+      name: saved.name,
+      type: saved.name,
+      stockTypeId: saved.stockTypeId,
       value: saved.value,
       monthlyContribution: saved.monthlyContribution,
       isGuaranteed: saved.isGuaranteed,

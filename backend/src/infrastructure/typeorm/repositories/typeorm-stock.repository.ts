@@ -29,11 +29,18 @@ export class TypeOrmStockRepository implements StockRepository {
     return entities.map((e) => StockMapper.toDomain(e));
   }
 
-  async findByType(type: string): Promise<StockDomain | null> {
+  async findByName(name: string): Promise<StockDomain | null> {
     const entity = await this.repo.findOne({
-      where: { type, deleted_at: IsNull() },
+      where: [
+        { type: name, deleted_at: IsNull() },
+        { name, deleted_at: IsNull() },
+      ],
     });
     return entity ? StockMapper.toDomain(entity) : null;
+  }
+
+  async findByType(type: string): Promise<StockDomain | null> {
+    return this.findByName(type);
   }
 
   async findAll(): Promise<StockDomain[]> {
@@ -129,5 +136,9 @@ export class TypeOrmStockRepository implements StockRepository {
       where: conditions.length === 1 ? conditions[0] : conditions,
     });
     return count > 0;
+  }
+
+  async softDelete(id: string): Promise<void> {
+    await this.repo.softDelete(id);
   }
 }

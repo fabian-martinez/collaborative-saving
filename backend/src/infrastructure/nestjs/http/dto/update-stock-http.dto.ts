@@ -13,13 +13,32 @@ import { StockBehavior } from '@domain/entities/stock.entity';
 
 export class UpdateStockHttpDto extends PartialType(CreateStockHttpDto) {
   @ApiProperty({
-    description: 'The type or name of the stock',
+    description: 'The descriptive name of the stock',
+    example: 'Acción Ordinaria Actualizada',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiProperty({
+    description: 'The type or name of the stock (backward compatibility)',
     example: 'preferential',
     required: false,
   })
   @IsString()
   @IsOptional()
   type?: string;
+
+  @ApiProperty({
+    description: 'UUID referencing the StockType catalog entity',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+    required: false,
+    nullable: true,
+  })
+  @IsString()
+  @IsOptional()
+  stock_type_id?: string | null;
 
   @ApiProperty({
     description: 'The current value of one stock unit',

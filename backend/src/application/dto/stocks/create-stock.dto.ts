@@ -1,7 +1,14 @@
+/**
+ * Copyright 2026 Collaborative Saving Project.
+ * All rights reserved.
+ */
+
 import { StockBehavior } from '@domain/entities/stock.entity';
 
 export class CreateStockDto {
-  type: string;
+  name?: string;
+  type?: string;
+  stockTypeId?: string | null;
   value: number;
   monthlyContribution: number;
   isGuaranteed?: boolean;
