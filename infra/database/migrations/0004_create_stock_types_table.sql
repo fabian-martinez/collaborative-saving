@@ -26,62 +26,18 @@ COMMENT ON COLUMN public.stock_types.guaranteed_yield IS 'Tasa o porcentaje de r
 CREATE INDEX IF NOT EXISTS idx_stock_types_code ON public.stock_types(code);
 CREATE INDEX IF NOT EXISTS idx_stock_types_deleted_at ON public.stock_types(deleted_at);
 
--- 3. Sembrado inicial teniendo en cuenta los tipos de datos de producción (Docker)
+-- 3. Sembrado inicial de tipos de acciones base
 INSERT INTO public.stock_types (id, code, name, behavior, is_guaranteed, guaranteed_yield, description, created_at, updated_at)
 VALUES
-    (gen_random_uuid(), 'acciones_grandes', 'Acciones Grandes', 'CAPITAL_APPRECIATION', false, null, 'Acción de alta denominación con apreciación de capital', now(), now()),
-    (gen_random_uuid(), 'acciones_medianas', 'Acciones Medianas', 'CAPITAL_APPRECIATION', false, null, 'Acción de mediana denominación', now(), now()),
-    (gen_random_uuid(), 'acciones_pequenas', 'Acciones Pequeñas', 'CAPITAL_APPRECIATION', false, null, 'Acción de baja denominación', now(), now()),
-    (gen_random_uuid(), 'acciones_super', 'Acciones Super', 'DIVIDEND_YIELD', false, null, 'Acción especial con distribución periódica directa de rendimientos por dividendo', now(), now()),
+    (gen_random_uuid(), 'ordinaria', 'Acción Ordinaria', 'CAPITAL_APPRECIATION', false, null, 'Acción estándar con participación en valorización de activos (Mini, Fénix, Pequeña, Mediana, Grande)', now(), now()),
     (gen_random_uuid(), 'bono_navideno', 'Bono Navideño', 'CAPITAL_APPRECIATION', true, 0.0200, 'Bono navideño con rendimiento pactado garantizado del 2% mensual', now(), now()),
-    (gen_random_uuid(), 'bono_navideno_2026', 'Bono Navideño 2026', 'CAPITAL_APPRECIATION', true, 0.0200, 'Bono navideño emisión 2026 con rendimiento pactado garantizado del 2% mensual', now(), now()),
     (gen_random_uuid(), 'cdt', 'Certificado de Depósito a Término', 'CAPITAL_APPRECIATION', true, 0.0150, 'Instrumento de ahorro a plazo fijo con rendimiento garantizado del 1.5% mensual', now(), now()),
-    (gen_random_uuid(), 'accion_fenix', 'Accion Fenix', 'CAPITAL_APPRECIATION', false, null, 'Acción Serie Fénix', now(), now()),
-    (gen_random_uuid(), 'accion_mini', 'Accion Mini', 'CAPITAL_APPRECIATION', false, null, 'Acción de denominación reducida', now(), now()),
+    (gen_random_uuid(), 'super', 'Acción Super', 'DIVIDEND_YIELD', false, null, 'Acción especial con distribución periódica directa de rendimientos por dividendo', now(), now()),
     (gen_random_uuid(), 'seguro', 'Seguro', 'CAPITAL_APPRECIATION', false, null, 'Fondo de seguro colectivo mutual', now(), now()),
-    (gen_random_uuid(), 'ordinaria', 'Acción Ordinaria', 'CAPITAL_APPRECIATION', false, null, 'Acción estándar con participación en valorización de activos', now(), now()),
     (gen_random_uuid(), 'preferencial', 'Acción Preferencial', 'CAPITAL_APPRECIATION', true, 0.0200, 'Acción con rendimiento preferencial garantizado del 2% mensual', now(), now())
 ON CONFLICT (code) DO NOTHING;
 
--- 4. Extracción e inserción dinámica de tipos desde la tabla stocks si contiene otros tipos no mapeados
-DO $$
-BEGIN
-    IF EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' AND table_name = 'stocks' AND column_name = 'type'
-    ) THEN
-        INSERT INTO public.stock_types (id, code, name, behavior, is_guaranteed, guaranteed_yield, description, created_at, updated_at)
-        SELECT
-            gen_random_uuid(),
-            s.derived_code,
-            s.derived_name,
-            s.behavior,
-            s.is_guaranteed,
-            s.guaranteed_yield,
-            'Tipo de acción migrado automáticamente desde stocks de producción',
-            now(),
-            now()
-        FROM (
-            SELECT DISTINCT ON (derived_code)
-                CASE 
-                    WHEN type ILIKE 'CDT%' THEN 'cdt'
-                    ELSE LOWER(REGEXP_REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(TRIM(type), 'á', 'a'), 'é', 'e'), 'í', 'i'), 'ó', 'o'), 'ú', 'u'), '[^a-zA-Z0-9]+', '_', 'g'))
-                END AS derived_code,
-                CASE 
-                    WHEN type ILIKE 'CDT%' THEN 'Certificado de Depósito a Término'
-                    ELSE type
-                END AS derived_name,
-                behavior,
-                is_guaranteed,
-                guaranteed_yield
-            FROM public.stocks
-            ORDER BY derived_code, id
-        ) s
-        ON CONFLICT (code) DO NOTHING;
-    END IF;
-END $$;
-
--- 5. Vincular relación stock_type_id en la tabla stocks si existe (compatibilidad con datos de producción)
+-- 4. Vincular relación stock_type_id en la tabla stocks si existe (compatibilidad con datos de producción)
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'stocks') THEN
@@ -95,47 +51,32 @@ BEGIN
         END IF;
 
         -- Actualizar los stocks de producción con su stock_type_id correspondiente
-        IF EXISTS (
-            SELECT 1 FROM information_schema.columns 
-            WHERE table_schema = 'public' AND table_name = 'stocks' AND column_name = 'type'
-        ) THEN
-            UPDATE public.stocks s
-            SET stock_type_id = st.id
-            FROM public.stock_types st
-            WHERE s.stock_type_id IS NULL
-              AND (
-                (s.type ILIKE 'CDT%' AND st.code = 'cdt')
-                OR (LOWER(s.type) = 'bono navideño' AND st.code = 'bono_navideno')
-                OR (LOWER(s.type) = 'bono navideño 2026' AND st.code = 'bono_navideno_2026')
-                OR (LOWER(s.type) = 'acciones grandes' AND st.code = 'acciones_grandes')
-                OR (LOWER(s.type) = 'acciones medianas' AND st.code = 'acciones_medianas')
-                OR (LOWER(s.type) = 'acciones pequeñas' AND st.code = 'acciones_pequenas')
-                OR (LOWER(s.type) = 'acciones super' AND st.code = 'acciones_super')
-                OR (LOWER(s.type) = 'accion fenix' AND st.code = 'accion_fenix')
-                OR (LOWER(s.type) = 'accion mini' AND st.code = 'accion_mini')
-                OR (LOWER(s.type) = 'seguro' AND st.code = 'seguro')
-                OR (LOWER(TRIM(s.type)) = LOWER(TRIM(st.name)))
-              );
-        ELSIF EXISTS (
-            SELECT 1 FROM information_schema.columns 
-            WHERE table_schema = 'public' AND table_name = 'stocks' AND column_name = 'name'
-        ) THEN
+        -- Soporta tanto columna 'name' como 'type'
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'stocks' AND column_name = 'name') THEN
             UPDATE public.stocks s
             SET stock_type_id = st.id
             FROM public.stock_types st
             WHERE s.stock_type_id IS NULL
               AND (
                 (s.name ILIKE 'CDT%' AND st.code = 'cdt')
-                OR (LOWER(s.name) = 'bono navideño' AND st.code = 'bono_navideno')
-                OR (LOWER(s.name) = 'bono navideño 2026' AND st.code = 'bono_navideno_2026')
-                OR (LOWER(s.name) = 'acciones grandes' AND st.code = 'acciones_grandes')
-                OR (LOWER(s.name) = 'acciones medianas' AND st.code = 'acciones_medianas')
-                OR (LOWER(s.name) = 'acciones pequeñas' AND st.code = 'acciones_pequenas')
-                OR (LOWER(s.name) = 'acciones super' AND st.code = 'acciones_super')
-                OR (LOWER(s.name) = 'accion fenix' AND st.code = 'accion_fenix')
-                OR (LOWER(s.name) = 'accion mini' AND st.code = 'accion_mini')
+                OR (LOWER(s.name) IN ('bono navideño', 'bono navideño 2026') AND st.code = 'bono_navideno')
+                OR (LOWER(s.name) IN ('accion mini', 'accion fenix', 'acciones pequeñas', 'acciones medianas', 'acciones grandes') AND st.code = 'ordinaria')
+                OR (LOWER(s.name) IN ('acciones super', 'accion super', 'super') AND st.code = 'super')
                 OR (LOWER(s.name) = 'seguro' AND st.code = 'seguro')
                 OR (LOWER(TRIM(s.name)) = LOWER(TRIM(st.name)))
+              );
+        ELSIF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'stocks' AND column_name = 'type') THEN
+            UPDATE public.stocks s
+            SET stock_type_id = st.id
+            FROM public.stock_types st
+            WHERE s.stock_type_id IS NULL
+              AND (
+                (s.type ILIKE 'CDT%' AND st.code = 'cdt')
+                OR (LOWER(s.type) IN ('bono navideño', 'bono navideño 2026') AND st.code = 'bono_navideno')
+                OR (LOWER(s.type) IN ('accion mini', 'accion fenix', 'acciones pequeñas', 'acciones medianas', 'acciones grandes') AND st.code = 'ordinaria')
+                OR (LOWER(s.type) IN ('acciones super', 'accion super', 'super') AND st.code = 'super')
+                OR (LOWER(s.type) = 'seguro' AND st.code = 'seguro')
+                OR (LOWER(TRIM(s.type)) = LOWER(TRIM(st.name)))
               );
         END IF;
     END IF;
