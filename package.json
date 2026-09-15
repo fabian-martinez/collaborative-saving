@@ -16,6 +16,10 @@
     "start": "npm-run-all --parallel start:backend start:app",
     "start:backend": "cd backend && npm run start:prod",
     "start:app": "cd frontend-v2 && npm run preview",
+    "db:migrate": "bash infra/database/scripts/migrate.sh up",
+    "db:status": "bash infra/database/scripts/migrate.sh status",
+    "db:baseline": "bash infra/database/scripts/migrate.sh baseline",
+    "test:migrations": "bash infra/database/scripts/test-migrations.sh",
     "lint:md": "markdownlint \"**/*.md\"",
     "lint:md:fix": "markdownlint \"**/*.md\" --fix",
     "prepare": "lefthook install"

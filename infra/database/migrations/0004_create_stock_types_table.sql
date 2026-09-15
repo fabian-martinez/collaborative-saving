@@ -46,7 +46,10 @@ ON CONFLICT (code) DO NOTHING;
 -- 4. Extracción e inserción dinámica de tipos desde la tabla stocks si contiene otros tipos no mapeados
 DO $$
 BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'stocks') THEN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' AND table_name = 'stocks' AND column_name = 'type'
+    ) THEN
         INSERT INTO public.stock_types (id, code, name, behavior, is_guaranteed, guaranteed_yield, description, created_at, updated_at)
         SELECT
             gen_random_uuid(),
@@ -92,22 +95,48 @@ BEGIN
         END IF;
 
         -- Actualizar los stocks de producción con su stock_type_id correspondiente
-        UPDATE public.stocks s
-        SET stock_type_id = st.id
-        FROM public.stock_types st
-        WHERE s.stock_type_id IS NULL
-          AND (
-            (s.type ILIKE 'CDT%' AND st.code = 'cdt')
-            OR (LOWER(s.type) = 'bono navideño' AND st.code = 'bono_navideno')
-            OR (LOWER(s.type) = 'bono navideño 2026' AND st.code = 'bono_navideno_2026')
-            OR (LOWER(s.type) = 'acciones grandes' AND st.code = 'acciones_grandes')
-            OR (LOWER(s.type) = 'acciones medianas' AND st.code = 'acciones_medianas')
-            OR (LOWER(s.type) = 'acciones pequeñas' AND st.code = 'acciones_pequenas')
-            OR (LOWER(s.type) = 'acciones super' AND st.code = 'acciones_super')
-            OR (LOWER(s.type) = 'accion fenix' AND st.code = 'accion_fenix')
-            OR (LOWER(s.type) = 'accion mini' AND st.code = 'accion_mini')
-            OR (LOWER(s.type) = 'seguro' AND st.code = 'seguro')
-            OR (LOWER(TRIM(s.type)) = LOWER(TRIM(st.name)))
-          );
+        IF EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_schema = 'public' AND table_name = 'stocks' AND column_name = 'type'
+        ) THEN
+            UPDATE public.stocks s
+            SET stock_type_id = st.id
+            FROM public.stock_types st
+            WHERE s.stock_type_id IS NULL
+              AND (
+                (s.type ILIKE 'CDT%' AND st.code = 'cdt')
+                OR (LOWER(s.type) = 'bono navideño' AND st.code = 'bono_navideno')
+                OR (LOWER(s.type) = 'bono navideño 2026' AND st.code = 'bono_navideno_2026')
+                OR (LOWER(s.type) = 'acciones grandes' AND st.code = 'acciones_grandes')
+                OR (LOWER(s.type) = 'acciones medianas' AND st.code = 'acciones_medianas')
+                OR (LOWER(s.type) = 'acciones pequeñas' AND st.code = 'acciones_pequenas')
+                OR (LOWER(s.type) = 'acciones super' AND st.code = 'acciones_super')
+                OR (LOWER(s.type) = 'accion fenix' AND st.code = 'accion_fenix')
+                OR (LOWER(s.type) = 'accion mini' AND st.code = 'accion_mini')
+                OR (LOWER(s.type) = 'seguro' AND st.code = 'seguro')
+                OR (LOWER(TRIM(s.type)) = LOWER(TRIM(st.name)))
+              );
+        ELSIF EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_schema = 'public' AND table_name = 'stocks' AND column_name = 'name'
+        ) THEN
+            UPDATE public.stocks s
+            SET stock_type_id = st.id
+            FROM public.stock_types st
+            WHERE s.stock_type_id IS NULL
+              AND (
+                (s.name ILIKE 'CDT%' AND st.code = 'cdt')
+                OR (LOWER(s.name) = 'bono navideño' AND st.code = 'bono_navideno')
+                OR (LOWER(s.name) = 'bono navideño 2026' AND st.code = 'bono_navideno_2026')
+                OR (LOWER(s.name) = 'acciones grandes' AND st.code = 'acciones_grandes')
+                OR (LOWER(s.name) = 'acciones medianas' AND st.code = 'acciones_medianas')
+                OR (LOWER(s.name) = 'acciones pequeñas' AND st.code = 'acciones_pequenas')
+                OR (LOWER(s.name) = 'acciones super' AND st.code = 'acciones_super')
+                OR (LOWER(s.name) = 'accion fenix' AND st.code = 'accion_fenix')
+                OR (LOWER(s.name) = 'accion mini' AND st.code = 'accion_mini')
+                OR (LOWER(s.name) = 'seguro' AND st.code = 'seguro')
+                OR (LOWER(TRIM(s.name)) = LOWER(TRIM(st.name)))
+              );
+        END IF;
     END IF;
 END $$;
