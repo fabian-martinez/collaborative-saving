@@ -17,6 +17,7 @@ import { EventBusModule } from './infrastructure/services/event-bus/event-bus.mo
 import { TransactionManagerModule } from './infrastructure/services/transaction-manager/transaction-manager.module';
 import { FirebaseAdminModule } from './infrastructure/services/firebase-admin/firebase-admin.module';
 import { AuthModule } from './infrastructure/services/auth/auth.module';
+import { AuthV2Module } from './infrastructure/nestjs/http/modules/auth-v2.module';
 import { FirebaseAuthGuard } from './infrastructure/nestjs/auth/guards/firebase-auth.guard';
 import { RolesGuard } from './infrastructure/nestjs/auth/guards/roles.guard';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -52,6 +53,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
     TransactionManagerModule,
     FirebaseAdminModule,
     AuthModule,
+    AuthV2Module,
     MembersV2Module,
     StocksV2Module,
     MeetingsV2Module,
