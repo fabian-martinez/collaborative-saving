@@ -7,6 +7,7 @@ import { Eye, EyeClosed } from 'iconoir-vue/regular';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/shared/firebase/config';
 import apiClient from '@/api/client';
+import { authApi } from '@/api/auth.api';
 
 const email = ref('');
 const password = ref('');
@@ -32,22 +33,36 @@ async function handleLogin() {
   error.value = '';
 
   try {
+    // Verificación previa de socio activo
+    const validation = await authApi.validateEmail(email.value);
+    if (!validation.exists || !validation.active) {
+      error.value =
+        'Este correo no está registrado como socio activo en el fondo. Contacta al administrador.';
+      loading.value = false;
+      return;
+    }
+
     await authStore.login(email.value, password.value);
-    
+
     // Validar si el usuario está registrado en la base de datos de socios
     // Si no está registrado, el endpoint lanzará un error 401 que capturaremos en el catch
     await apiClient.get('/v2/dashboard');
-    
+
     const redirect = (route.query.redirect as string) || '/dashboard';
     router.push(redirect);
   } catch (e: any) {
-    // Si el error viene de Firebase Auth
-    if (e.code === 'auth/invalid-credential') {
+    if (e.response?.status === 429) {
+      error.value =
+        'Demasiados intentos. Por favor, espere un momento antes de intentar de nuevo.';
+    } else if (e.code === 'auth/invalid-credential') {
       error.value = 'Correo o contraseña incorrectos';
-    } else if (e.status === 401 || (e.response && e.response.status === 401) || e.message?.includes('401')) {
-      // Si la API del backend devuelve 401 (no registrado en SQL)
-      error.value = 'Su correo electrónico no está registrado como socio activo en el sistema. Por favor, contacte al administrador.';
-      // Forzar cierre de sesión en Firebase para mantener consistencia
+    } else if (
+      e.status === 401 ||
+      (e.response && e.response.status === 401) ||
+      e.message?.includes('401')
+    ) {
+      error.value =
+        'Este correo no está registrado como socio activo en el fondo. Contacta al administrador.';
       await authStore.logout();
     } else {
       error.value = 'Ocurrió un error al iniciar sesión. Intente de nuevo.';
@@ -75,18 +90,30 @@ async function handleResetPassword() {
   resetSuccess.value = false;
 
   try {
+    const validation = await authApi.validateEmail(resetEmail.value);
+    if (!validation.exists || !validation.active) {
+      resetError.value =
+        'Este correo no está registrado como socio activo en el fondo. Contacta al administrador.';
+      resetLoading.value = false;
+      return;
+    }
+
     await sendPasswordResetEmail(auth, resetEmail.value);
     resetSuccess.value = true;
     setTimeout(() => {
       showForgotPassword.value = false;
     }, 3000);
   } catch (e: any) {
-    if (e.code === 'auth/user-not-found') {
+    if (e.response?.status === 429) {
+      resetError.value =
+        'Demasiados intentos. Por favor, espere un momento antes de intentar de nuevo.';
+    } else if (e.code === 'auth/user-not-found') {
       resetError.value = 'No existe ningún usuario registrado con este correo.';
     } else if (e.code === 'auth/invalid-email') {
       resetError.value = 'Formato de correo electrónico no válido.';
     } else {
-      resetError.value = 'Ocurrió un error al enviar el correo. Intente de nuevo.';
+      resetError.value =
+        'Ocurrió un error al enviar el correo. Intente de nuevo.';
     }
   } finally {
     resetLoading.value = false;
