@@ -85,14 +85,45 @@ unset PGPASSWORD
 ### Automatización de Backups
 Se recomienda configurar una tarea programada (cron job) en el servidor de base de datos o mediante un GitHub Action que realice el `pg_dump` semanalmente y lo almacene en un almacenamiento seguro (S3, Google Drive, etc.).
 
+### Sistema de Migraciones y Versionamiento (`schema_migrations`)
+
+El versionamiento y trazabilidad de los cambios en la base de datos se gestiona automáticamente mediante la tabla `public.schema_migrations`:
+
+```sql
+CREATE TABLE IF NOT EXISTS public.schema_migrations (
+    version VARCHAR(255) PRIMARY KEY,
+    applied_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    execution_time_ms INTEGER,
+    checksum VARCHAR(64)
+);
+```
+
+#### Comandos Disponibles
+
+| Comando | Descripción |
+|---|---|
+| `npm run db:status` o `./deploy-schema.sh --status` | Muestra el estado de cada migración (aplicada o pendiente), fecha, duración y checksum. |
+| `npm run db:migrate` o `./deploy-schema.sh` | Aplica todas las migraciones pendientes en una transacción atómica por archivo. |
+| `npm run db:baseline` o `./deploy-schema.sh --baseline` | Registra las migraciones existentes sin ejecutarlas (para sincronizar bases de datos ya existentes). |
+
+También es posible ejecutar directamente el runner con una URL personalizada:
+```bash
+./infra/database/scripts/migrate.sh status "postgresql://..."
+./infra/database/scripts/migrate.sh up "postgresql://..."
+./infra/database/scripts/migrate.sh baseline "postgresql://..."
+```
+
 ### Plan de Migración de Esquemas
 Para realizar cambios en la estructura de la base de datos de manera segura:
 
-1. **Crear Migración:** Generar un nuevo archivo `.sql` en `infra/database/migrations/` con un prefijo numérico secuencial (ej. `0003_add_new_table.sql`).
-2. **Ambiente de Pruebas:** Aplicar la migración en una base de datos local o de staging para validar que no rompe la aplicación.
-3. **Backup Pre-Migración:** Generar un backup manual de producción justo antes de aplicar cambios.
-4. **Ejecución:** Aplicar el script en producción.
-5. **Estrategia de Rollback:** Cada migración debe tener un script de reversión documentado o el backup previo listo para ser restaurado en caso de falla catastrófica.
+1. **Crear Migración:** Generar un nuevo archivo `.sql` en `infra/database/migrations/` con un prefijo numérico secuencial (ej. `0006_add_new_table.sql`).
+2. **Ambiente de Pruebas:** Aplicar la migración localmente con `npm run db:migrate` y verificar con `npm run db:status`.
+3. **Validación de Atomicidad:** El runner ejecuta cada script dentro de una transacción (`BEGIN ... COMMIT`). Si una migración falla, se aplica `ROLLBACK` automático y no se registra en `schema_migrations`.
+4. **Despliegue:** Al correr el flujo de despliegue (`deploy-schema.sh`), las migraciones previas se omiten automáticamente (`[OMITIDA]`) y solo se aplican las nuevas pendientes.
+5. **Auditoría:** Es posible auditar el historial de migraciones en cualquier momento mediante SQL:
+   ```sql
+   SELECT * FROM public.schema_migrations ORDER BY applied_at;
+   ```
 
 ## Docs relacionados
 

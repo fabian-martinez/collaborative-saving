@@ -61,15 +61,9 @@ docker exec "$DOCKER_CONTAINER" pg_dump -U "$DOCKER_USER" -d "$DOCKER_DB" --no-o
 echo -e "${GREEN}✅ Datos y esquema restaurados con éxito.${NC}"
 
 # 5. Aplicar migraciones posteriores al volcado
-echo -e "\n${YELLOW}🔧 Paso 5: Aplicando migraciones incrementales pendientes...${NC}"
-for migration in "${REPO_ROOT}"/infra/database/migrations/0*.sql; do
-  mig_name=$(basename "$migration")
-  if [ "$mig_name" != "0001_initial_tables.sql" ]; then
-    echo -e "  - Aplicando ${mig_name}..."
-    psql "$TARGET_URL" -v ON_ERROR_STOP=1 -f "$migration" > /dev/null
-  fi
-done
-echo -e "${GREEN}✅ Migraciones aplicadas con éxito.${NC}"
+echo -e "\n${YELLOW}🔧 Paso 5: Aplicando migraciones incrementales pendientes con runner atómico...${NC}"
+bash "${SCRIPT_DIR}/migrate.sh" up "$TARGET_URL"
+echo -e "${GREEN}✅ Migraciones sincronizadas con éxito.${NC}"
 
 # 6. Resumen de filas en destino
 echo -e "\n${YELLOW}📊 Paso 6: Verificando conteo de registros en la base remota...${NC}"
@@ -88,6 +82,7 @@ UNION ALL SELECT 'mandatory_contributions', count(*) FROM public.mandatory_contr
 UNION ALL SELECT 'stock_subscriptions', count(*) FROM public.stock_subscriptions
 UNION ALL SELECT 'pending_member_payments', count(*) FROM public.pending_member_payments
 UNION ALL SELECT 'stock_value_history', count(*) FROM public.stock_value_history
+UNION ALL SELECT 'schema_migrations', count(*) FROM public.schema_migrations
 ORDER BY 1;
 "
 

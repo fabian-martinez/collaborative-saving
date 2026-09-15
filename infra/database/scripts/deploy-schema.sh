@@ -20,18 +20,62 @@ echo -e "${BLUE}======================================================${NC}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
-MIGRATIONS_DIR="${REPO_ROOT}/infra/database/migrations"
+MIGRATE_BIN="${SCRIPT_DIR}/migrate.sh"
 
-# Obtener DATABASE_URL (parámetro, entorno o .env.local)
-DB_URL="${1:-${DATABASE_URL:-}}"
+# Parseo de opciones
+MODE="deploy"
+TARGET_URL=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --status|-s|status)
+      MODE="status"
+      shift
+      ;;
+    --baseline|-b|baseline)
+      MODE="baseline"
+      shift
+      ;;
+    --help|-h)
+      echo -e "Uso: $0 [--status | --baseline] [DATABASE_URL]"
+      exit 0
+      ;;
+    postgresql://*|postgres://*)
+      TARGET_URL="$1"
+      shift
+      ;;
+    *)
+      if [ -z "$TARGET_URL" ]; then
+        TARGET_URL="$1"
+      fi
+      shift
+      ;;
+  esac
+done
+
+# Obtener DATABASE_URL (parámetro, entorno o archivos .env)
+DB_URL="${TARGET_URL:-${DATABASE_URL:-}}"
 if [ -z "$DB_URL" ] && [ -f "${REPO_ROOT}/.env.local" ]; then
   echo -e "${BLUE}ℹ️ Cargando DATABASE_URL desde .env.local...${NC}"
-  DB_URL=$(grep '^DATABASE_URL=' "${REPO_ROOT}/.env.local" | cut -d '=' -f2- | tr -d '"' | tr -d "'")
+  DB_URL=$(grep '^DATABASE_URL=' "${REPO_ROOT}/.env.local" | head -n1 | cut -d '=' -f2- | tr -d '"' | tr -d "'")
+fi
+if [ -z "$DB_URL" ] && [ -f "${REPO_ROOT}/.env" ]; then
+  DB_URL=$(grep '^DATABASE_URL=' "${REPO_ROOT}/.env" | head -n1 | cut -d '=' -f2- | tr -d '"' | tr -d "'")
+fi
+if [ -z "$DB_URL" ] && [ -f "${REPO_ROOT}/backend/.env" ]; then
+  DB_URL=$(grep '^DATABASE_URL=' "${REPO_ROOT}/backend/.env" | head -n1 | cut -d '=' -f2- | tr -d '"' | tr -d "'")
+fi
+if [ -z "$DB_URL" ]; then
+  default_local="postgresql://postgres:postgres@localhost:5432/restored_db_feb21"
+  if command -v psql &>/dev/null && psql "$default_local" -c "SELECT 1;" >/dev/null 2>&1; then
+    echo -e "${BLUE}ℹ️ Conectando a base de datos local por defecto (${default_local})${NC}"
+    DB_URL="$default_local"
+  fi
 fi
 
 if [ -z "$DB_URL" ]; then
   echo -e "${RED}❌ Error: No se especificó DATABASE_URL.${NC}"
-  echo -e "Uso: $0 \"<postgresql://user:password@host/dbname?sslmode=require>\""
+  echo -e "Uso: $0 [--status | --baseline] \"<postgresql://user:password@host/dbname?sslmode=require>\""
   echo -e "O exporta la variable: export DATABASE_URL=\"...\" y ejecuta $0"
   exit 1
 fi
@@ -43,6 +87,12 @@ if ! command -v psql &> /dev/null; then
   exit 1
 fi
 
+# Si se solicitó --status o --baseline, delegar a migrate.sh y terminar
+if [ "$MODE" = "status" ]; then
+  exec bash "$MIGRATE_BIN" status "$DB_URL"
+elif [ "$MODE" = "baseline" ]; then
+  exec bash "$MIGRATE_BIN" baseline "$DB_URL"
+fi
 
 # 1. Probar conectividad
 echo -e "\n${YELLOW}🔌 Paso 1: Verificando conectividad con la base de datos...${NC}"
@@ -54,17 +104,12 @@ else
   exit 1
 fi
 
-# 2. Ejecutar todas las migraciones en orden numérico
+# 2. Ejecutar todas las migraciones en orden numérico con runner atómico
 echo -e "\n${YELLOW}📦 Paso 2: Aplicando migraciones de base de datos...${NC}"
-for migration in "${MIGRATIONS_DIR}"/0*.sql; do
-  mig_name=$(basename "$migration")
-  echo -e "  - Aplicando ${mig_name}..."
-  psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$migration" > /dev/null
-  echo -e "${GREEN}    ✅ ${mig_name} aplicada correctamente.${NC}"
-done
+bash "$MIGRATE_BIN" up "$DB_URL"
 
-# 4. Insertar usuario administrador semilla si no existe
-echo -e "\n${YELLOW}👤 Paso 4: Configurando usuario administrador semilla...${NC}"
+# 3. Insertar usuario administrador semilla si no existe
+echo -e "\n${YELLOW}👤 Paso 3: Configurando usuario administrador semilla...${NC}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-admin@collaborativesaving.com}"
 ADMIN_NAME="${ADMIN_NAME:-Administrador Inicial}"
 ADMIN_ID_NUM="${ADMIN_ID_NUM:-10000001}"
@@ -82,8 +127,8 @@ else
   echo -e "${GREEN}ℹ️ Ya existe al menos un usuario administrador activo. Omitiendo inserción.${NC}"
 fi
 
-# 5. Verificación de tablas creadas
-echo -e "\n${YELLOW}🔍 Paso 5: Verificando tablas del esquema...${NC}"
+# 4. Verificación de tablas creadas
+echo -e "\n${YELLOW}🔍 Paso 4: Verificando tablas del esquema...${NC}"
 psql "$DB_URL" -c "
 SELECT 
     table_name,

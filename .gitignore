@@ -174,3 +174,4 @@ ui_design.pen
 .neon
 .agents/
 skills-lock.json
+.build/
