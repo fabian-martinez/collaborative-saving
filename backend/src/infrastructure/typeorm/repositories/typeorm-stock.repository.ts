@@ -101,4 +101,14 @@ export class TypeOrmStockRepository implements StockRepository {
     });
     return entities.map((e) => StockMapper.toDomain(e));
   }
+
+  async hasActiveStocksByType(stockType: string): Promise<boolean> {
+    const count = await this.repo.count({
+      where: {
+        type: stockType,
+        deleted_at: IsNull(),
+      },
+    });
+    return count > 0;
+  }
 }

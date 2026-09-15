@@ -18,13 +18,15 @@ describe('SettingsView.vue', () => {
     const wrapper = mount(SettingsView, {
       global: {
         stubs: {
-          LoanTypeManagement: true
+          LoanTypeManagement: true,
+          StockTypeManagement: true
         }
       }
     })
 
     expect(wrapper.text()).toContain('Configuración del Sistema')
     expect(wrapper.text()).toContain('Tipos de Préstamo')
+    expect(wrapper.text()).toContain('Tipos de Acciones')
     expect(wrapper.text()).toContain('Penalizaciones y Moras')
     expect(wrapper.text()).toContain('Parámetros Generales')
   })
@@ -33,23 +35,22 @@ describe('SettingsView.vue', () => {
     const wrapper = mount(SettingsView, {
       global: {
         stubs: {
-          LoanTypeManagement: true
+          LoanTypeManagement: true,
+          StockTypeManagement: true
         }
       }
     })
 
     const buttons = wrapper.findAll('button.tab')
-    expect(buttons).toHaveLength(3)
+    expect(buttons).toHaveLength(4)
 
     // Click Penalties tab
-    await buttons[1].trigger('click')
+    await buttons[2].trigger('click')
     expect(wrapper.text()).toContain('Penalizaciones y Moras')
-    expect(wrapper.text()).toContain('Issue #61')
 
     // Click General parameters tab
-    await buttons[2].trigger('click')
+    await buttons[3].trigger('click')
     expect(wrapper.text()).toContain('Parámetros Generales')
-    expect(wrapper.text()).toContain('Issue #62')
   })
 })
 

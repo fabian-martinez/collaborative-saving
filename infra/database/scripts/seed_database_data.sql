@@ -10,6 +10,7 @@
 TRUNCATE TABLE
   public.members,
   public.stocks,
+  public.stock_types,
   public.mandatory_contributions,
   public.stock_subscriptions,
   public.operations,
@@ -24,6 +25,16 @@ RESTART IDENTITY CASCADE;
 -- ----------------------------------------------------------------
 -- ▤ Catalog Data
 -- ----------------------------------------------------------------
+-- Insertar tipos de acciones (catálogo)
+INSERT INTO public.stock_types (id, code, name, behavior, is_guaranteed, guaranteed_yield, description) VALUES
+('e1a1b1c1-1111-4444-9999-000000000001', 'ordinaria', 'Acción Ordinaria', 'CAPITAL_APPRECIATION', false, null, 'Acción estándar con participación en valorización de activos'),
+('e1a1b1c1-1111-4444-9999-000000000002', 'preferencial', 'Acción Preferencial', 'CAPITAL_APPRECIATION', true, 0.0200, 'Acción con rendimiento preferencial garantizado del 2% mensual'),
+('e1a1b1c1-1111-4444-9999-000000000003', 'grande', 'Acción Grande', 'CAPITAL_APPRECIATION', false, null, 'Acción de alta denominación con apreciación de capital'),
+('e1a1b1c1-1111-4444-9999-000000000004', 'mediana', 'Acción Mediana', 'CAPITAL_APPRECIATION', false, null, 'Acción de mediana denominación'),
+('e1a1b1c1-1111-4444-9999-000000000005', 'pequena', 'Acción Pequeña', 'CAPITAL_APPRECIATION', false, null, 'Acción de baja denominación'),
+('e1a1b1c1-1111-4444-9999-000000000006', 'cdt', 'Certificado de Depósito a Término', 'DIVIDEND_YIELD', true, 0.0200, 'Instrumento de ahorro a plazo fijo con rendimiento garantizado')
+ON CONFLICT (code) DO NOTHING;
+
 -- Insertar tipos de préstamo
 INSERT INTO public.loan_types (id, code, name, interest_rate, description) VALUES
 ('681c73c5-0f84-449e-9571-a685462e256f', 'corriente', 'Corriente', 0.0150, 'Préstamo corriente estándar con tasa del 1.5% mensual'),
