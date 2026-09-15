@@ -23,3 +23,4 @@ export const LOAN_TRANSACTION_DETAIL_REPOSITORY = Symbol(
   'LoanTransactionDetailRepository',
 );
 export const LOAN_TYPE_REPOSITORY = Symbol('LoanTypeRepository');
+export const STOCK_TYPE_REPOSITORY = Symbol('StockTypeRepository');

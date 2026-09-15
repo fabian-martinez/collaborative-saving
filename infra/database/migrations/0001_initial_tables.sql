@@ -23,6 +23,7 @@ drop table if exists "public"."mandatory_contributions" cascade;
 drop table if exists "public"."loan_transaction_details" cascade;
 drop table if exists "public"."loans" cascade;
 drop table if exists "public"."loan_types" cascade;
+drop table if exists "public"."stock_types" cascade;
 drop table if exists "public"."stock_value_history" cascade;
 drop type if exists "public"."member_due" cascade;
 
@@ -68,6 +69,21 @@ create table public.operations (
 );
 comment on table public.operations is 'Represents a single, high-level financial event.';
 
+-- Defines the types and behavior of stocks available in the fund.
+create table public.stock_types (
+    id uuid default uuid_generate_v4() primary key,
+    code text not null unique,
+    name text not null,
+    behavior text not null default 'CAPITAL_APPRECIATION',
+    is_guaranteed boolean default false not null,
+    guaranteed_yield numeric(5, 4),
+    description text,
+    created_at timestamp with time zone default now() not null,
+    updated_at timestamp with time zone default now() not null,
+    deleted_at timestamp with time zone
+);
+comment on table public.stock_types is 'Defines the types and behavior of stocks available in the fund.';
+
 -- Defines the types of stocks available in the fund.
 create table public.stocks (
     id uuid default uuid_generate_v4() primary key,
@@ -77,6 +93,7 @@ create table public.stocks (
     is_guaranteed boolean default false not null,
     guaranteed_yield numeric(5, 4),
     behavior text not null default 'CAPITAL_APPRECIATION',
+    stock_type_id uuid references public.stock_types(id) on delete set null,
     deleted_at timestamp with time zone
 );
 comment on table public.stocks is 'Defines the types of stocks available in the fund.';

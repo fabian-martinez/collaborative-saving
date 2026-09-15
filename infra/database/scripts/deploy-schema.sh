@@ -54,27 +54,14 @@ else
   exit 1
 fi
 
-# 2. Ejecutar migración 0001
-MIGRATION_1="${MIGRATIONS_DIR}/0001_initial_tables.sql"
-echo -e "\n${YELLOW}📦 Paso 2: Aplicando 0001_initial_tables.sql...${NC}"
-if [ -f "$MIGRATION_1" ]; then
-  psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$MIGRATION_1"
-  echo -e "${GREEN}✅ Migración 0001 aplicada correctamente.${NC}"
-else
-  echo -e "${RED}❌ No se encontró el archivo $MIGRATION_1${NC}"
-  exit 1
-fi
-
-# 3. Ejecutar migración 0002
-MIGRATION_2="${MIGRATIONS_DIR}/0002_align_with_entities.sql"
-echo -e "\n${YELLOW}📦 Paso 3: Aplicando 0002_align_with_entities.sql...${NC}"
-if [ -f "$MIGRATION_2" ]; then
-  psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$MIGRATION_2"
-  echo -e "${GREEN}✅ Migración 0002 aplicada correctamente.${NC}"
-else
-  echo -e "${RED}❌ No se encontró el archivo $MIGRATION_2${NC}"
-  exit 1
-fi
+# 2. Ejecutar todas las migraciones en orden numérico
+echo -e "\n${YELLOW}📦 Paso 2: Aplicando migraciones de base de datos...${NC}"
+for migration in "${MIGRATIONS_DIR}"/0*.sql; do
+  mig_name=$(basename "$migration")
+  echo -e "  - Aplicando ${mig_name}..."
+  psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$migration" > /dev/null
+  echo -e "${GREEN}    ✅ ${mig_name} aplicada correctamente.${NC}"
+done
 
 # 4. Insertar usuario administrador semilla si no existe
 echo -e "\n${YELLOW}👤 Paso 4: Configurando usuario administrador semilla...${NC}"
