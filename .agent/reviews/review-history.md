@@ -148,3 +148,15 @@ The changes introduce comprehensive documentation and an interactive runtime arc
 - *No architectural violations or issues found. Excellent work!*
 
 ---
+
+## Review Session: 9/15/2026, 10:40:53 AM (Colombia)
+- **Branch:** `fix/swagger-helmet-csp`
+- **Verdict:** ✅ **APPROVED**
+
+### Explanation
+The changes in main.ts correctly configure Helmet with a Content Security Policy that accommodates Swagger UI, and enhance the Swagger documentation setup by adding bearer authentication and persisting authorization. These modifications are appropriate for the application bootstrap layer and do not violate any of the project's architectural or coding standards.
+
+### Issues / Suggested Improvements
+- *No architectural violations or issues found. Excellent work!*
+
+---
