@@ -4,7 +4,9 @@
   "description": "Collaborative Saving Application",
   "private": true,
   "scripts": {
-    "dev": "npm-run-all --parallel dev:backend dev:app",
+    "dev": "npm-run-all --parallel dev:backend dev:app dev:mobile",
+    "dev:all": "npm-run-all --parallel dev:backend dev:app dev:mobile",
+    "dev:web": "npm-run-all --parallel dev:backend dev:app",
     "dev:backend": "cd backend && npm run start:dev",
     "dev:app": "cd frontend-v2 && npm run dev",
     "dev:mobile": "cd frontend-mobile && npm run dev",
@@ -13,9 +15,10 @@
     "build:backend": "cd backend && npm run build",
     "build:app": "cd frontend-v2 && npm run build",
     "build:mobile": "cd frontend-mobile && npm run build",
-    "start": "npm-run-all --parallel start:backend start:app",
+    "start": "npm-run-all --parallel start:backend start:app start:mobile",
     "start:backend": "cd backend && npm run start:prod",
     "start:app": "cd frontend-v2 && npm run preview",
+    "start:mobile": "cd frontend-mobile && npm run preview",
     "lint:md": "markdownlint \"**/*.md\"",
     "lint:md:fix": "markdownlint \"**/*.md\" --fix",
     "prepare": "lefthook install"
