@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Collaborative Saving Project.
+ * All rights reserved.
+ */
+
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { StockResponseDto } from '@application/dto/stocks/stock-response.dto';
 
@@ -8,7 +13,9 @@ export class GetStocksQueryHandler {
     const stocks = await this.stockRepository.findActive();
     return stocks.map((s) => ({
       id: s.id,
-      type: s.type,
+      name: s.name,
+      type: s.name,
+      stockTypeId: s.stockTypeId,
       value: s.value,
       monthlyContribution: s.monthlyContribution,
       isGuaranteed: s.isGuaranteed,

@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Collaborative Saving Project.
+ * All rights reserved.
+ */
+
 import { Stock } from '@domain/entities/stock.entity';
 import { Stock as StockEntity } from '../entities/stock.entity';
 
@@ -6,7 +11,9 @@ export class StockMapper {
     try {
       return Stock.fromPersistence({
         id: persistence.id,
-        type: persistence.type,
+        name: persistence.name || persistence.type,
+        type: persistence.name || persistence.type,
+        stock_type_id: persistence.stock_type_id,
         value: Number(persistence.value),
         monthly_contribution: Number(persistence.monthly_contribution),
         is_guaranteed: persistence.is_guaranteed,
@@ -14,9 +21,7 @@ export class StockMapper {
           ? Number(persistence.guaranteed_yield)
           : null,
         behavior: persistence.behavior,
-        created_at:
-          (persistence as unknown as { created_at?: Date | string })
-            .created_at || new Date(),
+        created_at: persistence.created_at || new Date(),
         deleted_at: persistence.deleted_at,
       });
     } catch (error) {
@@ -29,7 +34,9 @@ export class StockMapper {
   static toPersistence(domain: Stock): Partial<StockEntity> {
     const result: Partial<StockEntity> = {
       id: domain.id,
-      type: domain.type,
+      name: domain.name,
+      type: domain.name,
+      stock_type_id: domain.stockTypeId,
       value: domain.value,
       monthly_contribution: domain.monthlyContribution,
       is_guaranteed: domain.isGuaranteed,

@@ -47,7 +47,9 @@ describe('CreateStockUseCase', () => {
     expect(saveSpy).toHaveBeenCalledTimes(1);
     expect(result).toEqual({
       id: savedStock.id,
+      name: savedStock.name,
       type: savedStock.type,
+      stockTypeId: null,
       value: savedStock.value,
       monthlyContribution: savedStock.monthlyContribution,
       isGuaranteed: savedStock.isGuaranteed,
@@ -60,7 +62,8 @@ describe('CreateStockUseCase', () => {
   it('should create a stock with all optional fields', async () => {
     // ARRANGE
     const createDto = {
-      type: 'guaranteed',
+      name: 'guaranteed',
+      stockTypeId: 'st-1',
       value: 150,
       monthlyContribution: 75,
       isGuaranteed: true,
@@ -76,7 +79,9 @@ describe('CreateStockUseCase', () => {
     const result = await useCase.execute(createDto);
 
     // ASSERT
+    expect(result.name).toBe('guaranteed');
     expect(result.type).toBe('guaranteed');
+    expect(result.stockTypeId).toBe('st-1');
     expect(result.value).toBe(150);
     expect(result.monthlyContribution).toBe(75);
     expect(result.isGuaranteed).toBe(true);
@@ -84,7 +89,7 @@ describe('CreateStockUseCase', () => {
     expect(result.behavior).toBe(StockBehavior.DIVIDEND_YIELD);
   });
 
-  it('should throw InvalidRequestError if stock type already exists', async () => {
+  it('should throw InvalidRequestError if stock name already exists', async () => {
     // ARRANGE
     const createDto = {
       type: 'preferential',
@@ -100,7 +105,7 @@ describe('CreateStockUseCase', () => {
       InvalidRequestError,
     );
     await expect(useCase.execute(createDto)).rejects.toThrow(
-      'Stock with type "preferential" already exists',
+      'Stock with name "preferential" already exists',
     );
 
     expect(findByTypeSpy).toHaveBeenCalledWith('preferential');

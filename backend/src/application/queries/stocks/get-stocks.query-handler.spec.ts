@@ -61,7 +61,9 @@ describe('GetStocksQueryHandler', () => {
     expect(result).toHaveLength(2);
     expect(result[0]).toEqual({
       id: stocks[0].id,
+      name: stocks[0].name,
       type: stocks[0].type,
+      stockTypeId: null,
       value: stocks[0].value,
       monthlyContribution: stocks[0].monthlyContribution,
       isGuaranteed: stocks[0].isGuaranteed,
@@ -71,7 +73,9 @@ describe('GetStocksQueryHandler', () => {
     });
     expect(result[1]).toEqual({
       id: stocks[1].id,
+      name: stocks[1].name,
       type: stocks[1].type,
+      stockTypeId: null,
       value: stocks[1].value,
       monthlyContribution: stocks[1].monthlyContribution,
       isGuaranteed: stocks[1].isGuaranteed,
