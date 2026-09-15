@@ -204,7 +204,7 @@ export class Loan {
       throw new Error('Payment cannot result in negative outstanding balance');
     }
 
-    this._outstandingBalance = newBalance;
+    this._outstandingBalance = newBalance <= 0.001 ? 0 : newBalance;
 
     if (this._outstandingBalance === 0) {
       this._status = LoanStatus.PAID;

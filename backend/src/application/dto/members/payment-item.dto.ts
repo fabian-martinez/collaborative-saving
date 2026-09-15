@@ -19,4 +19,5 @@ export interface PaymentItemDto {
   referenceId?: string;
   noveltyComment?: string;
   affectedPaymentType?: PaymentType;
+  isFullPayoff?: boolean;
 }

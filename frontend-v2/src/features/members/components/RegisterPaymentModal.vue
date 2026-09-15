@@ -39,16 +39,40 @@
               </div>
             </div>
             <div class="w-full text-left sm:w-auto sm:text-right sm:min-w-[150px]">
-              <label class="block text-xs sm:text-sm text-base-content/70 mb-1">Monto a pagar</label>
+              <div class="flex items-center justify-between sm:justify-end gap-2 mb-1">
+                <label class="block text-xs sm:text-sm text-base-content/70">Monto a pagar</label>
+                <button
+                  v-if="due.type === 'loan_payment' && due.details"
+                  type="button"
+                  class="btn btn-ghost btn-xs text-[10px] h-auto min-h-0 py-0.5 px-1 bg-base-200 hover:bg-base-300 rounded font-semibold text-secondary"
+                  :disabled="!isSelected(due)"
+                  @click="liquidateLoanDue(due)"
+                >
+                  Liquidar total
+                </button>
+              </div>
               <input
                 v-model.number="paymentAmounts[getDueKey(due)]"
                 type="number"
                 step="0.01"
                 min="0"
-                :max="due.amount"
-                class="w-full sm:w-32 text-right font-mono"
+                :max="getMaxAmount(due)"
+                class="w-full sm:w-36 text-right font-mono input input-bordered input-sm"
                 :disabled="!isSelected(due)"
               />
+              <div
+                v-if="getLoanResidualWarning(due)"
+                class="text-[11px] text-warning mt-1 text-right flex items-center justify-end gap-1"
+              >
+                <span>⚠️ Saldo: {{ formatCurrency(getLoanResidual(due)) }}</span>
+                <button
+                  type="button"
+                  class="link link-warning font-semibold underline"
+                  @click="liquidateLoanDue(due)"
+                >
+                  Liquidar
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -147,6 +171,37 @@ function toggleDue(due: MemberDue) {
   }
 }
 
+function getMaxAmount(due: MemberDue): number {
+  if (due.type === 'loan_payment' && due.details?.outstanding_balance !== undefined) {
+    return Number(((due.details.outstanding_balance || 0) + (due.details.interest || 0)).toFixed(2))
+  }
+  return due.amount
+}
+
+function liquidateLoanDue(due: MemberDue) {
+  if (!isSelected(due)) {
+    toggleDue(due)
+  }
+  const key = getDueKey(due)
+  paymentAmounts.value[key] = getMaxAmount(due)
+}
+
+function getLoanResidual(due: MemberDue): number {
+  if (due.type !== 'loan_payment' || due.details?.outstanding_balance === undefined) return 0
+  const key = getDueKey(due)
+  const paid = paymentAmounts.value[key] ?? due.amount
+  const interest = due.details.interest || 0
+  const principalPaid = Math.max(0, paid - interest)
+  const residual = (due.details.outstanding_balance || 0) - principalPaid
+  return Number(residual.toFixed(2))
+}
+
+function getLoanResidualWarning(due: MemberDue): boolean {
+  if (!isSelected(due) || due.type !== 'loan_payment') return false
+  const residual = getLoanResidual(due)
+  return residual > 0.001 && residual <= 10
+}
+
 async function handleSubmit() {
   if (selectedDues.value.length === 0 || totalAmount.value === 0) return
 
@@ -170,6 +225,10 @@ async function handleSubmit() {
 
       if (noveltyComment.value.trim()) {
         payment.novelty_comment = noveltyComment.value.trim()
+      }
+
+      if (due.type === 'loan_payment' && getLoanResidual(due) <= 0.001) {
+        payment.is_full_payoff = true
       }
 
       return payment
