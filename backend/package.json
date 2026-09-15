@@ -27,7 +27,11 @@
     "typeorm": "typeorm-ts-node-commonjs",
     "typeorm:migration:generate": "npm run typeorm -- -d ./src/infrastructure/typeorm/data-source.ts migration:generate ./src/infrastructure/typeorm/migrations/create-config-tables",
     "typeorm:migration:run": "npm run typeorm -- -d ./src/infrastructure/typeorm/data-source.ts migration:run",
-    "typeorm:migration:revert": "npm run typeorm -- -d ./src/infrastructure/typeorm/data-source.ts migration:revert"
+    "typeorm:migration:revert": "npm run typeorm -- -d ./src/infrastructure/typeorm/data-source.ts migration:revert",
+    "db:migrate": "bash ../infra/database/scripts/migrate.sh up",
+    "db:status": "bash ../infra/database/scripts/migrate.sh status",
+    "db:baseline": "bash ../infra/database/scripts/migrate.sh baseline",
+    "test:migrations": "bash ../infra/database/scripts/test-migrations.sh"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.3",
