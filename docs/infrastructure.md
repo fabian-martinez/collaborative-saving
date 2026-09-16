@@ -125,86 +125,103 @@ curl -i -X POST https://<TU-BACKEND-URL>/v2/auth/validate-email \
 curl -i https://<TU-BACKEND-URL>/members
 ```
 
-### Despliegue del Frontend Web en Firebase Hosting (Fase 6)
+### Despliegue del Frontend (Web y Mobile) en Firebase Hosting (Fase 6)
 
-El frontend Vue 3 (`frontend-v2`) se compila como una Single Page Application (SPA) optimizada con Vite y se sirve a través de **Firebase Hosting**, aprovechando la red global CDN de Google Cloud, HTTPS automático y la integración nativa con Firebase Authentication.
+Los frontends Vue 3 (`frontend-v2` para Web y `frontend-mobile` para dispositivos móviles) se compilan como Single Page Applications (SPA) con Vite y se despliegan en **Firebase Hosting Multi-Site**, aprovechando la CDN global de Google Cloud, HTTPS automático y la autenticación centralizada con Firebase Auth.
 
-#### 1. Configuración de Firebase Hosting
+#### 1. Configuración Multi-Sitio de Firebase Hosting
 
-El proyecto cuenta con el manifiesto [`firebase.json`](../firebase.json) en la raíz:
-- **Directorio público:** `frontend-v2/dist`
-- **SPA Rewrites:** Todas las rutas dinámicas (`/**`) se resuelven contra `/index.html` para evitar errores 404 al recargar rutas como `/dashboard` o `/members`.
-- **Cabeceras de Seguridad:** Incluye `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` y `Permissions-Policy`.
-- **Caché Inmutable:** Activos bajo `/assets/**` con `Cache-Control: public, max-age=31536000, immutable`.
+El proyecto cuenta con el manifiesto [`firebase.json`](../firebase.json) configurado con dos *targets*:
+- **Target `web`:** Compila desde `frontend-v2/dist` (para acceso desktop/web principal).
+- **Target `mobile`:** Compila desde `frontend-mobile/dist` (optimizado para navegación táctil/móvil).
+- **SPA Rewrites:** Todas las rutas dinámicas (`/**`) de ambos sitios se resuelven contra `/index.html`.
+- **Cabeceras de Seguridad:** Incluyen `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` y `Permissions-Policy`.
+- **Caché Inmutable:** Activos estáticos en `/assets/**` con `Cache-Control: public, max-age=31536000, immutable`.
 
 #### 2. Variables de Entorno de Compilación
 
-Durante el proceso de build (`npm run build`), Vite inyecta las siguientes variables:
+Durante el proceso de compilación (`npm run build`), Vite inyecta las siguientes variables:
 
-| Variable | Descripción / Ejemplo |
-|---|---|
-| `VITE_API_URL` | URL pública del backend (ej. `https://collaborative-saving-backend.onrender.com`) |
-| `VITE_API_VERSION` | Versión del API (ej. `v2`) |
-| `VITE_USE_MOCKS` | `false` en producción |
-| `VITE_FIREBASE_API_KEY` | Clave de API de Firebase |
-| `VITE_FIREBASE_AUTH_DOMAIN` | Dominio de autenticación de Firebase (ej. `<project-id>.firebaseapp.com`) |
-| `VITE_FIREBASE_PROJECT_ID` | ID del proyecto de Firebase |
-| `VITE_FIREBASE_STORAGE_BUCKET` | Bucket de almacenamiento (ej. `<project-id>.firebasestorage.app`) |
-| `VITE_FIREBASE_MESSAGING_SENDER_ID` | ID de remitente de mensajería |
-| `VITE_FIREBASE_APP_ID` | ID de aplicación web en Firebase |
+| Variable | Descripción / Ejemplo | Aplica a |
+|---|---|:---:|
+| `VITE_API_URL` | URL pública del backend (ej. `https://collaborative-saving-backend.onrender.com`) | Web y Mobile |
+| `VITE_API_VERSION` | Versión del API (ej. `v2`) | Web |
+| `VITE_USE_MOCKS` | `false` en producción | Web y Mobile |
+| `VITE_FIREBASE_API_KEY` | Clave de API de Firebase | Web y Mobile |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Dominio de autenticación de Firebase (ej. `<project-id>.firebaseapp.com`) | Web y Mobile |
+| `VITE_FIREBASE_PROJECT_ID` | ID del proyecto de Firebase | Web y Mobile |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Bucket de almacenamiento (ej. `<project-id>.firebasestorage.app`) | Web y Mobile |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | ID de remitente de mensajería | Web y Mobile |
+| `VITE_FIREBASE_APP_ID` | ID de aplicación web en Firebase | Web y Mobile |
 
-#### 3. Vinculación de Subdominio Personalizado en Hostinger
+#### 3. Configuración de Sitios y Subdominios en Hostinger
 
-Para conectar tu subdominio (ej. `app.tudominio.com`):
+Para habilitar ambos sitios con sus respectivos subdominios:
 
-1. **En Firebase Console:**
-   - Ve a **Build** -> **Hosting** -> **Add custom domain** (Agregar dominio personalizado).
-   - Ingresa el subdominio completo (ej. `app.tudominio.com`).
-   - No marques la opción de redirección de dominio raíz si mantienes tu web principal en Hostinger.
-   - Firebase indicará el valor de registro DNS necesario (generalmente un CNAME o registro A/TXT de verificación).
+1. **En Firebase Console (Multi-Site):**
+   - El sitio web principal utiliza el sitio por defecto de Firebase (`<project-id>`).
+   - Para el frontend móvil: Ve a **Hosting** -> Desplázate hacia abajo y haz clic en **Agregar otro sitio**.
+   - Asigna un identificador al sitio móvil (ejemplo: `<project-id>-mobile`).
 
-2. **En el panel de Hostinger (hPanel):**
-   - Accede a **Dominios** -> Selecciona tu dominio -> **Zona DNS** (DNS / Nameservers).
-   - Agrega un nuevo registro:
-     - **Tipo:** `CNAME`
-     - **Nombre:** `app` (o el nombre de tu subdominio; Hostinger añade automáticamente tu dominio base)
-     - **Apunta a:** `<tu-project-id>.web.app.`
-     - **TTL:** `300` (o el valor predeterminado `14400`)
-   - Si Firebase requiere verificación de propiedad previa:
-     - Agrega el registro **TXT** indicado con el nombre y código de verificación correspondiente (`google-site-verification=...`).
+2. **Vincular Targets Locales con Firebase CLI:**
+   ```bash
+   npx firebase-tools target:apply hosting web <project-id>
+   npx firebase-tools target:apply hosting mobile <project-id>-mobile
+   ```
 
-3. **Aprovisionamiento SSL:**
-   - Google Trust Services / Let's Encrypt aprovisionará automáticamente el certificado TLS. El proceso toma entre 15 minutos y un par de horas tras la propagación DNS.
+3. **En el panel de Hostinger (hPanel):**
+   Accede a **Dominios** -> Selecciona tu dominio -> **Zona DNS** y crea los registros CNAME correspondientes:
+   - **Para Web (`app.tudominio.com`):**
+     - Tipo: `CNAME`
+     - Nombre: `app`
+     - Apunta a: `<project-id>.web.app.`
+     - TTL: `300`
+   - **Para Mobile (`m.tudominio.com` o `mobile.tudominio.com`):**
+     - Tipo: `CNAME`
+     - Nombre: `m` (o `mobile`)
+     - Apunta a: `<project-id>-mobile.web.app.`
+     - TTL: `300`
 
 4. **Autorización en Firebase Authentication:**
-   - En Firebase Console -> **Authentication** -> pestaña **Settings** -> **Authorized domains**.
-   - Confirma que `app.tudominio.com` figure en la lista (Firebase Hosting lo añade de forma automática al vincular el dominio).
+   - En Firebase Console -> **Authentication** -> **Settings** -> **Authorized domains**.
+   - Asegúrate de que tanto `app.tudominio.com` como `m.tudominio.com` figuren como dominios autorizados.
 
-5. **Sincronización con el Backend:**
-   - En Render / Cloud Run, actualiza la variable de entorno `ALLOWED_ORIGINS` para incluir la URL final:
-     `ALLOWED_ORIGINS="https://app.tudominio.com,https://<project-id>.web.app"`
+5. **Sincronización de CORS con el Backend:**
+   - En Render / Cloud Run, actualiza `ALLOWED_ORIGINS` con ambos orígenes:
+     ```bash
+     ALLOWED_ORIGINS="https://app.tudominio.com,https://m.tudominio.com,https://<project-id>.web.app"
+     ```
 
 #### 4. Despliegue Manual con Firebase CLI
 
 ```bash
-# 1. Autenticarse en Firebase (solo la primera vez)
-npx firebase-tools login
-
-# 2. Seleccionar el proyecto activo
-npx firebase-tools use <project-id>
-
-# 3. Compilar y desplegar
+# Desplegar únicamente el frontend web
 npm run deploy:app
+
+# Desplegar únicamente el frontend móvil
+npm run deploy:mobile
+
+# Desplegar ambos simultáneamente
+npm run deploy:all
 ```
 
-#### 5. Despliegue Automatizado con GitHub Actions
+#### 5. Automatización con GitHub Actions y Configuración de Secretos
 
-El workflow [`.github/workflows/deploy-frontend.yml`](../.github/workflows/deploy-frontend.yml) automatiza el ciclo:
-- **Pull Requests:** Despliega canales de previsualización (Preview Channels) con URLs efímeras para validar cambios antes de fusionar.
-- **Push a `main`:** Despliega automáticamente al canal en vivo (`live`).
-- **Secretos requeridos en GitHub:**
-  - `FIREBASE_SERVICE_ACCOUNT`: Clave privada JSON de la cuenta de servicio de Firebase.
-  - `VITE_*`: Variables de entorno de compilación listadas en la tabla anterior.
+El workflow [`.github/workflows/deploy-frontend.yml`](../.github/workflows/deploy-frontend.yml) automatiza la compilación y despliegue de ambos frontends.
+
+> [!IMPORTANT]
+> **Configuración del Secreto `FIREBASE_SERVICE_ACCOUNT` en GitHub:**
+> Si en la ejecución de GitHub Actions se presenta el error:
+> `Error: Input required and not supplied: firebaseServiceAccount`
+>
+> Significa que el secreto aún no ha sido cargado en el repositorio de GitHub. Para resolverlo:
+> 1. En **Firebase Console**, ve a **Configuración del proyecto (⚙️)** -> **Cuentas de servicio** (Service accounts).
+> 2. Haz clic en **Generar nueva clave privada** (Generate new private key) para descargar el archivo JSON de credenciales.
+> 3. Abre tu repositorio en GitHub y ve a **Settings** -> **Secrets and variables** -> **Actions**.
+> 4. Haz clic en **New repository secret**.
+> 5. Nombre: `FIREBASE_SERVICE_ACCOUNT`.
+> 6. Valor: Pega el contenido completo del archivo JSON generado en el paso 2 (inicia con `{"type": "service_account", ...}`).
+> 7. Haz clic en **Add secret**. El workflow se re-ejecutará automáticamente en el siguiente push o PR.
 
 ## Observabilidad
 
