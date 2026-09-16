@@ -384,6 +384,72 @@ describe('MembersV2Controller', () => {
       expect(result).toEqual([]);
       expect(result).toHaveLength(0);
     });
+
+    it('should mask PII for regular members viewing list', async () => {
+      const members = [
+        {
+          id: '550e8400-e29b-41d4-a716-446655440001',
+          name: 'Member One',
+          email: 'member.one@example.com',
+          role: 'member',
+          status: 'active',
+          identificationNumber: '1234567890',
+          phone: '+57 300 123 4567',
+          address: 'Calle 123',
+          beneficiary: 'Maria Perez',
+          registrationDate: new Date(),
+          createdAt: new Date(),
+        },
+      ];
+      getMembersQueryExecuteSpy.mockResolvedValue(members);
+
+      const regularUser = {
+        id: 'other-user-id',
+        email: 'other@example.com',
+        role: 'member',
+      };
+
+      const result = await controller.list(regularUser);
+
+      expect(result[0].email).toBe('m***e@example.com');
+      expect(result[0].identification_number).toBe('******7890');
+      expect(result[0].phone).toBe('+** *** *** 4567');
+      expect(result[0].address).toBe('[PROTEGIDO]');
+      expect(result[0].beneficiary).toBe('[PROTEGIDO]');
+    });
+
+    it('should not mask PII for admin or treasurer viewing list', async () => {
+      const members = [
+        {
+          id: '550e8400-e29b-41d4-a716-446655440001',
+          name: 'Member One',
+          email: 'member.one@example.com',
+          role: 'member',
+          status: 'active',
+          identificationNumber: '1234567890',
+          phone: '+57 300 123 4567',
+          address: 'Calle 123',
+          beneficiary: 'Maria Perez',
+          registrationDate: new Date(),
+          createdAt: new Date(),
+        },
+      ];
+      getMembersQueryExecuteSpy.mockResolvedValue(members);
+
+      const adminUser = {
+        id: 'admin-id',
+        email: 'admin@example.com',
+        role: 'admin',
+      };
+
+      const result = await controller.list(adminUser);
+
+      expect(result[0].email).toBe('member.one@example.com');
+      expect(result[0].identification_number).toBe('1234567890');
+      expect(result[0].phone).toBe('+57 300 123 4567');
+      expect(result[0].address).toBe('Calle 123');
+      expect(result[0].beneficiary).toBe('Maria Perez');
+    });
   });
 
   describe('detail', () => {
@@ -402,6 +468,68 @@ describe('MembersV2Controller', () => {
         identification_number: mockMemberResponse.identificationNumber,
         registration_date: mockMemberResponse.registrationDate,
       });
+    });
+
+    it('should mask PII when regular member views another member detail', async () => {
+      const targetMember = {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        name: 'Target Member',
+        email: 'target@example.com',
+        role: 'member',
+        status: 'active',
+        identificationNumber: '1234567890',
+        phone: '+57 300 123 4567',
+        address: 'Calle 123',
+        beneficiary: 'Maria Perez',
+        registrationDate: new Date(),
+        createdAt: new Date(),
+      };
+      getMemberDetailQueryExecuteSpy.mockResolvedValue(targetMember);
+
+      const viewer = {
+        id: 'different-user-id',
+        email: 'viewer@example.com',
+        role: 'member',
+      };
+
+      const result = await controller.detail(targetMember.id, viewer);
+
+      expect(result.email).toBe('t***t@example.com');
+      expect(result.identification_number).toBe('******7890');
+      expect(result.phone).toBe('+** *** *** 4567');
+      expect(result.address).toBe('[PROTEGIDO]');
+      expect(result.beneficiary).toBe('[PROTEGIDO]');
+    });
+
+    it('should not mask PII when member views their own detail', async () => {
+      const targetMember = {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        name: 'Target Member',
+        email: 'target@example.com',
+        role: 'member',
+        status: 'active',
+        identificationNumber: '1234567890',
+        phone: '+57 300 123 4567',
+        address: 'Calle 123',
+        beneficiary: 'Maria Perez',
+        registrationDate: new Date(),
+        createdAt: new Date(),
+      };
+      getMemberDetailQueryExecuteSpy.mockResolvedValue(targetMember);
+
+      const selfViewer = {
+        id: targetMember.id,
+        email: 'target@example.com',
+        role: 'member',
+      };
+
+      const result = await controller.detail(targetMember.id, selfViewer);
+
+      expect(result.email).toBe('target@example.com');
+      expect(result.identification_number).toBe('1234567890');
+      expect(result.phone).toBe('+57 300 123 4567');
+      expect(result.address).toBe('Calle 123');
+      expect(result.beneficiary).toBe('Maria Perez');
     });
 
     it('should throw HttpException with NOT_FOUND when member not found', async () => {
