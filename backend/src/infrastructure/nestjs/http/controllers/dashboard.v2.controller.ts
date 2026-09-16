@@ -4,6 +4,7 @@ import { GetMonthlyMovementsQueryHandler } from '@application/queries/dashboard/
 import { GetPortfolioStatusQueryHandler } from '@application/queries/dashboard/get-portfolio-status.query-handler';
 import { GetMonthlyMovementsResponseHttpDto } from '../dto/dashboard/monthly-movements-response-http.dto';
 import { GetPortfolioStatusResponseHttpDto } from '../dto/dashboard/portfolio-status-response-http.dto';
+import { DashboardSessionResponseHttpDto } from '../dto/dashboard/dashboard-session-response-http.dto';
 
 @ApiTags('Dashboard V2')
 @Controller('v2/dashboard')
@@ -12,6 +13,21 @@ export class DashboardV2Controller {
     private readonly getMonthlyMovementsQuery: GetMonthlyMovementsQueryHandler,
     private readonly getPortfolioStatusQuery: GetPortfolioStatusQueryHandler,
   ) {}
+
+  @Get()
+  @ApiOperation({
+    summary: 'Dashboard health check and session validation',
+    description:
+      'Validates that the authenticated member has an active session and access to the dashboard.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Dashboard session is valid',
+    type: DashboardSessionResponseHttpDto,
+  })
+  getDashboardSession(): DashboardSessionResponseHttpDto {
+    return { status: 'ok' };
+  }
 
   @Get('monthly-movements')
   @ApiOperation({
