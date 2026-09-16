@@ -18,7 +18,10 @@ import { CryptoService } from './crypto.service';
         new CryptoService(configService),
       inject: [ConfigService],
     },
-    CryptoService,
+    {
+      provide: CryptoService,
+      useExisting: CRYPTO_SERVICE,
+    },
   ],
   exports: [CRYPTO_SERVICE, CryptoService],
 })
