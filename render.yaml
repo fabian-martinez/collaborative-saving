@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: collaborative-saving-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    region: ohio
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_SSL
+        value: "true"
+      - key: ENABLE_SWAGGER
+        value: "false"
+      - key: ALLOWED_ORIGINS
+        value: http://localhost:5173,https://collaborative-saving.pages.dev,https://collaborative-saving.vercel.app
+      - key: DATABASE_URL
+        sync: false
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
