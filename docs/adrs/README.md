@@ -18,6 +18,7 @@ Este directorio contiene **ADRs** — registros cortos y fechados de decisiones 
 - [ADR-0012: Sistema transversal registro operaciones](./0012-sistema-transversal-registro-operaciones.md)
 - [ADR-0013: Decisiones técnicas frontend v2](./0013-decisiones-tecnicas-frontend-v2.md)
 - [ADR-0014: Selección Neon Postgres para producción](./0014-seleccion-neon-postgres-produccion.md)
+- [ADR-0015: Selección Firebase Hosting para frontend](./0015-seleccion-firebase-hosting-frontend.md)
 
 ## Cómo escribir uno nuevo
 

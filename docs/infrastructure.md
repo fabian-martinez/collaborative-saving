@@ -40,7 +40,7 @@ npm run dev
 - **Base de Datos:** Neon Serverless Postgres (PostgreSQL 15+, SSL obligatorio, Connection Pooling con PgBouncer).
 - **Autenticación:** Firebase Auth.
 - **Backend:** NestJS en PaaS / Container (Render / Cloud Run).
-- **Frontend:** SPA Vue 3 en CDN (Cloudflare Pages / Vercel).
+- **Frontend:** SPA Vue 3 en Firebase Hosting (CDN global de Google Cloud) con subdominio personalizado en Hostinger.
 
 ### CI/CD
 
@@ -100,7 +100,7 @@ Para desplegar vía contenedor:
 | `DATABASE_URL` | URI de conexión pooled de Neon (`postgresql://neondb_owner:...@...-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require`) | **Sí** |
 | `DATABASE_SSL` | `true` (habilita conexión segura TLS con `{ rejectUnauthorized: false }`) | No |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | String JSON de la clave privada de Firebase Admin en una sola línea (`{"type":"service_account",...}`) | **Sí** |
-| `ALLOWED_ORIGINS` | Orígenes autorizados separados por coma (`https://collaborative-saving.pages.dev,https://collaborative-saving.vercel.app,http://localhost:5173`) | No |
+| `ALLOWED_ORIGINS` | Orígenes autorizados separados por coma (ej. `https://app.<tu-dominio>.com,https://<project-id>.web.app,http://localhost:5173`) | No |
 | `ENABLE_SWAGGER` | `false` (deshabilita la interfaz `/api` en producción para proteger esquemas y endpoints) | No |
 
 #### Ciclo de Vida y Migraciones en Producción
@@ -124,6 +124,87 @@ curl -i -X POST https://<TU-BACKEND-URL>/v2/auth/validate-email \
 # 3. Verificación de seguridad en rutas protegidas (DEBE responder 401 Unauthorized)
 curl -i https://<TU-BACKEND-URL>/members
 ```
+
+### Despliegue del Frontend Web en Firebase Hosting (Fase 6)
+
+El frontend Vue 3 (`frontend-v2`) se compila como una Single Page Application (SPA) optimizada con Vite y se sirve a través de **Firebase Hosting**, aprovechando la red global CDN de Google Cloud, HTTPS automático y la integración nativa con Firebase Authentication.
+
+#### 1. Configuración de Firebase Hosting
+
+El proyecto cuenta con el manifiesto [`firebase.json`](../firebase.json) en la raíz:
+- **Directorio público:** `frontend-v2/dist`
+- **SPA Rewrites:** Todas las rutas dinámicas (`/**`) se resuelven contra `/index.html` para evitar errores 404 al recargar rutas como `/dashboard` o `/members`.
+- **Cabeceras de Seguridad:** Incluye `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` y `Permissions-Policy`.
+- **Caché Inmutable:** Activos bajo `/assets/**` con `Cache-Control: public, max-age=31536000, immutable`.
+
+#### 2. Variables de Entorno de Compilación
+
+Durante el proceso de build (`npm run build`), Vite inyecta las siguientes variables:
+
+| Variable | Descripción / Ejemplo |
+|---|---|
+| `VITE_API_URL` | URL pública del backend (ej. `https://collaborative-saving-backend.onrender.com`) |
+| `VITE_API_VERSION` | Versión del API (ej. `v2`) |
+| `VITE_USE_MOCKS` | `false` en producción |
+| `VITE_FIREBASE_API_KEY` | Clave de API de Firebase |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Dominio de autenticación de Firebase (ej. `<project-id>.firebaseapp.com`) |
+| `VITE_FIREBASE_PROJECT_ID` | ID del proyecto de Firebase |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Bucket de almacenamiento (ej. `<project-id>.firebasestorage.app`) |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | ID de remitente de mensajería |
+| `VITE_FIREBASE_APP_ID` | ID de aplicación web en Firebase |
+
+#### 3. Vinculación de Subdominio Personalizado en Hostinger
+
+Para conectar tu subdominio (ej. `app.tudominio.com`):
+
+1. **En Firebase Console:**
+   - Ve a **Build** -> **Hosting** -> **Add custom domain** (Agregar dominio personalizado).
+   - Ingresa el subdominio completo (ej. `app.tudominio.com`).
+   - No marques la opción de redirección de dominio raíz si mantienes tu web principal en Hostinger.
+   - Firebase indicará el valor de registro DNS necesario (generalmente un CNAME o registro A/TXT de verificación).
+
+2. **En el panel de Hostinger (hPanel):**
+   - Accede a **Dominios** -> Selecciona tu dominio -> **Zona DNS** (DNS / Nameservers).
+   - Agrega un nuevo registro:
+     - **Tipo:** `CNAME`
+     - **Nombre:** `app` (o el nombre de tu subdominio; Hostinger añade automáticamente tu dominio base)
+     - **Apunta a:** `<tu-project-id>.web.app.`
+     - **TTL:** `300` (o el valor predeterminado `14400`)
+   - Si Firebase requiere verificación de propiedad previa:
+     - Agrega el registro **TXT** indicado con el nombre y código de verificación correspondiente (`google-site-verification=...`).
+
+3. **Aprovisionamiento SSL:**
+   - Google Trust Services / Let's Encrypt aprovisionará automáticamente el certificado TLS. El proceso toma entre 15 minutos y un par de horas tras la propagación DNS.
+
+4. **Autorización en Firebase Authentication:**
+   - En Firebase Console -> **Authentication** -> pestaña **Settings** -> **Authorized domains**.
+   - Confirma que `app.tudominio.com` figure en la lista (Firebase Hosting lo añade de forma automática al vincular el dominio).
+
+5. **Sincronización con el Backend:**
+   - En Render / Cloud Run, actualiza la variable de entorno `ALLOWED_ORIGINS` para incluir la URL final:
+     `ALLOWED_ORIGINS="https://app.tudominio.com,https://<project-id>.web.app"`
+
+#### 4. Despliegue Manual con Firebase CLI
+
+```bash
+# 1. Autenticarse en Firebase (solo la primera vez)
+npx firebase-tools login
+
+# 2. Seleccionar el proyecto activo
+npx firebase-tools use <project-id>
+
+# 3. Compilar y desplegar
+npm run deploy:app
+```
+
+#### 5. Despliegue Automatizado con GitHub Actions
+
+El workflow [`.github/workflows/deploy-frontend.yml`](../.github/workflows/deploy-frontend.yml) automatiza el ciclo:
+- **Pull Requests:** Despliega canales de previsualización (Preview Channels) con URLs efímeras para validar cambios antes de fusionar.
+- **Push a `main`:** Despliega automáticamente al canal en vivo (`live`).
+- **Secretos requeridos en GitHub:**
+  - `FIREBASE_SERVICE_ACCOUNT`: Clave privada JSON de la cuenta de servicio de Firebase.
+  - `VITE_*`: Variables de entorno de compilación listadas en la tabla anterior.
 
 ## Observabilidad
 

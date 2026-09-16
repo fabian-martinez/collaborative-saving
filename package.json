@@ -18,6 +18,8 @@
     "start": "npm-run-all --parallel start:backend start:app start:mobile",
     "start:backend": "cd backend && npm run start:prod",
     "start:app": "cd frontend-v2 && npm run preview",
+    "deploy:hosting": "npx firebase-tools deploy --only hosting",
+    "deploy:app": "npm run build:app && npx firebase-tools deploy --only hosting",
     "db:migrate": "bash infra/database/scripts/migrate.sh up",
     "db:status": "bash infra/database/scripts/migrate.sh status",
     "db:baseline": "bash infra/database/scripts/migrate.sh baseline",
