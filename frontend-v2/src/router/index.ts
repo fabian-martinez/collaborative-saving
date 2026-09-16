@@ -1,6 +1,13 @@
+/**
+ * Copyright 2026 Collaborative Saving Project.
+ * All rights reserved.
+ */
+
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/features/auth/stores/authStore'
+import { isSignInWithEmailLink } from 'firebase/auth'
+import { auth } from '@/shared/firebase/config'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -96,14 +103,25 @@ const router = createRouter({
 
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
+  const isMagicLink =
+    !!(to.query.apiKey && to.query.oobCode) ||
+    (typeof window !== 'undefined' && isSignInWithEmailLink(auth, window.location.href))
 
-  if (to.name !== 'login' && !authStore.isAuthenticated) {
-    next({ name: 'login', query: { redirect: to.fullPath } })
-  } else if (to.name === 'login' && authStore.isAuthenticated) {
-    next({ name: 'dashboard' })
-  } else {
-    next()
+  if (to.name === 'login') {
+    if (authStore.isAuthenticated && !isMagicLink) {
+      return next({ name: 'dashboard' })
+    }
+    return next()
   }
+
+  if (!authStore.isAuthenticated) {
+    if (isMagicLink) {
+      return next({ name: 'login', query: to.query })
+    }
+    return next({ name: 'login', query: { redirect: to.fullPath } })
+  }
+
+  next()
 })
 
 export default router

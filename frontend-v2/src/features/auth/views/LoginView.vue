@@ -1,62 +1,124 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+/**
+ * Copyright 2026 Collaborative Saving Project.
+ * All rights reserved.
+ */
+
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import ErrorMessage from '@/shared/components/ErrorMessage.vue';
-import { Eye, EyeClosed } from 'iconoir-vue/regular';
-import { sendPasswordResetEmail } from 'firebase/auth';
+import { Mail, Refresh, ArrowLeft } from 'iconoir-vue/regular';
+import { isSignInWithEmailLink } from 'firebase/auth';
 import { auth } from '@/shared/firebase/config';
 import apiClient from '@/api/client';
 import { authApi } from '@/api/auth.api';
-
-const email = ref('');
-const password = ref('');
-const error = ref('');
-const loading = ref(false);
-const showPassword = ref(false);
 
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
 
-// Estados para recuperar contraseña
-const showForgotPassword = ref(false);
-const resetEmail = ref('');
-const resetError = ref('');
-const resetSuccess = ref(false);
-const resetLoading = ref(false);
+// Form states
+const email = ref('');
+const submittedEmail = ref('');
+const error = ref('');
+const loading = ref(false);
+const linkSent = ref(false);
 
-async function handleLogin() {
-  if (!email.value || !password.value) return;
+// Cooldown state
+const cooldown = ref(0);
+let cooldownTimer: ReturnType<typeof setInterval> | null = null;
+
+// Magic link landing states
+const isVerifyingLink = ref(false);
+const showConfirmEmailModal = ref(false);
+const confirmEmail = ref('');
+const confirmError = ref('');
+const confirmLoading = ref(false);
+
+function startCooldown(seconds = 60) {
+  cooldown.value = seconds;
+  if (cooldownTimer) {
+    clearInterval(cooldownTimer);
+  }
+  cooldownTimer = setInterval(() => {
+    if (cooldown.value > 0) {
+      cooldown.value--;
+    } else {
+      if (cooldownTimer) {
+        clearInterval(cooldownTimer);
+        cooldownTimer = null;
+      }
+    }
+  }, 1000);
+}
+
+onUnmounted(() => {
+  if (cooldownTimer) {
+    clearInterval(cooldownTimer);
+    cooldownTimer = null;
+  }
+});
+
+async function handleSendMagicLink(emailToSend?: string) {
+  const targetEmail = (emailToSend || email.value).trim();
+  if (!targetEmail) return;
 
   loading.value = true;
   error.value = '';
 
   try {
-    // Verificación previa de socio activo
-    const validation = await authApi.validateEmail(email.value);
+    // 1. Verificación previa de socio activo
+    const validation = await authApi.validateEmail(targetEmail);
     if (!validation.exists || !validation.active) {
       error.value =
         'Este correo no está registrado como socio activo en el fondo. Contacta al administrador.';
-      loading.value = false;
       return;
     }
 
-    await authStore.login(email.value, password.value);
+    // 2. Enviar Magic Link
+    await authStore.sendMagicLink(targetEmail);
+    submittedEmail.value = targetEmail;
+    linkSent.value = true;
+    startCooldown(60);
+  } catch (e: any) {
+    if (e.response?.status === 429) {
+      error.value =
+        'Demasiados intentos. Por favor, espere un momento antes de intentar de nuevo.';
+    } else if (e.code === 'auth/invalid-email') {
+      error.value = 'Formato de correo electrónico no válido.';
+    } else {
+      error.value = 'Ocurrió un error al enviar el enlace. Intente de nuevo.';
+    }
+  } finally {
+    loading.value = false;
+  }
+}
+
+function handleResend() {
+  if (cooldown.value > 0 || loading.value) return;
+  handleSendMagicLink(submittedEmail.value);
+}
+
+function resetForm() {
+  linkSent.value = false;
+  error.value = '';
+}
+
+async function processLogin(targetEmail: string, url: string) {
+  isVerifyingLink.value = true;
+  error.value = '';
+
+  try {
+    await authStore.completeMagicLinkLogin(url, targetEmail);
 
     // Validar si el usuario está registrado en la base de datos de socios
-    // Si no está registrado, el endpoint lanzará un error 401 que capturaremos en el catch
     await apiClient.get('/v2/dashboard');
 
     const redirect = (route.query.redirect as string) || '/dashboard';
     router.push(redirect);
   } catch (e: any) {
-    if (e.response?.status === 429) {
-      error.value =
-        'Demasiados intentos. Por favor, espere un momento antes de intentar de nuevo.';
-    } else if (e.code === 'auth/invalid-credential') {
-      error.value = 'Correo o contraseña incorrectos';
-    } else if (
+    if (
       e.status === 401 ||
       (e.response && e.response.status === 401) ||
       e.message?.includes('401')
@@ -64,73 +126,145 @@ async function handleLogin() {
       error.value =
         'Este correo no está registrado como socio activo en el fondo. Contacta al administrador.';
       await authStore.logout();
+    } else if (
+      e.code === 'auth/invalid-action-code' ||
+      e.code === 'auth/expired-action-code'
+    ) {
+      error.value =
+        'El enlace de acceso no es válido o ha expirado. Por favor, solicita uno nuevo.';
+    } else if (e.message === 'El enlace no es válido o ha expirado.') {
+      error.value = e.message;
     } else {
       error.value = 'Ocurrió un error al iniciar sesión. Intente de nuevo.';
     }
   } finally {
-    loading.value = false;
+    isVerifyingLink.value = false;
   }
 }
 
-function openForgotPassword() {
-  resetEmail.value = email.value;
-  resetError.value = '';
-  resetSuccess.value = false;
-  showForgotPassword.value = true;
-}
+async function handleConfirmEmailSubmit() {
+  const targetEmail = confirmEmail.value.trim();
+  if (!targetEmail) return;
 
-function closeForgotPassword() {
-  showForgotPassword.value = false;
-}
-
-async function handleResetPassword() {
-  if (!resetEmail.value) return;
-  resetLoading.value = true;
-  resetError.value = '';
-  resetSuccess.value = false;
+  confirmLoading.value = true;
+  confirmError.value = '';
 
   try {
-    const validation = await authApi.validateEmail(resetEmail.value);
+    // Verificación previa de socio activo
+    const validation = await authApi.validateEmail(targetEmail);
     if (!validation.exists || !validation.active) {
-      resetError.value =
+      confirmError.value =
         'Este correo no está registrado como socio activo en el fondo. Contacta al administrador.';
-      resetLoading.value = false;
       return;
     }
 
-    await sendPasswordResetEmail(auth, resetEmail.value);
-    resetSuccess.value = true;
-    setTimeout(() => {
-      showForgotPassword.value = false;
-    }, 3000);
+    showConfirmEmailModal.value = false;
+    await processLogin(targetEmail, window.location.href);
   } catch (e: any) {
     if (e.response?.status === 429) {
-      resetError.value =
+      confirmError.value =
         'Demasiados intentos. Por favor, espere un momento antes de intentar de nuevo.';
-    } else if (e.code === 'auth/user-not-found') {
-      resetError.value = 'No existe ningún usuario registrado con este correo.';
-    } else if (e.code === 'auth/invalid-email') {
-      resetError.value = 'Formato de correo electrónico no válido.';
     } else {
-      resetError.value =
-        'Ocurrió un error al enviar el correo. Intente de nuevo.';
+      confirmError.value =
+        'Error al validar el correo electrónico. Intente de nuevo.';
     }
   } finally {
-    resetLoading.value = false;
+    confirmLoading.value = false;
   }
 }
+
+function cancelConfirmModal() {
+  showConfirmEmailModal.value = false;
+}
+
+onMounted(async () => {
+  const currentUrl = window.location.href;
+  if (isSignInWithEmailLink(auth, currentUrl)) {
+    const storedEmail = window.localStorage.getItem('emailForSignIn');
+    if (storedEmail) {
+      await processLogin(storedEmail, currentUrl);
+    } else {
+      // Dispositivo o navegador distinto: solicitar confirmación de email
+      showConfirmEmailModal.value = true;
+    }
+  }
+});
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-base-200">
-    <div class="card w-96 bg-base-100 shadow-xl">
-      <div class="card-body">
-        <h2 class="card-title justify-center text-2xl font-bold mb-4">Iniciar Sesión</h2>
+  <div class="min-h-screen flex items-center justify-center bg-base-200 p-4">
+    <!-- Estado: Verificando enlace mágico -->
+    <div v-if="isVerifyingLink" class="card w-full max-w-md bg-base-100 shadow-xl text-center py-8">
+      <div class="card-body items-center">
+        <span class="loading loading-spinner loading-lg text-primary mb-4"></span>
+        <h2 class="card-title text-2xl font-bold">Verificando enlace...</h2>
+        <p class="text-base-content/70 text-sm mt-2">
+          Estamos comprobando tu enlace de acceso para iniciar sesión automáticamente.
+        </p>
+      </div>
+    </div>
 
-        <form @submit.prevent="handleLogin">
+    <!-- Estado: Enlace enviado ("Revisa tu correo") -->
+    <div v-else-if="linkSent" class="card w-full max-w-md bg-base-100 shadow-xl">
+      <div class="card-body items-center text-center">
+        <div class="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-2">
+          <Mail class="w-8 h-8" />
+        </div>
+        <h2 class="card-title text-2xl font-bold">Revisa tu correo</h2>
+        <p class="text-base-content/70 text-sm mt-1">
+          Hemos enviado un enlace mágico de acceso a:
+        </p>
+        <p class="font-semibold text-base text-base-content break-all mt-1">
+          {{ submittedEmail }}
+        </p>
+        <p class="text-xs text-base-content/60 mt-3">
+          Haz clic en el enlace recibido en tu bandeja de entrada (o carpeta de spam) para iniciar sesión directamente.
+        </p>
+
+        <ErrorMessage
+          v-if="error"
+          :error="error"
+          title="Error al reenviar"
+          class="mt-4 w-full text-left"
+        />
+
+        <div class="card-actions flex-col w-full gap-3 mt-6">
+          <button
+            type="button"
+            class="btn btn-primary w-full"
+            :disabled="cooldown > 0 || loading"
+            @click="handleResend"
+          >
+            <span v-if="loading" class="loading loading-spinner"></span>
+            <Refresh v-else class="w-4 h-4 mr-1" />
+            <span v-if="cooldown > 0">Reenviar enlace en {{ cooldown }}s</span>
+            <span v-else>Reenviar enlace</span>
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm w-full gap-2 text-base-content/70 hover:text-base-content"
+            @click="resetForm"
+          >
+            <ArrowLeft class="w-4 h-4" />
+            ¿Ingresaste un correo incorrecto? Cambiar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estado: Formulario inicial de solicitud de enlace -->
+    <div v-else class="card w-full max-w-md bg-base-100 shadow-xl">
+      <div class="card-body">
+        <h2 class="card-title justify-center text-2xl font-bold mb-2">Iniciar Sesión</h2>
+        <p class="text-sm text-base-content/70 text-center mb-4">
+          Ingresa tu correo electrónico y te enviaremos un enlace mágico de acceso directo sin contraseña.
+        </p>
+
+        <form @submit.prevent="handleSendMagicLink()">
           <div class="form-control w-full">
             <label class="label" for="email">
-              <span class="label-text">Correo Electrónico</span>
+              <span class="label-text font-medium">Correo Electrónico</span>
             </label>
             <input
               id="email"
@@ -139,43 +273,8 @@ async function handleResetPassword() {
               placeholder="correo@ejemplo.com"
               class="input input-bordered w-full"
               required
+              autocomplete="email"
             />
-          </div>
-
-          <div class="form-control w-full mt-4">
-            <label class="label" for="password">
-              <span class="label-text">Contraseña</span>
-            </label>
-            <div class="relative">
-              <input
-                id="password"
-                v-model="password"
-                :type="showPassword ? 'text' : 'password'"
-                placeholder="••••••••"
-                class="input input-bordered w-full pr-10"
-                required
-              />
-              <button
-                type="button"
-                class="absolute inset-y-0 right-0 px-3 flex items-center text-base-content/60 hover:text-base-content"
-                @click="showPassword = !showPassword"
-                :aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
-                :aria-pressed="showPassword"
-              >
-                <Eye v-if="!showPassword" class="w-5 h-5" />
-                <EyeClosed v-else class="w-5 h-5" />
-              </button>
-            </div>
-            <!-- Enlace Recuperar Contraseña -->
-            <div class="text-right mt-2">
-              <button
-                type="button"
-                class="text-xs link link-hover text-primary font-medium"
-                @click="openForgotPassword"
-              >
-                ¿Olvidaste tu contraseña?
-              </button>
-            </div>
           </div>
 
           <ErrorMessage
@@ -192,7 +291,7 @@ async function handleResetPassword() {
               :disabled="loading"
             >
               <span v-if="loading" class="loading loading-spinner"></span>
-              Ingresar
+              Enviar Enlace Mágico
             </button>
           </div>
         </form>
@@ -200,56 +299,57 @@ async function handleResetPassword() {
     </div>
   </div>
 
-  <!-- Modal de Recuperar Contraseña -->
-  <dialog :open="showForgotPassword" class="modal bg-black/50 z-50" :class="{ 'modal-open': showForgotPassword }">
+  <!-- Diálogo modal para confirmación de correo (dispositivo o navegador distinto) -->
+  <dialog
+    :open="showConfirmEmailModal"
+    class="modal bg-black/50 z-50"
+    :class="{ 'modal-open': showConfirmEmailModal }"
+  >
     <div class="modal-box">
-      <h3 class="font-bold text-lg mb-4">Recuperar Contraseña</h3>
+      <h3 class="font-bold text-lg mb-2">Confirmar Correo Electrónico</h3>
       <p class="text-sm text-base-content/70 mb-4">
-        Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
+        Parece que abriste el enlace en un navegador o dispositivo diferente. Por seguridad, por favor confirma tu correo electrónico para iniciar sesión.
       </p>
-      
-      <form @submit.prevent="handleResetPassword">
+
+      <form @submit.prevent="handleConfirmEmailSubmit">
         <div class="form-control w-full">
-          <label class="label" for="reset-email">
+          <label class="label" for="confirm-email">
             <span class="label-text">Correo Electrónico</span>
           </label>
           <input
-            id="reset-email"
-            v-model="resetEmail"
+            id="confirm-email"
+            v-model="confirmEmail"
             type="email"
             placeholder="correo@ejemplo.com"
             class="input input-bordered w-full"
             required
+            autocomplete="email"
           />
         </div>
 
         <ErrorMessage
-          v-if="resetError"
-          :error="resetError"
-          title="Error de recuperación"
+          v-if="confirmError"
+          :error="confirmError"
+          title="Error de confirmación"
           class="mt-4"
         />
-
-        <div v-if="resetSuccess" class="alert alert-success shadow-sm mt-4 text-sm">
-          <span>Se ha enviado un correo con instrucciones para restablecer tu contraseña.</span>
-        </div>
 
         <div class="modal-action mt-6">
           <button
             type="button"
             class="btn btn-ghost"
-            @click="closeForgotPassword"
-            :disabled="resetLoading"
+            :disabled="confirmLoading"
+            @click="cancelConfirmModal"
           >
             Cancelar
           </button>
           <button
             type="submit"
             class="btn btn-primary"
-            :disabled="resetLoading || resetSuccess"
+            :disabled="confirmLoading"
           >
-            <span v-if="resetLoading" class="loading loading-spinner"></span>
-            Enviar Enlace
+            <span v-if="confirmLoading" class="loading loading-spinner"></span>
+            Confirmar e Iniciar Sesión
           </button>
         </div>
       </form>
