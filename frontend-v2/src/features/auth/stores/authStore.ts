@@ -1,10 +1,18 @@
+/**
+ * Copyright 2026 Collaborative Saving Project.
+ * All rights reserved.
+ */
+
 import { defineStore } from 'pinia';
 import { ref, shallowRef, computed } from 'vue';
 import {
-  signInWithEmailAndPassword,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
   signOut,
   onAuthStateChanged,
-  type User
+  type User,
+  type ActionCodeSettings
 } from 'firebase/auth';
 import { auth } from '@/shared/firebase/config';
 
@@ -26,12 +34,37 @@ export const useAuthStore = defineStore('auth', () => {
     });
   }
 
-  async function login(email: string, password: string) {
+  async function sendMagicLink(email: string) {
     try {
-      const credential = await signInWithEmailAndPassword(auth, email, password);
-      user.value = credential.user;
+      const actionCodeSettings: ActionCodeSettings = {
+        url: `${window.location.origin}/login`,
+        handleCodeInApp: true
+      };
+      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+      window.localStorage.setItem('emailForSignIn', email);
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Send magic link error:', error);
+      throw error;
+    }
+  }
+
+  async function completeMagicLinkLogin(url: string, emailParam?: string) {
+    if (!isSignInWithEmailLink(auth, url)) {
+      throw new Error('El enlace no es válido o ha expirado.');
+    }
+
+    const email = emailParam || window.localStorage.getItem('emailForSignIn');
+    if (!email) {
+      throw new Error('EMAIL_REQUIRED');
+    }
+
+    try {
+      const credential = await signInWithEmailLink(auth, email, url);
+      user.value = credential.user;
+      window.localStorage.removeItem('emailForSignIn');
+      return credential.user;
+    } catch (error) {
+      console.error('Complete magic link login error:', error);
       throw error;
     }
   }
@@ -61,7 +94,8 @@ export const useAuthStore = defineStore('auth', () => {
     initialized,
     isAuthenticated,
     init,
-    login,
+    sendMagicLink,
+    completeMagicLinkLogin,
     logout,
     getToken
   };
