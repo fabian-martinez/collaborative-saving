@@ -136,6 +136,9 @@ async function processLogin(targetEmail: string, url: string) {
       error.value = e.message;
     } else {
       error.value = 'Ocurrió un error al iniciar sesión. Intente de nuevo.';
+      if (authStore.isAuthenticated) {
+        await authStore.logout();
+      }
     }
   } finally {
     isVerifyingLink.value = false;
