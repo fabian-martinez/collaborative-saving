@@ -36,6 +36,7 @@ describe('GetPendingPaymentsQueryHandler', () => {
       findById: jest.fn(),
       findByIds: jest.fn(),
       findByEmail: jest.fn(),
+      findByIdentificationNumber: jest.fn(),
       findActive: jest.fn(),
       save: jest.fn(),
       softDelete: jest.fn(),

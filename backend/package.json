@@ -32,7 +32,8 @@
     "db:migrate": "bash ../infra/database/scripts/migrate.sh up",
     "db:status": "bash ../infra/database/scripts/migrate.sh status",
     "db:baseline": "bash ../infra/database/scripts/migrate.sh baseline",
-    "test:migrations": "bash ../infra/database/scripts/test-migrations.sh"
+    "test:migrations": "bash ../infra/database/scripts/test-migrations.sh",
+    "migrate:pii": "ts-node -r tsconfig-paths/register src/scripts/migrate-pii-encryption.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.2.5",

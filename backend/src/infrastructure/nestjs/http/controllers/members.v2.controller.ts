@@ -93,6 +93,14 @@ import { LoanResponseDto } from '@application/dto/loans/loan-response.dto';
 import { RolesGuard } from '@infrastructure/nestjs/auth/guards/roles.guard';
 import { Roles } from '@infrastructure/nestjs/auth/decorators/roles.decorator';
 import { MemberRole } from '@domain/enums/member-role.enum';
+import { CurrentUser } from '@infrastructure/nestjs/auth/decorators/current-user.decorator';
+import { AuthenticatedUserDto } from '@application/queries/auth/get-authenticated-user.query';
+import {
+  maskEmail,
+  maskIdentificationNumber,
+  maskPhone,
+  maskGeneral,
+} from '@infrastructure/utils/pii-masker.util';
 
 @ApiTags('Members V2')
 @Controller('v2/members')
@@ -162,9 +170,11 @@ export class MembersV2Controller {
       },
     },
   })
-  async list(): Promise<MemberResponseHttpDto[]> {
+  async list(
+    @CurrentUser() currentUser?: AuthenticatedUserDto,
+  ): Promise<MemberResponseHttpDto[]> {
     const members = await this.getMembersQuery.execute();
-    return members.map((m) => this.mapMemberToHttp(m));
+    return members.map((m) => this.mapMemberToHttp(m, currentUser));
   }
 
   @Post()
@@ -298,9 +308,10 @@ export class MembersV2Controller {
   })
   async detail(
     @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() currentUser?: AuthenticatedUserDto,
   ): Promise<MemberResponseHttpDto> {
     const result = await this.getMemberDetailQuery.execute(id);
-    return this.mapMemberToHttp(result);
+    return this.mapMemberToHttp(result, currentUser);
   }
 
   @Get(':id/loans')
@@ -1267,17 +1278,48 @@ export class MembersV2Controller {
     };
   }
 
-  private mapMemberToHttp(m: MemberResponseDto): MemberResponseHttpDto {
+  private mapMemberToHttp(
+    m: MemberResponseDto,
+    currentUser?: AuthenticatedUserDto,
+  ): MemberResponseHttpDto {
+    const isAuthorized =
+      !currentUser ||
+      currentUser.role === (MemberRole.ADMIN as string) ||
+      currentUser.role === (MemberRole.TREASURER as string) ||
+      currentUser.id === m.id;
+
+    const email = isAuthorized ? m.email : maskEmail(m.email);
+    const identificationNumber = isAuthorized
+      ? m.identificationNumber
+      : m.identificationNumber
+        ? maskIdentificationNumber(m.identificationNumber)
+        : undefined;
+    const address = isAuthorized
+      ? m.address
+      : m.address
+        ? maskGeneral(m.address)
+        : undefined;
+    const phone = isAuthorized
+      ? m.phone
+      : m.phone
+        ? maskPhone(m.phone)
+        : undefined;
+    const beneficiary = isAuthorized
+      ? m.beneficiary
+      : m.beneficiary
+        ? maskGeneral(m.beneficiary)
+        : undefined;
+
     return {
       id: m.id,
       name: m.name,
-      email: m.email,
+      email,
       role: m.role,
-      identification_number: m.identificationNumber,
+      identification_number: identificationNumber,
       status: m.status,
-      address: m.address,
-      phone: m.phone,
-      beneficiary: m.beneficiary,
+      address,
+      phone,
+      beneficiary,
       registration_date: m.registrationDate,
       created_at: m.createdAt,
     };
