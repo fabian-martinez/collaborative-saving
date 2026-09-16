@@ -1,0 +1,17 @@
+{
+  "projects": {
+    "default": "collaborative-saving"
+  },
+  "targets": {
+    "collaborative-saving": {
+      "hosting": {
+        "web": [
+          "collaborative-saving"
+        ],
+        "mobile": [
+          "collaborative-saving-mobile"
+        ]
+      }
+    }
+  }
+}
