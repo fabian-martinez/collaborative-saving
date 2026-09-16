@@ -48,6 +48,83 @@ npm run dev
 - **Trigger:** Push a main.
 - **Pasos:** Build -> Lint -> Test -> Deploy.
 
+### Despliegue del Backend API (Fase 4)
+
+El backend NestJS se despliega como un servicio web gestionado en **Render** (o alternativamente en **Google Cloud Run** usando el contenedor Docker).
+
+#### Opción A: Despliegue en Render (Recomendado $0)
+
+##### Método 1: Render Blueprint (1-Click / IaC)
+El proyecto incluye un manifiesto declarativo [`render.yaml`](../render.yaml) en la raíz:
+1. En el panel de Render, selecciona **New +** -> **Blueprint**.
+2. Conecta el repositorio de GitHub (`collaborative-saving`).
+3. Render detectará automáticamente el servicio `collaborative-saving-backend` con todas sus configuraciones en la región `ohio` (co-ubicada con Neon en `aws-us-east-2`).
+4. Asigna los valores secretos solicitados (`DATABASE_URL` y `FIREBASE_SERVICE_ACCOUNT_JSON`).
+5. Haz clic en **Apply**.
+
+##### Método 2: Configuración Manual en Render
+Si prefieres crearlo manualmente:
+1. **New +** -> **Web Service**.
+2. Conectar repositorio y configurar:
+   - **Name:** `collaborative-saving-backend`
+   - **Root Directory:** `backend`
+   - **Region:** `Ohio (US East)`
+   - **Runtime:** `Node`
+   - **Build Command:** `npm ci && npm run build`
+   - **Start Command:** `npm run start:prod`
+   - **Instance Type:** `Free`
+   - **Health Check Path:** `/`
+
+#### Opción B: Despliegue en Google Cloud Run
+Para desplegar vía contenedor:
+1. Compilar y subir la imagen usando [`backend/Dockerfile`](../backend/Dockerfile):
+   ```bash
+   gcloud builds submit --tag gcr.io/<PROJECT-ID>/collaborative-saving-backend ./backend
+   ```
+2. Desplegar el servicio en Cloud Run:
+   ```bash
+   gcloud run deploy collaborative-saving-backend \
+     --image gcr.io/<PROJECT-ID>/collaborative-saving-backend \
+     --platform managed \
+     --region us-east4 \
+     --allow-unauthenticated \
+     --port 3000
+   ```
+
+#### Matriz de Variables de Entorno de Producción
+
+| Variable | Valor / Descripción | Sensible |
+|---|---|:---:|
+| `NODE_ENV` | `production` | No |
+| `PORT` | `3000` (o asignado automáticamente por el proveedor) | No |
+| `DATABASE_URL` | URI de conexión pooled de Neon (`postgresql://neondb_owner:...@...-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require`) | **Sí** |
+| `DATABASE_SSL` | `true` (habilita conexión segura TLS con `{ rejectUnauthorized: false }`) | No |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | String JSON de la clave privada de Firebase Admin en una sola línea (`{"type":"service_account",...}`) | **Sí** |
+| `ALLOWED_ORIGINS` | Orígenes autorizados separados por coma (`https://collaborative-saving.pages.dev,https://collaborative-saving.vercel.app,http://localhost:5173`) | No |
+| `ENABLE_SWAGGER` | `false` (deshabilita la interfaz `/api` en producción para proteger esquemas y endpoints) | No |
+
+#### Ciclo de Vida y Migraciones en Producción
+1. **Migraciones de Esquema SQL:** Las tablas maestras y modificaciones estructuradas se registran en `public.schema_migrations` y se gestionan con `./deploy-schema.sh` o `npm run db:migrate`.
+2. **Migraciones TypeORM de Arranque:** Al arrancar el servicio en producción (`npm run start:prod`), se ejecuta automáticamente `typeorm:migration:run:prod` para aplicar cualquier migración pendiente de TypeORM (ej. ajustes de redondeo contable) antes de que NestJS empiece a recibir tráfico.
+3. **Escucha en `0.0.0.0`:** La API escucha en todas las interfaces para permitir que el reverse proxy del proveedor enrute las peticiones externas.
+
+#### Verificación y Pruebas Post-Despliegue
+
+Una vez desplegada la instancia, valida su funcionamiento y seguridad:
+
+```bash
+# 1. Health Check público (debe responder 200 OK con 'Hello World!')
+curl -i https://<TU-BACKEND-URL>/
+
+# 2. Validación de correo (público con rate-limiting, debe responder 200 OK)
+curl -i -X POST https://<TU-BACKEND-URL>/v2/auth/validate-email \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@collaborativesaving.com"}'
+
+# 3. Verificación de seguridad en rutas protegidas (DEBE responder 401 Unauthorized)
+curl -i https://<TU-BACKEND-URL>/members
+```
+
 ## Observabilidad
 
 Se utilizan los logs estructurados de NestJS y la consola de monitoreo de Neon / Cloud Logging.
