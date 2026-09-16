@@ -16,7 +16,7 @@ export const LOAN_CONSTANTS = {
   DEFAULT_INTEREST_RATE_ACTION: 0.015,
   DEFAULT_INTEREST_RATE_AGIL: 0.02,
   DEFAULT_INTEREST_RATE_PRIORITARIO: 0.02,
-  PAYOFF_TOLERANCE_COP: 1.00, // Tolerancia para absorción automática de saldos residuales por redondeo
+  PAYOFF_TOLERANCE_COP: 1.0, // Tolerancia para absorción automática de saldos residuales por redondeo
 } as const;
 
 /**
