@@ -30,8 +30,8 @@ export class FixMonthlyPaymentRounding1779492468221 implements MigrationInterfac
       // Insertar el asiento de ajuste
       await queryRunner.query(
         `
-                INSERT INTO ledger_entries (id, operation_id, account_type, amount, description, created_at, updated_at)
-                VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW(), NOW())
+                INSERT INTO ledger_entries (id, operation_id, account_type, amount, description, created_at)
+                VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW())
             `,
         [
           op.operationId,
