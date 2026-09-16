@@ -4,10 +4,13 @@ import { Repository, IsNull, UpdateResult } from 'typeorm';
 import { TypeOrmMemberRepository } from './typeorm-member.repository';
 import { Member as MemberEntity } from '../entities/member.entity';
 import { Member as MemberDomain } from '@domain/entities/member.entity';
+import { CRYPTO_SERVICE } from '@domain/constants/injection-tokens';
+import { CryptoServicePort } from '@domain/ports/services/crypto-service.port';
 
 describe('TypeOrmMemberRepository', () => {
   let repository: TypeOrmMemberRepository;
   let typeOrmRepo: jest.Mocked<Repository<MemberEntity>>;
+  let mockCryptoService: jest.Mocked<CryptoServicePort>;
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -18,12 +21,25 @@ describe('TypeOrmMemberRepository', () => {
       softDelete: jest.fn(),
     };
 
+    mockCryptoService = {
+      encrypt: jest.fn((val) => val),
+      decrypt: jest.fn((val) => val),
+      hashBlindIndex: jest.fn((val) => (val ? `hash_${val}` : val)),
+      isEncrypted: jest.fn((val: string | null | undefined) =>
+        Boolean(val && false),
+      ),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TypeOrmMemberRepository,
         {
           provide: getRepositoryToken(MemberEntity),
           useValue: mockTypeOrmRepo,
+        },
+        {
+          provide: CRYPTO_SERVICE,
+          useValue: mockCryptoService,
         },
       ],
     }).compile();
@@ -97,11 +113,10 @@ describe('TypeOrmMemberRepository', () => {
       const result = await repository.findByEmail(email);
 
       const findOneCall = typeOrmRepo.findOne.mock.calls[0][0];
-      const where = Array.isArray(findOneCall.where)
-        ? findOneCall.where[0]
-        : findOneCall.where;
-      expect(where?.email).toBe(email);
-      expect(where?.deletedAt).toEqual(IsNull());
+      expect(findOneCall.where).toEqual([
+        { emailHash: 'hash_test@example.com', deletedAt: IsNull() },
+        { email: 'test@example.com', deletedAt: IsNull() },
+      ]);
       expect(result).toBeInstanceOf(MemberDomain);
       expect(result?.email).toBe(email);
     });
@@ -111,6 +126,46 @@ describe('TypeOrmMemberRepository', () => {
       typeOrmRepo.findOne.mockResolvedValue(null);
 
       const result = await repository.findByEmail(email);
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findByIdentificationNumber', () => {
+    it('should return Member when found', async () => {
+      const idNum = '123456789';
+      const entity: MemberEntity = {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        name: 'Test Member',
+        email: 'test@example.com',
+        role: 'member',
+        status: 'active',
+        registrationDate: new Date('2024-01-15'),
+        createdAt: new Date('2024-01-15'),
+        deletedAt: null,
+        identificationNumber: idNum,
+        address: null as unknown as string,
+        phone: null as unknown as string,
+        beneficiary: null as unknown as string,
+      };
+
+      typeOrmRepo.findOne.mockResolvedValue(entity);
+
+      const result = await repository.findByIdentificationNumber(idNum);
+
+      const findOneCall = typeOrmRepo.findOne.mock.calls[0][0];
+      expect(findOneCall.where).toEqual([
+        { identificationNumberHash: 'hash_123456789', deletedAt: IsNull() },
+        { identificationNumber: '123456789', deletedAt: IsNull() },
+      ]);
+      expect(result).toBeInstanceOf(MemberDomain);
+      expect(result?.identificationNumber).toBe(idNum);
+    });
+
+    it('should return null when not found', async () => {
+      typeOrmRepo.findOne.mockResolvedValue(null);
+
+      const result = await repository.findByIdentificationNumber('123456789');
 
       expect(result).toBeNull();
     });

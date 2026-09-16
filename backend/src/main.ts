@@ -15,9 +15,16 @@ async function bootstrap() {
 
   const isProduction = process.env.NODE_ENV === 'production';
 
-  // Use Helmet for security headers, configuring CSP to allow Swagger UI
+  // Use Helmet for security headers, configuring CSP to allow Swagger UI and strict HSTS
   app.use(
     helmet({
+      hsts: isProduction
+        ? {
+            maxAge: 31536000,
+            includeSubDomains: true,
+            preload: true,
+          }
+        : false,
       contentSecurityPolicy: isProduction
         ? {
             directives: {

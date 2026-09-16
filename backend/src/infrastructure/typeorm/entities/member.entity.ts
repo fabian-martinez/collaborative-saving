@@ -5,6 +5,7 @@ import {
   DeleteDateColumn,
   CreateDateColumn,
 } from 'typeorm';
+import { encryptionTransformer } from '../transformers/encryption.transformer';
 
 @Entity({ name: 'members' })
 export class Member {
@@ -14,11 +15,27 @@ export class Member {
   @Column({ type: 'text' })
   name: string;
 
-  @Column({ type: 'text', unique: true })
+  @Column({ type: 'text', transformer: encryptionTransformer })
   email: string;
 
-  @Column({ type: 'text', unique: true, name: 'identification_number' })
-  identificationNumber: string;
+  @Column({ type: 'text', unique: true, name: 'email_hash', nullable: true })
+  emailHash?: string;
+
+  @Column({
+    type: 'text',
+    name: 'identification_number',
+    nullable: true,
+    transformer: encryptionTransformer,
+  })
+  identificationNumber?: string;
+
+  @Column({
+    type: 'text',
+    unique: true,
+    name: 'identification_number_hash',
+    nullable: true,
+  })
+  identificationNumberHash?: string | null;
 
   @Column({ type: 'text', default: 'member', nullable: false })
   role: string;
@@ -26,14 +43,14 @@ export class Member {
   @Column({ type: 'text', default: 'active', nullable: false })
   status: string;
 
-  @Column({ type: 'text', nullable: true })
-  address: string;
+  @Column({ type: 'text', nullable: true, transformer: encryptionTransformer })
+  address?: string;
 
-  @Column({ type: 'text', nullable: true })
-  phone: string;
+  @Column({ type: 'text', nullable: true, transformer: encryptionTransformer })
+  phone?: string;
 
-  @Column({ type: 'text', nullable: true })
-  beneficiary: string;
+  @Column({ type: 'text', nullable: true, transformer: encryptionTransformer })
+  beneficiary?: string;
 
   @CreateDateColumn({ type: 'date', name: 'registration_date' })
   registrationDate: Date;

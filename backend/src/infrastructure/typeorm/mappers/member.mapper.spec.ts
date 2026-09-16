@@ -1,6 +1,7 @@
 import { MemberMapper } from './member.mapper';
 import { Member } from '@domain/entities/member.entity';
 import { Member as MemberEntity } from '../entities/member.entity';
+import { CryptoServicePort } from '@domain/ports/services/crypto-service.port';
 
 describe('MemberMapper', () => {
   describe('toDomain', () => {
@@ -295,6 +296,80 @@ describe('MemberMapper', () => {
       expect(persistenceUndefined.address).toBeNull();
       expect(persistenceUndefined.phone).toBeNull();
       expect(persistenceUndefined.beneficiary).toBeNull();
+      expect(persistenceUndefined.identificationNumberHash).toBeNull();
+      expect(persistenceUndefined.emailHash).toBeDefined();
+    });
+
+    it('should calculate emailHash and identificationNumberHash using crypto service', () => {
+      const domain = Member.create({
+        name: 'Hash Test',
+        email: 'Test.User@Example.com',
+        identificationNumber: ' 987654321 ',
+      });
+
+      const persistence = MemberMapper.toPersistence(domain);
+      expect(persistence.emailHash).toHaveLength(64);
+      expect(persistence.identificationNumberHash).toHaveLength(64);
+    });
+
+    it('should support custom CryptoServicePort in toPersistence and toDomain', () => {
+      const mockCrypto: CryptoServicePort = {
+        encrypt: jest.fn(
+          (v: string | null | undefined): string | null | undefined =>
+            v ? `enc:${v}` : v,
+        ),
+        decrypt: jest.fn(
+          (v: string | null | undefined): string | null | undefined =>
+            typeof v === 'string' && v.startsWith('enc:')
+              ? v.replace('enc:', '')
+              : v,
+        ),
+        hashBlindIndex: jest.fn(
+          (v: string | null | undefined): string | null | undefined =>
+            v ? `hash:${v}` : v,
+        ),
+        isEncrypted: jest.fn(
+          (v: string | null | undefined): boolean =>
+            typeof v === 'string' && v.startsWith('enc:'),
+        ),
+      };
+
+      const hashBlindIndexSpy = jest.spyOn(mockCrypto, 'hashBlindIndex');
+      const decryptSpy = jest.spyOn(mockCrypto, 'decrypt');
+
+      const domain = Member.create({
+        name: 'Custom Crypto',
+        email: 'custom@example.com',
+        identificationNumber: '112233',
+      });
+
+      const persistence = MemberMapper.toPersistence(domain, mockCrypto);
+      expect(hashBlindIndexSpy).toHaveBeenCalledWith('custom@example.com');
+      expect(hashBlindIndexSpy).toHaveBeenCalledWith('112233');
+      expect(persistence.emailHash).toBe('hash:custom@example.com');
+
+      const entity: MemberEntity = {
+        id: domain.id,
+        name: 'Custom Crypto',
+        email: 'enc:custom@example.com',
+        role: 'member',
+        status: 'active',
+        registrationDate: new Date(),
+        createdAt: new Date(),
+        deletedAt: null,
+        identificationNumber: 'enc:112233',
+        address: 'enc:Secret Address',
+        phone: 'enc:+573000000000',
+        beneficiary: 'enc:Secret Beneficiary',
+      };
+
+      const mappedDomain = MemberMapper.toDomain(entity, mockCrypto);
+      expect(decryptSpy).toHaveBeenCalledWith('enc:custom@example.com');
+      expect(mappedDomain.email).toBe('custom@example.com');
+      expect(mappedDomain.identificationNumber).toBe('112233');
+      expect(mappedDomain.address).toBe('Secret Address');
+      expect(mappedDomain.phone).toBe('+573000000000');
+      expect(mappedDomain.beneficiary).toBe('Secret Beneficiary');
     });
   });
 });

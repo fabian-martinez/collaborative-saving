@@ -15,12 +15,14 @@ import { DashboardV2Module } from './infrastructure/nestjs/http/modules/dashboar
 import { SettingsV2Module } from './infrastructure/nestjs/http/modules/settings-v2.module';
 import { EventBusModule } from './infrastructure/services/event-bus/event-bus.module';
 import { TransactionManagerModule } from './infrastructure/services/transaction-manager/transaction-manager.module';
+import { CryptoModule } from './infrastructure/services/crypto/crypto.module';
 import { FirebaseAdminModule } from './infrastructure/services/firebase-admin/firebase-admin.module';
 import { AuthModule } from './infrastructure/services/auth/auth.module';
 import { AuthV2Module } from './infrastructure/nestjs/http/modules/auth-v2.module';
 import { FirebaseAuthGuard } from './infrastructure/nestjs/auth/guards/firebase-auth.guard';
 import { RolesGuard } from './infrastructure/nestjs/auth/guards/roles.guard';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { validateEnvConfig } from './infrastructure/config/env.validation';
 
 @Module({
   imports: [
@@ -32,23 +34,31 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
     ]),
     ConfigModule.forRoot({
       isGlobal: true,
+      validate: validateEnvConfig,
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        url:
+      useFactory: (configService: ConfigService) => {
+        const dbUrl =
           configService.get<string>('DATABASE_TEST_URL') ||
-          configService.get<string>('DATABASE_URL'),
-        autoLoadEntities: true,
-        synchronize: false,
-        ssl:
-          configService.get<string>('DATABASE_SSL') === 'true'
-            ? { rejectUnauthorized: false }
-            : false,
-      }),
+          configService.get<string>('DATABASE_URL') ||
+          '';
+        const isSsl =
+          configService.get<string>('DATABASE_SSL') === 'true' ||
+          dbUrl.includes('neon.tech') ||
+          dbUrl.includes('sslmode=require');
+
+        return {
+          type: 'postgres',
+          url: dbUrl,
+          autoLoadEntities: true,
+          synchronize: false,
+          ssl: isSsl ? { rejectUnauthorized: false } : false,
+        };
+      },
     }),
+    CryptoModule,
     EventBusModule,
     TransactionManagerModule,
     FirebaseAdminModule,

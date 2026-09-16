@@ -9,6 +9,7 @@ import { MEMBER_REPOSITORY } from '../../../../domain/constants/injection-tokens
 import { MemberRepository } from '../../../../domain/ports/repositories/member-repository.port';
 import { MemberRole } from '../../../../domain/enums/member-role.enum';
 import { ROLES_KEY } from '../decorators/roles.decorator';
+import { maskEmail } from '../../../utils/pii-masker.util';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -38,14 +39,16 @@ export class RolesGuard implements CanActivate {
 
     const member = await this.memberRepository.findByEmail(user.email);
     if (!member) {
-      console.warn(`RolesGuard: Member not found for email ${user.email}`);
+      console.warn(
+        `RolesGuard: Member not found for email ${maskEmail(user.email)}`,
+      );
       return false;
     }
 
     const hasRole = requiredRoles.includes(member.role as MemberRole);
     if (!hasRole) {
       console.warn(
-        `RolesGuard: User ${user.email} with role ${member.role} does not have required roles ${requiredRoles.join(', ')}`,
+        `RolesGuard: User ${maskEmail(user.email)} with role ${member.role} does not have required roles ${requiredRoles.join(', ')}`,
       );
     }
     return hasRole;
