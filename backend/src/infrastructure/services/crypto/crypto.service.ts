@@ -17,8 +17,8 @@ export class CryptoService implements CryptoServicePort {
 
   constructor(
     @Optional() private readonly configService?: ConfigService,
-    encryptionKeyOverride?: string,
-    blindIndexSaltOverride?: string,
+    @Optional() encryptionKeyOverride?: string,
+    @Optional() blindIndexSaltOverride?: string,
   ) {
     const rawKey =
       encryptionKeyOverride ??
