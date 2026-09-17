@@ -106,7 +106,7 @@ jobs:
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
-          target: mobile
+          target: mobiel-collaborative-saving
           projectId: ${{ secrets.VITE_FIREBASE_PROJECT_ID || 'collaborative-saving' }}
 
       - name: Deploy Web Live to Firebase Hosting (on Main)
@@ -126,6 +126,6 @@ jobs:
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
-          target: mobile
+          target: mobiel-collaborative-saving
           channelId: live
           projectId: ${{ secrets.VITE_FIREBASE_PROJECT_ID || 'collaborative-saving' }}
