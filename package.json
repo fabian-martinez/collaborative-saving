@@ -20,7 +20,7 @@
     "start:app": "cd frontend-v2 && npm run preview",
     "deploy:hosting": "npx firebase-tools deploy --only hosting",
     "deploy:app": "npm run build:app && npx firebase-tools deploy --only hosting:web",
-    "deploy:mobile": "npm run build:mobile && npx firebase-tools deploy --only hosting:mobile",
+    "deploy:mobile": "npm run build:mobile && npx firebase-tools deploy --only hosting:mobiel-collaborative-saving",
     "deploy:all": "npm run build:app && npm run build:mobile && npx firebase-tools deploy --only hosting",
     "db:migrate": "bash infra/database/scripts/migrate.sh up",
     "db:status": "bash infra/database/scripts/migrate.sh status",

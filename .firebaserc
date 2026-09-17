@@ -9,7 +9,10 @@
           "collaborative-saving"
         ],
         "mobile": [
-          "collaborative-saving-mobile"
+          "mobiel-collaborative-saving"
+        ],
+        "mobiel-collaborative-saving": [
+          "mobiel-collaborative-saving"
         ]
       }
     }

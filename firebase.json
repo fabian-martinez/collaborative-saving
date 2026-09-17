@@ -51,7 +51,7 @@
       "trailingSlash": false
     },
     {
-      "target": "mobile",
+      "target": "mobiel-collaborative-saving",
       "public": "frontend-mobile/dist",
       "ignore": [
         "firebase.json",
