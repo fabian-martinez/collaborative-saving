@@ -6,217 +6,143 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 import LoginView from '../src/features/auth/views/LoginView.vue';
-import { authApi } from '../src/api/auth.api';
 import apiClient from '../src/api/client';
-import * as firebaseAuth from 'firebase/auth';
 
 /**
  * @vitest-environment jsdom
  */
 
 const mockPush = vi.fn();
-const mockSendMagicLink = vi.fn();
-const mockCompleteMagicLinkLogin = vi.fn();
+const mockLogin = vi.fn();
 const mockLogout = vi.fn();
+let mockQuery: Record<string, string> = {};
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: mockPush }),
-  useRoute: () => ({ query: {} }),
+  useRoute: () => ({ query: mockQuery }),
 }));
 
 vi.mock('../src/features/auth/stores/authStore', () => ({
   useAuthStore: () => ({
-    sendMagicLink: mockSendMagicLink,
-    completeMagicLinkLogin: mockCompleteMagicLinkLogin,
+    login: mockLogin,
     logout: mockLogout,
     user: null,
     isAuthenticated: false,
   }),
 }));
 
-vi.mock('firebase/auth', () => ({
-  sendSignInLinkToEmail: vi.fn(),
-  isSignInWithEmailLink: vi.fn(),
-  signInWithEmailLink: vi.fn(),
-  signOut: vi.fn(),
-  onAuthStateChanged: vi.fn(),
-}));
-
 vi.mock('../src/shared/firebase/config', () => ({
   auth: {},
 }));
 
-vi.mock('../src/api/auth.api', () => ({
-  authApi: {
-    validateEmail: vi.fn(),
-  },
-}));
-
 vi.mock('../src/api/client', () => ({
   default: {
-    post: vi.fn(),
     get: vi.fn(),
   },
 }));
 
-describe('LoginView.vue with Magic Link Authentication', () => {
+describe('LoginView.vue with Email & Password Authentication', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    window.localStorage.clear();
-    vi.mocked(firebaseAuth.isSignInWithEmailLink).mockReturnValue(false);
+    mockQuery = {};
   });
 
-  it('blocks sending magic link and displays error if email is not registered or not active', async () => {
+  it('renders email and password inputs and submit button', () => {
+    const wrapper = mount(LoginView);
+
+    expect(wrapper.find('#email').exists()).toBe(true);
+    expect(wrapper.find('#password').exists()).toBe(true);
+    expect(wrapper.find('button[type="submit"]').text()).toContain('Iniciar Sesión');
+  });
+
+  it('logs in successfully and redirects to /dashboard by default', async () => {
     // ARRANGE
-    vi.mocked(authApi.validateEmail).mockResolvedValue({
-      exists: false,
-      active: false,
-    });
+    mockLogin.mockResolvedValue({ uid: 'user-123' });
+    vi.mocked(apiClient.get).mockResolvedValue({ data: {} });
 
     // ACT
     const wrapper = mount(LoginView);
-    await wrapper.find('#email').setValue('invalido@fondo.com');
+    await wrapper.find('#email').setValue('admin@fondo.com');
+    await wrapper.find('#password').setValue('Password123!');
     await wrapper.find('form').trigger('submit.prevent');
     await flushPromises();
 
     // ASSERT
-    expect(authApi.validateEmail).toHaveBeenCalledWith('invalido@fondo.com');
-    expect(mockSendMagicLink).not.toHaveBeenCalled();
-    expect(wrapper.text()).toContain(
-      'Este correo no está registrado como socio activo en el fondo. Contacta al administrador.',
-    );
+    expect(mockLogin).toHaveBeenCalledWith('admin@fondo.com', 'Password123!');
+    expect(apiClient.get).toHaveBeenCalledWith('/v2/dashboard');
+    expect(mockPush).toHaveBeenCalledWith('/dashboard');
   });
 
-  it('blocks sending magic link and displays error if member exists but is inactive', async () => {
+  it('redirects to the query redirect path if provided after successful login', async () => {
     // ARRANGE
-    vi.mocked(authApi.validateEmail).mockResolvedValue({
-      exists: true,
-      active: false,
-    });
+    mockQuery = { redirect: '/members' };
+    mockLogin.mockResolvedValue({ uid: 'user-123' });
+    vi.mocked(apiClient.get).mockResolvedValue({ data: {} });
+
+    // ACT
+    const wrapper = mount(LoginView);
+    await wrapper.find('#email').setValue('admin@fondo.com');
+    await wrapper.find('#password').setValue('Password123!');
+    await wrapper.find('form').trigger('submit.prevent');
+    await flushPromises();
+
+    // ASSERT
+    expect(mockPush).toHaveBeenCalledWith('/members');
+  });
+
+  it('displays error when credentials are invalid', async () => {
+    // ARRANGE
+    const invalidCredError = { code: 'auth/invalid-credential' };
+    mockLogin.mockRejectedValue(invalidCredError);
+
+    // ACT
+    const wrapper = mount(LoginView);
+    await wrapper.find('#email').setValue('admin@fondo.com');
+    await wrapper.find('#password').setValue('wrongpassword');
+    await wrapper.find('form').trigger('submit.prevent');
+    await flushPromises();
+
+    // ASSERT
+    expect(wrapper.text()).toContain('Correo electrónico o contraseña incorrectos.');
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('displays error and logs out if backend returns 401 unauthorized (user not registered or inactive)', async () => {
+    // ARRANGE
+    mockLogin.mockResolvedValue({ uid: 'user-123' });
+    const error401 = { response: { status: 401 } };
+    vi.mocked(apiClient.get).mockRejectedValue(error401);
 
     // ACT
     const wrapper = mount(LoginView);
     await wrapper.find('#email').setValue('inactivo@fondo.com');
+    await wrapper.find('#password').setValue('Password123!');
     await wrapper.find('form').trigger('submit.prevent');
     await flushPromises();
 
     // ASSERT
-    expect(authApi.validateEmail).toHaveBeenCalledWith('inactivo@fondo.com');
-    expect(mockSendMagicLink).not.toHaveBeenCalled();
+    expect(mockLogout).toHaveBeenCalled();
     expect(wrapper.text()).toContain(
       'Este correo no está registrado como socio activo en el fondo. Contacta al administrador.',
     );
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
-  it('sends magic link and shows confirmation view when email belongs to an active member', async () => {
+  it('displays error when rate limited by Firebase', async () => {
     // ARRANGE
-    vi.mocked(authApi.validateEmail).mockResolvedValue({
-      exists: true,
-      active: true,
-    });
-    mockSendMagicLink.mockResolvedValue(undefined);
+    const rateLimitError = { code: 'auth/too-many-requests' };
+    mockLogin.mockRejectedValue(rateLimitError);
 
     // ACT
     const wrapper = mount(LoginView);
-    await wrapper.find('#email').setValue('activo@fondo.com');
+    await wrapper.find('#email').setValue('admin@fondo.com');
+    await wrapper.find('#password').setValue('Password123!');
     await wrapper.find('form').trigger('submit.prevent');
     await flushPromises();
 
     // ASSERT
-    expect(authApi.validateEmail).toHaveBeenCalledWith('activo@fondo.com');
-    expect(mockSendMagicLink).toHaveBeenCalledWith('activo@fondo.com');
-    expect(wrapper.text()).toContain('Revisa tu correo');
-    expect(wrapper.text()).toContain('activo@fondo.com');
-    expect(wrapper.text()).toContain('Reenviar enlace en 60s');
-  });
-
-  it('handles rate limiting (429) gracefully when sending magic link', async () => {
-    // ARRANGE
-    const error429 = { response: { status: 429 } };
-    vi.mocked(authApi.validateEmail).mockRejectedValue(error429);
-
-    // ACT
-    const wrapper = mount(LoginView);
-    await wrapper.find('#email').setValue('activo@fondo.com');
-    await wrapper.find('form').trigger('submit.prevent');
-    await flushPromises();
-
-    // ASSERT
-    expect(authApi.validateEmail).toHaveBeenCalledWith('activo@fondo.com');
-    expect(mockSendMagicLink).not.toHaveBeenCalled();
     expect(wrapper.text()).toContain(
-      'Demasiados intentos. Por favor, espere un momento antes de intentar de nuevo.',
-    );
-  });
-
-  it('automatically completes login when landing on magic link with email in localStorage', async () => {
-    // ARRANGE
-    vi.mocked(firebaseAuth.isSignInWithEmailLink).mockReturnValue(true);
-    window.localStorage.setItem('emailForSignIn', 'activo@fondo.com');
-    mockCompleteMagicLinkLogin.mockResolvedValue({ email: 'activo@fondo.com' });
-    vi.mocked(apiClient.get).mockResolvedValue({ data: {} });
-
-    // ACT
-    mount(LoginView);
-    await flushPromises();
-
-    // ASSERT
-    expect(mockCompleteMagicLinkLogin).toHaveBeenCalledWith(
-      window.location.href,
-      'activo@fondo.com',
-    );
-    expect(apiClient.get).toHaveBeenCalledWith('/v2/dashboard');
-    expect(mockPush).toHaveBeenCalledWith('/dashboard');
-  });
-
-  it('shows confirmation modal when landing on magic link without email in localStorage and logs in after confirming', async () => {
-    // ARRANGE
-    vi.mocked(firebaseAuth.isSignInWithEmailLink).mockReturnValue(true);
-    // localStorage is empty
-    vi.mocked(authApi.validateEmail).mockResolvedValue({
-      exists: true,
-      active: true,
-    });
-    mockCompleteMagicLinkLogin.mockResolvedValue({ email: 'otro@fondo.com' });
-    vi.mocked(apiClient.get).mockResolvedValue({ data: {} });
-
-    // ACT
-    const wrapper = mount(LoginView);
-    await flushPromises();
-
-    // ASSERT modal is displayed
-    expect(wrapper.text()).toContain('Confirmar Correo Electrónico');
-    expect(mockCompleteMagicLinkLogin).not.toHaveBeenCalled();
-
-    // Submit confirmation email
-    await wrapper.find('#confirm-email').setValue('otro@fondo.com');
-    await wrapper.find('dialog form').trigger('submit.prevent');
-    await flushPromises();
-
-    expect(authApi.validateEmail).toHaveBeenCalledWith('otro@fondo.com');
-    expect(mockCompleteMagicLinkLogin).toHaveBeenCalledWith(
-      window.location.href,
-      'otro@fondo.com',
-    );
-    expect(apiClient.get).toHaveBeenCalledWith('/v2/dashboard');
-    expect(mockPush).toHaveBeenCalledWith('/dashboard');
-  });
-
-  it('handles invalid or expired magic link on landing', async () => {
-    // ARRANGE
-    vi.mocked(firebaseAuth.isSignInWithEmailLink).mockReturnValue(true);
-    window.localStorage.setItem('emailForSignIn', 'activo@fondo.com');
-    const expiredError = { code: 'auth/invalid-action-code' };
-    mockCompleteMagicLinkLogin.mockRejectedValue(expiredError);
-
-    // ACT
-    const wrapper = mount(LoginView);
-    await flushPromises();
-
-    // ASSERT
-    expect(wrapper.text()).toContain(
-      'El enlace de acceso no es válido o ha expirado. Por favor, solicita uno nuevo.',
+      'Demasiados intentos fallidos. Por favor, espere un momento antes de intentar de nuevo.',
     );
   });
 });
-
