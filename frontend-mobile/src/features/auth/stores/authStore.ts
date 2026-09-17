@@ -1,10 +1,18 @@
+/**
+ * Copyright 2026 Collaborative Saving Project.
+ * All rights reserved.
+ */
+
 import { defineStore } from 'pinia';
 import { ref, shallowRef, computed } from 'vue';
 import {
-  signInWithEmailAndPassword,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
   signOut,
   onAuthStateChanged,
-  type User
+  type User,
+  type ActionCodeSettings
 } from 'firebase/auth';
 import { auth } from '@/shared/firebase/config';
 
@@ -30,6 +38,9 @@ export const useAuthStore = defineStore('auth', () => {
     return new Promise((resolve) => {
       onAuthStateChanged(auth, (currentUser) => {
         user.value = currentUser;
+        if (currentUser?.email && memberProfile.value) {
+          memberProfile.value.email = currentUser.email;
+        }
         loading.value = false;
         initialized.value = true;
         resolve();
@@ -37,20 +48,59 @@ export const useAuthStore = defineStore('auth', () => {
     });
   }
 
-  async function login(email: string, pass: string) {
+  async function sendMagicLink(email: string) {
     try {
       loading.value = true;
-      const credential = await signInWithEmailAndPassword(auth, email, pass);
+      const actionCodeSettings: ActionCodeSettings = {
+        url: `${window.location.origin}/login`,
+        handleCodeInApp: true
+      };
+      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+      window.localStorage.setItem('emailForSignIn', email);
+    } catch (error) {
+      console.error('[authStore] Error al enviar enlace mágico:', error);
+      throw error;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function completeMagicLinkLogin(url: string, emailParam?: string) {
+    if (!isSignInWithEmailLink(auth, url)) {
+      throw new Error('El enlace no es válido o ha expirado.');
+    }
+
+    const email = emailParam || window.localStorage.getItem('emailForSignIn');
+    if (!email) {
+      throw new Error('EMAIL_REQUIRED');
+    }
+
+    try {
+      loading.value = true;
+      const credential = await signInWithEmailLink(auth, email, url);
       user.value = credential.user;
+      if (credential.user?.email && memberProfile.value) {
+        memberProfile.value.email = credential.user.email;
+      }
+      window.localStorage.removeItem('emailForSignIn');
+      return credential.user;
+    } catch (error) {
+      console.error('[authStore] Error al completar inicio de sesión con enlace mágico:', error);
+      throw error;
     } finally {
       loading.value = false;
     }
   }
 
   async function logout() {
-    await signOut(auth);
-    user.value = null;
-    memberProfile.value = null;
+    try {
+      await signOut(auth);
+      user.value = null;
+      memberProfile.value = null;
+    } catch (error) {
+      console.error('[authStore] Error al cerrar sesión:', error);
+      throw error;
+    }
   }
 
   async function getToken(): Promise<string | null> {
@@ -69,7 +119,8 @@ export const useAuthStore = defineStore('auth', () => {
     initialized,
     isAuthenticated,
     init,
-    login,
+    sendMagicLink,
+    completeMagicLinkLogin,
     logout,
     getToken
   };

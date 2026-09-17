@@ -6,6 +6,7 @@
 import { defineStore } from 'pinia';
 import { ref, shallowRef, computed } from 'vue';
 import {
+  signInWithEmailAndPassword,
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
   signInWithEmailLink,
@@ -32,6 +33,20 @@ export const useAuthStore = defineStore('auth', () => {
         resolve();
       });
     });
+  }
+
+  async function login(email: string, pass: string) {
+    try {
+      loading.value = true;
+      const credential = await signInWithEmailAndPassword(auth, email, pass);
+      user.value = credential.user;
+      return credential.user;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    } finally {
+      loading.value = false;
+    }
   }
 
   async function sendMagicLink(email: string) {
@@ -94,6 +109,7 @@ export const useAuthStore = defineStore('auth', () => {
     initialized,
     isAuthenticated,
     init,
+    login,
     sendMagicLink,
     completeMagicLinkLogin,
     logout,
