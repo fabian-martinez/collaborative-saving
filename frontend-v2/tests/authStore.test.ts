@@ -13,6 +13,7 @@ import * as firebaseAuth from 'firebase/auth';
  */
 
 vi.mock('firebase/auth', () => ({
+  signInWithEmailAndPassword: vi.fn(),
   sendSignInLinkToEmail: vi.fn(),
   isSignInWithEmailLink: vi.fn(),
   signInWithEmailLink: vi.fn(),
@@ -34,6 +35,47 @@ describe('authStore', () => {
     setActivePinia(createPinia());
     vi.clearAllMocks();
     window.localStorage.clear();
+  });
+
+  describe('login', () => {
+    it('signs in with email and password and updates store state', async () => {
+      // ARRANGE
+      const authStore = useAuthStore();
+      const email = 'socio@ejemplo.com';
+      const password = 'password123';
+      const mockUser = { uid: 'user-123', email } as firebaseAuth.User;
+      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue({
+        user: mockUser,
+      } as firebaseAuth.UserCredential);
+
+      // ACT
+      const user = await authStore.login(email, password);
+
+      // ASSERT
+      expect(firebaseAuth.signInWithEmailAndPassword).toHaveBeenCalledWith(
+        expect.anything(),
+        email,
+        password,
+      );
+      expect(user).toEqual(mockUser);
+      expect(authStore.user).toEqual(mockUser);
+      expect(authStore.isAuthenticated).toBe(true);
+      expect(authStore.loading).toBe(false);
+    });
+
+    it('propagates error and resets loading state when login fails', async () => {
+      // ARRANGE
+      const authStore = useAuthStore();
+      const loginError = new Error('auth/invalid-credential');
+      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockRejectedValue(loginError);
+
+      // ACT & ASSERT
+      await expect(authStore.login('err@ejemplo.com', 'wrong')).rejects.toThrow(
+        'auth/invalid-credential',
+      );
+      expect(authStore.loading).toBe(false);
+      expect(authStore.isAuthenticated).toBe(false);
+    });
   });
 
   describe('sendMagicLink', () => {

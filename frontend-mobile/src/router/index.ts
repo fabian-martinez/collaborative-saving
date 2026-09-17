@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Collaborative Saving Project.
+ * All rights reserved.
+ */
+
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
 import HomeView from '@/features/home/views/HomeView.vue';
 import FundView from '@/features/fund/views/FundView.vue';
@@ -7,6 +12,8 @@ import LoginView from '@/features/auth/views/LoginView.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import { useAuthStore } from '@/features/auth/stores/authStore';
+import { isSignInWithEmailLink } from 'firebase/auth';
+import { auth } from '@/shared/firebase/config';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -56,13 +63,23 @@ router.beforeEach(async (to, _from, next) => {
     await authStore.init();
   }
 
-  const isPublic = to.matched.some((record) => record.meta.public);
-  if (!isPublic && !authStore.isAuthenticated) {
-    return next({ name: 'login' });
+  const isMagicLink =
+    !!(to.query.apiKey && to.query.oobCode) ||
+    (typeof window !== 'undefined' && isSignInWithEmailLink(auth, window.location.href));
+
+  if (to.name === 'login') {
+    if (authStore.isAuthenticated && !isMagicLink) {
+      return next({ name: 'home' });
+    }
+    return next();
   }
 
-  if (to.name === 'login' && authStore.isAuthenticated) {
-    return next({ name: 'home' });
+  const isPublic = to.matched.some((record) => record.meta.public);
+  if (!isPublic && !authStore.isAuthenticated) {
+    if (isMagicLink) {
+      return next({ name: 'login', query: to.query });
+    }
+    return next({ name: 'login' });
   }
 
   next();
