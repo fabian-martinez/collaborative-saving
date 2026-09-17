@@ -133,7 +133,7 @@ Los frontends Vue 3 (`frontend-v2` para Web y `frontend-mobile` para dispositivo
 
 El proyecto cuenta con el manifiesto [`firebase.json`](../firebase.json) configurado con dos *targets*:
 - **Target `web`:** Compila desde `frontend-v2/dist` (para acceso desktop/web principal).
-- **Target `mobiel-collaborative-saving`:** Compila desde `frontend-mobile/dist` (optimizado para navegación táctil/móvil; alias `mobile` mapeado en `.firebaserc`).
+- **Target `mobile-collaborative-saving`:** Compila desde `frontend-mobile/dist` (optimizado para navegación táctil/móvil; alias `mobile` mapeado en `.firebaserc`).
 - **SPA Rewrites:** Todas las rutas dinámicas (`/**`) de ambos sitios se resuelven contra `/index.html`.
 - **Cabeceras de Seguridad:** Incluyen `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` y `Permissions-Policy`.
 - **Caché Inmutable:** Activos estáticos en `/assets/**` con `Cache-Control: public, max-age=31536000, immutable`.
@@ -161,12 +161,12 @@ Para habilitar ambos sitios con sus respectivos subdominios:
 1. **En Firebase Console (Multi-Site):**
    - El sitio web principal utiliza el sitio por defecto de Firebase (`collaborative-saving`).
    - Para el frontend móvil: Ve a **Hosting** -> Desplázate hacia abajo y haz clic en **Agregar otro sitio**.
-   - Asigna el identificador del sitio móvil: `mobiel-collaborative-saving`.
+   - Asigna el identificador del sitio móvil: `mobile-collaborative-saving`.
 
 2. **Vincular Targets Locales con Firebase CLI:**
    ```bash
    npx firebase-tools target:apply hosting web collaborative-saving
-   npx firebase-tools target:apply hosting mobiel-collaborative-saving mobiel-collaborative-saving
+   npx firebase-tools target:apply hosting mobile-collaborative-saving mobile-collaborative-saving
    ```
 
 3. **En el panel de Hostinger (hPanel):**
@@ -179,7 +179,7 @@ Para habilitar ambos sitios con sus respectivos subdominios:
    - **Para Mobile (`m.tudominio.com` o `mobile.tudominio.com`):**
      - Tipo: `CNAME`
      - Nombre: `m` (o `mobile`)
-     - Apunta a: `mobiel-collaborative-saving.web.app.`
+     - Apunta a: `mobile-collaborative-saving.web.app.`
      - TTL: `300`
 
 4. **Autorización en Firebase Authentication:**
@@ -202,7 +202,7 @@ npm run deploy:app
 npm run deploy:mobile
 
 # Desplegar únicamente el frontend móvil (vía Firebase CLI directo)
-firebase deploy --only hosting:mobiel-collaborative-saving
+firebase deploy --only hosting:mobile-collaborative-saving
 
 # Desplegar ambos simultáneamente
 npm run deploy:all
