@@ -100,7 +100,7 @@ Para desplegar vía contenedor:
 | `DATABASE_URL` | URI de conexión pooled de Neon (`postgresql://neondb_owner:...@...-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require`) | **Sí** |
 | `DATABASE_SSL` | `true` (habilita conexión segura TLS con `{ rejectUnauthorized: false }`) | No |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | String JSON de la clave privada de Firebase Admin en una sola línea (`{"type":"service_account",...}`) | **Sí** |
-| `ALLOWED_ORIGINS` | Orígenes autorizados separados por coma (ej. `https://app.<tu-dominio>.com,https://<project-id>.web.app,http://localhost:5173`) | No |
+| `ALLOWED_ORIGINS` | Orígenes autorizados separados por coma (ej. `https://app.<tu-dominio>.com,https://<project-id>.web.app,http://localhost:5173`). Soporta comodines `*` (ej. `https://mobile-collaborative-saving--*.web.app` o `https://*.web.app`) para canales de preview en Pull Requests. | No |
 | `ENABLE_SWAGGER` | `false` (deshabilita la interfaz `/api` en producción para proteger esquemas y endpoints) | No |
 
 #### Ciclo de Vida y Migraciones en Producción
@@ -187,9 +187,9 @@ Para habilitar ambos sitios con sus respectivos subdominios:
    - Asegúrate de que tanto `app.tudominio.com` como `m.tudominio.com` figuren como dominios autorizados.
 
 5. **Sincronización de CORS con el Backend:**
-   - En Render / Cloud Run, actualiza `ALLOWED_ORIGINS` con ambos orígenes:
+   - En Render / Cloud Run, actualiza `ALLOWED_ORIGINS` con ambos orígenes y comodines para previews si se requiere:
      ```bash
-     ALLOWED_ORIGINS="https://app.tudominio.com,https://m.tudominio.com,https://<project-id>.web.app"
+     ALLOWED_ORIGINS="https://app.tudominio.com,https://m.tudominio.com,https://<project-id>.web.app,https://mobile-collaborative-saving--*.web.app"
      ```
 
 #### 4. Despliegue Manual con Firebase CLI
