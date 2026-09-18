@@ -132,6 +132,7 @@ export class LoansV2Controller {
       interestRate: dto.interest_rate,
       monthlyPaymentAmount: dto.monthly_payment_amount,
       term: dto.term,
+      loanType: dto.loan_type,
       // TODO: Extract user ID from request context when authentication is implemented
       changedBy: undefined,
     };

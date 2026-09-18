@@ -277,6 +277,30 @@ describe('LoansV2Controller', () => {
       );
     });
 
+    it('should update loan_type successfully', async () => {
+      const updatedLoan = {
+        ...mockLoanResponse,
+        loanType: 'agil',
+      };
+      updateLoanTermsUseCaseExecuteSpy.mockResolvedValue(updatedLoan);
+
+      const dto = {
+        loan_type: 'agil' as const,
+      };
+
+      const result = await controller.updateTerms('loan-id-1', dto);
+
+      expect(updateLoanTermsUseCaseExecuteSpy).toHaveBeenCalledWith({
+        loanId: 'loan-id-1',
+        interestRate: undefined,
+        monthlyPaymentAmount: undefined,
+        term: undefined,
+        loanType: 'agil',
+        changedBy: undefined,
+      });
+      expect(result.loan_type).toBe('agil');
+    });
+
     it('should handle HttpException errors', async () => {
       const error = new Error('Custom error');
       updateLoanTermsUseCaseExecuteSpy.mockRejectedValue(error);
