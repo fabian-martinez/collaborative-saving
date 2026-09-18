@@ -4,12 +4,97 @@
  */
 
 import {
+  originToPattern,
   resolveCorsOrigins,
   shouldEnableSwagger,
   LoggerLike,
 } from './cors.config';
 
 describe('cors.config', () => {
+  describe('originToPattern', () => {
+    it('should return literal origin string when origin contains no wildcard', () => {
+      // ARRANGE
+      const origin = 'https://collaborative-saving.web.app';
+
+      // ACT
+      const result = originToPattern(origin);
+
+      // ASSERT
+      expect(result).toBe('https://collaborative-saving.web.app');
+    });
+
+    it('should return literal "*" when origin is standalone wildcard', () => {
+      // ARRANGE
+      const origin = '*';
+
+      // ACT
+      const result = originToPattern(origin);
+
+      // ASSERT
+      expect(result).toBe('*');
+    });
+
+    it('should convert origin with wildcard into RegExp matching Firebase preview URLs', () => {
+      // ARRANGE
+      const pattern = 'https://mobile-collaborative-saving--*.web.app';
+
+      // ACT
+      const result = originToPattern(pattern);
+
+      // ASSERT
+      expect(result).toBeInstanceOf(RegExp);
+      const regex = result as RegExp;
+
+      // Positive matches
+      expect(
+        regex.test(
+          'https://mobile-collaborative-saving--pr268-feat-issue-176-upda-bnlymtx6.web.app',
+        ),
+      ).toBe(true);
+      expect(
+        regex.test('https://mobile-collaborative-saving--pr123.web.app'),
+      ).toBe(true);
+
+      // Case insensitivity
+      expect(
+        regex.test('https://MOBILE-COLLABORATIVE-SAVING--PR268.WEB.APP'),
+      ).toBe(true);
+
+      // Negative matches (unauthorized domains or protocols)
+      expect(regex.test('https://attacker.com')).toBe(false);
+      expect(regex.test('https://other-app.web.app')).toBe(false);
+      expect(
+        regex.test('http://mobile-collaborative-saving--pr123.web.app'),
+      ).toBe(false);
+      expect(
+        regex.test(
+          'https://mobile-collaborative-saving--pr123.web.app.attacker.com',
+        ),
+      ).toBe(false);
+      expect(
+        regex.test('https://mobile-collaborative-saving--evil/path.web.app'),
+      ).toBe(false);
+    });
+
+    it('should support general wildcard patterns like https://*.web.app', () => {
+      // ARRANGE
+      const pattern = 'https://*.web.app';
+
+      // ACT
+      const result = originToPattern(pattern);
+
+      // ASSERT
+      expect(result).toBeInstanceOf(RegExp);
+      const regex = result as RegExp;
+      expect(regex.test('https://collaborative-saving.web.app')).toBe(true);
+      expect(
+        regex.test('https://mobile-collaborative-saving--pr268.web.app'),
+      ).toBe(true);
+      expect(regex.test('https://sub.domain.web.app')).toBe(true);
+      expect(regex.test('https://malicious.com')).toBe(false);
+    });
+  });
+
   describe('resolveCorsOrigins', () => {
     let mockLogger: LoggerLike;
     let warnSpy: jest.SpyInstance;
@@ -139,6 +224,33 @@ describe('cors.config', () => {
       expect(() => resolveCorsOrigins(env, isProduction)).not.toThrow();
       const result = resolveCorsOrigins(env, isProduction);
       expect(result).toEqual(['https://app.example.com']);
+    });
+
+    it('should retain wildcard pattern origins as RegExp in production and strip standalone wildcard', () => {
+      // ARRANGE
+      const env =
+        'https://collaborative-saving.web.app, *, https://mobile-collaborative-saving--*.web.app';
+      const isProduction = true;
+
+      // ACT
+      const result = resolveCorsOrigins(env, isProduction, mockLogger);
+
+      // ASSERT
+      expect(result).toHaveLength(2);
+      expect(result[0]).toBe('https://collaborative-saving.web.app');
+      expect(result[1]).toBeInstanceOf(RegExp);
+
+      const pattern = result[1] as RegExp;
+      expect(
+        pattern.test(
+          'https://mobile-collaborative-saving--pr268-feat-issue-176-upda-bnlymtx6.web.app',
+        ),
+      ).toBe(true);
+
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Wildcard "*" origin is not allowed in production and has been removed from ALLOWED_ORIGINS.',
+      );
     });
   });
 
