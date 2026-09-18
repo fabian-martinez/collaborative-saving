@@ -550,4 +550,51 @@ describe('Loan Entity', () => {
       );
     });
   });
+
+  describe('updateTerms method', () => {
+    let loan: Loan;
+
+    beforeEach(() => {
+      loan = Loan.create({
+        memberId: 'member-1',
+        loanType: 'corriente',
+        approvedAmount: 10000,
+        monthlyPaymentAmount: 500,
+        interestRate: 0.02,
+        term: 24,
+      });
+    });
+
+    it('should update loanType', () => {
+      loan.updateTerms({ loanType: 'agil' });
+      expect(loan.loanType).toBe('agil');
+    });
+
+    it('should trim loanType', () => {
+      loan.updateTerms({ loanType: '  prioritario  ' });
+      expect(loan.loanType).toBe('prioritario');
+    });
+
+    it('should throw error when loanType is empty', () => {
+      expect(() => loan.updateTerms({ loanType: '' })).toThrow(
+        'Loan type cannot be empty',
+      );
+      expect(() => loan.updateTerms({ loanType: '   ' })).toThrow(
+        'Loan type cannot be empty',
+      );
+    });
+
+    it('should update terms and loanType together', () => {
+      loan.updateTerms({
+        loanType: 'prioritario',
+        interestRate: 0.03,
+        term: 12,
+        monthlyPaymentAmount: 850,
+      });
+      expect(loan.loanType).toBe('prioritario');
+      expect(loan.interestRate).toBe(0.03);
+      expect(loan.term).toBe(12);
+      expect(loan.monthlyPaymentAmount).toBe(850);
+    });
+  });
 });

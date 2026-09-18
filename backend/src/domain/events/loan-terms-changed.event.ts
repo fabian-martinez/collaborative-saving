@@ -7,11 +7,13 @@ export interface LoanTermsChangedPayload {
     interestRate: number;
     monthlyPaymentAmount: number;
     term: number;
+    loanType?: string;
   };
   newTerms: {
     interestRate: number;
     monthlyPaymentAmount: number;
     term: number;
+    loanType?: string;
   };
   changedBy?: string; // User ID who made the change
 }
