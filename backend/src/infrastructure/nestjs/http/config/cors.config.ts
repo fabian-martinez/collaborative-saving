@@ -32,6 +32,7 @@ export function resolveCorsOrigins(
       .filter((origin) => origin.length > 0);
   } else {
     origins = [
+      'http://localhost:5173',
       'http://localhost:5174',
       'http://localhost:5175',
       'http://localhost:3000',

@@ -3,10 +3,16 @@ import { ref, watch } from 'vue';
 const STORAGE_KEY = 'cs_mobile_privacy_hidden';
 
 // Estado global compartido reactivo
-const isHidden = ref<boolean>(localStorage.getItem(STORAGE_KEY) === 'true');
+const isHidden = ref<boolean>(
+  typeof localStorage !== 'undefined'
+    ? localStorage.getItem(STORAGE_KEY) === 'true'
+    : false
+);
 
 watch(isHidden, (newVal) => {
-  localStorage.setItem(STORAGE_KEY, String(newVal));
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(STORAGE_KEY, String(newVal));
+  }
 });
 
 export function usePrivacyMode() {

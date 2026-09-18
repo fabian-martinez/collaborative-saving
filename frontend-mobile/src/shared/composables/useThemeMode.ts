@@ -3,9 +3,10 @@ import { ref, watch } from 'vue';
 const THEME_KEY = 'cs_mobile_theme';
 
 // Inicializar estado desde localStorage o default a dark
-const initialIsDark = localStorage.getItem(THEME_KEY) !== null
-  ? localStorage.getItem(THEME_KEY) === 'dark'
-  : true; // Default dark mode premium
+const initialIsDark =
+  typeof localStorage !== 'undefined' && localStorage.getItem(THEME_KEY) !== null
+    ? localStorage.getItem(THEME_KEY) === 'dark'
+    : true; // Default dark mode premium
 
 const isDark = ref<boolean>(initialIsDark);
 
@@ -31,7 +32,9 @@ function applyTheme(dark: boolean) {
 applyTheme(isDark.value);
 
 watch(isDark, (val) => {
-  localStorage.setItem(THEME_KEY, val ? 'dark' : 'light');
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(THEME_KEY, val ? 'dark' : 'light');
+  }
   applyTheme(val);
 });
 
