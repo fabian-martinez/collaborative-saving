@@ -197,11 +197,13 @@ describe('UpdateLoanTermsUseCase', () => {
       interestRate: 0.05,
       monthlyPaymentAmount: 150000,
       term: 12,
+      loanType: 'corriente',
     });
     expect(publishedEvent.payload.newTerms).toEqual({
       interestRate: 0.06,
       monthlyPaymentAmount: 160000,
       term: 18,
+      loanType: 'corriente',
     });
   });
 
@@ -329,5 +331,85 @@ describe('UpdateLoanTermsUseCase', () => {
     await expect(useCase.execute(dto)).rejects.toThrow(
       'Loan term must be >= 1',
     );
+  });
+
+  it('should update loan type and emit event', async () => {
+    const loan = Loan.create({
+      memberId: mockMemberId,
+      loanType: 'corriente',
+      approvedAmount: 1000000,
+      monthlyPaymentAmount: 150000,
+      interestRate: 0.015,
+      term: 12,
+    });
+
+    const dto: UpdateLoanTermsDto = {
+      loanId: loan.id,
+      loanType: 'agil',
+    };
+
+    findByIdSpy.mockResolvedValue(loan);
+    saveSpy.mockImplementation((l: Loan) => Promise.resolve(l));
+
+    const result = await useCase.execute(dto);
+
+    expect(result.loanType).toBe('agil');
+    expect(result.interestRate).toBe(0.015); // Unchanged
+    expect(result.term).toBe(12); // Unchanged
+    expect(result.monthlyPaymentAmount).toBe(150000); // Unchanged
+
+    expect(publishSpy).toHaveBeenCalledTimes(1);
+    const publishCalls = publishSpy.mock.calls as unknown as [
+      LoanTermsChangedEvent,
+    ][];
+    const publishedEvent = publishCalls[0][0];
+    expect(publishedEvent.payload.previousTerms.loanType).toBe('corriente');
+    expect(publishedEvent.payload.newTerms.loanType).toBe('agil');
+  });
+
+  it('should throw error when loan type is invalid or empty', async () => {
+    const loan = Loan.create({
+      memberId: mockMemberId,
+      loanType: 'corriente',
+      approvedAmount: 1000000,
+      monthlyPaymentAmount: 150000,
+      interestRate: 0.015,
+      term: 12,
+    });
+
+    const dto: UpdateLoanTermsDto = {
+      loanId: loan.id,
+      loanType: '',
+    };
+
+    findByIdSpy.mockResolvedValue(loan);
+
+    await expect(useCase.execute(dto)).rejects.toThrow(
+      'Loan type cannot be empty',
+    );
+  });
+
+  it('should not emit event when loan type is same and no other changes', async () => {
+    const loan = Loan.create({
+      memberId: mockMemberId,
+      loanType: 'corriente',
+      approvedAmount: 1000000,
+      monthlyPaymentAmount: 150000,
+      interestRate: 0.015,
+      term: 12,
+    });
+
+    const dto: UpdateLoanTermsDto = {
+      loanId: loan.id,
+      loanType: 'corriente',
+    };
+
+    findByIdSpy.mockResolvedValue(loan);
+
+    const result = await useCase.execute(dto);
+
+    expect(result.loanType).toBe('corriente');
+    expect(saveSpy).not.toHaveBeenCalled();
+    expect(publishSpy).not.toHaveBeenCalled();
   });
 });

@@ -1,7 +1,24 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsNumber, Min, Max } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsOptional,
+  IsNumber,
+  Min,
+  Max,
+  IsString,
+  IsIn,
+} from 'class-validator';
 
 export class UpdateLoanTermsHttpDto {
+  @ApiPropertyOptional({
+    description:
+      'New loan type (corriente, agil, accion, prioritario). Optional.',
+    enum: ['corriente', 'agil', 'accion', 'prioritario'],
+    example: 'corriente',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(['corriente', 'agil', 'accion', 'prioritario'])
+  loan_type?: 'corriente' | 'agil' | 'accion' | 'prioritario';
   @ApiProperty({
     description: 'New interest rate (between 0 and 1). Optional.',
     example: 0.06,
