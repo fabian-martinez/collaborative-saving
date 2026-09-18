@@ -9,20 +9,43 @@ export interface LoggerLike {
 }
 
 /**
+ * Converts an origin definition into either a literal string or a RegExp.
+ *
+ * If the origin string contains a wildcard '*', it is transformed into a RegExp
+ * where '*' matches one or more valid authority characters (non-slash), properly escaping regex characters.
+ * Standalone '*' is preserved as a literal string.
+ */
+export function originToPattern(origin: string): string | RegExp {
+  if (origin === '*') {
+    return origin;
+  }
+
+  if (origin.includes('*')) {
+    const escaped = origin.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+    const regexPattern = `^${escaped.replace(/\*/g, '[^/]+')}$`;
+    return new RegExp(regexPattern, 'i');
+  }
+
+  return origin;
+}
+
+/**
  * Resolves allowed CORS origins based on configuration and environment.
  *
  * Rules:
  * - When allowedOriginsEnv is provided, splits by comma, trims whitespace, and filters empty strings.
  * - If allowedOriginsEnv is not provided or empty, falls back to default localhost origins.
- * - In production (isProduction = true), wildcards ('*') are strictly disallowed to prevent
+ * - In production (isProduction = true), standalone wildcards ('*') are strictly disallowed to prevent
  *   unauthorized cross-origin access and CORS conflicts with credentialed requests.
- *   Any wildcard '*' is removed and a warning is logged.
+ *   Any standalone wildcard '*' is removed and a warning is logged.
+ * - Origins with wildcards (e.g. 'https://mobile-collaborative-saving--*.web.app') are converted
+ *   to RegExp instances so dynamic preview channels are supported while preserving credentials compatibility.
  */
 export function resolveCorsOrigins(
   allowedOriginsEnv?: string,
   isProduction = false,
   logger?: LoggerLike,
-): string[] {
+): (string | RegExp)[] {
   let origins: string[];
 
   if (allowedOriginsEnv && allowedOriginsEnv.trim().length > 0) {
@@ -48,7 +71,7 @@ export function resolveCorsOrigins(
     }
   }
 
-  return origins;
+  return origins.map(originToPattern);
 }
 
 /**
