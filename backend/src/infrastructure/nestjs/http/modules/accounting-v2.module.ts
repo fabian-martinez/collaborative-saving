@@ -16,7 +16,9 @@ import { LedgerEntry as LedgerEntryEntity } from '@infrastructure/typeorm/entiti
 import {
   OPERATION_REPOSITORY,
   LEDGER_ENTRY_REPOSITORY,
+  TRANSACTION_MANAGER,
 } from '@domain/constants/injection-tokens';
+import { TypeOrmTransactionManager } from '@infrastructure/services/transaction-manager/typeorm-transaction-manager.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([OperationEntity, LedgerEntryEntity])],
@@ -30,6 +32,10 @@ import {
     {
       provide: LEDGER_ENTRY_REPOSITORY,
       useClass: TypeOrmLedgerEntryRepository,
+    },
+    {
+      provide: TRANSACTION_MANAGER,
+      useClass: TypeOrmTransactionManager,
     },
     // Query handlers
     {

@@ -8,7 +8,7 @@ import {
   PendingMemberPaymentType,
 } from '@domain/entities/pending-member-payment.entity';
 import { PendingMemberPayment } from '@domain/entities/pending-member-payment.entity';
-import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
+import { TRANSACTION_MANAGER } from '@domain/constants/injection-tokens';
 
 describe('TypeOrmPendingMemberPaymentRepository', () => {
   let repository: TypeOrmPendingMemberPaymentRepository;
@@ -36,7 +36,7 @@ describe('TypeOrmPendingMemberPaymentRepository', () => {
           useValue: mockTypeOrmRepo,
         },
         {
-          provide: TransactionManager,
+          provide: TRANSACTION_MANAGER,
           useValue: mockTransactionManager,
         },
       ],

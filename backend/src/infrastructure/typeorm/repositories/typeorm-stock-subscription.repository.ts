@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, In } from 'typeorm';
 import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-subscription-repository.port';
@@ -6,12 +6,14 @@ import { StockSubscription as StockSubscriptionDomain } from '@domain/entities/s
 import { StockSubscription as StockSubscriptionEntity } from '../entities/stock-subscription.entity';
 import { StockSubscriptionMapper } from '../mappers/stock-subscription.mapper';
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
+import { TRANSACTION_MANAGER } from '@domain/constants/injection-tokens';
 
 @Injectable()
 export class TypeOrmStockSubscriptionRepository implements StockSubscriptionRepository {
   constructor(
     @InjectRepository(StockSubscriptionEntity)
     private readonly repo: Repository<StockSubscriptionEntity>,
+    @Inject(TRANSACTION_MANAGER)
     private readonly transactionManager: TransactionManager,
   ) {}
 
