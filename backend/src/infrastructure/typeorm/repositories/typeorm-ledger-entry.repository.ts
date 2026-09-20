@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
@@ -15,6 +15,7 @@ import { LedgerEntry as LedgerEntryEntity } from '../entities/ledger-entry.entit
 import { LedgerEntryMapper } from '../mappers/ledger-entry.mapper';
 import { Operation as OperationEntity } from '../entities/operation.entity';
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
+import { TRANSACTION_MANAGER } from '@domain/constants/injection-tokens';
 
 @Injectable()
 export class TypeOrmLedgerEntryRepository implements LedgerEntryRepository {
@@ -23,6 +24,7 @@ export class TypeOrmLedgerEntryRepository implements LedgerEntryRepository {
     private readonly repo: Repository<LedgerEntryEntity>,
     @InjectRepository(OperationEntity)
     private readonly operationRepo: Repository<OperationEntity>,
+    @Inject(TRANSACTION_MANAGER)
     private readonly transactionManager: TransactionManager,
   ) {}
 

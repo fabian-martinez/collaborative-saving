@@ -7,7 +7,7 @@ import { Operation as OperationEntity } from '../entities/operation.entity';
 import { LedgerEntry as LedgerEntryDomain } from '@domain/entities/ledger-entry.entity';
 import { LedgerEntry } from '@domain/entities/ledger-entry.entity';
 import { CASH_ACCOUNT } from '@domain/constants/account-types';
-import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
+import { TRANSACTION_MANAGER } from '@domain/constants/injection-tokens';
 
 describe('TypeOrmLedgerEntryRepository', () => {
   let repository: TypeOrmLedgerEntryRepository;
@@ -46,7 +46,7 @@ describe('TypeOrmLedgerEntryRepository', () => {
           useValue: mockOperationRepo,
         },
         {
-          provide: TransactionManager,
+          provide: TRANSACTION_MANAGER,
           useValue: mockTransactionManager,
         },
       ],

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
@@ -10,12 +10,14 @@ import {
   PaginationOptions,
   PaginatedResult,
 } from '@domain/ports/repositories/operation-repository.port';
+import { TRANSACTION_MANAGER } from '@domain/constants/injection-tokens';
 
 @Injectable()
 export class TypeOrmLoanTransactionDetailRepository implements LoanTransactionDetailRepository {
   constructor(
     @InjectRepository(LoanTransactionDetailEntity)
     private readonly repo: Repository<LoanTransactionDetailEntity>,
+    @Inject(TRANSACTION_MANAGER)
     private readonly transactionManager: TransactionManager,
   ) {}
 
