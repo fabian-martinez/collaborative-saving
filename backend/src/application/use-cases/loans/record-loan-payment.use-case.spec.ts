@@ -13,6 +13,8 @@ import {
   CASH_ACCOUNT,
   LOANS_RECEIVABLE_ACCOUNT,
   INTEREST_INCOME_ACCOUNT,
+  STOCK_CAPITAL_ACCOUNT,
+  MEMBER_EQUITY_ACCOUNT,
 } from '@domain/constants/account-types';
 
 describe('RecordLoanPaymentUseCase', () => {
@@ -206,6 +208,117 @@ describe('RecordLoanPaymentUseCase', () => {
 
       // Should only create 1 transaction detail (principal only)
       expect(loanTransactionDetailSaveSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should record a payment with stock payment method (debit STOCK_CAPITAL_ACCOUNT, no CASH entry)', async () => {
+      const mockLoan = createMockLoan({ outstandingBalance: 5000 });
+      loanFindByIdSpy.mockResolvedValue(mockLoan);
+      loanSaveSpy.mockResolvedValue(mockLoan);
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
+
+      const paymentDate = new Date('2024-08-01');
+      const dto: RecordLoanPaymentDto = {
+        loanId: mockLoan.id,
+        meetingId: mockMeetingId,
+        totalPaymentAmount: 1000,
+        forcedInterestAmount: 0,
+        forcedPrincipalAmount: 1000,
+        paymentMethod: 'stock',
+        sourceAccount: STOCK_CAPITAL_ACCOUNT,
+        stockId: 'stock-123',
+        stockSubscriptionId: 'sub-456',
+        date: paymentDate,
+        notes: 'Pago de crédito con 2 acciones',
+      };
+
+      const result = await useCase.execute(dto);
+
+      expect(result.interestPaid).toBe(0);
+      expect(result.principalPaid).toBe(1000);
+      expect(result.newOutstandingBalance).toBe(4000);
+
+      expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          memberId: mockMemberId,
+          meetingId: mockMeetingId,
+          type: OperationType.STOCK_LOAN_PAYMENT,
+          date: paymentDate,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          entries: expect.arrayContaining([
+            expect.objectContaining({
+              accountType: STOCK_CAPITAL_ACCOUNT,
+              amount: 1000,
+              stockId: 'stock-123',
+              stockSubscriptionId: 'sub-456',
+            }),
+            expect.objectContaining({
+              accountType: LOANS_RECEIVABLE_ACCOUNT,
+              amount: -1000,
+            }),
+          ]),
+        }),
+      );
+
+      // Verify CASH is NEVER used in entries
+      expect(recordOperationExecuteSpy).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          entries: expect.arrayContaining([
+            expect.objectContaining({
+              accountType: CASH_ACCOUNT,
+            }),
+          ]),
+        }),
+      );
+    });
+
+    it('should record a payment with equity payment method (debit MEMBER_EQUITY_ACCOUNT, no CASH entry)', async () => {
+      const mockLoan = createMockLoan({ outstandingBalance: 5000 });
+      loanFindByIdSpy.mockResolvedValue(mockLoan);
+      loanSaveSpy.mockResolvedValue(mockLoan);
+      loanTransactionDetailSaveSpy.mockResolvedValue({});
+
+      const dto: RecordLoanPaymentDto = {
+        loanId: mockLoan.id,
+        meetingId: mockMeetingId,
+        totalPaymentAmount: 500,
+        forcedInterestAmount: 0,
+        forcedPrincipalAmount: 500,
+        paymentMethod: 'equity',
+      };
+
+      const result = await useCase.execute(dto);
+
+      expect(result.principalPaid).toBe(500);
+
+      expect(recordOperationExecuteSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: OperationType.LOAN_PAYMENT,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          entries: expect.arrayContaining([
+            expect.objectContaining({
+              accountType: MEMBER_EQUITY_ACCOUNT,
+              amount: 500,
+            }),
+            expect.objectContaining({
+              accountType: LOANS_RECEIVABLE_ACCOUNT,
+              amount: -500,
+            }),
+          ]),
+        }),
+      );
+
+      // Verify CASH is NEVER used in entries
+      expect(recordOperationExecuteSpy).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          entries: expect.arrayContaining([
+            expect.objectContaining({
+              accountType: CASH_ACCOUNT,
+            }),
+          ]),
+        }),
+      );
     });
 
     it('should record a payment with forced amounts', async () => {
