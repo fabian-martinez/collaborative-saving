@@ -6,6 +6,7 @@ import { PaymentType } from '../enums/payment-type.enum';
 import {
   CASH_ACCOUNT,
   LOANS_RECEIVABLE_ACCOUNT,
+  STOCK_CAPITAL_ACCOUNT,
 } from '../constants/account-types';
 
 describe('PaymentMapperService', () => {
@@ -136,6 +137,182 @@ describe('PaymentMapperService', () => {
 
       // Assert
       expect(result).toBe(500);
+    });
+  });
+
+  describe('calculateStockPurchaseTotalAmount', () => {
+    it('should calculate total from STOCK_CAPITAL_ACCOUNT absolute amount for cash purchase', () => {
+      // Arrange
+      const entries = [
+        LedgerEntry.create({
+          operationId: 'op-1',
+          accountType: STOCK_CAPITAL_ACCOUNT,
+          amount: -1000,
+        }),
+        LedgerEntry.create({
+          operationId: 'op-1',
+          accountType: CASH_ACCOUNT,
+          amount: 1000,
+        }),
+      ];
+
+      // Act
+      const result = service.calculateStockPurchaseTotalAmount(entries);
+
+      // Assert
+      expect(result).toBe(1000);
+    });
+
+    it('should calculate total from STOCK_CAPITAL_ACCOUNT absolute amount for 100% financed purchase', () => {
+      // Arrange (100% financed, cashAmount = 0)
+      const entries = [
+        LedgerEntry.create({
+          operationId: 'op-1',
+          accountType: STOCK_CAPITAL_ACCOUNT,
+          amount: -2500,
+        }),
+        LedgerEntry.create({
+          operationId: 'op-1',
+          accountType: LOANS_RECEIVABLE_ACCOUNT,
+          amount: 2500,
+        }),
+      ];
+
+      // Act
+      const result = service.calculateStockPurchaseTotalAmount(entries);
+
+      // Assert
+      expect(result).toBe(2500);
+    });
+
+    it('should calculate total for partially financed stock purchase', () => {
+      // Arrange
+      const entries = [
+        LedgerEntry.create({
+          operationId: 'op-1',
+          accountType: STOCK_CAPITAL_ACCOUNT,
+          amount: -3000,
+        }),
+        LedgerEntry.create({
+          operationId: 'op-1',
+          accountType: CASH_ACCOUNT,
+          amount: 1000,
+        }),
+        LedgerEntry.create({
+          operationId: 'op-1',
+          accountType: LOANS_RECEIVABLE_ACCOUNT,
+          amount: 2000,
+        }),
+      ];
+
+      // Act
+      const result = service.calculateStockPurchaseTotalAmount(entries);
+
+      // Assert
+      expect(result).toBe(3000);
+    });
+
+    it('should fallback to positive entries sum if STOCK_CAPITAL_ACCOUNT is not present', () => {
+      // Arrange
+      const entries = [
+        LedgerEntry.create({
+          operationId: 'op-1',
+          accountType: CASH_ACCOUNT,
+          amount: 500,
+        }),
+        LedgerEntry.create({
+          operationId: 'op-1',
+          accountType: LOANS_RECEIVABLE_ACCOUNT,
+          amount: 500,
+        }),
+      ];
+
+      // Act
+      const result = service.calculateStockPurchaseTotalAmount(entries);
+
+      // Assert
+      expect(result).toBe(1000);
+    });
+
+    it('should return 0 when entries array is empty', () => {
+      expect(service.calculateStockPurchaseTotalAmount([])).toBe(0);
+    });
+  });
+
+  describe('calculateStockOperationTotalAmount', () => {
+    it('should calculate total from positive entries for stock transfer', () => {
+      // Arrange
+      const entries = [
+        LedgerEntry.create({
+          operationId: 'op-1',
+          accountType: STOCK_CAPITAL_ACCOUNT,
+          amount: 1500,
+        }),
+        LedgerEntry.create({
+          operationId: 'op-1',
+          accountType: STOCK_CAPITAL_ACCOUNT,
+          amount: -1500,
+        }),
+      ];
+
+      // Act
+      const result = service.calculateStockOperationTotalAmount(entries);
+
+      // Assert
+      expect(result).toBe(1500);
+    });
+
+    it('should calculate total from positive entries for stock loan payment', () => {
+      // Arrange
+      const entries = [
+        LedgerEntry.create({
+          operationId: 'op-1',
+          accountType: STOCK_CAPITAL_ACCOUNT,
+          amount: 2000,
+        }),
+        LedgerEntry.create({
+          operationId: 'op-1',
+          accountType: CASH_ACCOUNT,
+          amount: -2000,
+        }),
+      ];
+
+      // Act
+      const result = service.calculateStockOperationTotalAmount(entries);
+
+      // Assert
+      expect(result).toBe(2000);
+    });
+
+    it('should calculate total from positive entries for stock exchange', () => {
+      // Arrange
+      const entries = [
+        LedgerEntry.create({
+          operationId: 'op-1',
+          accountType: STOCK_CAPITAL_ACCOUNT,
+          amount: 2000,
+        }),
+        LedgerEntry.create({
+          operationId: 'op-1',
+          accountType: STOCK_CAPITAL_ACCOUNT,
+          amount: -1500,
+        }),
+        LedgerEntry.create({
+          operationId: 'op-1',
+          accountType: CASH_ACCOUNT,
+          amount: -500,
+        }),
+      ];
+
+      // Act
+      const result = service.calculateStockOperationTotalAmount(entries);
+
+      // Assert
+      expect(result).toBe(2000);
+    });
+
+    it('should return 0 when entries array is empty', () => {
+      expect(service.calculateStockOperationTotalAmount([])).toBe(0);
     });
   });
 

@@ -16,11 +16,27 @@
         <!-- Caso 1: Detalle de operación seleccionada -->
         <div v-if="stockModification.selectedOperation.value" class="space-y-4 flex-1 flex flex-col min-h-0 overflow-hidden">
           <div class="flex justify-between items-center mb-4 flex-shrink-0">
-            <h2 class="text-xl font-bold">Detalle de Operación</h2>
+            <div>
+              <h2 class="text-xl font-bold">Detalle de Operaciones</h2>
+              <p v-if="selectedMember" class="text-xs text-base-content/60">Socio: {{ selectedMember.name }}</p>
+            </div>
             <button class="btn btn-outline btn-sm rounded-lg" @click="closeOperationDetail">Regresar</button>
           </div>
-          <div class="flex-1 overflow-auto">
-            <OperationDetails :operation="stockModification.selectedOperation.value" />
+          <div class="flex-1 overflow-auto space-y-4">
+            <div 
+              v-for="op in getSelectedMemberOperations()" 
+              :key="op.id"
+              class="card bg-base-200/40 border border-base-200 p-4 rounded-xl space-y-3"
+            >
+              <div class="flex justify-between items-start">
+                <div>
+                  <h4 class="font-bold text-sm text-base-content">{{ op.description || op.type }}</h4>
+                  <p class="text-xs text-base-content/60">{{ formatDate(op.date) }}</p>
+                </div>
+                <span class="font-mono font-bold text-sm text-teal-700">{{ formatCurrency(op.total_amount) }}</span>
+              </div>
+              <OperationDetails :operation="op" />
+            </div>
           </div>
         </div>
 
@@ -897,6 +913,7 @@ import { usePaymentCollection } from '../../composables/usePaymentCollection'
 import { useMemberSelection } from '../../composables/useMemberSelection'
 import { usePrintReceipt } from '@/shared/composables/usePrintReceipt'
 import type { Member } from '@/api/members.api'
+import type { Operation } from '@/api/meetings.api'
 import OperationDetails from '@/shared/components/OperationDetails.vue'
 import PrintReceiptModal from '@/shared/components/PrintReceiptModal.vue'
 import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
@@ -975,6 +992,21 @@ function showMemberOperationsDetail(member: Member) {
   if (ops.length > 0) {
     stockModification.selectedOperation.value = ops[0]
   }
+}
+
+function getSelectedMemberOperations(): Operation[] {
+  if (selectedMember.value) {
+    const memberOps = stockModification.registeredOperations.value.filter(
+      op => op.member_id === selectedMember.value?.id
+    )
+    if (memberOps.length > 0) return memberOps
+  }
+  return stockModification.selectedOperation.value ? [stockModification.selectedOperation.value] : []
+}
+
+function formatDate(date: string | Date): string {
+  if (!date) return ''
+  return new Date(date).toLocaleDateString()
 }
 
 // Total computations for summary

@@ -56,6 +56,8 @@ describe('GetMeetingMonthlyPaymentsQueryHandler', () => {
 
     paymentMapperService = {
       calculatePaymentTotalAmount: jest.fn(),
+      calculateStockPurchaseTotalAmount: jest.fn(),
+      calculateStockOperationTotalAmount: jest.fn(),
       mapPaymentFilterToOperationTypes: jest.fn(),
       mapOperationTypeToPaymentType: jest.fn(),
     };
@@ -212,6 +214,20 @@ describe('GetMeetingMonthlyPaymentsQueryHandler', () => {
       date: operation1.date,
       description: operation1.description,
       totalAmount: 100000,
+      entries: [
+        {
+          id: entry1.id,
+          operationId: entry1.operationId,
+          accountType: entry1.accountType,
+          amount: entry1.amount,
+          createdAt: entry1.createdAt,
+          description: entry1.description,
+          loanId: null,
+          stockId: null,
+          mandatoryContributionId: null,
+          stockSubscriptionId: null,
+        },
+      ],
     });
     expect(result[1]).toEqual({
       id: operation2.id,
@@ -221,6 +237,20 @@ describe('GetMeetingMonthlyPaymentsQueryHandler', () => {
       date: operation2.date,
       description: operation2.description,
       totalAmount: 150000,
+      entries: [
+        {
+          id: entry2.id,
+          operationId: entry2.operationId,
+          accountType: entry2.accountType,
+          amount: entry2.amount,
+          createdAt: entry2.createdAt,
+          description: entry2.description,
+          loanId: null,
+          stockId: null,
+          mandatoryContributionId: null,
+          stockSubscriptionId: null,
+        },
+      ],
     });
   });
 
