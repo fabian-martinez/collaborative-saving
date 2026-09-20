@@ -18,6 +18,9 @@ import {
   CASH_ACCOUNT,
   LOANS_RECEIVABLE_ACCOUNT,
   INTEREST_INCOME_ACCOUNT,
+  STOCK_CAPITAL_ACCOUNT,
+  MEMBER_EQUITY_ACCOUNT,
+  AccountType,
 } from '@domain/constants/account-types';
 import { LOAN_CONSTANTS } from '@domain/constants/business-rules.constants';
 
@@ -135,16 +138,30 @@ export class RecordLoanPaymentUseCase {
       // 6. Build ledger entries
       const ledgerEntries: RecordOperationDto['entries'] = [];
 
-      // Cash entry (debit - money received)
+      // Determine funding account
+      const paymentMethod = dto.paymentMethod ?? 'cash';
+      let fundingAccount: AccountType = CASH_ACCOUNT;
+      if (dto.sourceAccount) {
+        fundingAccount = dto.sourceAccount;
+      } else if (paymentMethod === 'stock') {
+        fundingAccount = STOCK_CAPITAL_ACCOUNT;
+      } else if (paymentMethod === 'equity') {
+        fundingAccount = MEMBER_EQUITY_ACCOUNT;
+      }
+
+      // Funding entry (debit - money or equity received)
       ledgerEntries.push({
-        accountType: CASH_ACCOUNT,
+        accountType: fundingAccount,
         amount: totalPaymentAmount,
-        description: this.buildCashDescription(
+        description: this.buildFundingDescription(
+          fundingAccount,
           principalPaid,
           interestPaid,
           dto.notes,
         ),
         loanId: dto.loanId,
+        stockId: dto.stockId,
+        stockSubscriptionId: dto.stockSubscriptionId,
       });
 
       // Interest income entry (credit - income) if interest was paid
@@ -170,13 +187,24 @@ export class RecordLoanPaymentUseCase {
       }
 
       // 7. Record accounting operation
+      const operationType =
+        dto.operationType ??
+        (fundingAccount === STOCK_CAPITAL_ACCOUNT
+          ? OperationType.STOCK_LOAN_PAYMENT
+          : OperationType.LOAN_PAYMENT);
+
       const operationDto: RecordOperationDto = {
         memberId: loan.memberId,
         meetingId: dto.meetingId,
-        type: OperationType.LOAN_PAYMENT,
+        type: operationType,
+        date: dto.date,
         description:
           dto.notes ||
-          this.buildOperationDescription(principalPaid, interestPaid),
+          this.buildOperationDescription(
+            principalPaid,
+            interestPaid,
+            fundingAccount,
+          ),
         entries: ledgerEntries,
       };
 
@@ -240,6 +268,24 @@ export class RecordLoanPaymentUseCase {
     });
   }
 
+  private buildFundingDescription(
+    fundingAccount: AccountType,
+    principalPaid: number,
+    interestPaid: number,
+    notes?: string,
+  ): string {
+    if (notes) {
+      return notes;
+    }
+    if (fundingAccount === STOCK_CAPITAL_ACCOUNT) {
+      return `Aplicación de acciones para pago de crédito - Capital: ${principalPaid.toFixed(2)}`;
+    }
+    if (fundingAccount === MEMBER_EQUITY_ACCOUNT) {
+      return `Aplicación de patrimonio para pago de crédito - Capital: ${principalPaid.toFixed(2)}`;
+    }
+    return this.buildCashDescription(principalPaid, interestPaid);
+  }
+
   private buildCashDescription(
     principalPaid: number,
     interestPaid: number,
@@ -260,7 +306,14 @@ export class RecordLoanPaymentUseCase {
   private buildOperationDescription(
     principalPaid: number,
     interestPaid: number,
+    fundingAccount: AccountType = CASH_ACCOUNT,
   ): string {
+    if (fundingAccount === STOCK_CAPITAL_ACCOUNT) {
+      return `Pago de crédito con acciones: ${principalPaid.toFixed(2)}`;
+    }
+    if (fundingAccount === MEMBER_EQUITY_ACCOUNT) {
+      return `Pago de crédito con patrimonio: ${principalPaid.toFixed(2)}`;
+    }
     if (interestPaid > 0 && principalPaid > 0) {
       return `Pago de préstamo - Capital: ${principalPaid.toFixed(2)}, Intereses: ${interestPaid.toFixed(2)}`;
     } else if (principalPaid > 0) {
