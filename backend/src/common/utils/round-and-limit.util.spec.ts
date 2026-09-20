@@ -221,4 +221,38 @@ describe('roundAndLimit', () => {
     // Assert
     expect(result).toBe(0);
   });
+
+  it('should round positive and negative numbers ending in .xx5 symmetrically', () => {
+    // Arrange
+    const positiveValue = 1.005;
+    const negativeValue = -1.005;
+    const max = 1000;
+    const decimals = 2;
+
+    // Act
+    const positiveResult = roundAndLimit(positiveValue, max, decimals);
+    const negativeResult = roundAndLimit(negativeValue, max, decimals);
+
+    // Assert
+    expect(positiveResult).toBe(1.01);
+    expect(negativeResult).toBe(-1.01);
+    expect(positiveResult + negativeResult).toBe(0);
+  });
+
+  it('should round large numbers ending in .xx5 symmetrically without discrepancy', () => {
+    // Arrange
+    const positiveValue = 44229688.595;
+    const negativeValue = -44229688.595;
+    const max = 9999999999.99;
+    const decimals = 2;
+
+    // Act
+    const positiveResult = roundAndLimit(positiveValue, max, decimals);
+    const negativeResult = roundAndLimit(negativeValue, max, decimals);
+
+    // Assert
+    expect(positiveResult).toBe(44229688.6);
+    expect(negativeResult).toBe(-44229688.6);
+    expect(positiveResult + negativeResult).toBe(0);
+  });
 });

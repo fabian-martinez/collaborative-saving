@@ -94,6 +94,23 @@ describe('LedgerEntry Entity', () => {
         }),
       ).toThrow('LedgerEntry accountType is required');
     });
+
+    it('should round amounts symmetrically for positive and negative values with half-cents (.xx5)', () => {
+      const debitEntry = LedgerEntry.create({
+        operationId: 'operation-1',
+        accountType: CASH_ACCOUNT,
+        amount: 44229688.595,
+      });
+      const creditEntry = LedgerEntry.create({
+        operationId: 'operation-1',
+        accountType: STOCK_CAPITAL_ACCOUNT,
+        amount: -44229688.595,
+      });
+
+      expect(debitEntry.amount).toBe(44229688.6);
+      expect(creditEntry.amount).toBe(-44229688.6);
+      expect(debitEntry.amount + creditEntry.amount).toBe(0);
+    });
   });
 
   describe('fromPersistence static method', () => {
