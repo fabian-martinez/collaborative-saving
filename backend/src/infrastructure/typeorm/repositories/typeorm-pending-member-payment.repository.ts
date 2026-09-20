@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pending-member-payment-repository.port';
@@ -7,12 +7,14 @@ import { PendingMemberPayment as PendingMemberPaymentEntity } from '../entities/
 import { PendingMemberPaymentMapper } from '../mappers/pending-member-payment.mapper';
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
+import { TRANSACTION_MANAGER } from '@domain/constants/injection-tokens';
 
 @Injectable()
 export class TypeOrmPendingMemberPaymentRepository implements PendingMemberPaymentRepository {
   constructor(
     @InjectRepository(PendingMemberPaymentEntity)
     private readonly repo: Repository<PendingMemberPaymentEntity>,
+    @Inject(TRANSACTION_MANAGER)
     private readonly transactionManager: TransactionManager,
   ) {}
 
@@ -66,40 +68,16 @@ export class TypeOrmPendingMemberPaymentRepository implements PendingMemberPayme
   }
 
   async findPendingByMeeting(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     meetingId: string,
   ): Promise<PendingMemberPaymentDomain[]> {
     const repo = this.getRepository();
-    console.log(
-      `[TypeOrmPendingMemberPaymentRepository] findPendingByMeeting - meetingId: ${meetingId}`,
-    );
-    console.log(
-      `[TypeOrmPendingMemberPaymentRepository] Buscando TODOS los pagos pendientes activos (sin filtrar por reunión)`,
-    );
 
     // Buscar TODOS los pagos pendientes activos, sin importar la reunión
     // Esto permite que pagos pendientes de reuniones anteriores puedan ser pagados en la reunión actual
     const entities = await repo.find({
       where: { status: 'pending' },
       order: { createdAt: 'ASC' }, // Ordenar por fecha de creación para mantener consistencia
-    });
-
-    console.log(
-      `[TypeOrmPendingMemberPaymentRepository] Found ${entities.length} pending payments (all meetings)`,
-    );
-    entities.forEach((e, idx) => {
-      console.log(
-        `[TypeOrmPendingMemberPaymentRepository] Entity ${idx + 1}:`,
-        {
-          id: e.id,
-          memberId: e.memberId,
-          meetingId: e.meetingId,
-          referenceMeetingId: e.referenceMeetingId,
-          type: e.type,
-          status: e.status,
-          amount: e.amount,
-          notes: e.notes,
-        },
-      );
     });
 
     return entities.map((e) => PendingMemberPaymentMapper.toDomain(e));

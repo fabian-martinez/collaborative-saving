@@ -1,3 +1,8 @@
+import { AccountType } from '@domain/constants/account-types';
+import { OperationType } from '@domain/enums/operation-type.enum';
+
+export type LoanPaymentMethod = 'cash' | 'stock' | 'equity';
+
 /**
  * Record Loan Payment DTO
  *
@@ -35,4 +40,44 @@ export interface RecordLoanPaymentDto {
    * When true, principalPaid will cover the entire outstandingBalance.
    */
   isFullPayoff?: boolean;
+
+  /**
+   * Optional: Date of the payment operation.
+   * If not provided, defaults to current date.
+   * Useful to align the operation date with the meeting date.
+   */
+  date?: Date;
+
+  /**
+   * Optional: Payment method used for the loan payment.
+   * 'cash' (default): debits CASH_ACCOUNT
+   * 'stock': debits STOCK_CAPITAL_ACCOUNT and sets operation type to STOCK_LOAN_PAYMENT
+   * 'equity': debits MEMBER_EQUITY_ACCOUNT
+   */
+  paymentMethod?: LoanPaymentMethod;
+
+  /**
+   * Optional: Explicit account type to debit for funding the payment.
+   * If provided, overrides the default account determined by paymentMethod.
+   */
+  sourceAccount?: AccountType;
+
+  /**
+   * Optional: ID of the stock when payment is made using stocks.
+   * Added to the debit ledger entry.
+   */
+  stockId?: string;
+
+  /**
+   * Optional: ID of the stock subscription when payment is made using stocks.
+   * Added to the debit ledger entry.
+   */
+  stockSubscriptionId?: string;
+
+  /**
+   * Optional: Override the operation type.
+   * If not provided, defaults to STOCK_LOAN_PAYMENT when paymentMethod is 'stock'
+   * or sourceAccount is STOCK_CAPITAL_ACCOUNT, and LOAN_PAYMENT otherwise.
+   */
+  operationType?: OperationType;
 }

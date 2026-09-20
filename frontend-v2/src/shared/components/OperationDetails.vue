@@ -27,6 +27,13 @@
       </p>
     </div>
   </div>
+  <div v-else class="text-center py-4 text-base-content/60 text-xs">
+    <p v-if="operation.description" class="font-medium text-base-content/80">{{ operation.description }}</p>
+    <p v-if="operation.total_amount" class="mt-1 font-mono font-bold text-base-content">
+      Monto total: {{ formatCurrency(operation.total_amount) }}
+    </p>
+    <p v-if="!operation.description && !operation.total_amount">Sin detalles disponibles</p>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -49,6 +56,8 @@ interface Operation {
   type: string
   date: string | Date
   description?: string
+  total_amount?: number
+  entries?: LedgerEntry[]
   ledger_entries?: LedgerEntry[]
 }
 
@@ -57,7 +66,7 @@ const props = defineProps<{
 }>()
 
 const ledgerEntries = computed(() => {
-  return props.operation.ledger_entries || []
+  return props.operation.ledger_entries || props.operation.entries || []
 })
 
 const creditEntries = computed(() => {
@@ -67,11 +76,11 @@ const creditEntries = computed(() => {
   // Para compras de acciones (STOCK_PURCHASE):
   // - Mostrar CASH y LOANS_RECEIVABLE
   // - No mostrar STOCK_CAPITAL
-  // Para otros tipos de operaciones (pagos mensuales, etc.):
-  // - No mostrar CASH
+  // Para otros tipos de operaciones (pagos mensuales, transferencias, etc.):
+  // - No mostrar CASH si hay otras contrapartidas
   // - Mostrar todas las demás entradas
   
-  return ledgerEntries.value.filter((e) => {
+  const filtered = ledgerEntries.value.filter((e) => {
     const accountType = e.account_type
     
     if (isStockPurchase) {
@@ -82,17 +91,30 @@ const creditEntries = computed(() => {
       return accountType !== 'CASH'
     }
   })
+
+  if (filtered.length === 0 && ledgerEntries.value.length > 0) {
+    return ledgerEntries.value
+  }
+
+  return filtered
 })
 
 const accountNames: Record<string, string> = {
   CASH: 'Caja',
   LOANS_RECEIVABLE: 'Préstamos por Cobrar',
   STOCK_CAPITAL: 'Capital Social (Acciones)',
+  STOCK_TRANSFER: 'Transferencia de Acciones',
+  INVESTMENT_IN_STOCKS: 'Inversión en Acciones',
+  DIVIDENDS_PAYABLE: 'Dividendos por Pagar',
+  REVALUATION_SURPLUS: 'Superávit por Revalorización',
+  MEMBER_EQUITY: 'Patrimonio de Socios',
   INTEREST_INCOME: 'Ingresos por Intereses',
   FEE_INCOME: 'Ingresos por Otros',
   INSURANCE_INCOME: 'Ingresos por Seguro',
   MANDATORY_CONTRIBUTION_INCOME: 'Aportes Obligatorios',
   MONTHLY_PAYMENT: 'Cuota Mensual',
+  DIVIDEND_EXPENSE: 'Gasto de Dividendos',
+  OTHER_EXPENSES: 'Otros Gastos',
   NOVELTY_LOSS: 'Pérdida por Novedad',
   LOAN_PORTFOLIO: 'Cartera de Préstamos',
   STOCK_PORTFOLIO: 'Cartera de Acciones',

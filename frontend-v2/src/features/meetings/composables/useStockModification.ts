@@ -149,17 +149,24 @@ export function useStockModification() {
     error.value = null
 
     try {
-      const [transfers, loanPayments, exchanges] = await Promise.all([
+      const [transfers, stockLoanPayments, exchanges, allPayments] = await Promise.all([
         meetingsApi.getMeetingTransfers(store.meetingId),
         meetingsApi.getMeetingStockLoanPayments(store.meetingId),
-        meetingsApi.getMeetingExchanges(store.meetingId)
+        meetingsApi.getMeetingExchanges(store.meetingId),
+        meetingsApi.getMeetingPayments(store.meetingId).catch(() => [])
       ])
 
-      registeredOperations.value = [
-        ...transfers,
-        ...loanPayments,
-        ...exchanges
-      ]
+      const cashLoanPayments = (allPayments || []).filter(op => op.type === 'LOAN_PAYMENT')
+
+      // Avoid duplicates if any operation is present in multiple endpoints
+      const opsMap = new Map<string, Operation>()
+      for (const op of [...transfers, ...stockLoanPayments, ...exchanges, ...cashLoanPayments]) {
+        if (op && op.id) {
+          opsMap.set(op.id, op)
+        }
+      }
+
+      registeredOperations.value = Array.from(opsMap.values())
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Error al cargar operaciones'
       console.error('Error loading registered operations:', e)

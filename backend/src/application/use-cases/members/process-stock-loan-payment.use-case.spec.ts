@@ -102,7 +102,6 @@ describe('ProcessStockLoanPaymentUseCase', () => {
       meetingRepository,
       stockRepository,
       stockSubscriptionRepository,
-      recordOperationUseCase,
       recordLoanPaymentUseCase,
     );
 
@@ -124,16 +123,21 @@ describe('ProcessStockLoanPaymentUseCase', () => {
     const baseDto = createBaseDto();
     const result = await useCase.execute(baseDto);
 
-    // Stock conversion operation should be created
-    expect(result.operationId).toBe('stock-conversion-operation');
+    // Operation ID should come from RecordLoanPaymentUseCase
+    expect(result.operationId).toBe('loan-payment-operation');
 
-    // Loan payment should be delegated to RecordLoanPaymentUseCase
+    // Loan payment should be delegated to RecordLoanPaymentUseCase with stock paymentMethod
     expect(recordLoanPaymentExecuteSpy).toHaveBeenCalledWith({
       loanId: loan.id,
       meetingId: meeting.id,
       totalPaymentAmount: stock.value * baseDto.quantity, // 600000
       forcedInterestAmount: 0,
       forcedPrincipalAmount: stock.value * baseDto.quantity, // 600000
+      paymentMethod: 'stock',
+      sourceAccount: 'STOCK_CAPITAL',
+      stockId: stock.id,
+      stockSubscriptionId: subscription.id,
+      date: meeting.date,
       notes: expect.any(String) as string,
     });
 
@@ -175,28 +179,26 @@ describe('ProcessStockLoanPaymentUseCase', () => {
     expect(savedSubscription.quantity).toBe(3);
   });
 
-  it('creates stock conversion operation with correct entries', async () => {
+  it('delegates loan payment with stock payment method and does not create virtual cash conversion', async () => {
     const recordOperationSpy = jest.spyOn(recordOperationUseCase, 'execute');
     const baseDto = createBaseDto();
 
     await useCase.execute(baseDto);
 
-    expect(recordOperationSpy).toHaveBeenCalledWith(
+    // Should NOT call recordOperation directly (no virtual cash bridge)
+    expect(recordOperationSpy).not.toHaveBeenCalled();
+
+    // Should delegate to RecordLoanPaymentUseCase with stock parameters
+    expect(recordLoanPaymentExecuteSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        memberId: member.id,
-        meetingId: meeting.id,
-        type: 'STOCK_LOAN_PAYMENT',
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        entries: expect.arrayContaining([
-          expect.objectContaining({
-            accountType: 'STOCK_CAPITAL',
-            amount: 600000, // stock value * quantity (debit - reduce stock)
-          }),
-          expect.objectContaining({
-            accountType: 'CASH',
-            amount: -600000, // credit - virtual cash received from stocks
-          }),
-        ]),
+        paymentMethod: 'stock',
+        sourceAccount: 'STOCK_CAPITAL',
+        stockId: stock.id,
+        stockSubscriptionId: subscription.id,
+        date: meeting.date,
+        totalPaymentAmount: 600000,
+        forcedPrincipalAmount: 600000,
+        forcedInterestAmount: 0,
       }),
     );
   });

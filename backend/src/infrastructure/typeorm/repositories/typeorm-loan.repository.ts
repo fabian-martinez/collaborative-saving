@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
@@ -6,6 +6,7 @@ import { Loan as LoanDomain } from '@domain/entities/loan.entity';
 import { Loan as LoanEntity } from '../entities/loan.entity';
 import { LoanMapper } from '../mappers/loan.mapper';
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
+import { TRANSACTION_MANAGER } from '@domain/constants/injection-tokens';
 
 @Injectable()
 export class TypeOrmLoanRepository implements LoanRepository {
@@ -14,6 +15,7 @@ export class TypeOrmLoanRepository implements LoanRepository {
   constructor(
     @InjectRepository(LoanEntity)
     private readonly repo: Repository<LoanEntity>,
+    @Inject(TRANSACTION_MANAGER)
     private readonly transactionManager: TransactionManager,
   ) {}
 

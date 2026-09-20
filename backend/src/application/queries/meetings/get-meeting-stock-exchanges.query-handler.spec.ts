@@ -1,6 +1,8 @@
 import { GetMeetingStockExchangesQueryHandler } from './get-meeting-stock-exchanges.query-handler';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
+import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
+import { PaymentMapperService } from '@domain/services/payment-mapper.service';
 import { Operation } from '@domain/entities/operation.entity';
 import { OperationType } from '@domain/enums/operation-type.enum';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
@@ -10,6 +12,8 @@ describe('GetMeetingStockExchangesQueryHandler', () => {
   let queryHandler: GetMeetingStockExchangesQueryHandler;
   let meetingRepository: jest.Mocked<MeetingRepository>;
   let operationRepository: jest.Mocked<OperationRepository>;
+  let ledgerEntryRepository: jest.Mocked<LedgerEntryRepository>;
+  let paymentMapperService: jest.Mocked<PaymentMapperService>;
 
   beforeEach(() => {
     meetingRepository = {
@@ -28,9 +32,21 @@ describe('GetMeetingStockExchangesQueryHandler', () => {
       saveWithEntries: jest.fn(),
     } as unknown as jest.Mocked<OperationRepository>;
 
+    ledgerEntryRepository = {
+      findByOperations: jest.fn(),
+      findById: jest.fn(),
+      findByOperation: jest.fn(),
+    } as unknown as jest.Mocked<LedgerEntryRepository>;
+
+    paymentMapperService = {
+      calculateStockOperationTotalAmount: jest.fn(),
+    } as unknown as jest.Mocked<PaymentMapperService>;
+
     queryHandler = new GetMeetingStockExchangesQueryHandler(
       meetingRepository,
       operationRepository,
+      ledgerEntryRepository,
+      paymentMapperService,
     );
   });
 
@@ -109,6 +125,10 @@ describe('GetMeetingStockExchangesQueryHandler', () => {
       operation1,
       operation2,
     ]);
+    ledgerEntryRepository.findByOperations.mockResolvedValue([]);
+    paymentMapperService.calculateStockOperationTotalAmount.mockReturnValue(
+      750,
+    );
 
     // ACT
     const result = await queryHandler.execute(meetingId);
@@ -132,6 +152,8 @@ describe('GetMeetingStockExchangesQueryHandler', () => {
       type: operation1.type,
       date: operation1.date,
       description: operation1.description,
+      totalAmount: 750,
+      entries: [],
     });
     expect(result[1]).toEqual({
       id: operation2.id,
@@ -140,6 +162,8 @@ describe('GetMeetingStockExchangesQueryHandler', () => {
       type: operation2.type,
       date: operation2.date,
       description: operation2.description,
+      totalAmount: 750,
+      entries: [],
     });
   });
 
@@ -162,6 +186,10 @@ describe('GetMeetingStockExchangesQueryHandler', () => {
 
     meetingRepository.findById.mockResolvedValue(meeting);
     operationRepository.findByMeetingAndType.mockResolvedValue([operation]);
+    ledgerEntryRepository.findByOperations.mockResolvedValue([]);
+    paymentMapperService.calculateStockOperationTotalAmount.mockReturnValue(
+      1000,
+    );
 
     // ACT
     const result = await queryHandler.execute(meetingId);
@@ -173,6 +201,8 @@ describe('GetMeetingStockExchangesQueryHandler', () => {
       meetingId: meetingId,
       type: OperationType.STOCK_MODIFICATION,
       description: 'Complete stock exchange',
+      totalAmount: 1000,
+      entries: [],
     });
     expect(result[0].date).toBeInstanceOf(Date);
   });
@@ -194,11 +224,15 @@ describe('GetMeetingStockExchangesQueryHandler', () => {
 
     meetingRepository.findById.mockResolvedValue(meeting);
     operationRepository.findByMeetingAndType.mockResolvedValue([operation]);
+    ledgerEntryRepository.findByOperations.mockResolvedValue([]);
+    paymentMapperService.calculateStockOperationTotalAmount.mockReturnValue(0);
 
     // ACT
     const result = await queryHandler.execute(meetingId);
 
     // ASSERT
     expect(result[0].memberId).toBeNull();
+    expect(result[0].totalAmount).toBe(0);
+    expect(result[0].entries).toEqual([]);
   });
 });

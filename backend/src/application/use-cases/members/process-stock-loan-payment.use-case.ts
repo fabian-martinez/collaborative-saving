@@ -4,20 +4,15 @@ import { MemberRepository } from '@domain/ports/repositories/member-repository.p
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-subscription-repository.port';
-import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
 import { RecordLoanPaymentUseCase } from '@application/use-cases/loans/record-loan-payment.use-case';
-import { RecordOperationDto } from '@application/dto/accounting/record-operation.dto';
+import { RecordOperationUseCase } from '@application/use-cases/accounting/record-operation.use-case';
 import { RecordLoanPaymentResponseDto } from '@application/dto/loans/record-loan-payment-response.dto';
 import { MemberNotFoundException } from '@application/exceptions/member-not-found.exception';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { StockNotFoundException } from '@application/exceptions/stock-not-found.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
 import { Meeting } from '@domain/entities/meeting.entity';
-import { OperationType } from '@domain/enums/operation-type.enum';
-import {
-  CASH_ACCOUNT,
-  STOCK_CAPITAL_ACCOUNT,
-} from '@domain/constants/account-types';
+import { STOCK_CAPITAL_ACCOUNT } from '@domain/constants/account-types';
 
 /**
  * Process Stock Loan Payment Use Case
@@ -25,11 +20,12 @@ import {
  * Orchestrates the payment of a loan using stocks as payment method.
  * The stocks are converted to their monetary value which is then applied to the loan.
  *
- * The operation is split into two parts:
- * 1. STOCK_LOAN_PAYMENT: Converts stocks to virtual cash (STOCK_CAPITAL_ACCOUNT -> CASH_ACCOUNT)
- * 2. LOAN_PAYMENT: Applies the cash to the loan (delegated to RecordLoanPaymentUseCase)
+ * This is a 100% non-monetary transaction:
+ * - Debit: STOCK_CAPITAL_ACCOUNT (reduces member stock capital)
+ * - Credit: LOANS_RECEIVABLE_ACCOUNT (reduces loan balance)
+ * - CASH is NEVER touched under any circumstances.
  *
- * This approach maintains separation of responsibilities between the stocks and loans modules.
+ * Accounting and loan updates are handled atomically by RecordLoanPaymentUseCase.
  */
 export class ProcessStockLoanPaymentUseCase {
   constructor(
@@ -37,8 +33,8 @@ export class ProcessStockLoanPaymentUseCase {
     private readonly meetingRepository: MeetingRepository,
     private readonly stockRepository: StockRepository,
     private readonly stockSubscriptionRepository: StockSubscriptionRepository,
-    private readonly recordOperationUseCase: RecordOperationUseCase,
     private readonly recordLoanPaymentUseCase: RecordLoanPaymentUseCase,
+    private readonly _recordOperationUseCase?: RecordOperationUseCase,
   ) {}
 
   async execute(dto: StockLoanPaymentDto): Promise<StockOperationResponseDto> {
@@ -92,38 +88,9 @@ export class ProcessStockLoanPaymentUseCase {
     subscription.update({ quantity: updatedQuantity });
     await this.stockSubscriptionRepository.save(subscription);
 
-    // 7. Create the stock conversion operation (STOCK_LOAN_PAYMENT)
-    // This represents converting stocks to virtual cash
-    const stockConversionEntries: RecordOperationDto['entries'] = [
-      {
-        accountType: STOCK_CAPITAL_ACCOUNT,
-        amount: paymentValue,
-        description: `Aplicación de ${dto.quantity} ${stock.type} para pagar crédito`,
-        stockId: stock.id,
-        stockSubscriptionId: subscription.id,
-      },
-      {
-        accountType: CASH_ACCOUNT,
-        amount: -paymentValue,
-        description: 'Conversión de acciones a efectivo para pago de crédito',
-        stockSubscriptionId: subscription.id,
-      },
-    ];
-
-    const stockOperationResult = await this.recordOperationUseCase.execute({
-      memberId: dto.memberId,
-      meetingId: meeting.id,
-      type: OperationType.STOCK_LOAN_PAYMENT,
-      date: meeting.date,
-      description:
-        dto.notes ??
-        `Pago de crédito con ${dto.quantity} acciones ${stock.type}`,
-      entries: stockConversionEntries,
-    });
-
-    // 8. Apply the payment to the loan using RecordLoanPaymentUseCase
-    // This handles all loan-related logic (update loan, create transaction details)
-    // The payment is 100% principal since stock payments don't generate interest
+    // 7. Apply the payment to the loan using RecordLoanPaymentUseCase
+    // This directly records the STOCK_LOAN_PAYMENT operation (debit STOCK_CAPITAL, credit LOANS_RECEIVABLE)
+    // without touching CASH, and handles loan state updates and transaction details atomically.
     const loanPaymentResult: RecordLoanPaymentResponseDto =
       await this.recordLoanPaymentUseCase.execute({
         loanId: dto.loanId,
@@ -131,12 +98,19 @@ export class ProcessStockLoanPaymentUseCase {
         totalPaymentAmount: paymentValue,
         forcedInterestAmount: 0,
         forcedPrincipalAmount: paymentValue,
-        notes: dto.notes ?? 'Pago de capital registrado con acciones del socio',
+        paymentMethod: 'stock',
+        sourceAccount: STOCK_CAPITAL_ACCOUNT,
+        stockId: stock.id,
+        stockSubscriptionId: subscription.id,
+        date: meeting.date,
+        notes:
+          dto.notes ??
+          `Pago de crédito con ${dto.quantity} acciones ${stock.type}`,
       });
 
-    // 9. Return response
+    // 8. Return response
     return {
-      operationId: stockOperationResult.operationId,
+      operationId: loanPaymentResult.operationId,
       message: 'Pago de crédito con acciones registrado correctamente',
       details: {
         meetingId: meeting.id,

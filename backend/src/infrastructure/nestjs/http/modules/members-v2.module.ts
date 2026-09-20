@@ -574,7 +574,6 @@ import { IdentityService } from '@domain/ports/services/identity.service.port';
         meetingRepo: MeetingRepository,
         stockRepo: StockRepository,
         stockSubscriptionRepo: StockSubscriptionRepository,
-        recordOperationUseCase: RecordOperationUseCase,
         recordLoanPaymentUseCase: RecordLoanPaymentUseCase,
       ) =>
         new ProcessStockLoanPaymentUseCase(
@@ -582,7 +581,6 @@ import { IdentityService } from '@domain/ports/services/identity.service.port';
           meetingRepo,
           stockRepo,
           stockSubscriptionRepo,
-          recordOperationUseCase,
           recordLoanPaymentUseCase,
         ),
       inject: [
@@ -590,7 +588,6 @@ import { IdentityService } from '@domain/ports/services/identity.service.port';
         MEETING_REPOSITORY,
         STOCK_REPOSITORY,
         STOCK_SUBSCRIPTION_REPOSITORY,
-        RecordOperationUseCase,
         RecordLoanPaymentUseCase,
       ],
     },

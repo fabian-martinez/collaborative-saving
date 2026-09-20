@@ -53,6 +53,8 @@ describe('GetMemberPaymentsQueryHandler', () => {
     // Mock PaymentMapperService
     paymentMapperService = {
       calculatePaymentTotalAmount: jest.fn(),
+      calculateStockPurchaseTotalAmount: jest.fn(),
+      calculateStockOperationTotalAmount: jest.fn(),
       mapPaymentFilterToOperationTypes: jest.fn(),
       mapOperationTypeToPaymentType: jest.fn(),
     };

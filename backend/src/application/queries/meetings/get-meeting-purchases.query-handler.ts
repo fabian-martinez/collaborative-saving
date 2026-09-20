@@ -43,11 +43,11 @@ export class GetMeetingPurchasesQueryHandler {
     // 5. Agrupar entries por operación
     const entriesByOperation = LedgerEntryGrouper.groupByOperation(allEntries);
 
-    // 6. Mapear domain entities a DTOs con totalAmount calculado
+    // 6. Mapear domain entities a DTOs con totalAmount calculado y entries
     return operations.map((operation) => {
       const entries = entriesByOperation.get(operation.id) || [];
       const totalAmount =
-        this.paymentMapperService.calculatePaymentTotalAmount(entries);
+        this.paymentMapperService.calculateStockPurchaseTotalAmount(entries);
 
       return {
         id: operation.id,
@@ -57,6 +57,18 @@ export class GetMeetingPurchasesQueryHandler {
         date: operation.date,
         description: operation.description,
         totalAmount,
+        entries: entries.map((e) => ({
+          id: e.id,
+          operationId: e.operationId,
+          accountType: e.accountType,
+          amount: e.amount,
+          createdAt: e.createdAt,
+          description: e.description ?? null,
+          loanId: e.loanId ?? null,
+          stockId: e.stockId ?? null,
+          mandatoryContributionId: e.mandatoryContributionId ?? null,
+          stockSubscriptionId: e.stockSubscriptionId ?? null,
+        })),
       };
     });
   }

@@ -12,13 +12,47 @@
     <div v-if="!loading && !error" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch flex-1 min-h-0 overflow-hidden">
       <!-- Panel Izquierdo (Workspace Principal) - 8 Columnas -->
       <div class="lg:col-span-8 card bg-base-100 border border-base-200 shadow-sm rounded-xl p-4 md:p-5 flex flex-col h-full min-h-0 overflow-hidden">
-        <div class="space-y-4 flex-1 flex flex-col min-h-0 overflow-hidden">
+        <!-- Caso 1: Detalle de operación seleccionada -->
+        <div v-if="selectedOperation" class="space-y-4 flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div class="flex justify-between items-center mb-4 flex-shrink-0">
+            <div>
+              <h2 class="text-xl font-bold">Detalle de Operación</h2>
+              <p class="text-xs text-base-content/60">
+                {{ getMemberName(selectedOperation.member_id) }} - {{ formatDate(selectedOperation.date) }}
+              </p>
+            </div>
+            <button class="btn btn-outline btn-sm rounded-lg" @click="selectedOperation = null">Regresar</button>
+          </div>
+          <div class="flex-1 overflow-auto">
+            <OperationDetails :operation="selectedOperation" />
+          </div>
+        </div>
+
+        <!-- Caso 2: Vista Principal (Por Socio u Operaciones) -->
+        <div v-else class="space-y-4 flex-1 flex flex-col min-h-0 overflow-hidden">
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
             <div>
               <h2 class="text-lg font-bold text-base-content">Compra de Acciones (Paso 3)</h2>
               <p class="text-xs text-base-content/60 mt-1">
                 Registra las acciones compradas por los socios en esta reunión. Cada acción tiene un valor nominal de $10.00.
               </p>
+            </div>
+            <!-- View switcher -->
+            <div class="join border border-base-300 rounded-lg p-0.5 bg-base-200/50">
+              <button 
+                class="btn btn-xs join-item"
+                :class="activeView === 'members' ? 'btn-active bg-base-100 font-bold shadow-xs' : 'btn-ghost text-base-content/70'"
+                @click="activeView = 'members'"
+              >
+                Por Socio
+              </button>
+              <button 
+                class="btn btn-xs join-item"
+                :class="activeView === 'operations' ? 'btn-active bg-base-100 font-bold shadow-xs' : 'btn-ghost text-base-content/70'"
+                @click="activeView = 'operations'"
+              >
+                Operaciones ({{ registeredOperations.length }})
+              </button>
             </div>
           </div>
 
@@ -30,13 +64,13 @@
             <input 
               v-model="searchQuery" 
               type="text" 
-              placeholder="Buscar socio..." 
+              :placeholder="activeView === 'members' ? 'Buscar socio...' : 'Buscar operación o socio...'" 
               class="input input-bordered input-sm w-full pl-9 rounded-lg text-sm bg-base-100 focus:outline-none focus:border-teal-700" 
             />
           </div>
 
-          <!-- Table of Transactions -->
-          <div class="overflow-auto w-full border border-base-200 rounded-lg flex-1 min-h-0">
+          <!-- Table of Transactions (Por Socio) -->
+          <div v-if="activeView === 'members'" class="overflow-auto w-full border border-base-200 rounded-lg flex-1 min-h-0">
             <table class="table table-zebra w-full text-xs md:text-sm">
               <thead class="sticky top-0 z-10">
                 <tr class="bg-base-200/50 text-base-content/70">
@@ -99,7 +133,7 @@
                             <span>Crear CDT</span>
                           </a>
                         </li>
-                        <li v-if="getMemberTotalInvestment(member.id) > 0">
+                        <li v-if="getMemberPurchasedShares(member.id) > 0 || getMemberTotalInvestment(member.id) > 0">
                           <a @click="viewReceiptForMember(member)" class="text-xs gap-2">
                             <Printer class="h-3.5 w-3.5 text-teal-700 shrink-0" />
                             <span>Imprimir Recibo</span>
@@ -118,23 +152,82 @@
             </table>
           </div>
 
+          <!-- Table of Registered Operations (Operaciones) -->
+          <div v-else class="overflow-auto w-full border border-base-200 rounded-lg flex-1 min-h-0">
+            <table class="table table-zebra w-full text-xs md:text-sm">
+              <thead class="sticky top-0 z-10">
+                <tr class="bg-base-200/50 text-base-content/70">
+                  <th class="py-2 px-3 font-bold text-[11px] uppercase tracking-wider">Socio</th>
+                  <th class="py-2 px-3 font-bold text-[11px] uppercase tracking-wider">Descripción</th>
+                  <th class="py-2 px-3 font-bold text-[11px] uppercase tracking-wider text-center">Acciones</th>
+                  <th class="py-2 px-3 font-bold text-[11px] uppercase tracking-wider text-right">Inversión</th>
+                  <th class="py-2 px-3 font-bold text-[11px] uppercase tracking-wider text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr 
+                  v-for="op in paginatedOperations" 
+                  :key="op.id"
+                  class="hover:bg-base-200/30 transition-all"
+                >
+                  <td class="py-2.5 px-3">
+                    <span class="font-semibold text-xs text-base-content">{{ getMemberName(op.member_id) }}</span>
+                  </td>
+                  <td class="py-2.5 px-3">
+                    <span class="text-xs text-base-content/85">{{ op.description || op.type }}</span>
+                  </td>
+                  <td class="py-2.5 px-3 text-center">
+                    <span class="font-medium text-xs">{{ getQuantityFromOperation(op) }} uds</span>
+                  </td>
+                  <td class="py-2.5 px-3 text-right">
+                    <span class="font-bold text-xs text-emerald-600">{{ formatCurrency(op.total_amount) }}</span>
+                  </td>
+                  <td class="py-2.5 px-3 text-center">
+                    <div class="flex justify-center items-center gap-1">
+                      <button 
+                        class="btn btn-ghost btn-xs text-teal-700" 
+                        title="Ver detalle"
+                        @click="selectedOperation = op"
+                      >
+                        <Eye class="h-3.5 w-3.5" />
+                        <span class="hidden sm:inline text-xs">Detalle</span>
+                      </button>
+                      <button 
+                        class="btn btn-ghost btn-xs text-teal-700" 
+                        title="Imprimir Recibo"
+                        @click="viewReceiptForSingleOperation(op)"
+                      >
+                        <Printer class="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-if="filteredOperations.length === 0">
+                  <td colspan="5" class="text-center py-8 text-base-content/50">
+                    No hay operaciones de compra registradas en esta reunión.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
           <!-- Pagination Footer -->
           <div class="flex items-center justify-between flex-shrink-0 pt-2 border-t border-base-100">
             <span class="text-xs text-base-content/60">
-              Mostrando {{ filteredMembers.length }} socios
+              {{ activeView === 'members' ? `Mostrando ${filteredMembers.length} socios` : `Mostrando ${filteredOperations.length} operaciones` }}
             </span>
             <div class="flex items-center gap-2">
               <button 
                 class="btn btn-outline btn-xs font-semibold rounded-lg"
-                :disabled="currentPage === 1"
-                @click="currentPage--"
+                :disabled="activeView === 'members' ? currentPage === 1 : operationsCurrentPage === 1"
+                @click="activeView === 'members' ? currentPage-- : operationsCurrentPage--"
               >
                 Anterior
               </button>
               <button 
                 class="btn btn-outline btn-xs font-semibold rounded-lg"
-                :disabled="currentPage >= totalPages"
-                @click="currentPage++"
+                :disabled="activeView === 'members' ? currentPage >= totalPages : operationsCurrentPage >= totalOperationsPages"
+                @click="activeView === 'members' ? currentPage++ : operationsCurrentPage++"
               >
                 Siguiente
               </button>
@@ -242,7 +335,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { WarningTriangle, Search, InfoCircle, Printer, PlusCircle, Coins } from 'iconoir-vue/regular'
+import { WarningTriangle, Search, InfoCircle, Printer, PlusCircle, Coins, Eye } from 'iconoir-vue/regular'
 import { membersApi, type Member, type PurchaseStockRequest } from '@/api/members.api'
 import { stocksApi, type Stock } from '@/api/stocks.api'
 import { useActiveMeetingStore } from '../../stores/activeMeeting'
@@ -252,6 +345,7 @@ import { usePrintReceipt } from '@/shared/composables/usePrintReceipt'
 import EditBuyStockModal from './EditBuyStockModal.vue'
 import CreateCdtModal from './CreateCdtModal.vue'
 import PrintReceiptModal from '@/shared/components/PrintReceiptModal.vue'
+import OperationDetails from '@/shared/components/OperationDetails.vue'
 
 defineEmits<{
   completed: []
@@ -266,10 +360,16 @@ const accumulatedSharesByMember = ref<Record<string, number>>({})
 const loading = ref(false)
 const error = ref<string | null>(null)
 
+// View Toggle & Selection
+const activeView = ref<'members' | 'operations'>('members')
+const selectedOperation = ref<Operation | null>(null)
+
 // Search & Pagination
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = 5
+const operationsCurrentPage = ref(1)
+const operationsItemsPerPage = 5
 
 // Modals State
 const showBuyModal = ref(false)
@@ -324,9 +424,28 @@ const paginatedMembers = computed(() => {
   return filteredMembers.value.slice(start, start + itemsPerPage)
 })
 
-// Reset current page when query changes
+// Filtered and Paginated Operations
+const filteredOperations = computed(() => {
+  if (!searchQuery.value) return registeredOperations.value
+  const query = searchQuery.value.toLowerCase()
+  return registeredOperations.value.filter(op => {
+    const memberName = getMemberName(op.member_id).toLowerCase()
+    const desc = (op.description || '').toLowerCase()
+    return memberName.includes(query) || desc.includes(query)
+  })
+})
+
+const totalOperationsPages = computed(() => Math.max(1, Math.ceil(filteredOperations.value.length / operationsItemsPerPage)))
+
+const paginatedOperations = computed(() => {
+  const start = (operationsCurrentPage.value - 1) * operationsItemsPerPage
+  return filteredOperations.value.slice(start, start + operationsItemsPerPage)
+})
+
+// Reset current pages when query changes
 watch(searchQuery, () => {
   currentPage.value = 1
+  operationsCurrentPage.value = 1
 })
 
 function getMemberPurchasedShares(memberId: string): number {
@@ -341,15 +460,24 @@ function getMemberTotalInvestment(memberId: string): number {
     .reduce((sum, op) => sum + (op.total_amount || 0), 0)
 }
 
+function getMemberName(memberId?: string): string {
+  if (!memberId) return 'Fondo / General'
+  const member = members.value.find(m => m.id === memberId)
+  return member ? member.name : memberId
+}
 
+function formatDate(date: string | Date): string {
+  if (!date) return ''
+  return new Date(date).toLocaleDateString()
+}
 
 function getQuantityFromOperation(operation: Operation): number {
   if (operation.description?.includes('CDT')) return 0
-  const match = operation.description?.match(/(\d+)\s+uds/)
+  const match = operation.description?.match(/(\d+)\s*(?:acciones|uds)/i)
   if (match) {
     return parseInt(match[1], 10)
   }
-  return Math.round(operation.total_amount / 10)
+  return Math.round((operation.total_amount || 0) / 10)
 }
 
 function getInitials(name: string): string {
@@ -479,10 +607,29 @@ function viewReceiptForMember(member: Member) {
   purchasePrintDate.value = new Date(memberOps[0].date).toLocaleDateString()
   viewedPurchaseOperations.value = memberOps.map(op => ({
     id: op.id,
+    type: op.type || 'STOCK_PURCHASE',
     description: op.description || (op.description?.includes('CDT') ? 'Creación de CDT' : 'Compra de acciones'),
-    total_amount: op.total_amount
+    total_amount: op.total_amount,
+    entries: op.entries || op.ledger_entries || [],
+    ledger_entries: op.ledger_entries || op.entries || [],
   }))
-  purchaseTotal.value = memberOps.reduce((sum, op) => sum + op.total_amount, 0)
+  purchaseTotal.value = memberOps.reduce((sum, op) => sum + (op.total_amount || 0), 0)
+  printReceipt.openPrintModal()
+}
+
+function viewReceiptForSingleOperation(op: Operation) {
+  const member = members.value.find(m => m.id === op.member_id)
+  selectedMember.value = member || null
+  purchasePrintDate.value = new Date(op.date).toLocaleDateString()
+  viewedPurchaseOperations.value = [{
+    id: op.id,
+    type: op.type || 'STOCK_PURCHASE',
+    description: op.description || (op.description?.includes('CDT') ? 'Creación de CDT' : 'Compra de acciones'),
+    total_amount: op.total_amount,
+    entries: op.entries || op.ledger_entries || [],
+    ledger_entries: op.ledger_entries || op.entries || [],
+  }]
+  purchaseTotal.value = op.total_amount || 0
   printReceipt.openPrintModal()
 }
 

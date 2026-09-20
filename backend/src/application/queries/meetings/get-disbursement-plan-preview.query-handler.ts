@@ -25,23 +25,6 @@ export class GetDisbursementPlanPreviewQueryHandler {
     const pendingPayments =
       await this.pendingMemberPaymentRepository.findPendingByMeeting(meetingId);
 
-    console.log(`[GetDisbursementPlanPreview] MeetingId: ${meetingId}`);
-    console.log(
-      `[GetDisbursementPlanPreview] Found ${pendingPayments.length} pending payments`,
-    );
-    pendingPayments.forEach((p, idx) => {
-      console.log(`[GetDisbursementPlanPreview] Payment ${idx + 1}:`, {
-        id: p.id,
-        memberId: p.memberId,
-        meetingId: p.meetingId,
-        referenceMeetingId: p.referenceMeetingId,
-        type: p.type,
-        status: p.status,
-        amount: p.amount,
-        notes: p.notes,
-      });
-    });
-
     // 2. Calcular efectivo disponible sumando LedgerEntry con CASH_ACCOUNT
     const ledgerEntries =
       await this.ledgerEntryRepository.findByMeeting(meetingId);

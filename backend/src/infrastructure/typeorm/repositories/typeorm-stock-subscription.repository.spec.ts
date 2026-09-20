@@ -5,6 +5,7 @@ import { TypeOrmStockSubscriptionRepository } from './typeorm-stock-subscription
 import { StockSubscription as StockSubscriptionEntity } from '../entities/stock-subscription.entity';
 import { StockSubscription as StockSubscriptionDomain } from '@domain/entities/stock-subscription.entity';
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
+import { TRANSACTION_MANAGER } from '@domain/constants/injection-tokens';
 
 describe('TypeOrmStockSubscriptionRepository', () => {
   let repository: TypeOrmStockSubscriptionRepository;
@@ -32,7 +33,7 @@ describe('TypeOrmStockSubscriptionRepository', () => {
           useValue: mockTypeOrmRepo,
         },
         {
-          provide: TransactionManager,
+          provide: TRANSACTION_MANAGER,
           useValue: mockTransactionManager,
         },
       ],

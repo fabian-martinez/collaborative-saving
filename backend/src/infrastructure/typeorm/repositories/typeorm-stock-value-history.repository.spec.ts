@@ -5,10 +5,15 @@ import { TypeOrmStockValueHistoryRepository } from './typeorm-stock-value-histor
 import { StockValueHistory as StockValueHistoryEntity } from '../entities/stock-value-history.entity';
 import { StockValueHistory as StockValueHistoryDomain } from '@domain/entities/stock-value-history.entity';
 import { StockValueHistory } from '@domain/entities/stock-value-history.entity';
+import { TRANSACTION_MANAGER } from '@domain/constants/injection-tokens';
 
 describe('TypeOrmStockValueHistoryRepository', () => {
   let repository: TypeOrmStockValueHistoryRepository;
   let typeOrmRepo: jest.Mocked<Repository<StockValueHistoryEntity>>;
+  let mockTransactionManager: {
+    execute: jest.Mock;
+    getActiveQueryRunner: jest.Mock;
+  };
 
   beforeEach(async () => {
     const mockTypeOrmRepo = {
@@ -18,12 +23,21 @@ describe('TypeOrmStockValueHistoryRepository', () => {
       update: jest.fn(),
     };
 
+    mockTransactionManager = {
+      execute: jest.fn(),
+      getActiveQueryRunner: jest.fn().mockReturnValue(null),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TypeOrmStockValueHistoryRepository,
         {
           provide: getRepositoryToken(StockValueHistoryEntity),
           useValue: mockTypeOrmRepo,
+        },
+        {
+          provide: TRANSACTION_MANAGER,
+          useValue: mockTransactionManager,
         },
       ],
     }).compile();
@@ -413,6 +427,53 @@ describe('TypeOrmStockValueHistoryRepository', () => {
       const result = await repository.saveMany([]);
       expect(result).toHaveLength(0);
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('transaction support', () => {
+    it('should use transaction QueryRunner repository when active', async () => {
+      const transactionalRepo = {
+        save: jest.fn().mockResolvedValue({
+          id: 'history-1',
+          stockId: 'stock-1',
+          operationId: 'op-1',
+          previousValue: 100,
+          growthFromContributions: 0,
+          growthFromInterest: 0,
+          totalGrowthPerShare: 0,
+          newValue: 100,
+          createdAt: new Date(),
+        }),
+        findOne: jest.fn().mockResolvedValue(null),
+      };
+
+      const getRepository = jest.fn().mockReturnValue(transactionalRepo);
+      const mockQueryRunner = {
+        manager: {
+          getRepository,
+        },
+      };
+
+      mockTransactionManager.getActiveQueryRunner.mockReturnValue(
+        mockQueryRunner as any,
+      );
+
+      const history = StockValueHistory.create({
+        stockId: 'stock-1',
+        operationId: 'op-1',
+        previousValue: 100,
+        growthFromContributions: 0,
+        growthFromInterest: 0,
+        totalGrowthPerShare: 0,
+        newValue: 100,
+      });
+
+      await repository.save(history);
+
+      expect(getRepository).toHaveBeenCalledWith(StockValueHistoryEntity);
+      expect(transactionalRepo.save).toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(typeOrmRepo.save).not.toHaveBeenCalled();
     });
   });
 });

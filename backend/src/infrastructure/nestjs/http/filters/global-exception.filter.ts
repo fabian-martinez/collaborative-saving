@@ -27,6 +27,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
+    const method = request?.method ?? 'UNKNOWN';
+    const path = request?.url ?? '';
+
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
 
@@ -48,22 +51,34 @@ export class GlobalExceptionFilter implements ExceptionFilter {
               ? responseObj.message.join(', ')
               : responseObj.error || exception.message;
       }
+
+      if (status < HttpStatus.INTERNAL_SERVER_ERROR) {
+        this.logger.warn(`[${method}] ${path} - Status ${status}: ${message}`);
+      } else {
+        this.logger.error(
+          `[${method}] ${path} - Status ${status}: ${message}`,
+          exception.stack,
+        );
+      }
     }
     // Handle domain errors
     else if (exception instanceof NotFoundError) {
       status = HttpStatus.NOT_FOUND;
       message = exception.message;
+      this.logger.warn(`[${method}] ${path} - Status ${status}: ${message}`);
     } else if (exception instanceof BusinessRuleError) {
       status = HttpStatus.BAD_REQUEST;
       message = exception.message;
+      this.logger.warn(`[${method}] ${path} - Status ${status}: ${message}`);
     } else if (exception instanceof InvalidRequestError) {
       status = HttpStatus.BAD_REQUEST;
       message = exception.message;
+      this.logger.warn(`[${method}] ${path} - Status ${status}: ${message}`);
     }
     // Handle generic Error instances
     else if (exception instanceof Error) {
       this.logger.error(
-        `Unhandled error: ${exception.message}`,
+        `[${method}] ${path} - Unhandled error: ${exception.message}`,
         exception.stack,
       );
       message = 'Internal server error'; // Don't expose internal details
@@ -73,7 +88,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     // Handle non-Error exceptions (strings, etc.)
     else {
       this.logger.error(
-        `Unhandled exception of unknown type: ${String(exception)}`,
+        `[${method}] ${path} - Unhandled exception of unknown type: ${String(exception)}`,
       );
       message = 'Internal server error'; // Don't expose internal details
       status = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -83,7 +98,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       statusCode: status,
       message,
       timestamp: new Date().toISOString(),
-      path: request.url,
+      path: request?.url ?? '',
     });
   }
 }

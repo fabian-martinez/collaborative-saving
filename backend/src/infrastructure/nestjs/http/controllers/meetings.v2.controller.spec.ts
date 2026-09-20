@@ -424,6 +424,7 @@ describe('MeetingsV2Controller', () => {
           description: 'Payment 1',
           total_amount: 100000,
           entries: [],
+          ledger_entries: [],
         },
         {
           id: 'op-2',
@@ -434,6 +435,7 @@ describe('MeetingsV2Controller', () => {
           description: 'Payment 2',
           total_amount: 150000,
           entries: [],
+          ledger_entries: [],
         },
       ];
 
@@ -548,6 +550,7 @@ describe('MeetingsV2Controller', () => {
 
       // ASSERT
       expect(result[0].entries).toEqual([]);
+      expect(result[0].ledger_entries).toEqual([]);
       expect(result[0].total_amount).toBe(100000);
       expect(result[0]).toEqual({
         id: 'op-1',
@@ -558,6 +561,7 @@ describe('MeetingsV2Controller', () => {
         description: 'Payment 1',
         total_amount: 100000,
         entries: [],
+        ledger_entries: [],
       });
     });
 

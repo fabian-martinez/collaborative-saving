@@ -38,4 +38,12 @@ export class OperationResponseHttpDto {
     required: false,
   })
   entries?: LedgerEntryResponseHttpDto[];
+
+  @ApiProperty({
+    description:
+      'Alias for entries to support frontend components expecting ledger_entries',
+    type: [LedgerEntryResponseHttpDto],
+    required: false,
+  })
+  ledger_entries?: LedgerEntryResponseHttpDto[];
 }

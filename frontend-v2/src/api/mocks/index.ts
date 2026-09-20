@@ -72,7 +72,15 @@ const mockMeetings: Meeting[] = [
   }
 ]
 
+// Session in-memory operation stores for mock mode
+const mockSessionPurchases: MeetingOperation[] = []
+const mockSessionTransfers: any[] = []
+const mockSessionExchanges: any[] = []
+const mockSessionStockLoanPayments: any[] = []
+const mockSessionCashLoanPayments: MeetingOperation[] = []
+
 const mockLoans: Loan[] = [
+
   {
     id: '1',
     member_id: '1',
@@ -329,14 +337,58 @@ export const mockApi = {
     }
   },
 
-  async recordExtraordinaryLoanPayment(_memberId: string, data: any): Promise<any> {
+  async recordExtraordinaryLoanPayment(memberId: string, data: any): Promise<any> {
     await delay()
+    const opId = 'op-cash-loan-' + Date.now()
+    const operation: MeetingOperation = {
+      id: opId,
+      member_id: memberId,
+      meeting_id: data.meetingId,
+      type: 'LOAN_PAYMENT',
+      description: data.notes || `Abono extraordinario a capital préstamo en efectivo`,
+      date: new Date().toISOString(),
+      total_amount: data.amount || 0,
+      entries: [
+        {
+          id: 'entry-' + Date.now(),
+          account_type: 'CASH',
+          amount: data.amount || 0,
+          description: 'Caja - Abono a préstamo',
+          date: new Date().toISOString(),
+        },
+        {
+          id: 'entry-' + (Date.now() + 1),
+          account_type: 'LOANS_RECEIVABLE',
+          amount: -(data.amount || 0),
+          description: 'Préstamos por Cobrar - Abono extraordinario',
+          date: new Date().toISOString(),
+        },
+      ],
+      ledger_entries: [
+        {
+          id: 'entry-' + Date.now(),
+          account_type: 'CASH',
+          amount: data.amount || 0,
+          description: 'Caja - Abono a préstamo',
+          date: new Date().toISOString(),
+        },
+        {
+          id: 'entry-' + (Date.now() + 1),
+          account_type: 'LOANS_RECEIVABLE',
+          amount: -(data.amount || 0),
+          description: 'Préstamos por Cobrar - Abono extraordinario',
+          date: new Date().toISOString(),
+        },
+      ],
+    }
+    mockSessionCashLoanPayments.push(operation)
+
     return {
       loanId: data.loanId,
-      operationId: 'op-extraordinary-payment',
+      operationId: opId,
       interestPaid: 0,
       principalPaid: data.amount,
-      newOutstandingBalance: 1000000 - data.amount,
+      newOutstandingBalance: Math.max(0, 1000000 - data.amount),
       loanStatus: 'active',
       transactionDetailIds: ['detail1'],
     }
@@ -378,12 +430,58 @@ export const mockApi = {
     ]
   },
 
-  async createStockPurchase(_memberId: string, data: any): Promise<any> {
+  async createStockPurchase(memberId: string, data: any): Promise<any> {
     await delay()
+    const opId = 'op-purchase-' + Date.now()
+    const quantity = data.quantity || 1
+    const totalAmount = data.quantity ? data.quantity * 10 : (data.cash_amount || 0)
+    const cashAmount = data.cash_amount ?? totalAmount
+    const financedAmount = Math.max(0, totalAmount - cashAmount)
+
+    const entries: any[] = []
+    if (cashAmount > 0) {
+      entries.push({
+        id: 'entry-' + Date.now(),
+        account_type: 'CASH',
+        amount: cashAmount,
+        description: 'Caja - Compra de acciones',
+        date: new Date().toISOString(),
+      })
+    }
+    if (financedAmount > 0) {
+      entries.push({
+        id: 'entry-loan-' + Date.now(),
+        account_type: 'LOANS_RECEIVABLE',
+        amount: financedAmount,
+        description: 'Préstamo por Cobrar - Financiación de acciones',
+        date: new Date().toISOString(),
+      })
+    }
+    entries.push({
+      id: 'entry-capital-' + Date.now(),
+      account_type: 'STOCK_CAPITAL',
+      amount: -totalAmount,
+      description: 'Capital Social - Emisión de acciones',
+      date: new Date().toISOString(),
+    })
+
+    const newOp: MeetingOperation = {
+      id: opId,
+      member_id: memberId,
+      meeting_id: data.meeting_id || '1',
+      type: 'STOCK_PURCHASE',
+      description: `Compra de ${quantity} acciones`,
+      date: new Date().toISOString(),
+      total_amount: totalAmount,
+      entries,
+      ledger_entries: entries,
+    }
+    mockSessionPurchases.push(newOp)
+
     return {
-      operation_id: 'op-new-purchase',
-      stock_subscription_id: 'sub-new',
-      loan_id: data.loan_details ? 'loan-new' : undefined
+      operation_id: opId,
+      stock_subscription_id: 'sub-' + Date.now(),
+      loan_id: data.loan_details ? 'loan-' + Date.now() : undefined
     }
   },
 
@@ -426,19 +524,95 @@ export const mockApi = {
     return []
   },
 
-  async processStockExchange(_memberId: string, _data: any): Promise<any> {
+  async processStockExchange(memberId: string, data: any): Promise<any> {
     await delay()
-    return { operation_id: 'op-exchange', message: 'Exchange processed' }
+    const opId = 'op-exchange-' + Date.now()
+    const difference = data.from_quantity && data.to_quantity ? Math.abs((data.to_quantity - data.from_quantity) * 10) : 10
+    const entries = [
+      {
+        id: 'entry-' + Date.now(),
+        account_type: 'STOCK_CAPITAL',
+        amount: difference,
+        description: 'Modificación / Intercambio de acciones',
+        date: new Date().toISOString(),
+      }
+    ]
+    const newOp = {
+      id: opId,
+      member_id: memberId,
+      meeting_id: data.meeting_id || '1',
+      type: 'STOCK_EXCHANGE',
+      description: `Intercambio de ${data.from_quantity || 1} por ${data.to_quantity || 1} acciones`,
+      date: new Date().toISOString(),
+      total_amount: difference,
+      entries,
+      ledger_entries: entries,
+    }
+    mockSessionExchanges.push(newOp)
+    return { operation_id: opId, message: 'Exchange processed' }
   },
 
-  async processStockTransfer(_memberId: string, _data: any): Promise<any> {
+  async processStockTransfer(memberId: string, data: any): Promise<any> {
     await delay()
-    return { operation_id: 'op-transfer', message: 'Transfer processed' }
+    const opId = 'op-transfer-' + Date.now()
+    const totalValue = (data.quantity || 1) * 10
+    const entries = [
+      {
+        id: 'entry-' + Date.now(),
+        account_type: 'STOCK_TRANSFER',
+        amount: totalValue,
+        description: `Transferencia de ${data.quantity || 1} acciones`,
+        date: new Date().toISOString(),
+      }
+    ]
+    const newOp = {
+      id: opId,
+      member_id: memberId,
+      meeting_id: data.meeting_id || '1',
+      type: 'STOCK_TRANSFER',
+      description: `Transferencia de ${data.quantity || 1} acciones`,
+      date: new Date().toISOString(),
+      total_amount: totalValue,
+      entries,
+      ledger_entries: entries,
+    }
+    mockSessionTransfers.push(newOp)
+    return { operation_id: opId, message: 'Transfer processed' }
   },
 
-  async processStockLoanPayment(_memberId: string, _data: any): Promise<any> {
+  async processStockLoanPayment(memberId: string, data: any): Promise<any> {
     await delay()
-    return { operation_id: 'op-loan-payment', message: 'Loan payment processed' }
+    const opId = 'op-stock-loan-' + Date.now()
+    const totalValue = (data.quantity || 1) * 10
+    const entries = [
+      {
+        id: 'entry-' + Date.now(),
+        account_type: 'LOANS_RECEIVABLE',
+        amount: -totalValue,
+        description: `Abono a préstamo con ${data.quantity || 1} acciones`,
+        date: new Date().toISOString(),
+      },
+      {
+        id: 'entry-cap-' + Date.now(),
+        account_type: 'STOCK_CAPITAL',
+        amount: totalValue,
+        description: 'Liquidación de acciones para pago de préstamo',
+        date: new Date().toISOString(),
+      }
+    ]
+    const newOp = {
+      id: opId,
+      member_id: memberId,
+      meeting_id: data.meeting_id || '1',
+      type: 'STOCK_LOAN_PAYMENT',
+      description: `Pago de crédito con ${data.quantity || 1} acciones`,
+      date: new Date().toISOString(),
+      total_amount: totalValue,
+      entries,
+      ledger_entries: entries,
+    }
+    mockSessionStockLoanPayments.push(newOp)
+    return { operation_id: opId, message: 'Loan payment processed' }
   },
 
   async getMemberPaymentSchedule(_memberId: string): Promise<any> {
@@ -495,8 +669,7 @@ export const mockApi = {
 
   async getMeetingPayments(meetingId: string): Promise<MeetingOperation[]> {
     await delay()
-    // Retornar operaciones de múltiples miembros para el mock
-    return [
+    const defaultPayments: MeetingOperation[] = [
       {
         id: 'op1',
         member_id: '1',
@@ -505,6 +678,8 @@ export const mockApi = {
         description: 'Pago mensual',
         date: '2024-12-15T10:30:00Z',
         total_amount: 100000,
+        entries: [],
+        ledger_entries: [],
       },
       {
         id: 'op2',
@@ -514,38 +689,66 @@ export const mockApi = {
         description: 'Pago mensual',
         date: '2024-12-15T10:30:00Z',
         total_amount: 150000,
+        entries: [],
+        ledger_entries: [],
       },
     ]
+    const sessionPayments = mockSessionCashLoanPayments.filter(
+      (op) => !op.meeting_id || op.meeting_id === meetingId
+    )
+    return [...defaultPayments, ...sessionPayments]
   },
 
-  async getMeetingPurchases(_meetingId: string): Promise<MeetingOperation[]> {
+  async getMeetingPurchases(meetingId: string): Promise<MeetingOperation[]> {
     await delay()
-    const purchases = await mockApi.getMemberPurchases('1')
-    // Convertir MemberPurchase[] a Operation[]
-    return purchases.map(purchase => ({
-      id: purchase.operation_id,
-      member_id: '1', // Mock member ID
-      meeting_id: purchase.meeting_id,
-      type: 'STOCK_PURCHASE',
-      description: `Compra de ${purchase.stock_type} - ${purchase.quantity} uds`,
-      date: purchase.purchase_date,
-      total_amount: purchase.total_value
-    }))
+    const defaultPurchases: MeetingOperation[] = [
+      {
+        id: 'op3',
+        member_id: '1',
+        meeting_id: meetingId,
+        type: 'STOCK_PURCHASE',
+        description: `Compra de 20000 acciones de Acción A`,
+        date: '2024-12-15T10:30:00Z',
+        total_amount: 200000,
+        entries: [
+          {
+            id: 'entry-mock-1',
+            account_type: 'CASH',
+            amount: 200000,
+            description: 'Caja - Compra de acciones',
+            date: '2024-12-15T10:30:00Z',
+          }
+        ],
+        ledger_entries: [
+          {
+            id: 'entry-mock-1',
+            account_type: 'CASH',
+            amount: 200000,
+            description: 'Caja - Compra de acciones',
+            date: '2024-12-15T10:30:00Z',
+          }
+        ],
+      }
+    ]
+    const sessionPurchases = mockSessionPurchases.filter(
+      (op) => !op.meeting_id || op.meeting_id === meetingId
+    )
+    return [...defaultPurchases, ...sessionPurchases]
   },
 
-  async getMeetingTransfers(_meetingId: string): Promise<any[]> {
+  async getMeetingTransfers(meetingId: string): Promise<any[]> {
     await delay()
-    return []
+    return mockSessionTransfers.filter((op) => !op.meeting_id || op.meeting_id === meetingId)
   },
 
-  async getMeetingExchanges(_meetingId: string): Promise<any[]> {
+  async getMeetingExchanges(meetingId: string): Promise<any[]> {
     await delay()
-    return []
+    return mockSessionExchanges.filter((op) => !op.meeting_id || op.meeting_id === meetingId)
   },
 
-  async getMeetingStockLoanPayments(_meetingId: string): Promise<any[]> {
+  async getMeetingStockLoanPayments(meetingId: string): Promise<any[]> {
     await delay()
-    return []
+    return mockSessionStockLoanPayments.filter((op) => !op.meeting_id || op.meeting_id === meetingId)
   },
 
   async getRevaluationPreview(_meetingId: string): Promise<any> {
