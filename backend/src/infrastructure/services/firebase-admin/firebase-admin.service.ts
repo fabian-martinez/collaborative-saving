@@ -1,8 +1,10 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 
 @Injectable()
 export class FirebaseAdminService implements OnModuleInit {
+  private readonly logger = new Logger(FirebaseAdminService.name);
+
   onModuleInit() {
     if (!admin.apps.length) {
       const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
@@ -14,20 +16,20 @@ export class FirebaseAdminService implements OnModuleInit {
           admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
           });
-          console.log(
-            '[FirebaseAdminService] Initialized using FIREBASE_SERVICE_ACCOUNT_JSON env variable.',
+          this.logger.log(
+            'Initialized using FIREBASE_SERVICE_ACCOUNT_JSON env variable.',
           );
         } catch (error) {
-          console.error(
-            '[FirebaseAdminService] Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON, falling back to default:',
-            error,
+          this.logger.error(
+            'Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON, falling back to default:',
+            error instanceof Error ? error.stack : String(error),
           );
           admin.initializeApp();
         }
       } else {
         admin.initializeApp();
-        console.log(
-          '[FirebaseAdminService] Initialized using default credentials (GOOGLE_APPLICATION_CREDENTIALS).',
+        this.logger.log(
+          'Initialized using default credentials (GOOGLE_APPLICATION_CREDENTIALS).',
         );
       }
     }

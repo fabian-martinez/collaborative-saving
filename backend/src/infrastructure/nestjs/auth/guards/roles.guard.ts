@@ -3,6 +3,7 @@ import {
   ExecutionContext,
   Inject,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { MEMBER_REPOSITORY } from '../../../../domain/constants/injection-tokens';
@@ -13,6 +14,8 @@ import { maskEmail } from '../../../utils/pii-masker.util';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
+  private readonly logger = new Logger(RolesGuard.name);
+
   constructor(
     private reflector: Reflector,
     @Inject(MEMBER_REPOSITORY) private memberRepository: MemberRepository,
@@ -33,22 +36,20 @@ export class RolesGuard implements CanActivate {
     // FirebaseAuthGuard puts the decoded token in request['user']
     // The decoded token has an 'email' property
     if (!user || typeof user.email !== 'string') {
-      console.warn('RolesGuard: No user or email in request');
+      this.logger.warn('No user or email in request');
       return false;
     }
 
     const member = await this.memberRepository.findByEmail(user.email);
     if (!member) {
-      console.warn(
-        `RolesGuard: Member not found for email ${maskEmail(user.email)}`,
-      );
+      this.logger.warn(`Member not found for email ${maskEmail(user.email)}`);
       return false;
     }
 
     const hasRole = requiredRoles.includes(member.role as MemberRole);
     if (!hasRole) {
-      console.warn(
-        `RolesGuard: User ${maskEmail(user.email)} with role ${member.role} does not have required roles ${requiredRoles.join(', ')}`,
+      this.logger.warn(
+        `User ${maskEmail(user.email)} with role ${member.role} does not have required roles ${requiredRoles.join(', ')}`,
       );
     }
     return hasRole;

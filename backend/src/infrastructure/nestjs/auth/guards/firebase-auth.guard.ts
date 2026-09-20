@@ -3,6 +3,7 @@ import {
   ExecutionContext,
   Injectable,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
@@ -10,6 +11,8 @@ import { GetAuthenticatedUserQuery } from '@application/queries/auth/get-authent
 
 @Injectable()
 export class FirebaseAuthGuard implements CanActivate {
+  private readonly logger = new Logger(FirebaseAuthGuard.name);
+
   constructor(
     private reflector: Reflector,
     private readonly getAuthenticatedUserQuery: GetAuthenticatedUserQuery,
@@ -28,7 +31,7 @@ export class FirebaseAuthGuard implements CanActivate {
     const token = this.extractTokenFromHeader(request);
 
     if (!token) {
-      console.error('[FirebaseAuthGuard] No token found in request headers');
+      this.logger.error('No token found in request headers');
       throw new UnauthorizedException();
     }
 
@@ -39,9 +42,9 @@ export class FirebaseAuthGuard implements CanActivate {
       }
       request['user'] = user;
     } catch (error) {
-      console.error(
-        '[FirebaseAuthGuard] Authentication failed:',
-        error instanceof Error ? error.message : String(error),
+      this.logger.error(
+        `Authentication failed: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw new UnauthorizedException();
     }
