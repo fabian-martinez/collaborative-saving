@@ -29,6 +29,7 @@ export class UpdateLoanTermsUseCase {
       interestRate: loan.interestRate,
       monthlyPaymentAmount: loan.monthlyPaymentAmount,
       term: loan.term,
+      loanType: loan.loanType,
     };
 
     // 3. Check if any terms are being updated
@@ -37,7 +38,8 @@ export class UpdateLoanTermsUseCase {
         dto.interestRate !== loan.interestRate) ||
       (dto.monthlyPaymentAmount !== undefined &&
         dto.monthlyPaymentAmount !== loan.monthlyPaymentAmount) ||
-      (dto.term !== undefined && dto.term !== loan.term);
+      (dto.term !== undefined && dto.term !== loan.term) ||
+      (dto.loanType !== undefined && dto.loanType !== loan.loanType);
 
     if (!hasChanges) {
       // No changes, return current loan data
@@ -62,6 +64,7 @@ export class UpdateLoanTermsUseCase {
       interestRate: dto.interestRate,
       monthlyPaymentAmount: dto.monthlyPaymentAmount,
       term: dto.term,
+      loanType: dto.loanType,
     });
 
     // 5. Save updated loan
@@ -72,6 +75,7 @@ export class UpdateLoanTermsUseCase {
       interestRate: updatedLoan.interestRate,
       monthlyPaymentAmount: updatedLoan.monthlyPaymentAmount,
       term: updatedLoan.term,
+      loanType: updatedLoan.loanType,
     };
 
     // 7. Emit domain event for auditing

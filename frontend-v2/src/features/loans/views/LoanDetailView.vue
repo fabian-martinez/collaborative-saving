@@ -141,6 +141,15 @@
         
         <form @submit.prevent="submitUpdate" v-if="loan">
           <div class="form-control w-full mb-4">
+            <label class="label"><span class="label-text">Tipo de Préstamo</span></label>
+            <select v-model="updateForm.loan_type" class="select select-bordered w-full" @change="onLoanTypeChange" required>
+              <option v-for="option in LOAN_TYPE_OPTIONS" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-control w-full mb-4">
             <label class="label"><span class="label-text">Tasa de Interés (Ej: 0.02 para 2%)</span></label>
             <input v-model.number="updateForm.interest_rate" type="number" step="0.001" min="0" class="input input-bordered w-full" required />
           </div>
@@ -177,6 +186,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, Edit } from 'iconoir-vue/regular'
 import { loansApi, type Loan, type LoanTransaction } from '@/api/loans.api'
+import { LOAN_TYPE_OPTIONS, getDefaultInterestRate, type LoanType } from '@/features/loans/constants/loan-rates'
 import { formatCurrency, formatPercentage, formatDate } from '@/shared/utils/formatters'
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import ErrorMessage from '@/shared/components/ErrorMessage.vue'
@@ -339,7 +349,13 @@ const chartOptions = {
 // Update Modal State
 const updateModal = ref<HTMLDialogElement | null>(null)
 const updating = ref(false)
-const updateForm = ref({
+const updateForm = ref<{
+  loan_type: LoanType | string
+  interest_rate: number
+  term: number
+  monthly_payment_amount: number
+}>({
+  loan_type: 'corriente',
   interest_rate: 0,
   term: 0,
   monthly_payment_amount: 0
@@ -449,11 +465,18 @@ async function loadLoan() {
 function openUpdateModal() {
   if (!loan.value) return
   updateForm.value = {
+    loan_type: (loan.value.loan_type as LoanType) || 'corriente',
     interest_rate: loan.value.interest_rate,
     term: loan.value.term,
     monthly_payment_amount: loan.value.monthly_payment_amount
   }
   updateModal.value?.showModal()
+}
+
+function onLoanTypeChange() {
+  if (updateForm.value.loan_type) {
+    updateForm.value.interest_rate = getDefaultInterestRate(updateForm.value.loan_type)
+  }
 }
 
 function closeUpdateModal() {
@@ -465,6 +488,7 @@ async function submitUpdate() {
   updating.value = true
   try {
     await loansApi.updateLoanTerms(loan.value.id, {
+      loan_type: updateForm.value.loan_type,
       interest_rate: updateForm.value.interest_rate,
       term: updateForm.value.term,
       monthly_payment_amount: updateForm.value.monthly_payment_amount

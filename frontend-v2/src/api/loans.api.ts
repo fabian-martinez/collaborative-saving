@@ -31,6 +31,7 @@ export interface Loan {
 }
 
 export interface UpdateLoanTermsRequest {
+  loan_type?: 'corriente' | 'agil' | 'accion' | 'prioritario' | string
   interest_rate?: number
   monthly_payment_amount?: number
   term?: number

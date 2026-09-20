@@ -102,7 +102,14 @@ export class Loan {
     interestRate?: number;
     monthlyPaymentAmount?: number;
     term?: number;
+    loanType?: string;
   }): void {
+    if (data.loanType !== undefined) {
+      if (!data.loanType || data.loanType.trim().length === 0) {
+        throw new Error('Loan type cannot be empty');
+      }
+      this._loanType = data.loanType.trim();
+    }
     if (data.interestRate !== undefined) {
       if (data.interestRate < 0 || data.interestRate > 1) {
         throw new Error('Interest rate must be between 0 and 1');
@@ -220,6 +227,10 @@ export class Loan {
 
   private validateInvariants(): void {
     const EPSILON = 0.01; // Tolerancia para errores de precisión de punto flotante en moneda
+
+    if (!this._loanType || this._loanType.trim().length === 0) {
+      throw new Error('Loan type cannot be empty');
+    }
 
     if (this._approvedAmount <= 0) {
       throw new Error('Loan approved amount must be > 0');
