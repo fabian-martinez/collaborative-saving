@@ -167,6 +167,7 @@ backend/*.json
 
 # Backups
 infra/backups/
+infra/database/backups/
 
 # Agent and CLI artifacts
 .antigravitycli/
