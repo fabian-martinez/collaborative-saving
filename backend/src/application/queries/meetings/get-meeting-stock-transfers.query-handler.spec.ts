@@ -126,7 +126,9 @@ describe('GetMeetingStockTransfersQueryHandler', () => {
       operation2,
     ]);
     ledgerEntryRepository.findByOperations.mockResolvedValue([]);
-    paymentMapperService.calculateStockOperationTotalAmount.mockReturnValue(500);
+    paymentMapperService.calculateStockOperationTotalAmount.mockReturnValue(
+      500,
+    );
 
     // ACT
     const result = await queryHandler.execute(meetingId);
@@ -185,7 +187,9 @@ describe('GetMeetingStockTransfersQueryHandler', () => {
     meetingRepository.findById.mockResolvedValue(meeting);
     operationRepository.findByMeetingAndType.mockResolvedValue([operation]);
     ledgerEntryRepository.findByOperations.mockResolvedValue([]);
-    paymentMapperService.calculateStockOperationTotalAmount.mockReturnValue(1000);
+    paymentMapperService.calculateStockOperationTotalAmount.mockReturnValue(
+      1000,
+    );
 
     // ACT
     const result = await queryHandler.execute(meetingId);

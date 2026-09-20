@@ -2,7 +2,10 @@ import { LedgerEntry } from '../entities/ledger-entry.entity';
 import { PaymentFilterType } from '../enums/payment-filter-type.enum';
 import { OperationType } from '../enums/operation-type.enum';
 import { PaymentType } from '../enums/payment-type.enum';
-import { CASH_ACCOUNT, STOCK_CAPITAL_ACCOUNT } from '../constants/account-types';
+import {
+  CASH_ACCOUNT,
+  STOCK_CAPITAL_ACCOUNT,
+} from '../constants/account-types';
 
 /**
  * Payment Mapper Service
