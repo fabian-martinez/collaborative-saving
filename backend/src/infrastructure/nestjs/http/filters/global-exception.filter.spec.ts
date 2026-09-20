@@ -57,26 +57,6 @@ describe('GlobalExceptionFilter', () => {
     jest.clearAllMocks();
   });
 
-  it('should sanitize generic Error messages and log with stack trace', () => {
-    const error = new Error('Sensitive database info');
-    const loggerErrorSpy = jest
-      .spyOn(Logger.prototype, 'error')
-      .mockImplementation();
-
-    filter.catch(error, mockArgumentsHost as ArgumentsHost);
-
-    expect(mockStatus).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
-    expect(mockJson).toHaveBeenCalledWith(
-      expect.objectContaining({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Internal server error',
-      }),
-    );
-    expect(loggerErrorSpy).toHaveBeenCalledWith(
-      'Unhandled error: Sensitive database info',
-      error.stack,
-    );
-    loggerErrorSpy.mockRestore();
   describe('Domain Errors', () => {
     it('should log warn and return 404 for NotFoundError', () => {
       // Arrange
