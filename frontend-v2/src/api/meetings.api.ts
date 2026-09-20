@@ -117,6 +117,8 @@ export interface Operation {
   description?: string
   date: string | Date
   total_amount: number
+  entries?: any[]
+  ledger_entries?: any[]
 }
 
 export interface GetMeetingQuery {

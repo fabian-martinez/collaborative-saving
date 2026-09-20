@@ -2,7 +2,7 @@ import { LedgerEntry } from '../entities/ledger-entry.entity';
 import { PaymentFilterType } from '../enums/payment-filter-type.enum';
 import { OperationType } from '../enums/operation-type.enum';
 import { PaymentType } from '../enums/payment-type.enum';
-import { CASH_ACCOUNT } from '../constants/account-types';
+import { CASH_ACCOUNT, STOCK_CAPITAL_ACCOUNT } from '../constants/account-types';
 
 /**
  * Payment Mapper Service
@@ -26,6 +26,43 @@ export class PaymentMapperService {
   calculatePaymentTotalAmount(entries: LedgerEntry[]): number {
     return entries
       .filter((e) => e.accountType === CASH_ACCOUNT && e.amount > 0)
+      .reduce((sum, e) => sum + e.amount, 0);
+  }
+
+  /**
+   * Calculates the total amount for a stock purchase operation from ledger entries.
+   *
+   * Business Rule: For stock purchases, the total investment is the absolute value of
+   * the STOCK_CAPITAL_ACCOUNT entry, or the sum of debit entries (CASH + LOANS_RECEIVABLE).
+   *
+   * @param entries - Array of ledger entries to calculate from
+   * @returns The total stock purchase amount
+   */
+  calculateStockPurchaseTotalAmount(entries: LedgerEntry[]): number {
+    const stockCapitalEntry = entries.find(
+      (e) => e.accountType === STOCK_CAPITAL_ACCOUNT,
+    );
+    if (stockCapitalEntry) {
+      return Math.abs(stockCapitalEntry.amount);
+    }
+    return entries
+      .filter((e) => e.amount > 0)
+      .reduce((sum, e) => sum + e.amount, 0);
+  }
+
+  /**
+   * Calculates the total amount for a stock operation (transfer, exchange, loan payment)
+   * from ledger entries.
+   *
+   * Business Rule: In double-entry bookkeeping, the gross volume of the operation
+   * corresponds to the sum of positive entries (debits).
+   *
+   * @param entries - Array of ledger entries to calculate from
+   * @returns The total stock operation amount
+   */
+  calculateStockOperationTotalAmount(entries: LedgerEntry[]): number {
+    return entries
+      .filter((e) => e.amount > 0)
       .reduce((sum, e) => sum + e.amount, 0);
   }
 

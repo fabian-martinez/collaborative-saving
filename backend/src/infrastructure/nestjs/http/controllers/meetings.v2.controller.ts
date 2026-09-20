@@ -558,6 +558,20 @@ export class MeetingsV2Controller {
   private mapOperationToHttp(
     operation: OperationResponseDto,
   ): OperationResponseHttpDto {
+    const entries =
+      operation.entries?.map((e) => ({
+        id: e.id,
+        operation_id: e.operationId,
+        account_type: e.accountType,
+        amount: e.amount,
+        created_at: e.createdAt,
+        description: e.description,
+        loan_id: e.loanId,
+        stock_id: e.stockId,
+        mandatory_contribution_id: e.mandatoryContributionId,
+        stock_subscription_id: e.stockSubscriptionId,
+      })) ?? [];
+
     return {
       id: operation.id,
       member_id: operation.memberId,
@@ -566,7 +580,8 @@ export class MeetingsV2Controller {
       date: operation.date,
       description: operation.description ?? null,
       total_amount: operation.totalAmount ?? 0,
-      entries: [], // Meetings operations don't include ledger entries
+      entries,
+      ledger_entries: entries,
     };
   }
 

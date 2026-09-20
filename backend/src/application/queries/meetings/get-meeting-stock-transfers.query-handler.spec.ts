@@ -1,6 +1,8 @@
 import { GetMeetingStockTransfersQueryHandler } from './get-meeting-stock-transfers.query-handler';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
+import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
+import { PaymentMapperService } from '@domain/services/payment-mapper.service';
 import { Operation } from '@domain/entities/operation.entity';
 import { OperationType } from '@domain/enums/operation-type.enum';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
@@ -10,6 +12,8 @@ describe('GetMeetingStockTransfersQueryHandler', () => {
   let queryHandler: GetMeetingStockTransfersQueryHandler;
   let meetingRepository: jest.Mocked<MeetingRepository>;
   let operationRepository: jest.Mocked<OperationRepository>;
+  let ledgerEntryRepository: jest.Mocked<LedgerEntryRepository>;
+  let paymentMapperService: jest.Mocked<PaymentMapperService>;
 
   beforeEach(() => {
     meetingRepository = {
@@ -28,9 +32,21 @@ describe('GetMeetingStockTransfersQueryHandler', () => {
       saveWithEntries: jest.fn(),
     } as unknown as jest.Mocked<OperationRepository>;
 
+    ledgerEntryRepository = {
+      findByOperations: jest.fn(),
+      findById: jest.fn(),
+      findByOperation: jest.fn(),
+    } as unknown as jest.Mocked<LedgerEntryRepository>;
+
+    paymentMapperService = {
+      calculateStockOperationTotalAmount: jest.fn(),
+    } as unknown as jest.Mocked<PaymentMapperService>;
+
     queryHandler = new GetMeetingStockTransfersQueryHandler(
       meetingRepository,
       operationRepository,
+      ledgerEntryRepository,
+      paymentMapperService,
     );
   });
 
@@ -109,6 +125,8 @@ describe('GetMeetingStockTransfersQueryHandler', () => {
       operation1,
       operation2,
     ]);
+    ledgerEntryRepository.findByOperations.mockResolvedValue([]);
+    paymentMapperService.calculateStockOperationTotalAmount.mockReturnValue(500);
 
     // ACT
     const result = await queryHandler.execute(meetingId);
@@ -132,6 +150,8 @@ describe('GetMeetingStockTransfersQueryHandler', () => {
       type: operation1.type,
       date: operation1.date,
       description: operation1.description,
+      totalAmount: 500,
+      entries: [],
     });
     expect(result[1]).toEqual({
       id: operation2.id,
@@ -140,6 +160,8 @@ describe('GetMeetingStockTransfersQueryHandler', () => {
       type: operation2.type,
       date: operation2.date,
       description: operation2.description,
+      totalAmount: 500,
+      entries: [],
     });
   });
 
@@ -162,6 +184,8 @@ describe('GetMeetingStockTransfersQueryHandler', () => {
 
     meetingRepository.findById.mockResolvedValue(meeting);
     operationRepository.findByMeetingAndType.mockResolvedValue([operation]);
+    ledgerEntryRepository.findByOperations.mockResolvedValue([]);
+    paymentMapperService.calculateStockOperationTotalAmount.mockReturnValue(1000);
 
     // ACT
     const result = await queryHandler.execute(meetingId);
@@ -173,6 +197,8 @@ describe('GetMeetingStockTransfersQueryHandler', () => {
       meetingId: meetingId,
       type: OperationType.STOCK_TRANSFER,
       description: 'Complete stock transfer',
+      totalAmount: 1000,
+      entries: [],
     });
     expect(result[0].date).toBeInstanceOf(Date);
   });
@@ -194,11 +220,15 @@ describe('GetMeetingStockTransfersQueryHandler', () => {
 
     meetingRepository.findById.mockResolvedValue(meeting);
     operationRepository.findByMeetingAndType.mockResolvedValue([operation]);
+    ledgerEntryRepository.findByOperations.mockResolvedValue([]);
+    paymentMapperService.calculateStockOperationTotalAmount.mockReturnValue(0);
 
     // ACT
     const result = await queryHandler.execute(meetingId);
 
     // ASSERT
     expect(result[0].memberId).toBeNull();
+    expect(result[0].totalAmount).toBe(0);
+    expect(result[0].entries).toEqual([]);
   });
 });
