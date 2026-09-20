@@ -1,4 +1,4 @@
-import { ArgumentsHost, HttpStatus } from '@nestjs/common';
+import { ArgumentsHost, HttpStatus, Logger } from '@nestjs/common';
 import { GlobalExceptionFilter } from './global-exception.filter';
 import { Response, Request } from 'express';
 import { NotFoundError } from '@domain/errors/not-found.error';
@@ -37,12 +37,14 @@ describe('GlobalExceptionFilter', () => {
     };
   });
 
-  it('should sanitize generic Error messages', () => {
+  it('should sanitize generic Error messages and log with stack trace', () => {
     const error = new Error('Sensitive database info');
+    const loggerErrorSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation();
+
     filter.catch(error, mockArgumentsHost as ArgumentsHost);
 
-    // This assertion expects the fix to be implemented.
-    // Before the fix, this test will fail because it will be called with 'Sensitive database info'.
     expect(mockStatus).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
     expect(mockJson).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -50,6 +52,11 @@ describe('GlobalExceptionFilter', () => {
         message: 'Internal server error',
       }),
     );
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      'Unhandled error: Sensitive database info',
+      error.stack,
+    );
+    loggerErrorSpy.mockRestore();
   });
 
   it('should pass through domain errors like NotFoundError', () => {

@@ -16,8 +16,6 @@ import {
   HttpCode,
   UsePipes,
   ValidationPipe,
-  NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -39,7 +37,6 @@ import { CreateLoanTypeHttpDto } from '../dto/create-loan-type-http.dto';
 import { UpdateLoanTypeHttpDto } from '../dto/update-loan-type-http.dto';
 import { LoanTypeResponseHttpDto } from '../dto/loan-type-response-http.dto';
 import { LoanTypeResponseDto } from '@application/dto/settings/loan-type-response.dto';
-import { LoanTypeNotFoundException } from '@application/exceptions/loan-type-not-found.exception';
 
 @ApiTags('Loan Types V2')
 @Controller('v2/loan-types')
@@ -86,15 +83,8 @@ export class LoanTypesV2Controller {
   async detail(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<LoanTypeResponseHttpDto> {
-    try {
-      const result = await this.getLoanTypeDetailQuery.execute(id);
-      return this.toHttpDto(result);
-    } catch (error) {
-      if (error instanceof LoanTypeNotFoundException) {
-        throw new NotFoundException(error.message);
-      }
-      throw error;
-    }
+    const result = await this.getLoanTypeDetailQuery.execute(id);
+    return this.toHttpDto(result);
   }
 
   @Post()
@@ -115,19 +105,13 @@ export class LoanTypesV2Controller {
   async create(
     @Body() dto: CreateLoanTypeHttpDto,
   ): Promise<LoanTypeResponseHttpDto> {
-    try {
-      const result = await this.createLoanTypeUseCase.execute({
-        name: dto.name,
-        code: dto.code,
-        interestRate: dto.interest_rate,
-        description: dto.description,
-      });
-      return this.toHttpDto(result);
-    } catch (error) {
-      throw new BadRequestException(
-        error instanceof Error ? error.message : String(error),
-      );
-    }
+    const result = await this.createLoanTypeUseCase.execute({
+      name: dto.name,
+      code: dto.code,
+      interestRate: dto.interest_rate,
+      description: dto.description,
+    });
+    return this.toHttpDto(result);
   }
 
   @Patch(':id')
@@ -154,21 +138,12 @@ export class LoanTypesV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateLoanTypeHttpDto,
   ): Promise<LoanTypeResponseHttpDto> {
-    try {
-      const result = await this.updateLoanTypeUseCase.execute(id, {
-        name: dto.name,
-        interestRate: dto.interest_rate,
-        description: dto.description,
-      });
-      return this.toHttpDto(result);
-    } catch (error) {
-      if (error instanceof LoanTypeNotFoundException) {
-        throw new NotFoundException(error.message);
-      }
-      throw new BadRequestException(
-        error instanceof Error ? error.message : String(error),
-      );
-    }
+    const result = await this.updateLoanTypeUseCase.execute(id, {
+      name: dto.name,
+      interestRate: dto.interest_rate,
+      description: dto.description,
+    });
+    return this.toHttpDto(result);
   }
 
   @Delete(':id')
@@ -193,16 +168,7 @@ export class LoanTypesV2Controller {
     description: 'Cannot delete loan type with active loans associated',
   })
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    try {
-      await this.deleteLoanTypeUseCase.execute(id);
-    } catch (error) {
-      if (error instanceof LoanTypeNotFoundException) {
-        throw new NotFoundException(error.message);
-      }
-      throw new BadRequestException(
-        error instanceof Error ? error.message : String(error),
-      );
-    }
+    await this.deleteLoanTypeUseCase.execute(id);
   }
 
   private toHttpDto(dto: LoanTypeResponseDto): LoanTypeResponseHttpDto {

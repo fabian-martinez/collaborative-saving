@@ -3,7 +3,6 @@
  * All rights reserved.
  */
 
-import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { StockTypesV2Controller } from './stock-types.v2.controller';
 import { CreateStockTypeUseCase } from '@application/use-cases/settings/create-stock-type.use-case';
 import { UpdateStockTypeUseCase } from '@application/use-cases/settings/update-stock-type.use-case';
@@ -108,7 +107,7 @@ describe('StockTypesV2Controller', () => {
       expect(result.guaranteed_yield).toBe(0.02);
     });
 
-    it('should throw NotFoundException when stock type does not exist', async () => {
+    it('should throw StockTypeNotFoundException when stock type does not exist', async () => {
       // ARRANGE
       getStockTypeDetailQuery.execute.mockRejectedValue(
         new StockTypeNotFoundException('st-none'),
@@ -116,7 +115,7 @@ describe('StockTypesV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.detail('st-none')).rejects.toThrow(
-        NotFoundException,
+        StockTypeNotFoundException,
       );
     });
   });
@@ -161,7 +160,7 @@ describe('StockTypesV2Controller', () => {
       expect(result.guaranteed_yield).toBe(0.025);
     });
 
-    it('should throw BadRequestException if use case fails', async () => {
+    it('should rethrow error if use case fails', async () => {
       // ARRANGE
       createStockTypeUseCase.execute.mockRejectedValue(
         new Error('Duplicate code'),
@@ -169,7 +168,7 @@ describe('StockTypesV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.create({ name: 'Acción' })).rejects.toThrow(
-        BadRequestException,
+        'Duplicate code',
       );
     });
   });
@@ -202,7 +201,7 @@ describe('StockTypesV2Controller', () => {
       expect(result.is_guaranteed).toBe(false);
     });
 
-    it('should throw NotFoundException on StockTypeNotFoundException', async () => {
+    it('should throw StockTypeNotFoundException on StockTypeNotFoundException', async () => {
       // ARRANGE
       updateStockTypeUseCase.execute.mockRejectedValue(
         new StockTypeNotFoundException('st-none'),
@@ -210,11 +209,11 @@ describe('StockTypesV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.update('st-none', {})).rejects.toThrow(
-        NotFoundException,
+        StockTypeNotFoundException,
       );
     });
 
-    it('should throw BadRequestException on general error', async () => {
+    it('should rethrow general error', async () => {
       // ARRANGE
       updateStockTypeUseCase.execute.mockRejectedValue(
         new Error('Validation error'),
@@ -222,7 +221,7 @@ describe('StockTypesV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.update('st-1', {})).rejects.toThrow(
-        BadRequestException,
+        'Validation error',
       );
     });
   });
@@ -237,7 +236,7 @@ describe('StockTypesV2Controller', () => {
       expect(deleteUseCaseSpy).toHaveBeenCalledWith('st-1');
     });
 
-    it('should throw NotFoundException if stock type is not found', async () => {
+    it('should throw StockTypeNotFoundException if stock type is not found', async () => {
       // ARRANGE
       deleteStockTypeUseCase.execute.mockRejectedValue(
         new StockTypeNotFoundException('st-none'),
@@ -245,11 +244,11 @@ describe('StockTypesV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.remove('st-none')).rejects.toThrow(
-        NotFoundException,
+        StockTypeNotFoundException,
       );
     });
 
-    it('should throw BadRequestException if deletion is blocked due to active stocks', async () => {
+    it('should rethrow error if deletion is blocked due to active stocks', async () => {
       // ARRANGE
       deleteStockTypeUseCase.execute.mockRejectedValue(
         new Error(
@@ -259,7 +258,7 @@ describe('StockTypesV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.remove('st-1')).rejects.toThrow(
-        BadRequestException,
+        'Cannot delete stock type because it has active stocks associated',
       );
     });
   });

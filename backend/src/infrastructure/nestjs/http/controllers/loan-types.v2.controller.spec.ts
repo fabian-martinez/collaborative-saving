@@ -3,7 +3,6 @@
  * All rights reserved.
  */
 
-import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { LoanTypesV2Controller } from './loan-types.v2.controller';
 import { CreateLoanTypeUseCase } from '@application/use-cases/settings/create-loan-type.use-case';
 import { UpdateLoanTypeUseCase } from '@application/use-cases/settings/update-loan-type.use-case';
@@ -100,7 +99,7 @@ describe('LoanTypesV2Controller', () => {
       expect(result.name).toBe('Ágil');
     });
 
-    it('should throw NotFoundException when loan type not found', async () => {
+    it('should throw LoanTypeNotFoundException when loan type not found', async () => {
       // ARRANGE
       getLoanTypeDetailQuery.execute.mockRejectedValue(
         new LoanTypeNotFoundException('lt-1'),
@@ -108,7 +107,7 @@ describe('LoanTypesV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.detail('lt-1')).rejects.toThrow(
-        NotFoundException,
+        LoanTypeNotFoundException,
       );
     });
 
@@ -151,7 +150,7 @@ describe('LoanTypesV2Controller', () => {
       });
     });
 
-    it('should throw BadRequestException when create fails', async () => {
+    it('should rethrow error when create fails', async () => {
       // ARRANGE
       createLoanTypeUseCase.execute.mockRejectedValue(
         new Error('Duplicate code'),
@@ -160,17 +159,17 @@ describe('LoanTypesV2Controller', () => {
       // ACT & ASSERT
       await expect(
         controller.create({ name: 'Nuevo', interest_rate: 0.015 }),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow('Duplicate code');
     });
 
-    it('should handle non-Error exceptions properly', async () => {
+    it('should rethrow non-Error exceptions properly', async () => {
       // ARRANGE
       createLoanTypeUseCase.execute.mockRejectedValue('String error');
 
       // ACT & ASSERT
       await expect(
         controller.create({ name: 'Nuevo', interest_rate: 0.015 }),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toEqual('String error');
     });
   });
 
@@ -198,7 +197,7 @@ describe('LoanTypesV2Controller', () => {
       expect(result.interest_rate).toBe(0.018);
     });
 
-    it('should throw NotFoundException if loan type not found', async () => {
+    it('should throw LoanTypeNotFoundException if loan type not found', async () => {
       // ARRANGE
       updateLoanTypeUseCase.execute.mockRejectedValue(
         new LoanTypeNotFoundException('lt-1'),
@@ -207,10 +206,10 @@ describe('LoanTypesV2Controller', () => {
       // ACT & ASSERT
       await expect(
         controller.update('lt-1', { name: 'Actualizado' }),
-      ).rejects.toThrow(NotFoundException);
+      ).rejects.toThrow(LoanTypeNotFoundException);
     });
 
-    it('should throw BadRequestException if update fails with generic error', async () => {
+    it('should rethrow generic error if update fails', async () => {
       // ARRANGE
       updateLoanTypeUseCase.execute.mockRejectedValue(
         new Error('Invalid rate'),
@@ -219,7 +218,7 @@ describe('LoanTypesV2Controller', () => {
       // ACT & ASSERT
       await expect(
         controller.update('lt-1', { interest_rate: -1 }),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow('Invalid rate');
     });
   });
 
@@ -233,7 +232,7 @@ describe('LoanTypesV2Controller', () => {
       expect(deleteUseCaseSpy).toHaveBeenCalledWith('lt-1');
     });
 
-    it('should throw NotFoundException if loan type not found', async () => {
+    it('should throw LoanTypeNotFoundException if loan type not found', async () => {
       // ARRANGE
       deleteLoanTypeUseCase.execute.mockRejectedValue(
         new LoanTypeNotFoundException('lt-1'),
@@ -241,11 +240,11 @@ describe('LoanTypesV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.remove('lt-1')).rejects.toThrow(
-        NotFoundException,
+        LoanTypeNotFoundException,
       );
     });
 
-    it('should throw BadRequestException if deletion fails because of active loans', async () => {
+    it('should rethrow error if deletion fails because of active loans', async () => {
       // ARRANGE
       deleteLoanTypeUseCase.execute.mockRejectedValue(
         new Error('Cannot delete loan type with active loans associated'),
@@ -253,7 +252,7 @@ describe('LoanTypesV2Controller', () => {
 
       // ACT & ASSERT
       await expect(controller.remove('lt-1')).rejects.toThrow(
-        BadRequestException,
+        'Cannot delete loan type with active loans associated',
       );
     });
   });
