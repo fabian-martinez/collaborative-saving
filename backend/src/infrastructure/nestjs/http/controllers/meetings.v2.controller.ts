@@ -729,7 +729,6 @@ export class MeetingsV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ExecuteDisbursementPlanHttpDto,
   ): Promise<ExecuteDisbursementPlanResponseHttpDto> {
-    console.log('dto', dto);
     const executeDto: ExecuteDisbursementPlanDto = {
       meetingId: id,
       plan: dto.plan_items.map((item) =>
