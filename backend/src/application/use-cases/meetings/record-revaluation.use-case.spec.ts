@@ -19,6 +19,9 @@ import { OperationType } from '@domain/enums/operation-type.enum';
 import { Stock, StockBehavior } from '@domain/entities/stock.entity';
 import { StockSubscription } from '@domain/entities/stock-subscription.entity';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
+import { BusinessRuleError } from '@domain/errors/business-rule.error';
+import { LedgerEntry } from '@domain/entities/ledger-entry.entity';
+import { INVESTMENT_IN_STOCKS_ACCOUNT } from '@domain/constants/account-types';
 
 describe('RecordRevaluationUseCase', () => {
   let useCase: RecordRevaluationUseCase;
@@ -221,6 +224,14 @@ describe('RecordRevaluationUseCase', () => {
     meetingRepository.findById.mockResolvedValue(meeting);
     operationRepository.findByMeetingAndType.mockResolvedValue([
       existingOperation,
+    ]);
+    ledgerEntryRepository.findByOperation.mockResolvedValue([
+      LedgerEntry.create({
+        operationId: existingOperation.id,
+        accountType: INVESTMENT_IN_STOCKS_ACCOUNT,
+        amount: 100,
+        description: 'Existing entry',
+      }),
     ]);
     assetRevaluationDomainService.getExecutedRevaluationData.mockResolvedValue(
       mockExecutedResult,
@@ -801,5 +812,150 @@ describe('RecordRevaluationUseCase', () => {
     expect(result.status).toBe('executed');
     expect(result.details[0].growthFromContributions).toBe(5);
     expect(result.details[0].growthFromInterest).toBe(3);
+  });
+
+  it('should throw BusinessRuleError if existing revaluation operation has no ledger entries', async () => {
+    // ARRANGE
+    const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+    const dto: RecordRevaluationDto = { meetingId };
+    const meeting = Meeting.create({
+      date: new Date('2024-01-15'),
+    });
+
+    const existingOperation = Operation.create({
+      meetingId,
+      type: OperationType.ASSET_REVALUATION,
+      date: new Date('2024-01-15'),
+      description: 'Revaluación existente',
+    });
+
+    meetingRepository.findById.mockResolvedValue(meeting);
+    operationRepository.findByMeetingAndType.mockResolvedValue([
+      existingOperation,
+    ]);
+    ledgerEntryRepository.findByOperation.mockResolvedValue([]);
+
+    // ACT & ASSERT
+    await expect(useCase.execute(dto)).rejects.toThrow(BusinessRuleError);
+    await expect(useCase.execute(dto)).rejects.toThrow(
+      /Inconsistent revaluation state detected/,
+    );
+  });
+
+  it('should throw BusinessRuleError if dividend yield stock generates dividends but has no active subscriptions', async () => {
+    // ARRANGE
+    const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+    const dto: RecordRevaluationDto = { meetingId };
+    const meeting = Meeting.create({
+      date: new Date('2024-01-15'),
+    });
+
+    const dividendStock = Stock.create({
+      type: 'dividend',
+      value: 100,
+      monthlyContribution: 10,
+      behavior: StockBehavior.DIVIDEND_YIELD,
+    });
+
+    const mockCalculationResult = {
+      totalContributions: 0,
+      totalInterest: 500,
+      totalToDistribute: 500,
+      details: [
+        {
+          stockId: dividendStock.id,
+          type: 'dividend',
+          isGuaranteed: false,
+          totalShares: 10,
+          previousValue: 100,
+          growthFromContributions: 0,
+          growthFromInterest: 0,
+          totalGrowthPerShare: 0,
+          estimatedGrowthFromContributions: 0,
+          newValue: 100,
+          dividendsGenerated: 50,
+        },
+      ],
+      totalMandatoryContributions: 0,
+      mandatoryContributionsByType: [],
+    };
+
+    meetingRepository.findById.mockResolvedValue(meeting);
+    operationRepository.findByMeetingAndType.mockResolvedValue([]);
+    assetRevaluationDomainService.calculateRevaluationData.mockResolvedValue(
+      mockCalculationResult,
+    );
+    operationRepository.save.mockImplementation((op) => Promise.resolve(op));
+    stockRepository.findById.mockResolvedValue(dividendStock);
+    stockRepository.findByIds.mockResolvedValue([dividendStock]);
+    stockValueHistoryRepository.saveMany.mockResolvedValue([]);
+    stockRepository.save.mockResolvedValue(dividendStock);
+    stockRepository.saveMany.mockResolvedValue([dividendStock]);
+    // No active subscriptions returned
+    stockSubscriptionRepository.findByStocks.mockResolvedValue([]);
+
+    // ACT & ASSERT
+    await expect(useCase.execute(dto)).rejects.toThrow(BusinessRuleError);
+    await expect(useCase.execute(dto)).rejects.toThrow(
+      /No active subscriptions found for dividend yield stock/,
+    );
+  });
+
+  it('should propagate error to transactionManager when ledger entry persistence fails', async () => {
+    // ARRANGE
+    const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+    const dto: RecordRevaluationDto = { meetingId };
+    const meeting = Meeting.create({
+      date: new Date('2024-01-15'),
+    });
+
+    const regularStock = Stock.create({
+      type: 'regular',
+      value: 100,
+      monthlyContribution: 10,
+      isGuaranteed: false,
+    });
+
+    const mockCalculationResult = {
+      totalContributions: 1000,
+      totalInterest: 0,
+      totalToDistribute: 1000,
+      details: [
+        {
+          stockId: regularStock.id,
+          type: 'regular',
+          isGuaranteed: false,
+          totalShares: 10,
+          previousValue: 100,
+          growthFromContributions: 10,
+          growthFromInterest: 0,
+          totalGrowthPerShare: 10,
+          estimatedGrowthFromContributions: 10,
+          newValue: 110,
+        },
+      ],
+      totalMandatoryContributions: 0,
+      mandatoryContributionsByType: [],
+    };
+
+    meetingRepository.findById.mockResolvedValue(meeting);
+    operationRepository.findByMeetingAndType.mockResolvedValue([]);
+    assetRevaluationDomainService.calculateRevaluationData.mockResolvedValue(
+      mockCalculationResult,
+    );
+    operationRepository.save.mockImplementation((op) => Promise.resolve(op));
+    stockRepository.findById.mockResolvedValue(regularStock);
+    stockRepository.findByIds.mockResolvedValue([regularStock]);
+    stockValueHistoryRepository.saveMany.mockResolvedValue([]);
+    stockRepository.save.mockResolvedValue(regularStock);
+    stockRepository.saveMany.mockResolvedValue([regularStock]);
+    ledgerEntryRepository.saveMany.mockRejectedValue(
+      new Error('Database connection failed'),
+    );
+
+    // ACT & ASSERT
+    await expect(useCase.execute(dto)).rejects.toThrow(
+      'Database connection failed',
+    );
   });
 });

@@ -4,10 +4,15 @@ import { Repository, IsNull, In } from 'typeorm';
 import { TypeOrmStockRepository } from './typeorm-stock.repository';
 import { Stock as StockEntity, StockBehavior } from '../entities/stock.entity';
 import { Stock as StockDomain } from '@domain/entities/stock.entity';
+import { TRANSACTION_MANAGER } from '@domain/constants/injection-tokens';
 
 describe('TypeOrmStockRepository', () => {
   let repository: TypeOrmStockRepository;
   let typeOrmRepo: jest.Mocked<Repository<StockEntity>>;
+  let mockTransactionManager: {
+    execute: jest.Mock;
+    getActiveQueryRunner: jest.Mock;
+  };
   let saveSpy: jest.SpyInstance;
   let findSpy: jest.SpyInstance;
   let findOneSpy: jest.SpyInstance;
@@ -33,12 +38,21 @@ describe('TypeOrmStockRepository', () => {
       ),
     };
 
+    mockTransactionManager = {
+      execute: jest.fn(),
+      getActiveQueryRunner: jest.fn().mockReturnValue(null),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TypeOrmStockRepository,
         {
           provide: getRepositoryToken(StockEntity),
           useValue: mockTypeOrmRepo,
+        },
+        {
+          provide: TRANSACTION_MANAGER,
+          useValue: mockTransactionManager,
         },
       ],
     }).compile();
@@ -646,6 +660,53 @@ describe('TypeOrmStockRepository', () => {
       // Assert
       expect(result).toBe(true);
       expect(countSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('transaction support', () => {
+    it('should use transaction QueryRunner repository when active', async () => {
+      const transactionalRepo = {
+        save: jest.fn().mockResolvedValue({
+          id: 'stock-1',
+          type: 'regular',
+          value: 110,
+          monthly_contribution: 10,
+          is_guaranteed: false,
+          guaranteed_yield: null,
+          behavior: StockBehavior.CAPITAL_APPRECIATION,
+          stock_type_id: null,
+        }),
+        findOne: jest.fn().mockResolvedValue(null),
+        find: jest.fn().mockResolvedValue([]),
+        merge: jest.fn((entity: any, ...partials: any[]) =>
+          Object.assign(entity, ...partials),
+        ),
+      };
+
+      const mockQueryRunner = {
+        manager: {
+          getRepository: jest.fn().mockReturnValue(transactionalRepo),
+        },
+      };
+
+      mockTransactionManager.getActiveQueryRunner.mockReturnValue(
+        mockQueryRunner as any,
+      );
+
+      const stock = StockDomain.create({
+        type: 'regular',
+        value: 110,
+        monthlyContribution: 10,
+        isGuaranteed: false,
+      });
+
+      await repository.save(stock);
+
+      expect(mockQueryRunner.manager.getRepository).toHaveBeenCalledWith(
+        StockEntity,
+      );
+      expect(transactionalRepo.save).toHaveBeenCalled();
+      expect(typeOrmRepo.save).not.toHaveBeenCalled();
     });
   });
 });

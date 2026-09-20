@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
@@ -6,12 +6,14 @@ import { Meeting as MeetingDomain } from '@domain/entities/meeting.entity';
 import { Meeting as MeetingEntity } from '../entities/meeting.entity';
 import { MeetingMapper } from '../mappers/meeting.mapper';
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
+import { TRANSACTION_MANAGER } from '@domain/constants/injection-tokens';
 
 @Injectable()
 export class TypeOrmMeetingRepository implements MeetingRepository {
   constructor(
     @InjectRepository(MeetingEntity)
     private readonly repo: Repository<MeetingEntity>,
+    @Inject(TRANSACTION_MANAGER)
     private readonly transactionManager: TransactionManager,
   ) {}
 

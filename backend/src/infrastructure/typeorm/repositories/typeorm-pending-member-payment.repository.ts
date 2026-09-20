@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pending-member-payment-repository.port';
@@ -7,12 +7,14 @@ import { PendingMemberPayment as PendingMemberPaymentEntity } from '../entities/
 import { PendingMemberPaymentMapper } from '../mappers/pending-member-payment.mapper';
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
+import { TRANSACTION_MANAGER } from '@domain/constants/injection-tokens';
 
 @Injectable()
 export class TypeOrmPendingMemberPaymentRepository implements PendingMemberPaymentRepository {
   constructor(
     @InjectRepository(PendingMemberPaymentEntity)
     private readonly repo: Repository<PendingMemberPaymentEntity>,
+    @Inject(TRANSACTION_MANAGER)
     private readonly transactionManager: TransactionManager,
   ) {}
 

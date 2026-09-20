@@ -26,6 +26,7 @@ import {
 } from '@domain/constants/account-types';
 import { MeetingNotFoundException } from '@application/exceptions/meeting-not-found.exception';
 import { InvalidRequestError } from '@domain/errors/invalid-request.error';
+import { BusinessRuleError } from '@domain/errors/business-rule.error';
 import { OperationBalanceValidator } from '@domain/services/operation-balance-validator.service';
 import { roundAndLimit } from '@domain/utils/round-and-limit.util';
 
@@ -59,8 +60,17 @@ export class RecordRevaluationUseCase {
         );
 
       if (existingRevaluation.length > 0) {
-        // Si ya existe, retornar resultado existente
         const operation = existingRevaluation[0];
+        const existingEntries =
+          await this.ledgerEntryRepository.findByOperation(operation.id);
+
+        if (existingEntries.length === 0) {
+          throw new BusinessRuleError(
+            `Inconsistent revaluation state detected for meeting ${dto.meetingId}: operation ${operation.id} exists but has no ledger entries`,
+          );
+        }
+
+        // Si ya existe y es válida, retornar resultado existente
         const calculationResult =
           await this.assetRevaluationDomainService.getExecutedRevaluationData(
             operation.id,
@@ -228,9 +238,14 @@ export class RecordRevaluationUseCase {
               0,
             );
 
-            if (totalShares > 0) {
-              // Crear pagos pendientes de dividendos
-              for (const sub of activeSubscriptions) {
+            if (totalShares <= 0) {
+              throw new BusinessRuleError(
+                `No active subscriptions found for dividend yield stock ${stock.type} with generated dividends`,
+              );
+            }
+
+            // Crear pagos pendientes de dividendos
+            for (const sub of activeSubscriptions) {
                 const memberDividend = roundAndLimit(
                   (sub.quantity / totalShares) *
                     (detail.dividendsGenerated * detail.totalShares),
@@ -270,7 +285,6 @@ export class RecordRevaluationUseCase {
                   stockId: detail.stockId,
                 },
               );
-            }
           }
         } else {
           // Por aportes de capital

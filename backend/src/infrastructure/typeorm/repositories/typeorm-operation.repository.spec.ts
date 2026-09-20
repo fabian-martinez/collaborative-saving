@@ -9,6 +9,7 @@ import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-r
 import { OperationType } from '@domain/enums/operation-type.enum';
 import { CASH_ACCOUNT, AccountType } from '@domain/constants/account-types';
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
+import { TRANSACTION_MANAGER } from '@domain/constants/injection-tokens';
 
 describe('TypeOrmOperationRepository', () => {
   let repository: TypeOrmOperationRepository;
@@ -44,7 +45,7 @@ describe('TypeOrmOperationRepository', () => {
           useValue: mockLedgerEntryRepo,
         },
         {
-          provide: TransactionManager,
+          provide: TRANSACTION_MANAGER,
           useValue: {
             execute: jest.fn(),
             getActiveQueryRunner: jest.fn().mockReturnValue(null),

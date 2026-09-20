@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
@@ -15,12 +15,14 @@ import { LedgerEntry } from '@domain/entities/ledger-entry.entity';
 import { AccountType } from '@domain/constants/account-types';
 import { OperationType } from '@domain/enums/operation-type.enum';
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
+import { TRANSACTION_MANAGER } from '@domain/constants/injection-tokens';
 
 @Injectable()
 export class TypeOrmOperationRepository implements OperationRepository {
   constructor(
     @InjectRepository(OperationEntity)
     private readonly repo: Repository<OperationEntity>,
+    @Inject(TRANSACTION_MANAGER)
     private readonly transactionManager: TransactionManager,
   ) {}
 
