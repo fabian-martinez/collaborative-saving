@@ -246,45 +246,45 @@ export class RecordRevaluationUseCase {
 
             // Crear pagos pendientes de dividendos
             for (const sub of activeSubscriptions) {
-                const memberDividend = roundAndLimit(
-                  (sub.quantity / totalShares) *
-                    (detail.dividendsGenerated * detail.totalShares),
-                  9999999999.99,
-                  2,
-                );
-                if (memberDividend > 0) {
-                  const pendingPayment = PendingMemberPayment.create({
-                    memberId: sub.memberId,
-                    meetingId: dto.meetingId,
-                    type: PendingMemberPaymentType.DIVIDEND,
-                    amount: memberDividend,
-                    notes: `Dividendo generado por acción ${stock.type}`,
-                    stockId: detail.stockId,
-                    stockSubscriptionId: sub.id,
-                    referenceMeetingId: dto.meetingId,
-                    disbursementType: 'dividend',
-                  });
-                  pendingPayments.push(pendingPayment);
-                }
-              }
-
-              // Asientos contables para dividendos
-              const totalDividends =
-                detail.dividendsGenerated * detail.totalShares;
-              ledgerEntries.push(
-                {
-                  accountType: DIVIDENDS_PAYABLE_ACCOUNT,
-                  amount: totalDividends,
-                  description: `Dividendo generado por acción ${stock.type}`,
-                  stockId: detail.stockId,
-                },
-                {
-                  accountType: REVALUATION_SURPLUS_ACCOUNT,
-                  amount: -totalDividends,
-                  description: `Contrapartida por dividendos en acción ${stock.type}`,
-                  stockId: detail.stockId,
-                },
+              const memberDividend = roundAndLimit(
+                (sub.quantity / totalShares) *
+                  (detail.dividendsGenerated * detail.totalShares),
+                9999999999.99,
+                2,
               );
+              if (memberDividend > 0) {
+                const pendingPayment = PendingMemberPayment.create({
+                  memberId: sub.memberId,
+                  meetingId: dto.meetingId,
+                  type: PendingMemberPaymentType.DIVIDEND,
+                  amount: memberDividend,
+                  notes: `Dividendo generado por acción ${stock.type}`,
+                  stockId: detail.stockId,
+                  stockSubscriptionId: sub.id,
+                  referenceMeetingId: dto.meetingId,
+                  disbursementType: 'dividend',
+                });
+                pendingPayments.push(pendingPayment);
+              }
+            }
+
+            // Asientos contables para dividendos
+            const totalDividends =
+              detail.dividendsGenerated * detail.totalShares;
+            ledgerEntries.push(
+              {
+                accountType: DIVIDENDS_PAYABLE_ACCOUNT,
+                amount: totalDividends,
+                description: `Dividendo generado por acción ${stock.type}`,
+                stockId: detail.stockId,
+              },
+              {
+                accountType: REVALUATION_SURPLUS_ACCOUNT,
+                amount: -totalDividends,
+                description: `Contrapartida por dividendos en acción ${stock.type}`,
+                stockId: detail.stockId,
+              },
+            );
           }
         } else {
           // Por aportes de capital

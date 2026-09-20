@@ -8,7 +8,6 @@ import {
   LoanTransactionType,
 } from '@domain/entities/loan-transaction-detail.entity';
 import { LoanTransactionDetail } from '@domain/entities/loan-transaction-detail.entity';
-import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 import { TRANSACTION_MANAGER } from '@domain/constants/injection-tokens';
 
 describe('TypeOrmLoanTransactionDetailRepository', () => {

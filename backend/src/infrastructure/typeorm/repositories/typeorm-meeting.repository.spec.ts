@@ -5,7 +5,6 @@ import { TypeOrmMeetingRepository } from './typeorm-meeting.repository';
 import { Meeting as MeetingEntity } from '../entities/meeting.entity';
 import { Meeting as MeetingDomain } from '@domain/entities/meeting.entity';
 import { MeetingStatus } from '@domain/entities/meeting.entity';
-import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 import { TRANSACTION_MANAGER } from '@domain/constants/injection-tokens';
 
 describe('TypeOrmMeetingRepository', () => {

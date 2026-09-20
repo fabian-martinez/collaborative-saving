@@ -94,9 +94,7 @@ export class TypeOrmStockValueHistoryRepository implements StockValueHistoryRepo
       }
       return StockValueHistoryMapper.toDomain(updated);
     } else {
-      const saved = await repo.save(
-        persistence as StockValueHistoryEntity,
-      );
+      const saved = await repo.save(persistence as StockValueHistoryEntity);
       return StockValueHistoryMapper.toDomain(saved);
     }
   }
@@ -108,9 +106,7 @@ export class TypeOrmStockValueHistoryRepository implements StockValueHistoryRepo
     const persistences = histories.map((h) =>
       StockValueHistoryMapper.toPersistence(h),
     );
-    const saved = await repo.save(
-      persistences as StockValueHistoryEntity[],
-    );
+    const saved = await repo.save(persistences as StockValueHistoryEntity[]);
     return saved.map((e) => StockValueHistoryMapper.toDomain(e));
   }
 }

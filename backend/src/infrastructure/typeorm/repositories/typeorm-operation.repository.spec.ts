@@ -8,7 +8,6 @@ import { Operation } from '@domain/entities/operation.entity';
 import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
 import { OperationType } from '@domain/enums/operation-type.enum';
 import { CASH_ACCOUNT, AccountType } from '@domain/constants/account-types';
-import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 import { TRANSACTION_MANAGER } from '@domain/constants/injection-tokens';
 
 describe('TypeOrmOperationRepository', () => {

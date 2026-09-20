@@ -678,14 +678,21 @@ describe('TypeOrmStockRepository', () => {
         }),
         findOne: jest.fn().mockResolvedValue(null),
         find: jest.fn().mockResolvedValue([]),
-        merge: jest.fn((entity: any, ...partials: any[]) =>
-          Object.assign(entity, ...partials),
+        merge: jest.fn(
+          (
+            entity: StockEntity,
+            ...partials: Partial<StockEntity>[]
+          ): StockEntity => {
+            Object.assign(entity, ...partials);
+            return entity;
+          },
         ),
       };
 
+      const getRepository = jest.fn().mockReturnValue(transactionalRepo);
       const mockQueryRunner = {
         manager: {
-          getRepository: jest.fn().mockReturnValue(transactionalRepo),
+          getRepository,
         },
       };
 
@@ -702,11 +709,9 @@ describe('TypeOrmStockRepository', () => {
 
       await repository.save(stock);
 
-      expect(mockQueryRunner.manager.getRepository).toHaveBeenCalledWith(
-        StockEntity,
-      );
+      expect(getRepository).toHaveBeenCalledWith(StockEntity);
       expect(transactionalRepo.save).toHaveBeenCalled();
-      expect(typeOrmRepo.save).not.toHaveBeenCalled();
+      expect(saveSpy).not.toHaveBeenCalled();
     });
   });
 });

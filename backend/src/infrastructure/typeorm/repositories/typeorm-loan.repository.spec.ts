@@ -4,7 +4,6 @@ import { Repository, UpdateResult } from 'typeorm';
 import { TypeOrmLoanRepository } from './typeorm-loan.repository';
 import { Loan as LoanEntity } from '../entities/loan.entity';
 import { Loan as LoanDomain } from '@domain/entities/loan.entity';
-import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 import { TRANSACTION_MANAGER } from '@domain/constants/injection-tokens';
 
 describe('TypeOrmLoanRepository', () => {

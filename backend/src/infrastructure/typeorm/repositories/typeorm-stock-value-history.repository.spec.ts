@@ -447,9 +447,10 @@ describe('TypeOrmStockValueHistoryRepository', () => {
         findOne: jest.fn().mockResolvedValue(null),
       };
 
+      const getRepository = jest.fn().mockReturnValue(transactionalRepo);
       const mockQueryRunner = {
         manager: {
-          getRepository: jest.fn().mockReturnValue(transactionalRepo),
+          getRepository,
         },
       };
 
@@ -469,10 +470,9 @@ describe('TypeOrmStockValueHistoryRepository', () => {
 
       await repository.save(history);
 
-      expect(mockQueryRunner.manager.getRepository).toHaveBeenCalledWith(
-        StockValueHistoryEntity,
-      );
+      expect(getRepository).toHaveBeenCalledWith(StockValueHistoryEntity);
       expect(transactionalRepo.save).toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(typeOrmRepo.save).not.toHaveBeenCalled();
     });
   });
