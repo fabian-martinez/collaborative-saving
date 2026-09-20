@@ -16,8 +16,6 @@ import {
   HttpCode,
   UsePipes,
   ValidationPipe,
-  NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -39,7 +37,6 @@ import { CreateStockTypeHttpDto } from '../dto/create-stock-type-http.dto';
 import { UpdateStockTypeHttpDto } from '../dto/update-stock-type-http.dto';
 import { StockTypeResponseHttpDto } from '../dto/stock-type-response-http.dto';
 import { StockTypeResponseDto } from '@application/dto/settings/stock-type-response.dto';
-import { StockTypeNotFoundException } from '@application/exceptions/stock-type-not-found.exception';
 
 @ApiTags('Stock Types V2')
 @Controller('v2/stock-types')
@@ -86,15 +83,8 @@ export class StockTypesV2Controller {
   async detail(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<StockTypeResponseHttpDto> {
-    try {
-      const result = await this.getStockTypeDetailQuery.execute(id);
-      return this.toHttpDto(result);
-    } catch (error) {
-      if (error instanceof StockTypeNotFoundException) {
-        throw new NotFoundException(error.message);
-      }
-      throw error;
-    }
+    const result = await this.getStockTypeDetailQuery.execute(id);
+    return this.toHttpDto(result);
   }
 
   @Post()
@@ -115,21 +105,15 @@ export class StockTypesV2Controller {
   async create(
     @Body() dto: CreateStockTypeHttpDto,
   ): Promise<StockTypeResponseHttpDto> {
-    try {
-      const result = await this.createStockTypeUseCase.execute({
-        name: dto.name,
-        code: dto.code,
-        behavior: dto.behavior,
-        isGuaranteed: dto.is_guaranteed,
-        guaranteedYield: dto.guaranteed_yield,
-        description: dto.description,
-      });
-      return this.toHttpDto(result);
-    } catch (error) {
-      throw new BadRequestException(
-        error instanceof Error ? error.message : String(error),
-      );
-    }
+    const result = await this.createStockTypeUseCase.execute({
+      name: dto.name,
+      code: dto.code,
+      behavior: dto.behavior,
+      isGuaranteed: dto.is_guaranteed,
+      guaranteedYield: dto.guaranteed_yield,
+      description: dto.description,
+    });
+    return this.toHttpDto(result);
   }
 
   @Patch(':id')
@@ -156,23 +140,14 @@ export class StockTypesV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateStockTypeHttpDto,
   ): Promise<StockTypeResponseHttpDto> {
-    try {
-      const result = await this.updateStockTypeUseCase.execute(id, {
-        name: dto.name,
-        behavior: dto.behavior,
-        isGuaranteed: dto.is_guaranteed,
-        guaranteedYield: dto.guaranteed_yield,
-        description: dto.description,
-      });
-      return this.toHttpDto(result);
-    } catch (error) {
-      if (error instanceof StockTypeNotFoundException) {
-        throw new NotFoundException(error.message);
-      }
-      throw new BadRequestException(
-        error instanceof Error ? error.message : String(error),
-      );
-    }
+    const result = await this.updateStockTypeUseCase.execute(id, {
+      name: dto.name,
+      behavior: dto.behavior,
+      isGuaranteed: dto.is_guaranteed,
+      guaranteedYield: dto.guaranteed_yield,
+      description: dto.description,
+    });
+    return this.toHttpDto(result);
   }
 
   @Delete(':id')
@@ -197,16 +172,7 @@ export class StockTypesV2Controller {
     description: 'Cannot delete stock type with active stocks associated',
   })
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    try {
-      await this.deleteStockTypeUseCase.execute(id);
-    } catch (error) {
-      if (error instanceof StockTypeNotFoundException) {
-        throw new NotFoundException(error.message);
-      }
-      throw new BadRequestException(
-        error instanceof Error ? error.message : String(error),
-      );
-    }
+    await this.deleteStockTypeUseCase.execute(id);
   }
 
   private toHttpDto(dto: StockTypeResponseDto): StockTypeResponseHttpDto {
