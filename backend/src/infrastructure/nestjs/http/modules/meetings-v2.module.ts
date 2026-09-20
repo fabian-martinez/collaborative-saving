@@ -241,25 +241,63 @@ import {
       useFactory: (
         meetingRepo: MeetingRepository,
         operationRepo: OperationRepository,
-      ) => new GetMeetingStockTransfersQueryHandler(meetingRepo, operationRepo),
-      inject: [MEETING_REPOSITORY, OPERATION_REPOSITORY],
+        ledgerEntryRepo: LedgerEntryRepository,
+        paymentMapperService: PaymentMapperService,
+      ) =>
+        new GetMeetingStockTransfersQueryHandler(
+          meetingRepo,
+          operationRepo,
+          ledgerEntryRepo,
+          paymentMapperService,
+        ),
+      inject: [
+        MEETING_REPOSITORY,
+        OPERATION_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+        PaymentMapperService,
+      ],
     },
     {
       provide: GetMeetingStockExchangesQueryHandler,
       useFactory: (
         meetingRepo: MeetingRepository,
         operationRepo: OperationRepository,
-      ) => new GetMeetingStockExchangesQueryHandler(meetingRepo, operationRepo),
-      inject: [MEETING_REPOSITORY, OPERATION_REPOSITORY],
+        ledgerEntryRepo: LedgerEntryRepository,
+        paymentMapperService: PaymentMapperService,
+      ) =>
+        new GetMeetingStockExchangesQueryHandler(
+          meetingRepo,
+          operationRepo,
+          ledgerEntryRepo,
+          paymentMapperService,
+        ),
+      inject: [
+        MEETING_REPOSITORY,
+        OPERATION_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+        PaymentMapperService,
+      ],
     },
     {
       provide: GetMeetingStockLoanPaymentsQueryHandler,
       useFactory: (
         meetingRepo: MeetingRepository,
         operationRepo: OperationRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+        paymentMapperService: PaymentMapperService,
       ) =>
-        new GetMeetingStockLoanPaymentsQueryHandler(meetingRepo, operationRepo),
-      inject: [MEETING_REPOSITORY, OPERATION_REPOSITORY],
+        new GetMeetingStockLoanPaymentsQueryHandler(
+          meetingRepo,
+          operationRepo,
+          ledgerEntryRepo,
+          paymentMapperService,
+        ),
+      inject: [
+        MEETING_REPOSITORY,
+        OPERATION_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+        PaymentMapperService,
+      ],
     },
     {
       provide: GetRevaluationQueryHandler,

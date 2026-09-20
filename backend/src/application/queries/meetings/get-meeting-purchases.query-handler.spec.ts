@@ -17,7 +17,7 @@ describe('GetMeetingPurchasesQueryHandler', () => {
   let findByIdSpy: jest.SpyInstance;
   let findByMeetingAndTypeSpy: jest.SpyInstance;
   let findByOperationsSpy: jest.SpyInstance;
-  let calculatePaymentTotalAmountSpy: jest.SpyInstance;
+  let calculateStockPurchaseTotalAmountSpy: jest.SpyInstance;
 
   beforeEach(() => {
     meetingRepository = {
@@ -43,6 +43,7 @@ describe('GetMeetingPurchasesQueryHandler', () => {
     } as unknown as jest.Mocked<LedgerEntryRepository>;
 
     paymentMapperService = {
+      calculateStockPurchaseTotalAmount: jest.fn(),
       calculatePaymentTotalAmount: jest.fn(),
     } as unknown as jest.Mocked<PaymentMapperService>;
 
@@ -52,9 +53,9 @@ describe('GetMeetingPurchasesQueryHandler', () => {
       'findByMeetingAndType',
     );
     findByOperationsSpy = jest.spyOn(ledgerEntryRepository, 'findByOperations');
-    calculatePaymentTotalAmountSpy = jest.spyOn(
+    calculateStockPurchaseTotalAmountSpy = jest.spyOn(
       paymentMapperService,
-      'calculatePaymentTotalAmount',
+      'calculateStockPurchaseTotalAmount',
     );
 
     queryHandler = new GetMeetingPurchasesQueryHandler(
@@ -129,7 +130,7 @@ describe('GetMeetingPurchasesQueryHandler', () => {
     findByIdSpy.mockResolvedValue(meeting);
     findByMeetingAndTypeSpy.mockResolvedValue([operation1, operation2]);
     findByOperationsSpy.mockResolvedValue([]);
-    calculatePaymentTotalAmountSpy.mockReturnValue(0);
+    calculateStockPurchaseTotalAmountSpy.mockReturnValue(0);
 
     // ACT
     const result = await queryHandler.execute(meetingId);
@@ -153,6 +154,7 @@ describe('GetMeetingPurchasesQueryHandler', () => {
       date: operation1.date,
       description: operation1.description,
       totalAmount: 0,
+      entries: [],
     });
     expect(result[1]).toEqual({
       id: operation2.id,
@@ -162,6 +164,7 @@ describe('GetMeetingPurchasesQueryHandler', () => {
       date: operation2.date,
       description: operation2.description,
       totalAmount: 0,
+      entries: [],
     });
   });
 
@@ -185,7 +188,7 @@ describe('GetMeetingPurchasesQueryHandler', () => {
     findByIdSpy.mockResolvedValue(meeting);
     findByMeetingAndTypeSpy.mockResolvedValue([operation]);
     findByOperationsSpy.mockResolvedValue([]);
-    calculatePaymentTotalAmountSpy.mockReturnValue(1000);
+    calculateStockPurchaseTotalAmountSpy.mockReturnValue(1000);
 
     // ACT
     const result = await queryHandler.execute(meetingId);
@@ -198,6 +201,7 @@ describe('GetMeetingPurchasesQueryHandler', () => {
       type: OperationType.STOCK_PURCHASE,
       description: 'Complete stock purchase',
       totalAmount: 1000,
+      entries: [],
     });
     expect(result[0].date).toBeInstanceOf(Date);
   });
@@ -220,7 +224,7 @@ describe('GetMeetingPurchasesQueryHandler', () => {
     findByIdSpy.mockResolvedValue(meeting);
     findByMeetingAndTypeSpy.mockResolvedValue([operation]);
     findByOperationsSpy.mockResolvedValue([]);
-    calculatePaymentTotalAmountSpy.mockReturnValue(0);
+    calculateStockPurchaseTotalAmountSpy.mockReturnValue(0);
 
     // ACT
     const result = await queryHandler.execute(meetingId);
@@ -228,5 +232,6 @@ describe('GetMeetingPurchasesQueryHandler', () => {
     // ASSERT
     expect(result[0].memberId).toBeNull();
     expect(result[0].totalAmount).toBe(0);
+    expect(result[0].entries).toEqual([]);
   });
 });
