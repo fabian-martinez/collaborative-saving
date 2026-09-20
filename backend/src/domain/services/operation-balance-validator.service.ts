@@ -40,8 +40,10 @@ export class OperationBalanceValidator {
     }
 
     // Round to 2 decimal places to avoid floating point precision issues
-    const roundedDebits = Math.round(totalDebits * 100) / 100;
-    const roundedCredits = Math.round(totalCredits * 100) / 100;
+    const roundedDebits =
+      Math.round((totalDebits + Number.EPSILON) * 100) / 100;
+    const roundedCredits =
+      Math.round((totalCredits + Number.EPSILON) * 100) / 100;
 
     if (roundedDebits !== roundedCredits) {
       throw new BusinessRuleError(
