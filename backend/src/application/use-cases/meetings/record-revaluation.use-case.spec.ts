@@ -958,4 +958,94 @@ describe('RecordRevaluationUseCase', () => {
       'Database connection failed',
     );
   });
+
+  it('should successfully balance operations even with fractional share growth amounts ending in .xx5', async () => {
+    // ARRANGE
+    const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+    const dto: RecordRevaluationDto = { meetingId };
+    const meeting = Meeting.create({
+      date: new Date('2024-01-15'),
+    });
+
+    const stockA = Stock.create({
+      type: 'stock-a',
+      value: 100,
+      monthlyContribution: 10,
+      isGuaranteed: false,
+    });
+    const stockB = Stock.create({
+      type: 'stock-b',
+      value: 100,
+      monthlyContribution: 10,
+      isGuaranteed: false,
+    });
+
+    // Both stocks have growth that when multiplied by totalShares results in .xx5 amounts
+    const mockCalculationResult = {
+      totalContributions: 56.04,
+      totalInterest: 0,
+      totalToDistribute: 56.04,
+      details: [
+        {
+          stockId: stockA.id,
+          type: 'stock-a',
+          isGuaranteed: false,
+          totalShares: 2,
+          previousValue: 100,
+          growthFromContributions: 12.3475, // 12.3475 * 2 = 24.695 (ends in .xx5)
+          growthFromInterest: 0,
+          totalGrowthPerShare: 12.3475,
+          estimatedGrowthFromContributions: 10,
+          newValue: 112.35,
+        },
+        {
+          stockId: stockB.id,
+          type: 'stock-b',
+          isGuaranteed: false,
+          totalShares: 2,
+          previousValue: 100,
+          growthFromContributions: 15.6725, // 15.6725 * 2 = 31.345 (ends in .xx5)
+          growthFromInterest: 0,
+          totalGrowthPerShare: 15.6725,
+          estimatedGrowthFromContributions: 10,
+          newValue: 115.67,
+        },
+      ],
+      totalMandatoryContributions: 0,
+      mandatoryContributionsByType: [],
+    };
+
+    meetingRepository.findById.mockResolvedValue(meeting);
+    operationRepository.findByMeetingAndType.mockResolvedValue([]);
+    assetRevaluationDomainService.calculateRevaluationData.mockResolvedValue(
+      mockCalculationResult,
+    );
+    operationRepository.save.mockImplementation((op) => Promise.resolve(op));
+    stockRepository.findByIds.mockResolvedValue([stockA, stockB]);
+    stockValueHistoryRepository.saveMany.mockResolvedValue([]);
+    stockRepository.saveMany.mockResolvedValue([stockA, stockB]);
+    let capturedEntries: LedgerEntry[] = [];
+    ledgerEntryRepository.saveMany.mockImplementation(
+      (entries: LedgerEntry[]) => {
+        capturedEntries = entries;
+        return Promise.resolve(entries);
+      },
+    );
+
+    // ACT
+    const result = await useCase.execute(dto);
+
+    // ASSERT
+    expect(result.status).toBe('executed');
+    expect(ledgerEntrySaveManySpy).toHaveBeenCalledTimes(1);
+    const totalDebits = capturedEntries
+      .filter((e) => e.isDebit())
+      .reduce((sum, e) => sum + e.amount, 0);
+    const totalCredits = capturedEntries
+      .filter((e) => e.isCredit())
+      .reduce((sum, e) => sum + Math.abs(e.amount), 0);
+    expect(Math.round(totalDebits * 100) / 100).toBe(
+      Math.round(totalCredits * 100) / 100,
+    );
+  });
 });

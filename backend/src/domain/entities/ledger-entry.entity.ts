@@ -14,8 +14,11 @@ export class LedgerEntry {
     private _mandatoryContributionId?: string | null,
     private _stockSubscriptionId?: string | null,
   ) {
-    // Redondear estrictamente a 2 decimales para evitar discrepancias entre JS y Postgres
-    this._amount = Math.round(this._amount * 100) / 100;
+    // Redondear simétricamente a 2 decimales para evitar discrepancias entre JS y Postgres y asimetría en débitos/créditos
+    const sign = this._amount < 0 ? -1 : 1;
+    this._amount =
+      sign *
+      (Math.round((Math.abs(this._amount) + Number.EPSILON) * 100) / 100);
     this.validateInvariants();
   }
 
@@ -90,7 +93,10 @@ export class LedgerEntry {
       this._accountType = data.accountType;
     }
     if (data.amount !== undefined) {
-      this._amount = data.amount;
+      const sign = data.amount < 0 ? -1 : 1;
+      this._amount =
+        sign *
+        (Math.round((Math.abs(data.amount) + Number.EPSILON) * 100) / 100);
     }
     if (data.description !== undefined) {
       this._description = data.description;

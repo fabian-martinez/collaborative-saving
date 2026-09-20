@@ -269,8 +269,11 @@ export class RecordRevaluationUseCase {
             }
 
             // Asientos contables para dividendos
-            const totalDividends =
-              detail.dividendsGenerated * detail.totalShares;
+            const totalDividends = roundAndLimit(
+              detail.dividendsGenerated * detail.totalShares,
+              9999999999.99,
+              2,
+            );
             ledgerEntries.push(
               {
                 accountType: DIVIDENDS_PAYABLE_ACCOUNT,
@@ -289,8 +292,11 @@ export class RecordRevaluationUseCase {
         } else {
           // Por aportes de capital
           if (detail.growthFromContributions > 0) {
-            const totalGrowth =
-              detail.growthFromContributions * detail.totalShares;
+            const totalGrowth = roundAndLimit(
+              detail.growthFromContributions * detail.totalShares,
+              9999999999.99,
+              2,
+            );
             ledgerEntries.push(
               {
                 accountType: INVESTMENT_IN_STOCKS_ACCOUNT,
@@ -309,7 +315,11 @@ export class RecordRevaluationUseCase {
 
           // Por intereses
           if (detail.growthFromInterest > 0) {
-            const totalGrowth = detail.growthFromInterest * detail.totalShares;
+            const totalGrowth = roundAndLimit(
+              detail.growthFromInterest * detail.totalShares,
+              9999999999.99,
+              2,
+            );
             ledgerEntries.push(
               {
                 accountType: INVESTMENT_IN_STOCKS_ACCOUNT,
@@ -331,17 +341,18 @@ export class RecordRevaluationUseCase {
       // Asientos para aportes obligatorios
       if (calculationResult.mandatoryContributionsByType.length > 0) {
         for (const m of calculationResult.mandatoryContributionsByType) {
+          const totalMandatory = roundAndLimit(m.total, 9999999999.99, 2);
           ledgerEntries.push(
             {
               accountType: MANDATORY_CONTRIBUTION_INCOME_ACCOUNT,
-              amount: m.total,
+              amount: totalMandatory,
               description:
                 'Revalorización de aportes obligatorios (no afecta acciones)',
               mandatoryContributionId: m.mandatoryContributionId,
             },
             {
               accountType: REVALUATION_SURPLUS_ACCOUNT,
-              amount: -m.total,
+              amount: -totalMandatory,
               description:
                 'Contrapartida de revalorización de aportes obligatorios',
               mandatoryContributionId: m.mandatoryContributionId,
