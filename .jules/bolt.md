@@ -25,3 +25,7 @@
 ## 2024-06-29 - Resolve N+1 query in RecordRevaluationUseCase using custom batched queries
 **Learning:** Found an N+1 query bottleneck inside a loop handling dividend generations, where the `StockSubscriptionRepository` was being queried individually using `findByStock` for each stock detail. Creating a batched query method `findByStocks(stockIds)` inside the interface, TypeORM implementation and use case fixes this issue without affecting logic.
 **Action:** Always batch fetching operations when dealing with lists or arrays of IDs. Add `findByStocks` (or `findByIds`) batch methods to TypeORM repository ports and implementations (using the SQL `IN` operator) to resolve N+1 bottlenecks and structure the returned data in a `Map`.
+
+## 2026-09-22 - Batch Saving Transaction Details in RecordLoanPaymentUseCase
+**Learning:** Sequential calls to `repository.save()` for multiple domain entities (e.g. interest and principal `LoanTransactionDetail`s) inside a use case trigger multiple individual SQL write operations and database roundtrips.
+**Action:** Collect entities into an array and persist them in a single batch call using `repository.saveMany(entities)` to perform a single batch INSERT/upsert operation.
