@@ -94,9 +94,7 @@ describe('RecordLoanPaymentUseCase', () => {
     } as unknown as jest.Mocked<StockSubscriptionRepository>;
 
     transactionManager = {
-      execute: jest.fn(async <T>(operation: () => Promise<T>): Promise<T> => {
-        return await operation();
-      }),
+      execute: jest.fn((operation: () => Promise<unknown>) => operation()),
       getActiveQueryRunner: jest.fn(),
     } as unknown as jest.Mocked<TransactionManager>;
 
@@ -122,7 +120,7 @@ describe('RecordLoanPaymentUseCase', () => {
     loanSaveSpy = jest.spyOn(loanRepository, 'save');
     loanTransactionDetailSaveManySpy = jest
       .spyOn(loanTransactionDetailRepository, 'saveMany')
-      .mockImplementation(async (details) => details);
+      .mockImplementation((details) => Promise.resolve(details));
   });
 
   describe('Successful payment recording', () => {
