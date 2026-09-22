@@ -38,32 +38,32 @@ El proyecto visual de gestión se encuentra en:
 Cada tarjeta en el proyecto debe tener definidos los siguientes metadatos:
 
 #### 📅 `Sprint` (Planificación Temporal)
-* **Valores:** `Sprint 1`, `Sprint 2`, `Sprint 3`, `Sprint 4`, `Sprint 5`, `Sprint 6`, `Sprint 7`, `Sprint 8`, `Backlog`.
-* **⚠️ Regla de Oro (Cero Dependencias Intra-Sprint):**  
+- **Valores:** `Sprint 1`, `Sprint 2`, `Sprint 3`, `Sprint 4`, `Sprint 5`, `Sprint 6`, `Sprint 7`, `Sprint 8`, `Backlog`.
+- **⚠️ Regla de Oro (Cero Dependencias Intra-Sprint):**  
   Si la **Tarea B** depende de la **Tarea A**, obligatoriamente:
   $$\text{Sprint}(B) > \text{Sprint}(A)$$
   **Bajo ninguna circunstancia se asignará una tarea al mismo sprint que sus prerrequisitos no cerrados.** Esto garantiza que cada sprint sea autónomo y libre de bloqueos internos.
 
 #### 🏷️ `Track` (Épica / Dominio Funcional)
-* **`🚀 Despliegue Web $0`:** Infraestructura, Docker, Render, Cloudflare, Firebase Hosting y pipelines CI/CD de producción.
-* **`💰 Core Financiero`:** Motor contable de partida doble, créditos, liquidaciones, recaudos mensuales, auditoría de libro mayor y asamblea.
-* **`⚙️ Settings & Dinámica`:** Configuración dinámica del fondo, catálogo de acciones, tipos de crédito y parámetros globales.
-* **`🔐 Auth, Passkeys & PII`:** Seguridad, Magic Link passwordless, WebAuthn/Passkeys, roles, sesiones y cifrado de datos personales en reposo.
-* **`📱 CustomerUI & DX`:** Aplicación móvil de socios (`frontend-mobile`), capacidades PWA y herramientas de experiencia de desarrollo.
-* **`🎨 Frontend UX & QA`:** Backoffice administrativo (`frontend-v2`), alineación de diseño, componentes UI y suites E2E con Playwright.
-* **`🌐 DocuSeal & Multi-Tenancy`:** Firma digital de pagarés, SDK embebido y arquitectura multi-fondo.
-* **`✅ Histórico / Cerrados`:** Tareas fundacionales concluidas previamente.
+- **`🚀 Despliegue Web $0`:** Infraestructura, Docker, Render, Cloudflare, Firebase Hosting y pipelines CI/CD de producción.
+- **`💰 Core Financiero`:** Motor contable de partida doble, créditos, liquidaciones, recaudos mensuales, auditoría de libro mayor y asamblea.
+- **`⚙️ Settings & Dinámica`:** Configuración dinámica del fondo, catálogo de acciones, tipos de crédito y parámetros globales.
+- **`🔐 Auth, Passkeys & PII`:** Seguridad, Magic Link passwordless, WebAuthn/Passkeys, roles, sesiones y cifrado de datos personales en reposo.
+- **`📱 CustomerUI & DX`:** Aplicación móvil de socios (`frontend-mobile`), capacidades PWA y herramientas de experiencia de desarrollo.
+- **`🎨 Frontend UX & QA`:** Backoffice administrativo (`frontend-v2`), alineación de diseño, componentes UI y suites E2E con Playwright.
+- **`🌐 DocuSeal & Multi-Tenancy`:** Firma digital de pagarés, SDK embebido y arquitectura multi-fondo.
+- **`✅ Histórico / Cerrados`:** Tareas fundacionales concluidas previamente.
 
 #### 🚨 `Prioridad`
-* **`🔴 Crítica`:** Bloquea despliegues a producción, vulnerabilidades de seguridad, integridad contable o fallas en el flujo transaccional de asamblea.
-* **`🟠 Alta`:** Funcionalidades imprescindibles para el objetivo del sprint o la épica activa.
-* **`🔵 Media`:** Mejoras operativas, refactorizaciones arquitectónicas o deuda técnica controlada.
-* **`⚪ Baja`:** Mejoras cosméticas, optimizaciones menores o documentación complementaria.
+- **`🔴 Crítica`:** Bloquea despliegues a producción, vulnerabilidades de seguridad, integridad contable o fallas en el flujo transaccional de asamblea.
+- **`🟠 Alta`:** Funcionalidades imprescindibles para el objetivo del sprint o la épica activa.
+- **`🔵 Media`:** Mejoras operativas, refactorizaciones arquitectónicas o deuda técnica controlada.
+- **`⚪ Baja`:** Mejoras cosméticas, optimizaciones menores o documentación complementaria.
 
 #### 📋 `Status`
-* **`Todo`:** Tarea planificada en el sprint pero no iniciada.
-* **`In Progress`:** Tarea con rama activa y desarrollo en curso.
-* **`Done`:** PR mergeado exitosamente en `main`.
+- **`Todo`:** Tarea planificada en el sprint pero no iniciada.
+- **`In Progress`:** Tarea con rama activa y desarrollo en curso.
+- **`Done`:** PR mergeado exitosamente en `main`.
 
 ---
 
