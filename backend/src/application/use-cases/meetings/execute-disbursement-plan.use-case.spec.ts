@@ -59,6 +59,7 @@ describe('ExecuteDisbursementPlanUseCase', () => {
       findByMeeting: jest.fn().mockResolvedValue([]),
       findPendingByMeeting: jest.fn().mockResolvedValue([]),
       save: jest.fn(),
+      saveMany: jest.fn(),
     } as unknown as jest.Mocked<PendingMemberPaymentRepository>;
 
     transactionExecuteMock = jest.fn(
@@ -726,14 +727,15 @@ describe('ExecuteDisbursementPlanUseCase', () => {
     ]);
 
     pendingMemberPaymentRepository.findByMeeting.mockResolvedValue([p1]);
-    const pendingPaymentSaveSpy = jest
-      .spyOn(pendingMemberPaymentRepository, 'save')
-      .mockResolvedValue(p1);
+    const pendingPaymentSaveManySpy = jest
+      .spyOn(pendingMemberPaymentRepository, 'saveMany')
+      .mockResolvedValue([p1]);
 
     const result = await useCase.execute(dto);
 
     expect(result.success).toBe(true);
-    expect(pendingPaymentSaveSpy).toHaveBeenCalledTimes(1);
+    expect(pendingPaymentSaveManySpy).toHaveBeenCalledTimes(1);
+    expect(pendingPaymentSaveManySpy).toHaveBeenCalledWith([p1]);
     expect(p1.notes).toContain('Saldo pendiente (Aplazado) - Initial notes');
   });
 });
