@@ -53,9 +53,14 @@ export class RecordMonthlyPaymentsUseCase {
       throw new MemberNotFoundException(dto.memberId);
     }
 
-    // 2. Get active meeting (or use provided meetingId)
-    let meeting: Meeting | null;
-    if (dto.meetingId) {
+    // 2. Get active meeting (or use provided meeting / meetingId)
+    let meeting: Meeting | null = null;
+    if (
+      dto.activeMeeting &&
+      (!dto.meetingId || dto.meetingId === dto.activeMeeting.id)
+    ) {
+      meeting = dto.activeMeeting;
+    } else if (dto.meetingId) {
       meeting = await this.meetingRepository.findById(dto.meetingId);
       if (!meeting) {
         throw new MeetingNotFoundException(dto.meetingId);
