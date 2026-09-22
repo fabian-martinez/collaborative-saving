@@ -46,6 +46,7 @@ describe('GetMemberPurchasesQueryHandler', () => {
 
     stockRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByType: jest.fn(),
       findAll: jest.fn(),
       findActive: jest.fn(),
@@ -206,7 +207,9 @@ describe('GetMemberPurchasesQueryHandler', () => {
       jest
         .spyOn(ledgerEntryRepository, 'findByOperations')
         .mockResolvedValue([ledgerEntry]);
-      jest.spyOn(stockRepository, 'findById').mockResolvedValue(stock);
+      const findByIdsSpy = jest
+        .spyOn(stockRepository, 'findByIds')
+        .mockResolvedValue([stock]);
       jest.spyOn(loanRepository, 'findByIds').mockResolvedValue([]);
 
       const result = await queryHandler.execute(memberId, {
@@ -214,6 +217,7 @@ describe('GetMemberPurchasesQueryHandler', () => {
       });
 
       expect(result).toHaveLength(1);
+      expect(findByIdsSpy).toHaveBeenCalledWith([stockId]);
       expect(result[0]).toEqual({
         stockSubscriptionId: stockSubscription.id,
         stockId,
@@ -294,7 +298,9 @@ describe('GetMemberPurchasesQueryHandler', () => {
       jest
         .spyOn(ledgerEntryRepository, 'findByOperations')
         .mockResolvedValue([ledgerEntry]);
-      jest.spyOn(stockRepository, 'findById').mockResolvedValue(stock);
+      const findByIdsSpy = jest
+        .spyOn(stockRepository, 'findByIds')
+        .mockResolvedValue([stock]);
       jest.spyOn(loanRepository, 'findByIds').mockResolvedValue([loan]);
 
       const result = await queryHandler.execute(memberId, {
@@ -302,6 +308,7 @@ describe('GetMemberPurchasesQueryHandler', () => {
       });
 
       expect(result).toHaveLength(1);
+      expect(findByIdsSpy).toHaveBeenCalledWith([stockId]);
       expect(result[0]).toEqual({
         stockSubscriptionId: stockSubscription.id,
         stockId,
@@ -372,7 +379,9 @@ describe('GetMemberPurchasesQueryHandler', () => {
       jest
         .spyOn(ledgerEntryRepository, 'findByOperations')
         .mockResolvedValue([ledgerEntry]);
-      jest.spyOn(stockRepository, 'findById').mockResolvedValue(stock);
+      const findByIdsSpy = jest
+        .spyOn(stockRepository, 'findByIds')
+        .mockResolvedValue([stock]);
       jest.spyOn(loanRepository, 'findByIds').mockResolvedValue([]);
 
       const result = await queryHandler.execute(memberId, {
@@ -380,6 +389,7 @@ describe('GetMemberPurchasesQueryHandler', () => {
       });
 
       expect(result).toHaveLength(1);
+      expect(findByIdsSpy).toHaveBeenCalledWith([stockId]);
       const findByMemberSpy = jest.spyOn(operationRepository, 'findByMember');
       expect(findByMemberSpy).toHaveBeenCalledWith(memberId, {
         meetingId,
