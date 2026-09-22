@@ -234,9 +234,10 @@ describe('GetMemberStockExchangesQueryHandler', () => {
       jest
         .spyOn(ledgerEntryRepository, 'findByOperations')
         .mockResolvedValue([fromEntry, toEntry, cashEntry]);
-      jest
+      const findByIdsSpy = jest
         .spyOn(stockSubscriptionRepository, 'findByIds')
         .mockResolvedValue([fromSubscription, toSubscription]);
+      const findByIdSpy = jest.spyOn(stockSubscriptionRepository, 'findById');
       jest
         .spyOn(stockRepository, 'findByIds')
         .mockResolvedValue([fromStock, toStock]);
@@ -263,10 +264,10 @@ describe('GetMemberStockExchangesQueryHandler', () => {
         toSubscriptionId: toSubscription.id,
         pendingPaymentId: pendingPayment.id,
       });
-      expect(stockSubscriptionRepository.findByIds).toHaveBeenCalledWith(
+      expect(findByIdsSpy).toHaveBeenCalledWith(
         expect.arrayContaining([fromSubscription.id, toSubscription.id]),
       );
-      expect(stockSubscriptionRepository.findById).not.toHaveBeenCalled();
+      expect(findByIdSpy).not.toHaveBeenCalled();
     });
 
     it('should return exchanges with credit difference successfully', async () => {
@@ -367,9 +368,10 @@ describe('GetMemberStockExchangesQueryHandler', () => {
       jest
         .spyOn(ledgerEntryRepository, 'findByOperations')
         .mockResolvedValue([fromEntry, toEntry, loanEntry]);
-      jest
+      const findByIdsSpy = jest
         .spyOn(stockSubscriptionRepository, 'findByIds')
         .mockResolvedValue([fromSubscription, toSubscription]);
+      const findByIdSpy = jest.spyOn(stockSubscriptionRepository, 'findById');
       jest
         .spyOn(stockRepository, 'findByIds')
         .mockResolvedValue([fromStock, toStock]);
@@ -392,10 +394,10 @@ describe('GetMemberStockExchangesQueryHandler', () => {
         differenceHandling: 'credit',
         loanId: loan.id,
       });
-      expect(stockSubscriptionRepository.findByIds).toHaveBeenCalledWith(
+      expect(findByIdsSpy).toHaveBeenCalledWith(
         expect.arrayContaining([fromSubscription.id, toSubscription.id]),
       );
-      expect(stockSubscriptionRepository.findById).not.toHaveBeenCalled();
+      expect(findByIdSpy).not.toHaveBeenCalled();
     });
 
     it('should filter by meetingId when provided', async () => {
