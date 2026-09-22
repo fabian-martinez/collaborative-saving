@@ -38,7 +38,8 @@ cd backend && npm run test
 ## Seguimiento de Tareas
 
 - **Issues:** El seguimiento de tareas y bugs se realiza en GitHub.
-- **Consulta:** Utiliza la herramienta `gh` para consultar el estado y detalles de los issues (ej: `gh issue list`, `gh issue view <number>`).
+- **Milestones:** Utiliza Milestones para agrupar issues que pertenezcan a un mismo objetivo, épica o iniciativa con múltiples fases. Todos los issues asociados deben tener asignado el Milestone para reflejar el progreso del hito.
+- **Consulta:** Utiliza la herramienta `gh` para consultar el estado y detalles de los issues y milestones (ej: `gh issue list`, `gh issue view <number>`, `gh api repos/:owner/:repo/milestones`).
 
 ## Reglas no obvias
 
