@@ -489,6 +489,12 @@ describe('ExecuteDisbursementPlanUseCase', () => {
 
     expect(result.success).toBe(true);
     expect(pendingPayment.status).toBe('paid');
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(pendingMemberPaymentRepository.findByIds).toHaveBeenCalledWith([
+      'pending-1',
+    ]);
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(pendingMemberPaymentRepository.findById).not.toHaveBeenCalled();
   });
 
   it('should handle OTHER disbursement with full payment', async () => {

@@ -79,8 +79,11 @@ export class ExecuteDisbursementPlanUseCase {
         );
       }
 
-      // 4. ORDENAR ítems según prioridad del ADR-0006
-      const sortedPlan = await this.sortPlanByPriority(dto.plan, dto.meetingId);
+      // 4. ORDENAR ítems según prioridad del ADR-0006 y pre-cargar pagos pendientes
+      const { sortedPlan, paymentsMap } = await this.sortPlanByPriority(
+        dto.plan,
+        dto.meetingId,
+      );
 
       // 5. Trackear efectivo desembolsado acumulado
       let disbursedTotal = 0;
@@ -106,6 +109,7 @@ export class ExecuteDisbursementPlanUseCase {
           item,
           dto.meetingId,
           currentAvailableCash,
+          paymentsMap,
         );
 
         disbursedTotal += disbursedAmount;
@@ -169,11 +173,15 @@ export class ExecuteDisbursementPlanUseCase {
 
   /**
    * Ordena el plan de desembolsos según las prioridades del ADR-0006
+   * y retorna los pagos pendientes pre-cargados para evitar consultas N+1.
    */
   private async sortPlanByPriority(
     plan: DisbursementPlanItemDto[],
     meetingId: string,
-  ): Promise<DisbursementPlanItemDto[]> {
+  ): Promise<{
+    sortedPlan: DisbursementPlanItemDto[];
+    paymentsMap: Map<string, PendingMemberPayment>;
+  }> {
     // 1. Obtener todos los pagos pendientes necesarios para determinar prioridad
     const paymentIds = plan
       .map((item) => item.pendingMemberPaymentId)
@@ -195,7 +203,7 @@ export class ExecuteDisbursementPlanUseCase {
     }
 
     // 2. Ordenar ítems usando el helper de prioridad
-    return [...plan].sort((a, b) => {
+    const sortedPlan = [...plan].sort((a, b) => {
       const priorityA = DisbursementPriorityHelper.getPriority(
         a,
         meetingId,
@@ -214,6 +222,8 @@ export class ExecuteDisbursementPlanUseCase {
       // Si tienen la misma prioridad, mantener orden original (estable) o por monto
       return 0;
     });
+
+    return { sortedPlan, paymentsMap };
   }
 
   private async calculateAvailableCash(meetingId: string): Promise<number> {
@@ -228,6 +238,7 @@ export class ExecuteDisbursementPlanUseCase {
     item: DisbursementPlanItemDto,
     meetingId: string,
     currentAvailableCash: number,
+    paymentsMap: Map<string, PendingMemberPayment>,
   ): Promise<number> {
     switch (item.type) {
       case DisbursementType.LOAN:
@@ -257,6 +268,7 @@ export class ExecuteDisbursementPlanUseCase {
           item,
           meetingId,
           currentAvailableCash,
+          paymentsMap,
         );
 
       default:
@@ -270,6 +282,7 @@ export class ExecuteDisbursementPlanUseCase {
     item: DisbursementPlanItemDto,
     meetingId: string,
     availableCash: number,
+    paymentsMap: Map<string, PendingMemberPayment>,
   ): Promise<number> {
     // 1. Calcular monto máximo desembolsable
     const maxDisbursable = Math.min(item.amount, availableCash);
@@ -283,9 +296,15 @@ export class ExecuteDisbursementPlanUseCase {
     // 2. Obtener PendingMemberPayment existente si existe
     let pendingPayment: PendingMemberPayment | null = null;
     if (item.pendingMemberPaymentId) {
-      pendingPayment = await this.pendingMemberPaymentRepository.findById(
-        item.pendingMemberPaymentId,
-      );
+      // ⚡ Bolt Performance Optimization:
+      // Replaced sequential findById calls inside the processing loop with
+      // pre-fetched payments map lookups, preventing N+1 database queries.
+      pendingPayment = paymentsMap.get(item.pendingMemberPaymentId) ?? null;
+      if (!pendingPayment) {
+        pendingPayment = await this.pendingMemberPaymentRepository.findById(
+          item.pendingMemberPaymentId,
+        );
+      }
       if (pendingPayment) {
         // Aprobar automáticamente si está PENDING
         if (pendingPayment.status === 'pending') {
