@@ -58,7 +58,7 @@ describe('UpdateLoanApprovedAmountUseCase', () => {
       calculateRemainingAmount: jest.fn(),
       findWithFilters: jest.fn(),
       delete: jest.fn(),
-    } as unknown as jest.Mocked<PendingMemberPaymentRepository>;
+    };
 
     meetingRepository = {
       findById: jest.fn(),
