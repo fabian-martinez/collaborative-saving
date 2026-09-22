@@ -53,6 +53,7 @@ describe('GetMemberStockExchangesQueryHandler', () => {
 
     stockSubscriptionRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
       findByMemberAndStock: jest.fn(),
       findByMember: jest.fn(),
       findActiveByMember: jest.fn(),
@@ -233,17 +234,10 @@ describe('GetMemberStockExchangesQueryHandler', () => {
       jest
         .spyOn(ledgerEntryRepository, 'findByOperations')
         .mockResolvedValue([fromEntry, toEntry, cashEntry]);
-      jest
-        .spyOn(stockSubscriptionRepository, 'findById')
-        .mockImplementation((id: string) => {
-          if (id === fromSubscription.id) {
-            return Promise.resolve(fromSubscription);
-          }
-          if (id === toSubscription.id) {
-            return Promise.resolve(toSubscription);
-          }
-          return Promise.resolve(null);
-        });
+      const findByIdsSpy = jest
+        .spyOn(stockSubscriptionRepository, 'findByIds')
+        .mockResolvedValue([fromSubscription, toSubscription]);
+      const findByIdSpy = jest.spyOn(stockSubscriptionRepository, 'findById');
       jest
         .spyOn(stockRepository, 'findByIds')
         .mockResolvedValue([fromStock, toStock]);
@@ -270,6 +264,10 @@ describe('GetMemberStockExchangesQueryHandler', () => {
         toSubscriptionId: toSubscription.id,
         pendingPaymentId: pendingPayment.id,
       });
+      expect(findByIdsSpy).toHaveBeenCalledWith(
+        expect.arrayContaining([fromSubscription.id, toSubscription.id]),
+      );
+      expect(findByIdSpy).not.toHaveBeenCalled();
     });
 
     it('should return exchanges with credit difference successfully', async () => {
@@ -370,17 +368,10 @@ describe('GetMemberStockExchangesQueryHandler', () => {
       jest
         .spyOn(ledgerEntryRepository, 'findByOperations')
         .mockResolvedValue([fromEntry, toEntry, loanEntry]);
-      jest
-        .spyOn(stockSubscriptionRepository, 'findById')
-        .mockImplementation((id: string) => {
-          if (id === fromSubscription.id) {
-            return Promise.resolve(fromSubscription);
-          }
-          if (id === toSubscription.id) {
-            return Promise.resolve(toSubscription);
-          }
-          return Promise.resolve(null);
-        });
+      const findByIdsSpy = jest
+        .spyOn(stockSubscriptionRepository, 'findByIds')
+        .mockResolvedValue([fromSubscription, toSubscription]);
+      const findByIdSpy = jest.spyOn(stockSubscriptionRepository, 'findById');
       jest
         .spyOn(stockRepository, 'findByIds')
         .mockResolvedValue([fromStock, toStock]);
@@ -403,6 +394,10 @@ describe('GetMemberStockExchangesQueryHandler', () => {
         differenceHandling: 'credit',
         loanId: loan.id,
       });
+      expect(findByIdsSpy).toHaveBeenCalledWith(
+        expect.arrayContaining([fromSubscription.id, toSubscription.id]),
+      );
+      expect(findByIdSpy).not.toHaveBeenCalled();
     });
 
     it('should filter by meetingId when provided', async () => {
