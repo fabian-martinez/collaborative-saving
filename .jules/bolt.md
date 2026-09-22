@@ -29,3 +29,6 @@
 ## 2026-07-20 - Reuse pre-fetched batch maps across use-case workflows
 **Learning:** In `ExecuteDisbursementPlanUseCase`, `sortPlanByPriority` already fetched `PendingMemberPayment` entities in batch via `findByIds` and built a `paymentsMap`. However, during plan execution, `processOtherDisbursement` was performing sequential `findById` lookups for the same items, creating an N+1 query pattern.
 **Action:** Return the pre-fetched `paymentsMap` from initial validation/sorting phases and pass it to execution functions, replacing O(N) database calls with O(1) in-memory Map lookups.
+## 2026-09-22 - Batch Saving Transaction Details in RecordLoanPaymentUseCase
+**Learning:** Sequential calls to `repository.save()` for multiple domain entities (e.g. interest and principal `LoanTransactionDetail`s) inside a use case trigger multiple individual SQL write operations and database roundtrips.
+**Action:** Collect entities into an array and persist them in a single batch call using `repository.saveMany(entities)` to perform a single batch INSERT/upsert operation.
