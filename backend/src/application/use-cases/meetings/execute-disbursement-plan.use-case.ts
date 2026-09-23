@@ -138,6 +138,7 @@ export class ExecuteDisbursementPlanUseCase {
           .filter((id): id is string => !!id),
       );
 
+      const paymentsToPostpone: PendingMemberPayment[] = [];
       for (const payment of allMeetingPayments) {
         if (
           (payment.status === 'pending' || payment.status === 'approved') &&
@@ -151,9 +152,13 @@ export class ExecuteDisbursementPlanUseCase {
             payment.update({
               notes: `Saldo pendiente (Aplazado) - ${existingNotes}`.trim(),
             });
-            await this.pendingMemberPaymentRepository.save(payment);
+            paymentsToPostpone.push(payment);
           }
         }
+      }
+
+      if (paymentsToPostpone.length > 0) {
+        await this.pendingMemberPaymentRepository.saveMany(paymentsToPostpone);
       }
 
       // 8. Retornar resultado
