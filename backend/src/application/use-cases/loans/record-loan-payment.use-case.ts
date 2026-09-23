@@ -222,37 +222,40 @@ export class RecordLoanPaymentUseCase {
         await this.releaseSubscriptionsForPaidLoan(loan.id);
       }
 
-      // 8. Create loan transaction details
-      const transactionDetailIds: string[] = [];
+      // 8. Create loan transaction details (Bolt ⚡: batch save to avoid N+1 save queries)
+      const transactionDetailsToSave: LoanTransactionDetail[] = [];
 
       if (interestPaid > 0) {
-        const interestTransactionDetail = LoanTransactionDetail.create({
-          loanId: loan.id,
-          transactionType: LoanTransactionType.INTEREST_PAYMENT,
-          amount: interestPaid,
-          notes: dto.notes || null,
-          operationId: operationResult.operationId,
-        });
-        const savedInterestDetail =
-          await this.loanTransactionDetailRepository.save(
-            interestTransactionDetail,
-          );
-        transactionDetailIds.push(savedInterestDetail.id);
+        transactionDetailsToSave.push(
+          LoanTransactionDetail.create({
+            loanId: loan.id,
+            transactionType: LoanTransactionType.INTEREST_PAYMENT,
+            amount: interestPaid,
+            notes: dto.notes || null,
+            operationId: operationResult.operationId,
+          }),
+        );
       }
 
       if (principalPaid > 0) {
-        const principalTransactionDetail = LoanTransactionDetail.create({
-          loanId: loan.id,
-          transactionType: LoanTransactionType.PRINCIPAL_PAYMENT,
-          amount: principalPaid,
-          notes: dto.notes || null,
-          operationId: operationResult.operationId,
-        });
-        const savedPrincipalDetail =
-          await this.loanTransactionDetailRepository.save(
-            principalTransactionDetail,
+        transactionDetailsToSave.push(
+          LoanTransactionDetail.create({
+            loanId: loan.id,
+            transactionType: LoanTransactionType.PRINCIPAL_PAYMENT,
+            amount: principalPaid,
+            notes: dto.notes || null,
+            operationId: operationResult.operationId,
+          }),
+        );
+      }
+
+      const transactionDetailIds: string[] = [];
+      if (transactionDetailsToSave.length > 0) {
+        const savedDetails =
+          await this.loanTransactionDetailRepository.saveMany(
+            transactionDetailsToSave,
           );
-        transactionDetailIds.push(savedPrincipalDetail.id);
+        transactionDetailIds.push(...savedDetails.map((detail) => detail.id));
       }
 
       // 9. Return response

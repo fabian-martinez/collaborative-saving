@@ -29,3 +29,12 @@
 ## 2026-07-15 - Redundant Active Meeting Lookups in Batch Payment Operations
 **Learning:** Calling `meetingRepository.findActive()` iteratively during batch operations (like processing monthly payments for multiple members) introduces redundant database queries.
 **Action:** Pass pre-fetched entity context (e.g., `activeMeeting?: Meeting` in `RecordMonthlyPaymentsDto`) to allow callers to pass an existing meeting reference and bypass redundant database lookups.
+## 2026-09-22 - Resolving N+1 save queries in ExecuteDisbursementPlanUseCase
+**Learning:** Auto-postponing unprocessed pending member payments in `ExecuteDisbursementPlanUseCase` invoked `repository.save(payment)` inside a loop, resulting in N+1 database save roundtrips.
+**Action:** Collect entities to update into an array inside the loop and perform a single batch update with `repository.saveMany(paymentsToPostpone)` after the loop completes.
+## 2026-07-20 - Reuse pre-fetched batch maps across use-case workflows
+**Learning:** In `ExecuteDisbursementPlanUseCase`, `sortPlanByPriority` already fetched `PendingMemberPayment` entities in batch via `findByIds` and built a `paymentsMap`. However, during plan execution, `processOtherDisbursement` was performing sequential `findById` lookups for the same items, creating an N+1 query pattern.
+**Action:** Return the pre-fetched `paymentsMap` from initial validation/sorting phases and pass it to execution functions, replacing O(N) database calls with O(1) in-memory Map lookups.
+## 2026-09-22 - Batch Saving Transaction Details in RecordLoanPaymentUseCase
+**Learning:** Sequential calls to `repository.save()` for multiple domain entities (e.g. interest and principal `LoanTransactionDetail`s) inside a use case trigger multiple individual SQL write operations and database roundtrips.
+**Action:** Collect entities into an array and persist them in a single batch call using `repository.saveMany(entities)` to perform a single batch INSERT/upsert operation.
