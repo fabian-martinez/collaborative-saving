@@ -84,11 +84,12 @@ export class GetMemberStockExchangesQueryHandler {
 
     // Fetch related entities
     const stocks = await this.stockRepository.findByIds(Array.from(stockIds));
-    const subscriptions = await Promise.all(
-      Array.from(subscriptionIds).map((id) =>
-        this.stockSubscriptionRepository.findById(id),
-      ),
-    );
+    const subscriptions =
+      subscriptionIds.size > 0
+        ? await this.stockSubscriptionRepository.findByIds(
+            Array.from(subscriptionIds),
+          )
+        : [];
     const loans =
       loanIds.size > 0
         ? await this.loanRepository.findByIds(Array.from(loanIds))

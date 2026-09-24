@@ -101,10 +101,9 @@ export class ProcessStockWithdrawalDisbursementUseCase {
       );
     }
 
-    // 2. Aprobar el pending payment si está pendiente
+    // 2. Aprobar el pending payment si está pendiente (en memoria)
     if (pendingPayment.status === 'pending') {
       pendingPayment.approve();
-      await this.pendingMemberPaymentRepository.save(pendingPayment);
     }
 
     // 3. Validar que el monto del item no exceda el del pending payment
@@ -147,11 +146,11 @@ export class ProcessStockWithdrawalDisbursementUseCase {
       2,
     );
 
-    if (remainingAmount > 0) {
-      // Hay saldo pendiente: marcar el existente como PAID y crear nuevo por faltante
-      pendingPayment.markAsPaid();
-      await this.pendingMemberPaymentRepository.save(pendingPayment);
+    pendingPayment.markAsPaid();
+    const paymentsToSave: PendingMemberPayment[] = [pendingPayment];
 
+    if (remainingAmount > 0) {
+      // Hay saldo pendiente: crear nuevo por faltante
       const newPendingPayment = PendingMemberPayment.create({
         memberId: item.memberId,
         meetingId,
@@ -166,13 +165,11 @@ export class ProcessStockWithdrawalDisbursementUseCase {
           item.notes || ''
         }`.trim(),
       });
-      // El pago pendiente se crea con estado PENDING por defecto
-      await this.pendingMemberPaymentRepository.save(newPendingPayment);
-    } else {
-      // No hay saldo pendiente: marcar como PAID
-      pendingPayment.markAsPaid();
-      await this.pendingMemberPaymentRepository.save(pendingPayment);
+      paymentsToSave.push(newPendingPayment);
     }
+
+    // Batch guardar los pagos pendientes modificados/creados
+    await this.pendingMemberPaymentRepository.saveMany(paymentsToSave);
 
     return maxDisbursable;
   }
