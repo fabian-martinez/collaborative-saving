@@ -67,15 +67,13 @@ export class SimulateLoanPaymentPlanUseCase {
         totalInterest: simulation.totalInterest,
         totalPayments: simulation.totalPayments,
         monthsSaved: simulation.monthsSaved,
-        schedule: simulation.schedule.map(
-          (item): AmortizationScheduleDto => ({
-            month: item.month,
-            payment: item.payment,
-            interest: item.interest,
-            principal: item.principal,
-            balance: item.balance,
-          }),
-        ),
+        schedule: simulation.schedule.map((item): AmortizationScheduleDto => ({
+          month: item.month,
+          payment: item.payment,
+          interest: item.interest,
+          principal: item.principal,
+          balance: item.balance,
+        })),
       };
 
       // Calculate savings compared to base scenario

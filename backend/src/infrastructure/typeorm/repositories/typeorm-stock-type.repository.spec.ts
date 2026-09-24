@@ -24,8 +24,10 @@ describe('TypeOrmStockTypeRepository', () => {
       find: jest.fn(),
       save: jest.fn(),
       merge: jest.fn(
-        (existing: StockTypeEntity, update: Partial<StockTypeEntity>) =>
-          ({ ...existing, ...update }) as StockTypeEntity,
+        (existing: StockTypeEntity, update: Partial<StockTypeEntity>) => ({
+          ...existing,
+          ...update,
+        }),
       ),
       softDelete: jest.fn(),
     };

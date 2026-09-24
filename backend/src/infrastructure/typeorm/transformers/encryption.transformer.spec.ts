@@ -35,7 +35,7 @@ describe('EncryptionTransformer', () => {
         (val: string | null | undefined): boolean =>
           typeof val === 'string' && val.startsWith('enc:'),
       ),
-    } as unknown as jest.Mocked<CryptoServicePort>;
+    };
 
     encryptSpy = jest.spyOn(mockCryptoService, 'encrypt');
     decryptSpy = jest.spyOn(mockCryptoService, 'decrypt');

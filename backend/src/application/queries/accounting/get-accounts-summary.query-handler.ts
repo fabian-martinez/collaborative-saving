@@ -98,24 +98,22 @@ export class GetAccountsSummaryQueryHandler {
           totalCredits: data.totalCredits,
           entriesCount: data.entriesCount,
           hasMoreEntries: data.entriesCount > entriesLimit,
-          entries: data.entries.map(
-            (entry): AccountLedgerEntryDto => ({
-              id: entry.id,
-              operationId: entry.operationId,
-              accountType: entry.accountType,
-              amount: entry.amount,
-              createdAt: entry.createdAt,
-              description: entry.description,
-              loanId: entry.loanId,
-              stockId: entry.stockId,
-              mandatoryContributionId: entry.mandatoryContributionId,
-              stockSubscriptionId: entry.stockSubscriptionId,
-              operationType: entry.operationType
-                ? (entry.operationType as OperationType)
-                : undefined,
-              operationDate: entry.operationDate,
-            }),
-          ),
+          entries: data.entries.map((entry): AccountLedgerEntryDto => ({
+            id: entry.id,
+            operationId: entry.operationId,
+            accountType: entry.accountType,
+            amount: entry.amount,
+            createdAt: entry.createdAt,
+            description: entry.description,
+            loanId: entry.loanId,
+            stockId: entry.stockId,
+            mandatoryContributionId: entry.mandatoryContributionId,
+            stockSubscriptionId: entry.stockSubscriptionId,
+            operationType: entry.operationType
+              ? (entry.operationType as OperationType)
+              : undefined,
+            operationDate: entry.operationDate,
+          })),
         };
         return accountSummary;
       })

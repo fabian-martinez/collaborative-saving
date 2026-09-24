@@ -23,7 +23,7 @@ describe('GetLoanTransactionsQueryHandler', () => {
       findPendingByMember: jest.fn(),
       save: jest.fn(),
       findByIds: jest.fn(),
-    } as unknown as jest.Mocked<LoanRepository>;
+    };
 
     loanTransactionDetailRepository = {
       findById: jest.fn(),
@@ -35,7 +35,7 @@ describe('GetLoanTransactionsQueryHandler', () => {
       findByOperationIds: jest.fn(),
       save: jest.fn(),
       saveMany: jest.fn(),
-    } as unknown as jest.Mocked<LoanTransactionDetailRepository>;
+    };
 
     queryHandler = new GetLoanTransactionsQueryHandler(
       loanRepository,
