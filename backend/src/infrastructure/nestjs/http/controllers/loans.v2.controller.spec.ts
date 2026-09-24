@@ -233,6 +233,29 @@ describe('LoansV2Controller', () => {
       expect(result.monthly_payment_amount).toBe(160000);
     });
 
+    it('should pass changedBy when currentUser is provided', async () => {
+      const updatedLoan = {
+        ...mockLoanResponse,
+        interestRate: 0.06,
+      };
+      updateLoanTermsUseCaseExecuteSpy.mockResolvedValue(updatedLoan);
+
+      const dto = {
+        interest_rate: 0.06,
+      };
+      const user = { id: 'admin-user-123', email: 'admin@example.com', role: 'admin' };
+
+      await controller.updateTerms('loan-id-1', dto, user);
+
+      expect(updateLoanTermsUseCaseExecuteSpy).toHaveBeenCalledWith({
+        loanId: 'loan-id-1',
+        interestRate: 0.06,
+        monthlyPaymentAmount: undefined,
+        term: undefined,
+        changedBy: 'admin-user-123',
+      });
+    });
+
     it('should throw 404 when loan not found', async () => {
       updateLoanTermsUseCaseExecuteSpy.mockRejectedValue(
         new LoanNotFoundException('loan-id-1'),
@@ -555,6 +578,24 @@ describe('LoansV2Controller', () => {
         loanId,
         newApprovedAmount: 8000,
         changedBy: undefined,
+      });
+    });
+
+    it('should pass changedBy when currentUser is provided', async () => {
+      const loanId = 'loan-id-1';
+      const dto = {
+        new_approved_amount: 8000,
+      };
+      const user = { id: 'admin-user-123', email: 'admin@example.com', role: 'admin' };
+
+      updateLoanApprovedAmountUseCaseExecuteSpy.mockResolvedValue(undefined);
+
+      await controller.updateApprovedAmount(loanId, dto, user);
+
+      expect(updateLoanApprovedAmountUseCaseExecuteSpy).toHaveBeenCalledWith({
+        loanId,
+        newApprovedAmount: 8000,
+        changedBy: 'admin-user-123',
       });
     });
 

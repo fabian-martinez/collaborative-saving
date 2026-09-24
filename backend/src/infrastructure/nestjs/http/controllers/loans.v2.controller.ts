@@ -11,6 +11,8 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { Roles } from '../../auth/decorators/roles.decorator';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { AuthenticatedUserDto } from '@application/queries/auth/get-authenticated-user.query';
 import { MemberRole } from '@domain/enums/member-role.enum';
 import {
   ApiTags,
@@ -126,6 +128,7 @@ export class LoansV2Controller {
   async updateTerms(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateLoanTermsHttpDto,
+    @CurrentUser() currentUser?: AuthenticatedUserDto,
   ): Promise<LoanResponseHttpDto> {
     const updateDto: UpdateLoanTermsDto = {
       loanId: id,
@@ -133,8 +136,7 @@ export class LoansV2Controller {
       monthlyPaymentAmount: dto.monthly_payment_amount,
       term: dto.term,
       loanType: dto.loan_type,
-      // TODO: Extract user ID from request context when authentication is implemented
-      changedBy: undefined,
+      changedBy: currentUser?.id,
     };
     const result = await this.updateLoanTermsUseCase.execute(updateDto);
     return this.mapLoanToHttp(result);
@@ -238,11 +240,12 @@ export class LoansV2Controller {
   async updateApprovedAmount(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateLoanApprovedAmountHttpDto,
+    @CurrentUser() currentUser?: AuthenticatedUserDto,
   ): Promise<void> {
     const updateDto: UpdateLoanApprovedAmountDto = {
       loanId: id,
       newApprovedAmount: dto.new_approved_amount,
-      changedBy: undefined,
+      changedBy: currentUser?.id,
     };
     await this.updateLoanApprovedAmountUseCase.execute(updateDto);
   }
