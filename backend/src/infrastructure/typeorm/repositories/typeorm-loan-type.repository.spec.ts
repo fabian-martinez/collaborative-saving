@@ -23,8 +23,10 @@ describe('TypeOrmLoanTypeRepository', () => {
       find: jest.fn(),
       save: jest.fn(),
       merge: jest.fn(
-        (existing: LoanTypeEntity, update: Partial<LoanTypeEntity>) =>
-          ({ ...existing, ...update }) as LoanTypeEntity,
+        (existing: LoanTypeEntity, update: Partial<LoanTypeEntity>) => ({
+          ...existing,
+          ...update,
+        }),
       ),
       softDelete: jest.fn(),
     };

@@ -195,16 +195,8 @@ describe('GetMemberStockTransfersQueryHandler', () => {
         .spyOn(ledgerEntryRepository, 'findByOperations')
         .mockResolvedValue([fromEntry, toEntry]);
       jest
-        .spyOn(stockSubscriptionRepository, 'findById')
-        .mockImplementation((id: string) => {
-          if (id === fromSubscription.id) {
-            return Promise.resolve(fromSubscription);
-          }
-          if (id === toSubscription.id) {
-            return Promise.resolve(toSubscription);
-          }
-          return Promise.resolve(null);
-        });
+        .spyOn(stockSubscriptionRepository, 'findByIds')
+        .mockResolvedValue([fromSubscription, toSubscription]);
       jest.spyOn(stockRepository, 'findByIds').mockResolvedValue([stock]);
 
       const result = await queryHandler.execute(fromMemberId, {

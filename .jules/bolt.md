@@ -1,31 +1,42 @@
 ## 2024-03-02 - N+1 Queries in Use Cases
 **Learning:** Found N+1 query bottleneck in `record-revaluation.use-case.ts` where the same repository entity (`Stock`) was being queried repetitively inside multiple loops using `findById`.
 **Action:** Replace repetitive `findById` calls with a single `findByIds` call before loops, cache the results in a `Map<string, Entity>`, and perform O(1) memory lookups within iterations.
+
 ## 2024-02-23 - TypeORM Save vs Update Pattern
 **Learning:** The codebase frequently uses a manual `findOne` -> `update` -> `findOne` pattern for updates, which incurs 3 database roundtrips. TypeORM's `save()` method handles upserts (insert or update) and returns the updated entity in a single or double query (depending on driver support for `RETURNING`), significantly reducing latency.
 **Action:** Always prefer `repository.save(entity)` over manual existence checks and updates when the full entity is available, especially for high-frequency write operations.
+
 ## 2024-05-18 - Replacing findById with findByIds vs Promise.all
 **Learning:** When attempting to resolve N+1 queries by replacing iterative `findById` calls with a single `findByIds` call, be careful if the original logic relies on falling back/defaulting when an entity is NOT found (e.g., `stock ? stock.value : 0`). `findByIds` will only return the existing records, omitting missing ones entirely. Iterating only over the returned records will bypass the fallback logic for missing IDs, introducing a functional regression (e.g., `undefined` instead of `0`).
 **Action:** If the logic depends on a 1:1 mapping including nulls for missing records, use `Promise.all(ids.map(id => repo.findById(id)))` instead of `findByIds`. This still executes concurrently (avoiding sequential DB roundtrips) while preserving the exact array length and null values for the fallback logic.
+
 ## 2026-04-27 - Optimizing N+1 queries using `findByIds` in TypeORM
 **Learning:** We can efficiently prevent N+1 queries by replacing iterative `Promise.all(ids.map(id => repo.findById(id)))` calls with a single bulk retrieval `await repo.findByIds(ids)`. However, `findByIds` omits records that don't exist, breaking the 1:1 index mapping between the requested IDs and the returned array (which some legacy code, like `calculate-member-insurance.use-case.ts`, relies upon).
 **Action:** Always prefer `findByIds` with a lookup `Map` (e.g. `const entityMap = new Map(entities.map(e => [e.id, e]));`) over `Promise.all(findById)`. Use `Promise.all(findById)` *only* when the exact 1:1 mapped array structure including `null` values is strictly required by the specific algorithm.
+
 ## 2024-05-28 - Optimize PendingMemberPayment Retrieval using Batching
 **Learning:** In the `ExecuteDisbursementPlanUseCase`, the sorting of disbursement plan items was causing an N+1 query problem by iteratively fetching `PendingMemberPayment` entities one by one using `findById`. This degraded performance when executing large disbursement plans.
 **Action:** Always batch fetching operations when dealing with lists or arrays of IDs. Add `findByIds` batch methods to TypeORM repository ports and implementations (using the SQL `IN` operator) to resolve N+1 bottlenecks.
+
 ## 2026-05-18 - Safe Resolution of N+1 Queries with Defaulting Logic
 **Learning:** Replacing `Promise.all(ids.map(id => repo.findById(id)))` with `await repo.findByIds(ids)` breaks functionality if the subsequent logic relies on a perfect 1:1 mapping of requested IDs to results (especially where missing records fallback to default values, e.g., `stock ? stock.value : 0`). `findByIds` filters out missing records, so iterating solely over its output bypasses the fallback mechanism for missing IDs.
 **Action:** When refactoring to `findByIds`, map the database results into a `Map<string, Entity>` immediately. Then, iterate over the *original array of requested IDs*, doing a `Map.get(id)` for each to safely trigger any required fallback logic for missing records.
+
 ## 2026-06-08 - Mocking ID assignments for Map lookups in tests
 **Learning:** In backend unit tests, domain entities instantiated via `.create()` automatically generate random UUIDs. When testing logic that relies on mapping by ID (like `findByIds` array-to-map caching), if the mock returns these instances without explicitly matching IDs, the Map lookup will fail because the ID requested by the logic won't match the auto-generated entity ID.
 **Action:** Use `Reflect.set(entity, 'id', 'expected-id')` to explicitly align the entity's ID with the mocked retrieval expectations in tests to ensure `Map.get(id)` successfully finds the object.
+
 ## 2026-06-15 - Resolving N+1 in GetMemberPaymentScheduleQueryHandler
 **Learning:** Repositories might lack multi-ID fetch methods for complex relationships (like `LoanTransactionDetailRepository.findByLoans`). Loop-based fetching introduces severe N+1 queries.
 **Action:** When iterating to fetch nested data, implement and use `findBy...s(ids)` in the repository layer using `In(ids)`, fetch everything in one query, and group it locally. Ensure temporary script files used for modifications are deleted before committing to avoid codebase pollution.
+
 ## 2024-06-29 - Resolve N+1 query in RecordRevaluationUseCase using custom batched queries
 **Learning:** Found an N+1 query bottleneck inside a loop handling dividend generations, where the `StockSubscriptionRepository` was being queried individually using `findByStock` for each stock detail. Creating a batched query method `findByStocks(stockIds)` inside the interface, TypeORM implementation and use case fixes this issue without affecting logic.
 **Action:** Always batch fetching operations when dealing with lists or arrays of IDs. Add `findByStocks` (or `findByIds`) batch methods to TypeORM repository ports and implementations (using the SQL `IN` operator) to resolve N+1 bottlenecks and structure the returned data in a `Map`.
 
+## 2026-09-22 - Resolve N+1 query in GetMemberStockTransfersQueryHandler using findByIds
+**Learning:** In `GetMemberStockTransfersQueryHandler`, fetching related `StockSubscription` entities used `Promise.all(subscriptionIds.map(id => repository.findById(id)))`, triggering N individual database roundtrips.
+**Action:** Replace `Promise.all(map(findById))` with `repository.findByIds(Array.from(subscriptionIds))` to fetch all target records in a single `IN (...)` database query, and index them using `new Map(...)` for O(1) lookups.
 ## 2026-09-22 - Batching Pending Member Payment Save Operations
 **Learning:** Sequential `repository.save()` calls during logical entity status transitions (e.g., approving, marking as paid, and creating a remaining balance entity) create unneeded I/O roundtrips.
 **Action:** Defer saving intermediate in-memory status changes and batch all modified and newly created entities into a single `repository.saveMany([entity1, entity2])` call.

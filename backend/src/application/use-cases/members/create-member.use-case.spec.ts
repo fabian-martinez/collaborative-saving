@@ -20,7 +20,7 @@ describe('CreateMemberUseCase', () => {
     identityService = {
       getIdentity: jest.fn(),
       createUser: jest.fn(),
-    } as unknown as jest.Mocked<IdentityService>;
+    };
 
     createUserSpy = jest.spyOn(identityService, 'createUser');
 

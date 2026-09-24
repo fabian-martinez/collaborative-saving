@@ -19,7 +19,7 @@ describe('GetPortfolioStatusQueryHandler', () => {
       findPendingByMember: jest.fn(),
       save: jest.fn(),
       findByIds: jest.fn(),
-    } as unknown as jest.Mocked<LoanRepository>;
+    };
 
     pendingMemberPaymentRepository = {
       findWithFilters: jest.fn(),
@@ -33,7 +33,7 @@ describe('GetPortfolioStatusQueryHandler', () => {
       saveMany: jest.fn(),
       calculateRemainingAmount: jest.fn(),
       delete: jest.fn(),
-    } as unknown as jest.Mocked<PendingMemberPaymentRepository>;
+    };
 
     handler = new GetPortfolioStatusQueryHandler(
       loanRepository,

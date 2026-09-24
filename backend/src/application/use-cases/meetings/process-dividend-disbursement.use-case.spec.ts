@@ -172,8 +172,7 @@ describe('ProcessDividendDisbursementUseCase', () => {
       expect(saveMock2).toHaveBeenCalledTimes(3); // Approve + markAsPaid + new pending
       const saveCalls = pendingMemberPaymentRepository.save.mock.calls;
       const newPendingPayment = saveCalls[saveCalls.length - 1]?.[0] as
-        | PendingMemberPayment
-        | undefined;
+        PendingMemberPayment | undefined;
       expect(newPendingPayment?.amount).toBe(400);
       expect(newPendingPayment?.status).toBe(
         PendingMemberPaymentStatus.APPROVED,
@@ -259,16 +258,14 @@ describe('ProcessDividendDisbursementUseCase', () => {
 
       // First call: create and approve
       const createCall = saveMock3.mock.calls[0]?.[0] as
-        | PendingMemberPayment
-        | undefined;
+        PendingMemberPayment | undefined;
       expect(createCall?.memberId).toBe('member-1');
       expect(createCall?.amount).toBe(500);
       expect(createCall?.type).toBe(PendingMemberPaymentType.DIVIDEND);
 
       // Second call: mark as paid after full disbursement
       const paidCall = saveMock3.mock.calls[1]?.[0] as
-        | PendingMemberPayment
-        | undefined;
+        PendingMemberPayment | undefined;
       expect(paidCall?.status).toBe(PendingMemberPaymentStatus.PAID);
 
       // Should record operation
