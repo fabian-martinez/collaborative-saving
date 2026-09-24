@@ -730,7 +730,9 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       pendingMemberPaymentRepository.findById.mockResolvedValue(
         mockPendingPayment,
       );
-      pendingMemberPaymentRepository.save.mockResolvedValue(mockPendingPayment);
+      pendingMemberPaymentRepository.saveMany.mockResolvedValue([
+        mockPendingPayment,
+      ]);
 
       // Act - Full payment of pending payment
       const result = await useCase.execute({
@@ -745,7 +747,10 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
         pendingMemberPaymentRepository,
         'findById',
       );
-      const saveSpy = jest.spyOn(pendingMemberPaymentRepository, 'save');
+      const saveManyPaymentsSpy = jest.spyOn(
+        pendingMemberPaymentRepository,
+        'saveMany',
+      );
       const findByStockSpy = jest.spyOn(
         stockSubscriptionRepository,
         'findByStock',
@@ -760,8 +765,13 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       );
 
       expect(findByIdSpy).toHaveBeenCalledWith('pending-payment-id-1');
-      // Should call save 2 times: approve pending (if needed) + mark as paid (no remaining amount)
-      expect(saveSpy).toHaveBeenCalledTimes(2);
+      // Should call saveMany 1 time with batched pending payments
+      expect(saveManyPaymentsSpy).toHaveBeenCalledTimes(1);
+      expect(saveManyPaymentsSpy).toHaveBeenCalledWith([
+        expect.objectContaining({
+          status: 'paid',
+        }),
+      ]);
       // Should NOT call subscription-related methods (this is a pending payment, not a real withdrawal)
       expect(findByStockSpy).not.toHaveBeenCalled();
       expect(hasEnoughSpy).not.toHaveBeenCalled();
@@ -1136,7 +1146,10 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
         pendingMemberPaymentRepository,
         'findById',
       );
-      const saveSpy = jest.spyOn(pendingMemberPaymentRepository, 'save');
+      const saveManyPaymentsSpy = jest.spyOn(
+        pendingMemberPaymentRepository,
+        'saveMany',
+      );
       const executeSpy = jest.spyOn(recordOperationUseCase, 'execute');
 
       // Should NOT call findByStock (no subscription lookup)
@@ -1148,7 +1161,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
       expect(saveManySpy).not.toHaveBeenCalled();
       // Should process the pending payment
       expect(findByIdSpy).toHaveBeenCalledWith(pendingPayment.id);
-      expect(saveSpy).toHaveBeenCalled();
+      expect(saveManyPaymentsSpy).toHaveBeenCalled();
       // Should record operation
       expect(executeSpy).toHaveBeenCalled();
     });
@@ -1180,15 +1193,7 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
         operationId: 'operation-id-1',
         ledgerEntryIds: [],
       });
-      pendingMemberPaymentRepository.save.mockResolvedValue(
-        PendingMemberPayment.create({
-          memberId: mockMemberId,
-          meetingId: mockMeetingId,
-          type: PendingMemberPaymentType.STOCK_WITHDRAWAL,
-          amount: 2000,
-          stockId: mockStockId,
-        }),
-      );
+      pendingMemberPaymentRepository.saveMany.mockResolvedValue([]);
 
       // Act
       const result = await useCase.execute({
@@ -1199,12 +1204,16 @@ describe('ProcessStockWithdrawalDisbursementUseCase', () => {
 
       // Assert
       expect(result).toBe(3000);
-      const saveSpy = jest.spyOn(pendingMemberPaymentRepository, 'save');
-      // Should approve pending payment, mark as paid, and create new one
-      expect(saveSpy).toHaveBeenCalledTimes(3);
-      // Should create new pending payment for remaining amount (2000 = 5000 - 3000)
-      // El tercer llamado (índice 2) es el nuevo pago pendiente creado
-      const newPendingPaymentCall = saveSpy.mock.calls[2][0];
+      const saveManyPaymentsSpy = jest.spyOn(
+        pendingMemberPaymentRepository,
+        'saveMany',
+      );
+      // Should call saveMany once with both the original payment (marked as paid) and new remaining payment
+      expect(saveManyPaymentsSpy).toHaveBeenCalledTimes(1);
+      const savedPayments = saveManyPaymentsSpy.mock.calls[0][0];
+      expect(savedPayments).toHaveLength(2);
+      expect(savedPayments[0].status).toBe('paid');
+      const newPendingPaymentCall = savedPayments[1];
       expect(newPendingPaymentCall.amount).toBe(2000);
       expect(newPendingPaymentCall.type).toBe(
         PendingMemberPaymentType.STOCK_WITHDRAWAL,
