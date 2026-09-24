@@ -179,6 +179,103 @@ describe('RecordMonthlyPaymentsUseCase', () => {
       expect(result.meetingId).toBe(mockMeeting.id);
     });
 
+    it('should use provided activeMeeting when available without calling findActive', async () => {
+      // ARRANGE
+      const dtoWithActiveMeeting: RecordMonthlyPaymentsDto = {
+        ...validDto,
+        activeMeeting: mockMeeting,
+      };
+      findByIdSpy.mockResolvedValue(mockMember);
+      recordOperationExecuteSpy.mockResolvedValue({
+        operationId: 'operation-id',
+        ledgerEntryIds: ['entry-1', 'entry-2'],
+      });
+
+      // ACT
+      const result = await useCase.execute(dtoWithActiveMeeting);
+
+      // ASSERT
+      expect(findActiveSpy).not.toHaveBeenCalled();
+      expect(result.meetingId).toBe(mockMeeting.id);
+    });
+
+    it('should fallback to findById if meetingId differs from activeMeeting.id', async () => {
+      // ARRANGE
+      const differentMeeting = Meeting.create({
+        date: new Date('2024-02-15'),
+      });
+      const dtoWithMismatch: RecordMonthlyPaymentsDto = {
+        ...validDto,
+        meetingId: differentMeeting.id,
+        activeMeeting: mockMeeting,
+      };
+      const findMeetingByIdSpy = jest.spyOn(meetingRepository, 'findById');
+      findByIdSpy.mockResolvedValue(mockMember);
+      findMeetingByIdSpy.mockResolvedValue(differentMeeting);
+      recordOperationExecuteSpy.mockResolvedValue({
+        operationId: 'operation-id',
+        ledgerEntryIds: ['entry-1', 'entry-2'],
+      });
+
+      // ACT
+      const result = await useCase.execute(dtoWithMismatch);
+
+      // ASSERT
+      expect(findMeetingByIdSpy).toHaveBeenCalledWith(differentMeeting.id);
+      expect(findActiveSpy).not.toHaveBeenCalled();
+      expect(result.meetingId).toBe(differentMeeting.id);
+    });
+
+    describe('performance benchmark', () => {
+      it('should significantly reduce DB lookups in batch processing by caching activeMeeting', async () => {
+        // ARRANGE
+        findByIdSpy.mockResolvedValue(mockMember);
+        findActiveSpy.mockResolvedValue(mockMeeting);
+        recordOperationExecuteSpy.mockResolvedValue({
+          operationId: 'op-1',
+          ledgerEntryIds: ['entry-1'],
+        });
+
+        const BATCH_SIZE = 100;
+        const memberDtos: RecordMonthlyPaymentsDto[] = Array.from(
+          { length: BATCH_SIZE },
+          (_, i) => ({
+            ...validDto,
+            memberId: `member-${i}`,
+          }),
+        );
+
+        // ACT - Baseline: Uncached (each call triggers findActive)
+        findActiveSpy.mockClear();
+        const startTimeUncached = performance.now();
+        for (const dto of memberDtos) {
+          await useCase.execute(dto);
+        }
+        const timeUncached = performance.now() - startTimeUncached;
+        const uncachedCalls = findActiveSpy.mock.calls.length;
+
+        // ACT - Optimized: Pre-fetched activeMeeting context passed in batch
+        findActiveSpy.mockClear();
+        const activeMeeting = (await meetingRepository.findActive())!; // Fetched once for batch
+        findActiveSpy.mockClear();
+
+        const startTimeCached = performance.now();
+        for (const dto of memberDtos) {
+          await useCase.execute({
+            ...dto,
+            activeMeeting,
+          });
+        }
+        const timeCached = performance.now() - startTimeCached;
+        const cachedCalls = findActiveSpy.mock.calls.length;
+
+        // ASSERT & VERIFY MEASUREMENT
+        expect(uncachedCalls).toBe(BATCH_SIZE);
+        expect(cachedCalls).toBe(0);
+        expect(timeCached).toBeLessThanOrEqual(timeUncached + 50);
+      });
+    });
+
     it('should calculate correct total amount', async () => {
       // ARRANGE
       findByIdSpy.mockResolvedValue(mockMember);
