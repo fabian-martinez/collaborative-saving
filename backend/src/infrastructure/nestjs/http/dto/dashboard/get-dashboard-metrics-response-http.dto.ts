@@ -7,7 +7,10 @@ export class ActiveMembersHttpDto {
   @ApiProperty({ description: 'Total number of members', example: 45 })
   total: number;
 
-  @ApiProperty({ description: 'Percentage change in active members', example: 5 })
+  @ApiProperty({
+    description: 'Percentage change in active members',
+    example: 5,
+  })
   change_percent: number;
 }
 
@@ -26,7 +29,10 @@ export class ActiveLoansHttpDto {
   @ApiProperty({ description: 'Count of active loans', example: 18 })
   count: number;
 
-  @ApiProperty({ description: 'Indicates if loans exist in portfolio', example: true })
+  @ApiProperty({
+    description: 'Indicates if loans exist in portfolio',
+    example: true,
+  })
   in_portfolio: boolean;
 }
 
@@ -39,7 +45,10 @@ export class OverduePortfolioHttpDto {
   @ApiProperty({ description: 'Value of overdue portfolio', example: 1250000 })
   value: number;
 
-  @ApiProperty({ description: 'Percentage of overdue portfolio relative to total portfolio', example: 5.1 })
+  @ApiProperty({
+    description: 'Percentage of overdue portfolio relative to total portfolio',
+    example: 5.1,
+  })
   percent_of_total: number;
 }
 
@@ -47,7 +56,10 @@ export class MonthlyCollectedHttpDto {
   @ApiProperty({ description: 'Value collected monthly', example: 8750000 })
   value: number;
 
-  @ApiProperty({ description: 'Percentage change in monthly collection', example: 12 })
+  @ApiProperty({
+    description: 'Percentage change in monthly collection',
+    example: 12,
+  })
   change_percent: number;
 }
 
