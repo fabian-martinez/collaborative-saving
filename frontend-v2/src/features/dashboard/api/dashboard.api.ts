@@ -90,8 +90,8 @@ export const dashboardApi = {
     if (USE_MOCKS) {
       return mockApi.getRecentActivity()
     }
-    // TODO: Implementar llamada real a API
-    throw new Error('Not implemented')
+    const response = await apiClient.get<RecentActivity[]>('/v2/dashboard/recent-activity')
+    return response.data
   },
 
   async getPortfolioStatus(): Promise<PortfolioStatus> {
@@ -102,4 +102,3 @@ export const dashboardApi = {
     return response.data
   }
 }
-

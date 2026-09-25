@@ -2,8 +2,10 @@ import { Controller, Get, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { GetMonthlyMovementsQueryHandler } from '@application/queries/dashboard/get-monthly-movements.query-handler';
 import { GetPortfolioStatusQueryHandler } from '@application/queries/dashboard/get-portfolio-status.query-handler';
+import { GetRecentActivityQueryHandler } from '@application/queries/dashboard/get-recent-activity.query-handler';
 import { GetMonthlyMovementsResponseHttpDto } from '../dto/dashboard/monthly-movements-response-http.dto';
 import { GetPortfolioStatusResponseHttpDto } from '../dto/dashboard/portfolio-status-response-http.dto';
+import { RecentActivityResponseHttpDto } from '../dto/dashboard/recent-activity-response-http.dto';
 import { DashboardSessionResponseHttpDto } from '../dto/dashboard/dashboard-session-response-http.dto';
 
 @ApiTags('Dashboard V2')
@@ -12,6 +14,7 @@ export class DashboardV2Controller {
   constructor(
     private readonly getMonthlyMovementsQuery: GetMonthlyMovementsQueryHandler,
     private readonly getPortfolioStatusQuery: GetPortfolioStatusQueryHandler,
+    private readonly getRecentActivityQuery: GetRecentActivityQueryHandler,
   ) {}
 
   @Get()
@@ -71,5 +74,30 @@ export class DashboardV2Controller {
       overdue: result.overdue,
       written_off: result.writtenOff,
     };
+  }
+
+  @Get('recent-activity')
+  @ApiOperation({
+    summary: 'Get recent activity for dashboard',
+    description:
+      'Retrieves recent operations with member details and total operation amounts.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Recent activity retrieved successfully',
+    type: [RecentActivityResponseHttpDto],
+  })
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async getRecentActivity(): Promise<RecentActivityResponseHttpDto[]> {
+    const activities = await this.getRecentActivityQuery.execute();
+
+    return activities.map((activity) => ({
+      id: activity.id,
+      type: activity.type,
+      description: activity.description,
+      amount: activity.amount,
+      timestamp: activity.timestamp,
+      member_name: activity.memberName,
+    }));
   }
 }
