@@ -83,12 +83,15 @@ export class GetMemberPurchasesQueryHandler {
       .map((sub) => sub.financingLoanId)
       .filter((id): id is string => id !== null && id !== undefined);
 
-    // Fetch stocks and loans in parallel
-    const stocks = await Promise.all(
-      stockIds.map((id) => this.stockRepository.findById(id)),
-    );
-    const loans =
-      loanIds.length > 0 ? await this.loanRepository.findByIds(loanIds) : [];
+    // Fetch stocks and loans in parallel using bulk fetch
+    const [stocks, loans] = await Promise.all([
+      stockIds.length > 0
+        ? this.stockRepository.findByIds(stockIds)
+        : Promise.resolve([]),
+      loanIds.length > 0
+        ? this.loanRepository.findByIds(loanIds)
+        : Promise.resolve([]),
+    ]);
 
     // Create maps for quick lookup
     const stockMap = new Map(
