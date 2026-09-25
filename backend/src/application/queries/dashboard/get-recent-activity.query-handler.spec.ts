@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { GetRecentActivityQueryHandler } from './get-recent-activity.query-handler';
 import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
@@ -114,7 +115,9 @@ describe('GetRecentActivityQueryHandler', () => {
       },
     ]);
     expect(memberRepository.findByIds).toHaveBeenCalledWith(['member-1']);
-    expect(ledgerEntryRepository.findByOperations).toHaveBeenCalledWith(['op-1']);
+    expect(ledgerEntryRepository.findByOperations).toHaveBeenCalledWith([
+      'op-1',
+    ]);
   });
 
   it('should use "Sistema" when operation has no memberId', async () => {
