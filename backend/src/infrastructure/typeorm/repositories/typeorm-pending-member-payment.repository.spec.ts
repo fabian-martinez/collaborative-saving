@@ -383,29 +383,22 @@ describe('TypeOrmPendingMemberPaymentRepository', () => {
   });
 
   describe('calculateRemainingAmount', () => {
-    it('should return payment amount when payment exists', async () => {
+    it('should return full payment amount when payment status is pending', async () => {
       const paymentId = 'payment-1';
-      const domain = PendingMemberPayment.create({
-        memberId: 'member-1',
-        meetingId: 'meeting-1',
-        type: PendingMemberPaymentType.DIVIDEND,
-        amount: 1000,
-      });
-
       const entity: Partial<PendingMemberPaymentEntity> = {
         id: paymentId,
-        memberId: domain.memberId,
-        meetingId: domain.meetingId,
-        type: domain.type,
-        amount: domain.amount,
-        status: domain.status,
+        memberId: 'member-1',
+        meetingId: 'meeting-1',
+        type: 'dividend',
+        amount: 1000,
+        status: 'pending',
         notes: null,
         stockId: null,
         loanId: null,
         stockSubscriptionId: null,
         referenceMeetingId: null,
         disbursementType: null,
-        createdAt: domain.createdAt,
+        createdAt: new Date(),
       };
 
       typeOrmRepo.findOne.mockResolvedValue(
@@ -413,6 +406,81 @@ describe('TypeOrmPendingMemberPaymentRepository', () => {
       );
       const result = await repository.calculateRemainingAmount(paymentId);
       expect(result).toBe(1000);
+    });
+
+    it('should return full payment amount when payment status is approved', async () => {
+      const paymentId = 'payment-1';
+      const entity: Partial<PendingMemberPaymentEntity> = {
+        id: paymentId,
+        memberId: 'member-1',
+        meetingId: 'meeting-1',
+        type: 'dividend',
+        amount: 1000,
+        status: 'approved',
+        notes: null,
+        stockId: null,
+        loanId: null,
+        stockSubscriptionId: null,
+        referenceMeetingId: null,
+        disbursementType: null,
+        createdAt: new Date(),
+      };
+
+      typeOrmRepo.findOne.mockResolvedValue(
+        entity as PendingMemberPaymentEntity,
+      );
+      const result = await repository.calculateRemainingAmount(paymentId);
+      expect(result).toBe(1000);
+    });
+
+    it('should return 0 when payment status is paid', async () => {
+      const paymentId = 'payment-1';
+      const entity: Partial<PendingMemberPaymentEntity> = {
+        id: paymentId,
+        memberId: 'member-1',
+        meetingId: 'meeting-1',
+        type: 'dividend',
+        amount: 1000,
+        status: 'paid',
+        notes: null,
+        stockId: null,
+        loanId: null,
+        stockSubscriptionId: null,
+        referenceMeetingId: null,
+        disbursementType: null,
+        createdAt: new Date(),
+      };
+
+      typeOrmRepo.findOne.mockResolvedValue(
+        entity as PendingMemberPaymentEntity,
+      );
+      const result = await repository.calculateRemainingAmount(paymentId);
+      expect(result).toBe(0);
+    });
+
+    it('should return 0 when payment status is rejected', async () => {
+      const paymentId = 'payment-1';
+      const entity: Partial<PendingMemberPaymentEntity> = {
+        id: paymentId,
+        memberId: 'member-1',
+        meetingId: 'meeting-1',
+        type: 'dividend',
+        amount: 1000,
+        status: 'rejected',
+        notes: null,
+        stockId: null,
+        loanId: null,
+        stockSubscriptionId: null,
+        referenceMeetingId: null,
+        disbursementType: null,
+        createdAt: new Date(),
+      };
+
+      typeOrmRepo.findOne.mockResolvedValue(
+        entity as PendingMemberPaymentEntity,
+      );
+      const result = await repository.calculateRemainingAmount(paymentId);
+      expect(result).toBe(0);
     });
 
     it('should throw error when payment not found', async () => {

@@ -2,10 +2,12 @@ import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pending-member-payment-repository.port';
-import { PendingMemberPayment as PendingMemberPaymentDomain } from '@domain/entities/pending-member-payment.entity';
+import {
+  PendingMemberPayment as PendingMemberPaymentDomain,
+  PendingMemberPaymentStatus,
+} from '@domain/entities/pending-member-payment.entity';
 import { PendingMemberPayment as PendingMemberPaymentEntity } from '../entities/pending-member-payment.entity';
 import { PendingMemberPaymentMapper } from '../mappers/pending-member-payment.mapper';
-import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 import { TRANSACTION_MANAGER } from '@domain/constants/injection-tokens';
 
@@ -17,13 +19,6 @@ export class TypeOrmPendingMemberPaymentRepository implements PendingMemberPayme
     @Inject(TRANSACTION_MANAGER)
     private readonly transactionManager: TransactionManager,
   ) {}
-
-  // LedgerEntryRepository will be injected via setter or passed as parameter
-  private ledgerEntryRepository?: LedgerEntryRepository;
-
-  setLedgerEntryRepository(repo: LedgerEntryRepository): void {
-    this.ledgerEntryRepository = repo;
-  }
 
   /**
    * Get the repository to use (with or without active transaction)
@@ -124,17 +119,26 @@ export class TypeOrmPendingMemberPaymentRepository implements PendingMemberPayme
     return saved.map((e) => PendingMemberPaymentMapper.toDomain(e));
   }
 
+  /**
+   * Calculates the remaining amount of a pending member payment.
+   * Architectural decision: PendingMemberPayment is informative/predictive and does not
+   * track partial payments or link to ledger_entries. If the payment status is active
+   * ('pending' or 'approved'), it returns the full amount. If completed ('paid') or
+   * cancelled ('rejected'), it returns 0.
+   */
   async calculateRemainingAmount(paymentId: string): Promise<number> {
     const payment = await this.findById(paymentId);
     if (!payment) {
       throw new Error('PendingMemberPayment not found');
     }
 
-    // Find all ledger entries related to this payment
-    // This would require additional logic to link ledger entries to payments
-    // For now, return the full amount
-    // TODO: Implement proper calculation based on ledger entries
-    // Note: This method may require LedgerEntryRepository for full implementation
+    if (
+      payment.status === PendingMemberPaymentStatus.PAID ||
+      payment.status === PendingMemberPaymentStatus.REJECTED
+    ) {
+      return 0;
+    }
+
     return payment.amount;
   }
 
