@@ -13,12 +13,14 @@ import { MembersV2Module } from './members-v2.module';
 import {
   MEMBER_REPOSITORY,
   STOCK_SUBSCRIPTION_REPOSITORY,
+  STOCK_REPOSITORY,
   LOAN_REPOSITORY,
   PENDING_MEMBER_PAYMENT_REPOSITORY,
   MEETING_REPOSITORY,
 } from '@domain/constants/injection-tokens';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
 import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-subscription-repository.port';
+import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
 import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pending-member-payment-repository.port';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
@@ -55,6 +57,7 @@ import { MeetingRepository } from '@domain/ports/repositories/meeting-repository
       useFactory: (
         memberRepo: MemberRepository,
         stockSubRepo: StockSubscriptionRepository,
+        stockRepo: StockRepository,
         loanRepo: LoanRepository,
         pendingPaymentRepo: PendingMemberPaymentRepository,
         meetingRepo: MeetingRepository,
@@ -63,6 +66,7 @@ import { MeetingRepository } from '@domain/ports/repositories/meeting-repository
         new GetDashboardMetricsQueryHandler(
           memberRepo,
           stockSubRepo,
+          stockRepo,
           loanRepo,
           pendingPaymentRepo,
           meetingRepo,
@@ -71,6 +75,7 @@ import { MeetingRepository } from '@domain/ports/repositories/meeting-repository
       inject: [
         MEMBER_REPOSITORY,
         STOCK_SUBSCRIPTION_REPOSITORY,
+        STOCK_REPOSITORY,
         LOAN_REPOSITORY,
         PENDING_MEMBER_PAYMENT_REPOSITORY,
         MEETING_REPOSITORY,

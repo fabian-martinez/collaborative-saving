@@ -1,6 +1,7 @@
 import { GetDashboardMetricsQueryHandler } from './get-dashboard-metrics.query-handler';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
 import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-subscription-repository.port';
+import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
 import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pending-member-payment-repository.port';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
@@ -8,6 +9,7 @@ import { MeetingSummaryService } from '@application/services/meeting-summary.ser
 import { LoanStatus } from '@domain/enums/loan-status.enum';
 import { Member } from '@domain/entities/member.entity';
 import { StockSubscription } from '@domain/entities/stock-subscription.entity';
+import { Stock } from '@domain/entities/stock.entity';
 import { Loan } from '@domain/entities/loan.entity';
 import { PendingMemberPayment } from '@domain/entities/pending-member-payment.entity';
 import { Meeting } from '@domain/entities/meeting.entity';
@@ -16,6 +18,7 @@ describe('GetDashboardMetricsQueryHandler', () => {
   let handler: GetDashboardMetricsQueryHandler;
   let memberRepository: jest.Mocked<MemberRepository>;
   let stockSubscriptionRepository: jest.Mocked<StockSubscriptionRepository>;
+  let stockRepository: jest.Mocked<StockRepository>;
   let loanRepository: jest.Mocked<LoanRepository>;
   let pendingMemberPaymentRepository: jest.Mocked<PendingMemberPaymentRepository>;
   let meetingRepository: jest.Mocked<MeetingRepository>;
@@ -29,6 +32,10 @@ describe('GetDashboardMetricsQueryHandler', () => {
     stockSubscriptionRepository = {
       findByStocks: jest.fn(),
     } as unknown as jest.Mocked<StockSubscriptionRepository>;
+
+    stockRepository = {
+      findByIds: jest.fn(),
+    } as unknown as jest.Mocked<StockRepository>;
 
     loanRepository = {
       findAll: jest.fn(),
@@ -49,6 +56,7 @@ describe('GetDashboardMetricsQueryHandler', () => {
     handler = new GetDashboardMetricsQueryHandler(
       memberRepository,
       stockSubscriptionRepository,
+      stockRepository,
       loanRepository,
       pendingMemberPaymentRepository,
       meetingRepository,
@@ -66,16 +74,22 @@ describe('GetDashboardMetricsQueryHandler', () => {
 
     // Stock subscriptions mock
     stockSubscriptionRepository.findByStocks.mockResolvedValue([
-      { status: 'active', sharesCount: 10, sharePrice: 100, totalValue: 1000 } as StockSubscription,
-      { status: 'active', sharesCount: 5, sharePrice: 200, totalValue: 1000 } as StockSubscription,
-      { status: 'cancelled', sharesCount: 2, sharePrice: 100, totalValue: 200 } as StockSubscription,
+      { status: 'active', quantity: 10, stockId: 'stock-1' } as StockSubscription,
+      { status: 'active', quantity: 5, stockId: 'stock-2' } as StockSubscription,
+      { status: 'cancelled', quantity: 2, stockId: 'stock-1' } as StockSubscription,
+    ]);
+
+    // Stocks mock
+    stockRepository.findByIds.mockResolvedValue([
+      { id: 'stock-1', value: 100 } as Stock,
+      { id: 'stock-2', value: 200 } as Stock,
     ]);
 
     // Loans mock
     loanRepository.findAll.mockResolvedValue([
-      { id: 'loan-1', status: LoanStatus.ACTIVE, balance: 5000 } as Loan,
-      { id: 'loan-2', status: LoanStatus.ACTIVE, balance: 5000 } as Loan,
-      { id: 'loan-3', status: LoanStatus.PAID, balance: 0 } as Loan,
+      { id: 'loan-1', status: LoanStatus.ACTIVE, outstandingBalance: 5000 } as Loan,
+      { id: 'loan-2', status: LoanStatus.ACTIVE, outstandingBalance: 5000 } as Loan,
+      { id: 'loan-3', status: LoanStatus.PAID, outstandingBalance: 0 } as Loan,
     ]);
 
     // Pending payments mock (loan-2 is overdue)
