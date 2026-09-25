@@ -11,7 +11,6 @@ import { StockSubscription } from '@domain/entities/stock-subscription.entity';
 import { Loan } from '@domain/entities/loan.entity';
 import { PendingMemberPayment } from '@domain/entities/pending-member-payment.entity';
 import { Meeting } from '@domain/entities/meeting.entity';
-import { DetailedMeetingSummary } from '@application/dto/meetings/detailed-meeting-summary.dto';
 
 describe('GetDashboardMetricsQueryHandler', () => {
   let handler: GetDashboardMetricsQueryHandler;
@@ -90,9 +89,22 @@ describe('GetDashboardMetricsQueryHandler', () => {
       { id: 'm2', status: 'closed', date: new Date('2026-02-01') } as Meeting,
     ]);
 
-    meetingSummaryService.calculateSummary.mockResolvedValue({
+    const mockSummary = {
+      meeting: { id: 'm2' },
+      collections: { totalCollected: 15000 },
+      disbursements: { totalDisbursed: 0 },
+      netBalance: 15000,
       totalCollected: 15000,
-    } as DetailedMeetingSummary);
+      totalDisbursed: 0,
+      metrics: {
+        attendance: { current: 3, expected: 3, percentage: 100 },
+        revaluation: null,
+        paymentsUpToDate: 2,
+        overduePayments: 0,
+      },
+    };
+
+    meetingSummaryService.calculateSummary.mockResolvedValue(mockSummary as any);
 
     const result = await handler.execute();
 
