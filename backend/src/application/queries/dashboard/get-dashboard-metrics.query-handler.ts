@@ -16,6 +16,9 @@ import { MeetingSummaryService } from '@application/services/meeting-summary.ser
 import { LoanStatus } from '@domain/enums/loan-status.enum';
 import { Member } from '@domain/entities/member.entity';
 import { StockSubscription } from '@domain/entities/stock-subscription.entity';
+import { Loan } from '@domain/entities/loan.entity';
+import { PendingMemberPayment } from '@domain/entities/pending-member-payment.entity';
+import { Meeting } from '@domain/entities/meeting.entity';
 
 @Injectable()
 export class GetDashboardMetricsQueryHandler {
@@ -46,38 +49,40 @@ export class GetDashboardMetricsQueryHandler {
       (s: StockSubscription) => s.status === 'active',
     );
     const stocksCount = activeSubscriptions.reduce(
-      (acc: number, s: StockSubscription) => acc + (s.sharesCount || 1),
+      (acc: number, s: StockSubscription): number => acc + (s.sharesCount || 1),
       0,
     );
     const stocksValue = activeSubscriptions.reduce(
-      (acc: number, s: StockSubscription) =>
+      (acc: number, s: StockSubscription): number =>
         acc + (s.totalValue || (s.sharesCount || 1) * (s.sharePrice || 0)),
       0,
     );
 
-    const loans = await this.loanRepository.findAll();
+    const loans: Loan[] = await this.loanRepository.findAll();
     const activeLoans = loans.filter(
-      (l) => (l.status as LoanStatus) === LoanStatus.ACTIVE,
+      (l: Loan) => (l.status as LoanStatus) === LoanStatus.ACTIVE,
     );
     const activeLoansCount = activeLoans.length;
 
     const totalPortfolioValue = activeLoans.reduce(
-      (acc, l) => acc + (l.balance || l.amount || 0),
+      (acc: number, l: Loan): number => acc + (l.balance || l.amount || 0),
       0,
     );
 
-    const pendingPayments =
+    const pendingPayments: PendingMemberPayment[] =
       await this.pendingMemberPaymentRepository.findWithFilters({
         status: 'pending',
         type: 'LOAN_PAYMENT',
       });
-    const overdueLoanIds = new Set(
-      pendingPayments.map((p) => p.loanId).filter(Boolean),
+    const overdueLoanIds = new Set<string>(
+      pendingPayments
+        .map((p: PendingMemberPayment) => p.loanId)
+        .filter((id): id is string => Boolean(id)),
     );
 
-    const overdueLoans = activeLoans.filter((l) => overdueLoanIds.has(l.id));
+    const overdueLoans = activeLoans.filter((l: Loan) => overdueLoanIds.has(l.id));
     const overduePortfolioValue = overdueLoans.reduce(
-      (acc, l) => acc + (l.balance || l.amount || 0),
+      (acc: number, l: Loan): number => acc + (l.balance || l.amount || 0),
       0,
     );
 
@@ -86,10 +91,10 @@ export class GetDashboardMetricsQueryHandler {
         ? Number(((overduePortfolioValue / totalPortfolioValue) * 100).toFixed(1))
         : 0;
 
-    const meetings = await this.meetingRepository.findAll();
+    const meetings: Meeting[] = await this.meetingRepository.findAll();
     const closedMeetings = meetings
-      .filter((m) => m.status === 'closed')
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .filter((m: Meeting) => m.status === 'closed')
+      .sort((a: Meeting, b: Meeting) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     let monthlyCollectedValue = 0;
     if (closedMeetings.length > 0) {
