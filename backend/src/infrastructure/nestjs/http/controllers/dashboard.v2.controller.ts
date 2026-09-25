@@ -2,8 +2,10 @@ import { Controller, Get, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { GetMonthlyMovementsQueryHandler } from '@application/queries/dashboard/get-monthly-movements.query-handler';
 import { GetPortfolioStatusQueryHandler } from '@application/queries/dashboard/get-portfolio-status.query-handler';
+import { GetDashboardMetricsQueryHandler } from '@application/queries/dashboard/get-dashboard-metrics.query-handler';
 import { GetMonthlyMovementsResponseHttpDto } from '../dto/dashboard/monthly-movements-response-http.dto';
 import { GetPortfolioStatusResponseHttpDto } from '../dto/dashboard/portfolio-status-response-http.dto';
+import { GetDashboardMetricsResponseHttpDto } from '../dto/dashboard/get-dashboard-metrics-response-http.dto';
 import { DashboardSessionResponseHttpDto } from '../dto/dashboard/dashboard-session-response-http.dto';
 
 @ApiTags('Dashboard V2')
@@ -12,6 +14,7 @@ export class DashboardV2Controller {
   constructor(
     private readonly getMonthlyMovementsQuery: GetMonthlyMovementsQueryHandler,
     private readonly getPortfolioStatusQuery: GetPortfolioStatusQueryHandler,
+    private readonly getDashboardMetricsQuery: GetDashboardMetricsQueryHandler,
   ) {}
 
   @Get()
@@ -27,6 +30,50 @@ export class DashboardV2Controller {
   })
   getDashboardSession(): DashboardSessionResponseHttpDto {
     return { status: 'ok' };
+  }
+
+  @Get('metrics')
+  @ApiOperation({
+    summary: 'Get dashboard summary metrics',
+    description:
+      'Retrieves metrics for active members, total stocks, active loans, portfolio totals, overdue amounts, and monthly collection.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Dashboard metrics retrieved successfully',
+    type: GetDashboardMetricsResponseHttpDto,
+  })
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async getDashboardMetrics(): Promise<GetDashboardMetricsResponseHttpDto> {
+    const result = await this.getDashboardMetricsQuery.execute();
+
+    return {
+      active_members: {
+        count: result.activeMembers.count,
+        total: result.activeMembers.total,
+        change_percent: result.activeMembers.changePercent,
+      },
+      total_stocks: {
+        count: result.totalStocks.count,
+        value: result.totalStocks.value,
+        change_percent: result.totalStocks.changePercent,
+      },
+      active_loans: {
+        count: result.activeLoans.count,
+        in_portfolio: result.activeLoans.inPortfolio,
+      },
+      total_portfolio: {
+        value: result.totalPortfolio.value,
+      },
+      overdue_portfolio: {
+        value: result.overduePortfolio.value,
+        percent_of_total: result.overduePortfolio.percentOfTotal,
+      },
+      monthly_collected: {
+        value: result.monthlyCollected.value,
+        change_percent: result.monthlyCollected.changePercent,
+      },
+    };
   }
 
   @Get('monthly-movements')
