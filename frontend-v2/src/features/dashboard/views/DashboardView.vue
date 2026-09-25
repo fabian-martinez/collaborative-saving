@@ -151,9 +151,9 @@ const nextMeetingDate = computed(() => {
   if (!store.nextMeeting) return ''
   const date = new Date(store.nextMeeting.date)
   return new Intl.DateTimeFormat('es-ES', {
-    weekday: 'long',
     day: 'numeric',
-    month: 'long'
+    month: 'long',
+    year: 'numeric'
   }).format(date)
 })
 </script>
@@ -229,8 +229,7 @@ const nextMeetingDate = computed(() => {
           <h2 class="card-title">Próxima Reunión</h2>
           <div v-if="store.nextMeeting" class="space-y-4">
             <div>
-              <p class="text-2xl font-bold">Reunión #{{ store.nextMeeting.number }}</p>
-              <p class="text-sm text-base-content/60 mt-1">{{ nextMeetingDate }}</p>
+              <p class="text-2xl font-bold capitalize">{{ nextMeetingDate }}</p>
             </div>
             <div class="space-y-2">
               <div class="flex justify-between">
@@ -249,6 +248,9 @@ const nextMeetingDate = computed(() => {
             <button @click="handleStartMeeting" class="btn btn-primary w-full">
               Iniciar Reunión →
             </button>
+          </div>
+          <div v-else class="text-base-content/60 py-4">
+            No hay ninguna reunión programada o activa en este momento.
           </div>
         </div>
       </div>
