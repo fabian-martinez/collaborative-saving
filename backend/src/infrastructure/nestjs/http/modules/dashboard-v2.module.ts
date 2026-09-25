@@ -64,7 +64,11 @@ import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-r
           memberRepo,
           ledgerEntryRepo,
         ),
-      inject: [OPERATION_REPOSITORY, MEMBER_REPOSITORY, LEDGER_ENTRY_REPOSITORY],
+      inject: [
+        OPERATION_REPOSITORY,
+        MEMBER_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+      ],
     },
   ],
 })
