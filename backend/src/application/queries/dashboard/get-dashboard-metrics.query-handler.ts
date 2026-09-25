@@ -14,6 +14,8 @@ import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pendi
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { MeetingSummaryService } from '@application/services/meeting-summary.service';
 import { LoanStatus } from '@domain/enums/loan-status.enum';
+import { Member } from '@domain/entities/member.entity';
+import { StockSubscription } from '@domain/entities/stock-subscription.entity';
 
 @Injectable()
 export class GetDashboardMetricsQueryHandler {
@@ -32,24 +34,24 @@ export class GetDashboardMetricsQueryHandler {
   ) {}
 
   async execute(): Promise<GetDashboardMetricsResponseDto> {
-    const allMembers = await this.memberRepository.findAll();
+    const allMembers: Member[] = await this.memberRepository.findActive();
     const totalMembersCount = allMembers.length;
     const activeMembersCount = allMembers.filter(
-      (m) => m.status === 'active',
+      (m: Member) => m.status === 'active',
     ).length;
 
-    const subscriptions = await this.stockSubscriptionRepository.findAll();
+    const subscriptions: StockSubscription[] =
+      await this.stockSubscriptionRepository.findByStocks([]);
     const activeSubscriptions = subscriptions.filter(
-      (s) => s.status === 'active',
+      (s: StockSubscription) => s.status === 'active',
     );
     const stocksCount = activeSubscriptions.reduce(
-      (acc, s) => acc + (s.sharesCount || s.shares_count || 1),
+      (acc: number, s: StockSubscription) => acc + (s.sharesCount || 1),
       0,
     );
     const stocksValue = activeSubscriptions.reduce(
-      (acc, s) =>
-        acc +
-        (s.totalValue || s.total_value || (s.sharesCount || 1) * (s.sharePrice || 0)),
+      (acc: number, s: StockSubscription) =>
+        acc + (s.totalValue || (s.sharesCount || 1) * (s.sharePrice || 0)),
       0,
     );
 

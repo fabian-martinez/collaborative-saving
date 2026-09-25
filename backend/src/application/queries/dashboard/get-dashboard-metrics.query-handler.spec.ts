@@ -6,6 +6,12 @@ import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pendi
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { MeetingSummaryService } from '@application/services/meeting-summary.service';
 import { LoanStatus } from '@domain/enums/loan-status.enum';
+import { Member } from '@domain/entities/member.entity';
+import { StockSubscription } from '@domain/entities/stock-subscription.entity';
+import { Loan } from '@domain/entities/loan.entity';
+import { PendingMemberPayment } from '@domain/entities/pending-member-payment.entity';
+import { Meeting } from '@domain/entities/meeting.entity';
+import { DetailedMeetingSummary } from '@application/dto/meetings/detailed-meeting-summary.dto';
 
 describe('GetDashboardMetricsQueryHandler', () => {
   let handler: GetDashboardMetricsQueryHandler;
@@ -18,11 +24,11 @@ describe('GetDashboardMetricsQueryHandler', () => {
 
   beforeEach(() => {
     memberRepository = {
-      findAll: jest.fn(),
+      findActive: jest.fn(),
     } as unknown as jest.Mocked<MemberRepository>;
 
     stockSubscriptionRepository = {
-      findAll: jest.fn(),
+      findByStocks: jest.fn(),
     } as unknown as jest.Mocked<StockSubscriptionRepository>;
 
     loanRepository = {
@@ -53,40 +59,40 @@ describe('GetDashboardMetricsQueryHandler', () => {
 
   it('should calculate metrics correctly', async () => {
     // Members mock
-    memberRepository.findAll.mockResolvedValue([
-      { id: '1', status: 'active' } as any,
-      { id: '2', status: 'active' } as any,
-      { id: '3', status: 'inactive' } as any,
+    memberRepository.findActive.mockResolvedValue([
+      { id: '1', status: 'active' } as Member,
+      { id: '2', status: 'active' } as Member,
+      { id: '3', status: 'inactive' } as Member,
     ]);
 
     // Stock subscriptions mock
-    stockSubscriptionRepository.findAll.mockResolvedValue([
-      { status: 'active', sharesCount: 10, sharePrice: 100, totalValue: 1000 } as any,
-      { status: 'active', sharesCount: 5, sharePrice: 200, totalValue: 1000 } as any,
-      { status: 'cancelled', sharesCount: 2, sharePrice: 100, totalValue: 200 } as any,
+    stockSubscriptionRepository.findByStocks.mockResolvedValue([
+      { status: 'active', sharesCount: 10, sharePrice: 100, totalValue: 1000 } as StockSubscription,
+      { status: 'active', sharesCount: 5, sharePrice: 200, totalValue: 1000 } as StockSubscription,
+      { status: 'cancelled', sharesCount: 2, sharePrice: 100, totalValue: 200 } as StockSubscription,
     ]);
 
     // Loans mock
     loanRepository.findAll.mockResolvedValue([
-      { id: 'loan-1', status: LoanStatus.ACTIVE, balance: 5000 } as any,
-      { id: 'loan-2', status: LoanStatus.ACTIVE, balance: 5000 } as any,
-      { id: 'loan-3', status: LoanStatus.PAID, balance: 0 } as any,
+      { id: 'loan-1', status: LoanStatus.ACTIVE, balance: 5000 } as Loan,
+      { id: 'loan-2', status: LoanStatus.ACTIVE, balance: 5000 } as Loan,
+      { id: 'loan-3', status: LoanStatus.PAID, balance: 0 } as Loan,
     ]);
 
     // Pending payments mock (loan-2 is overdue)
     pendingMemberPaymentRepository.findWithFilters.mockResolvedValue([
-      { loanId: 'loan-2', status: 'pending', type: 'LOAN_PAYMENT' } as any,
+      { loanId: 'loan-2', status: 'pending', type: 'LOAN_PAYMENT' } as PendingMemberPayment,
     ]);
 
     // Meetings mock
     meetingRepository.findAll.mockResolvedValue([
-      { id: 'm1', status: 'closed', date: new Date('2026-01-01') } as any,
-      { id: 'm2', status: 'closed', date: new Date('2026-02-01') } as any,
+      { id: 'm1', status: 'closed', date: new Date('2026-01-01') } as Meeting,
+      { id: 'm2', status: 'closed', date: new Date('2026-02-01') } as Meeting,
     ]);
 
     meetingSummaryService.calculateSummary.mockResolvedValue({
       totalCollected: 15000,
-    } as any);
+    } as DetailedMeetingSummary);
 
     const result = await handler.execute();
 
