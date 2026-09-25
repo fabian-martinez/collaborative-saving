@@ -133,8 +133,8 @@ export class TypeOrmPendingMemberPaymentRepository implements PendingMemberPayme
     }
 
     if (
-      payment.status === PendingMemberPaymentStatus.PAID ||
-      payment.status === PendingMemberPaymentStatus.REJECTED
+      payment.status === (PendingMemberPaymentStatus.PAID as string) ||
+      payment.status === (PendingMemberPaymentStatus.REJECTED as string)
     ) {
       return 0;
     }
