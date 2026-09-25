@@ -3,6 +3,7 @@ import { DashboardV2Controller } from '../controllers/dashboard.v2.controller';
 import { GetMonthlyMovementsQueryHandler } from '@application/queries/dashboard/get-monthly-movements.query-handler';
 import { GetPortfolioStatusQueryHandler } from '@application/queries/dashboard/get-portfolio-status.query-handler';
 import { GetDashboardMetricsQueryHandler } from '@application/queries/dashboard/get-dashboard-metrics.query-handler';
+import { GetRecentActivityQueryHandler } from '@application/queries/dashboard/get-recent-activity.query-handler';
 import { MeetingSummaryService } from '@application/services/meeting-summary.service';
 import { MeetingsV2Module } from './meetings-v2.module';
 import { AccountingV2Module } from './accounting-v2.module';
@@ -17,6 +18,8 @@ import {
   LOAN_REPOSITORY,
   PENDING_MEMBER_PAYMENT_REPOSITORY,
   MEETING_REPOSITORY,
+  OPERATION_REPOSITORY,
+  LEDGER_ENTRY_REPOSITORY,
 } from '@domain/constants/injection-tokens';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
 import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-subscription-repository.port';
@@ -24,6 +27,8 @@ import { StockRepository } from '@domain/ports/repositories/stock-repository.por
 import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
 import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pending-member-payment-repository.port';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
+import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
+import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-repository.port';
 
 @Module({
   imports: [
@@ -80,6 +85,24 @@ import { MeetingRepository } from '@domain/ports/repositories/meeting-repository
         PENDING_MEMBER_PAYMENT_REPOSITORY,
         MEETING_REPOSITORY,
         MeetingSummaryService,
+      ],
+    },
+    {
+      provide: GetRecentActivityQueryHandler,
+      useFactory: (
+        operationRepo: OperationRepository,
+        memberRepo: MemberRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+      ) =>
+        new GetRecentActivityQueryHandler(
+          operationRepo,
+          memberRepo,
+          ledgerEntryRepo,
+        ),
+      inject: [
+        OPERATION_REPOSITORY,
+        MEMBER_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
       ],
     },
   ],
