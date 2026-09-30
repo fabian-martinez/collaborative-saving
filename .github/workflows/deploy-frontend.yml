@@ -29,8 +29,6 @@ permissions:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-    env:
-      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
     steps:
       - name: Checkout repository
@@ -48,7 +46,7 @@ jobs:
       - name: Install dependencies (Web)
         run: |
           cd frontend-v2
-          npm install
+          npm ci
 
       - name: Build Web frontend (Vue 3)
         env:
@@ -68,7 +66,7 @@ jobs:
       - name: Install dependencies (Mobile)
         run: |
           cd frontend-mobile
-          npm install
+          npm ci
 
       - name: Build Mobile frontend (Vue 3 Mobile)
         env:
@@ -85,13 +83,13 @@ jobs:
           npm run build
 
       - name: Check Firebase Service Account Secret
-        if: env.FIREBASE_SERVICE_ACCOUNT == ''
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && secrets.FIREBASE_SERVICE_ACCOUNT == ''
         run: |
           echo "::warning::El secreto 'FIREBASE_SERVICE_ACCOUNT' no esta configurado en GitHub Secrets."
           echo "::warning::Para habilitar el despliegue automatico en Firebase Hosting, agrega 'FIREBASE_SERVICE_ACCOUNT' en Settings -> Secrets and variables -> Actions."
 
       - name: Deploy Web Preview to Firebase Hosting (on PR)
-        if: github.event_name == 'pull_request' && env.FIREBASE_SERVICE_ACCOUNT != ''
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && secrets.FIREBASE_SERVICE_ACCOUNT != ''
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
@@ -100,7 +98,7 @@ jobs:
           projectId: ${{ secrets.VITE_FIREBASE_PROJECT_ID || 'collaborative-saving' }}
 
       - name: Deploy Mobile Preview to Firebase Hosting (on PR)
-        if: github.event_name == 'pull_request' && env.FIREBASE_SERVICE_ACCOUNT != ''
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && secrets.FIREBASE_SERVICE_ACCOUNT != ''
         continue-on-error: true
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
@@ -110,7 +108,7 @@ jobs:
           projectId: ${{ secrets.VITE_FIREBASE_PROJECT_ID || 'collaborative-saving' }}
 
       - name: Deploy Web Live to Firebase Hosting (on Main)
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && env.FIREBASE_SERVICE_ACCOUNT != ''
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && secrets.FIREBASE_SERVICE_ACCOUNT != ''
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
@@ -120,7 +118,7 @@ jobs:
           projectId: ${{ secrets.VITE_FIREBASE_PROJECT_ID || 'collaborative-saving' }}
 
       - name: Deploy Mobile Live to Firebase Hosting (on Main)
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && env.FIREBASE_SERVICE_ACCOUNT != ''
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && secrets.FIREBASE_SERVICE_ACCOUNT != ''
         continue-on-error: true
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
