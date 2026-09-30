@@ -8,3 +8,10 @@ coverage
 !backend/.env.example
 npm-debug.log*
 .DS_Store
+
+# Credentials and secrets
+*-adminsdk-*.json
+secrets/
+*.sql
+*.csv
+

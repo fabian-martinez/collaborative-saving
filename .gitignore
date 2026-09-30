@@ -147,8 +147,6 @@ FONDO_FAMILIAR_v3-1.xlsx
 seed_poblacion.sql
 tabla1_limpia.csv
 tabla2_limpia.csv
-seed_poblacion.sql
-seed_poblacion.sql
 docs/.DS_Store
 .DS_Store
 supabase/*.sql
@@ -156,6 +154,10 @@ backend/.env.test
 backend/secrets/
 docs/screenshots/
 docs/stitch_screens/
+
+# Data and logs
+infra/data/
+restoration_log.txt
 
 # Firebase Admin SDK credentials
 backend/*-adminsdk-*.json
@@ -169,6 +171,10 @@ backend/*.json
 infra/backups/
 infra/database/backups/
 
+# Scratch workspace (temporary files, preserve documentation)
+scratch/*
+!scratch/README.md
+
 # Agent and CLI artifacts
 .antigravitycli/
 ui_design.pen
@@ -176,3 +182,4 @@ ui_design.pen
 .agents/
 skills-lock.json
 .build/
+
