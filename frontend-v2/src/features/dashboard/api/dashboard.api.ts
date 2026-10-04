@@ -66,8 +66,8 @@ export const dashboardApi = {
     if (USE_MOCKS) {
       return mockApi.getDashboardMetrics()
     }
-    // TODO: Implementar llamada real a API
-    throw new Error('Not implemented')
+    const response = await apiClient.get<DashboardMetrics>('/v2/dashboard/metrics')
+    return response.data
   },
 
   async getMonthlyMovements(): Promise<MonthlyMovements> {
@@ -102,4 +102,3 @@ export const dashboardApi = {
     return response.data
   }
 }
-
