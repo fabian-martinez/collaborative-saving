@@ -1078,7 +1078,6 @@ export const mockApi = {
     await delay()
     return {
       id: '24',
-      number: 24,
       date: '2024-01-15T10:00:00Z',
       participants: 42,
       stock_value: 50000,

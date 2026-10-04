@@ -1,5 +1,6 @@
 import apiClient from '@/api/client'
 import { mockApi } from '@/api/mocks'
+import { meetingsApi } from '@/api/meetings.api'
 
 const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
 
@@ -39,7 +40,6 @@ export interface MonthlyMovements {
 
 export interface NextMeeting {
   id: string
-  number: number
   date: string
   participants: number
   stock_value: number
@@ -78,12 +78,23 @@ export const dashboardApi = {
     return response.data
   },
 
-  async getNextMeeting(): Promise<NextMeeting> {
+  async getNextMeeting(): Promise<NextMeeting | null> {
     if (USE_MOCKS) {
       return mockApi.getNextMeeting()
     }
-    // TODO: Implementar llamada real a API
-    throw new Error('Not implemented')
+    try {
+      const activeMeeting = await meetingsApi.getActiveMeeting()
+      if (!activeMeeting) return null
+      return {
+        id: activeMeeting.id,
+        date: typeof activeMeeting.date === 'string' ? activeMeeting.date : activeMeeting.date.toISOString(),
+        participants: activeMeeting.summary?.participants_count ?? 0,
+        stock_value: activeMeeting.summary?.total_stock_investment ?? 0,
+        active_loans: activeMeeting.summary?.total_loans ?? 0
+      }
+    } catch {
+      return null
+    }
   },
 
   async getRecentActivity(): Promise<RecentActivity[]> {
