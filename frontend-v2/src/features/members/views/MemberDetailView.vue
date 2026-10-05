@@ -287,9 +287,8 @@ function handlePaymentSuccess() {
   ])
 }
 
-function handleViewDetail(type: string, id: string) {
+function handleViewDetail(_type: string, _id: string) {
   // Navegar o mostrar detalles según el tipo
-  console.log('View detail:', type, id)
 }
 
 function handleViewSubscription(subscriptionId: string) {
@@ -306,22 +305,19 @@ function handlePayLoan(_loanId: string) {
   showRegisterPaymentModal.value = true
 }
 
-function handleViewPaymentDetail(paymentId: string) {
-  console.log('View payment detail:', paymentId)
+function handleViewPaymentDetail(_paymentId: string) {
+  // TODO: Implementar vista de detalle de pago
 }
 
-function handleExchange(subscription: any) {
-  console.log('Exchange:', subscription)
+function handleExchange(_subscription: any) {
   // Navigate to exchange modal or form
 }
 
-function handleTransfer(subscription: any) {
-  console.log('Transfer:', subscription)
+function handleTransfer(_subscription: any) {
   // Navigate to transfer modal or form
 }
 
-function handleUseForPayment(subscription: any) {
-  console.log('Use for payment:', subscription)
+function handleUseForPayment(_subscription: any) {
   // Navigate to payment form with stock selected
 }
 
