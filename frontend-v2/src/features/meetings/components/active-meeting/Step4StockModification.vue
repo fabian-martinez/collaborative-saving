@@ -918,6 +918,7 @@ import OperationDetails from '@/shared/components/OperationDetails.vue'
 import PrintReceiptModal from '@/shared/components/PrintReceiptModal.vue'
 import CopyOnDblClickNumber from '@/shared/components/CopyOnDblClickNumber.vue'
 import { formatCurrency } from '@/shared/utils/formatters'
+import { useToast } from '@/shared/composables/useToast'
 
 // 2. Props y emits
 defineEmits<{
@@ -925,6 +926,7 @@ defineEmits<{
 }>()
 
 // 3. Composables y stores
+const toast = useToast()
 const store = useActiveMeetingStore()
 const stockModification = useStockModification()
 const paymentCollection = usePaymentCollection()
@@ -1389,9 +1391,9 @@ async function confirmTransfer() {
     await stockModification.processTransfer(selectedMember.value.id, data)
     stockModification.showTransferReceipt.value = false
     stockModification.transferReceipt.value = null
-    alert('Transferencia procesada exitosamente')
+    toast.success('Transferencia procesada exitosamente')
   } catch (e) {
-    alert('Error al procesar la transferencia')
+    toast.error('Error al procesar la transferencia')
     console.error(e)
   }
 }
@@ -1410,9 +1412,9 @@ async function confirmLoanPayment() {
     await stockModification.processLoanPayment(selectedMember.value.id, data)
     stockModification.showLoanPaymentReceipt.value = false
     stockModification.loanPaymentReceipt.value = null
-    alert('Pago de crédito procesado exitosamente')
+    toast.success('Pago de crédito procesado exitosamente')
   } catch (e) {
-    alert('Error al procesar el pago de crédito')
+    toast.error('Error al procesar el pago de crédito')
     console.error(e)
   }
 }
@@ -1430,9 +1432,9 @@ async function confirmCashLoanPayment() {
     await stockModification.processCashLoanPayment(selectedMember.value.id, data)
     stockModification.showCashLoanPaymentReceipt.value = false
     stockModification.cashLoanPaymentReceipt.value = null
-    alert('Abono procesado exitosamente')
+    toast.success('Abono procesado exitosamente')
   } catch (e) {
-    alert('Error al procesar el abono a crédito')
+    toast.error('Error al procesar el abono a crédito')
     console.error(e)
   }
 }
@@ -1454,9 +1456,9 @@ async function confirmModification() {
     await stockModification.processExchange(selectedMember.value.id, data)
     stockModification.showModificationReceipt.value = false
     stockModification.modificationReceipt.value = null
-    alert('Modificación procesada exitosamente')
+    toast.success('Modificación procesada exitosamente')
   } catch (e) {
-    alert('Error al procesar la modificación')
+    toast.error('Error al procesar la modificación')
     console.error(e)
   }
 }
@@ -1470,7 +1472,7 @@ function closeOperationDetail() {
 }
 
 function saveDraft() {
-  alert('Borrador guardado exitosamente.')
+  toast.success('Borrador guardado exitosamente.')
 }
 
 // Lifecycle hooks

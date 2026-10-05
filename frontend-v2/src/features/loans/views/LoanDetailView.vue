@@ -192,6 +192,7 @@ import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import ErrorMessage from '@/shared/components/ErrorMessage.vue'
 import DataTable, { type Column } from '@/shared/components/DataTable.vue'
 import Pagination from '@/shared/components/Pagination.vue'
+import { useToast } from '@/shared/composables/useToast'
 import { Bar } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -212,6 +213,7 @@ ChartJS.register(
   Legend
 )
 
+const toast = useToast()
 const route = useRoute()
 const router = useRouter()
 const loan = ref<Loan | null>(null)
@@ -496,8 +498,9 @@ async function submitUpdate() {
     closeUpdateModal()
     // Reload loan to get fresh data
     await loadLoan()
+    toast.success('Crédito actualizado correctamente')
   } catch (e) {
-    alert(e instanceof Error ? e.message : 'Error al actualizar el crédito')
+    toast.error(e instanceof Error ? e.message : 'Error al actualizar el crédito')
   } finally {
     updating.value = false
   }

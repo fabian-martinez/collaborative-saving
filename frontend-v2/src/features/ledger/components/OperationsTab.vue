@@ -156,7 +156,9 @@ import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import ErrorMessage from '@/shared/components/ErrorMessage.vue'
 import Pagination from '@/shared/components/Pagination.vue'
 import { ACCOUNT_TYPE_LABELS, type AccountType } from '@/features/ledger/constants/account-types'
+import { useToast } from '@/shared/composables/useToast'
 
+const toast = useToast()
 const loading = ref(false)
 const error = ref<string | null>(null)
 const operations = ref<{ data: Operation[]; page: number; limit: number; total: number }>({
@@ -420,9 +422,10 @@ async function exportData() {
 
     const { exportToCSV } = await import('@/shared/utils/export')
     exportToCSV(exportData, `operaciones-${new Date().toISOString().split('T')[0]}`)
+    toast.success('Operaciones exportadas exitosamente')
   } catch (e) {
     console.error('Error al exportar operaciones:', e)
-    alert('Error al exportar operaciones')
+    toast.error('Error al exportar operaciones')
   }
 }
 

@@ -15,6 +15,7 @@ import { GetMeetingQueryHandler } from '@application/queries/meetings/get-meetin
 import { GetActiveMeetingQueryHandler } from '@application/queries/meetings/get-active-meeting.query-handler';
 import { GetRevaluationQueryHandler } from '@application/queries/meetings/get-revaluation.query-handler';
 import { GetDetailedMeetingSummaryQueryHandler } from '@application/queries/meetings/get-detailed-meeting-summary.query-handler';
+import { GetMeetingFundsSummaryQueryHandler } from '@application/queries/meetings/get-meeting-funds-summary.query-handler';
 import { RecordRevaluationUseCase } from '@application/use-cases/meetings/record-revaluation.use-case';
 import { MeetingStatus } from '@domain/entities/meeting.entity';
 import { OpenMeetingResponseHttpDto } from '../dto/open-meeting-response-http.dto';
@@ -41,6 +42,7 @@ describe('MeetingsV2Controller', () => {
   let getMeetingStockLoanPaymentsQuery: jest.Mocked<GetMeetingStockLoanPaymentsQueryHandler>;
   let getRevaluationQuery: jest.Mocked<GetRevaluationQueryHandler>;
   let getDetailedMeetingSummaryQuery: jest.Mocked<GetDetailedMeetingSummaryQueryHandler>;
+  let getMeetingFundsSummaryQuery: jest.Mocked<GetMeetingFundsSummaryQueryHandler>;
   let recordRevaluationUseCase: jest.Mocked<RecordRevaluationUseCase>;
   let getDisbursementPlanPreviewQuery: jest.Mocked<GetDisbursementPlanPreviewQueryHandler>;
   let executeDisbursementPlanUseCase: jest.Mocked<ExecuteDisbursementPlanUseCase>;
@@ -56,6 +58,7 @@ describe('MeetingsV2Controller', () => {
   let getMeetingStockExchangesQueryExecuteSpy: jest.SpyInstance;
   let getMeetingStockLoanPaymentsQueryExecuteSpy: jest.SpyInstance;
   let getRevaluationQueryExecuteSpy: jest.SpyInstance;
+  let getMeetingFundsSummaryQueryExecuteSpy: jest.SpyInstance;
   let recordRevaluationUseCaseExecuteSpy: jest.SpyInstance;
   let getDisbursementPlanPreviewQueryExecuteSpy: jest.SpyInstance;
   let executeDisbursementPlanUseCaseExecuteSpy: jest.SpyInstance;
@@ -170,6 +173,12 @@ describe('MeetingsV2Controller', () => {
             execute: jest.fn(),
           },
         },
+        {
+          provide: GetMeetingFundsSummaryQueryHandler,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -195,6 +204,9 @@ describe('MeetingsV2Controller', () => {
     getRevaluationQuery = module.get(GetRevaluationQueryHandler);
     getDetailedMeetingSummaryQuery = module.get(
       GetDetailedMeetingSummaryQueryHandler,
+    );
+    getMeetingFundsSummaryQuery = module.get(
+      GetMeetingFundsSummaryQueryHandler,
     );
     recordRevaluationUseCase = module.get(RecordRevaluationUseCase);
     getDisbursementPlanPreviewQuery = module.get(
@@ -231,6 +243,10 @@ describe('MeetingsV2Controller', () => {
       'execute',
     );
     getRevaluationQueryExecuteSpy = jest.spyOn(getRevaluationQuery, 'execute');
+    getMeetingFundsSummaryQueryExecuteSpy = jest.spyOn(
+      getMeetingFundsSummaryQuery,
+      'execute',
+    );
     recordRevaluationUseCaseExecuteSpy = jest.spyOn(
       recordRevaluationUseCase,
       'execute',
@@ -1503,6 +1519,126 @@ describe('MeetingsV2Controller', () => {
       await expect(
         controller.executeDisbursementPlan(meetingId, dto),
       ).rejects.toThrow(InvalidRequestError);
+    });
+  });
+
+  describe('getFundsSummary', () => {
+    const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+
+    it('should return mapped funds summary successfully', async () => {
+      // ARRANGE
+      const mockFundsSummary = {
+        meetingId,
+        loansByType: [
+          {
+            loanType: 'corriente',
+            loanTypeName: 'Corriente',
+            outstandingBalance: 1200000,
+            collectedThisMeeting: {
+              principal: 50000,
+              interest: 7500,
+              total: 57500,
+            },
+            activeCount: 3,
+          },
+          {
+            loanType: 'prioritario',
+            loanTypeName: 'Prioritario',
+            outstandingBalance: 0,
+            collectedThisMeeting: {
+              principal: 0,
+              interest: 0,
+              total: 0,
+            },
+            activeCount: 0,
+          },
+        ],
+        stocksByType: [
+          {
+            stockId: 'stock-1',
+            stockName: 'Acciones Ordinarias',
+            stockType: 'Acciones Ordinarias',
+            isGuaranteed: false,
+            totalShares: 100,
+            shareValue: 10000,
+            totalValue: 1000000,
+            activeSubscriptionsCount: 10,
+          },
+        ],
+      };
+
+      getMeetingFundsSummaryQueryExecuteSpy.mockResolvedValue(mockFundsSummary);
+
+      // ACT
+      const result = await controller.getFundsSummary(meetingId);
+
+      // ASSERT
+      expect(getMeetingFundsSummaryQueryExecuteSpy).toHaveBeenCalledWith(
+        meetingId,
+      );
+      expect(result).toEqual({
+        meeting_id: meetingId,
+        loans_by_type: [
+          {
+            loan_type: 'corriente',
+            loan_type_name: 'Corriente',
+            outstanding_balance: 1200000,
+            collected_this_meeting: {
+              principal: 50000,
+              interest: 7500,
+              total: 57500,
+            },
+            active_count: 3,
+          },
+          {
+            loan_type: 'prioritario',
+            loan_type_name: 'Prioritario',
+            outstanding_balance: 0,
+            collected_this_meeting: {
+              principal: 0,
+              interest: 0,
+              total: 0,
+            },
+            active_count: 0,
+          },
+        ],
+        stocks_by_type: [
+          {
+            stock_id: 'stock-1',
+            stock_name: 'Acciones Ordinarias',
+            stock_type: 'Acciones Ordinarias',
+            is_guaranteed: false,
+            total_shares: 100,
+            share_value: 10000,
+            total_value: 1000000,
+            active_subscriptions_count: 10,
+          },
+        ],
+      });
+    });
+
+    it('should throw MeetingNotFoundException when meeting is not found', async () => {
+      // ARRANGE
+      getMeetingFundsSummaryQueryExecuteSpy.mockRejectedValue(
+        new MeetingNotFoundException(meetingId),
+      );
+
+      // ACT & ASSERT
+      await expect(controller.getFundsSummary(meetingId)).rejects.toThrow(
+        MeetingNotFoundException,
+      );
+    });
+
+    it('should handle generic errors', async () => {
+      // ARRANGE
+      getMeetingFundsSummaryQueryExecuteSpy.mockRejectedValue(
+        new Error('Failed to get funds summary'),
+      );
+
+      // ACT & ASSERT
+      await expect(controller.getFundsSummary(meetingId)).rejects.toThrow(
+        'Failed to get funds summary',
+      );
     });
   });
 });

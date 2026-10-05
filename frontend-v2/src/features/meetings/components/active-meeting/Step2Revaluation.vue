@@ -391,9 +391,11 @@ import { meetingsApi, type RevaluationResponse } from '@/api/meetings.api'
 import { contributionsApi, type MandatoryContribution } from '@/api/contributions.api'
 import { formatCurrency } from '@/shared/utils/formatters'
 import { WarningTriangle, InfoCircle } from 'iconoir-vue/regular'
+import { useToast } from '@/shared/composables/useToast'
 
 type Status = 'idle' | 'loading' | 'success' | 'error'
 
+const toast = useToast()
 const status = ref<Status>('idle')
 const isExecuting = ref(false)
 const previewData = ref<RevaluationResponse | null>(null)
@@ -546,7 +548,7 @@ async function fetchPreview() {
 
 async function execute() {
   if (!store.meetingId) {
-    alert('Error: No hay ID de reunión activa.')
+    toast.error('Error: No hay ID de reunión activa.')
     return
   }
 
@@ -556,11 +558,11 @@ async function execute() {
   try {
     await meetingsApi.confirmRevaluation(store.meetingId)
     store.setRevaluationExecuted(true)
-    alert('Revalorización ejecutada con éxito.')
+    toast.success('Revalorización ejecutada con éxito.')
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Ocurrió un error desconocido.'
     errorMessage.value = `Fallo al ejecutar la revalorización: ${message}`
-    alert(`Error: ${errorMessage.value}`)
+    toast.error(`Error: ${errorMessage.value}`)
     console.error('Failed to execute revaluation:', err)
   } finally {
     isExecuting.value = false
@@ -572,7 +574,7 @@ function goToNextStep() {
 }
 
 function saveDraft() {
-  alert('Borrador guardado localmente.')
+  toast.success('Borrador guardado localmente.')
 }
 
 onMounted(() => {
