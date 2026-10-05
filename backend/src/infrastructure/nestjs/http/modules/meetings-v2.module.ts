@@ -25,6 +25,7 @@ import { GetMeetingQueryHandler } from '@application/queries/meetings/get-meetin
 import { GetActiveMeetingQueryHandler } from '@application/queries/meetings/get-active-meeting.query-handler';
 import { GetRevaluationQueryHandler } from '@application/queries/meetings/get-revaluation.query-handler';
 import { GetDetailedMeetingSummaryQueryHandler } from '@application/queries/meetings/get-detailed-meeting-summary.query-handler';
+import { GetMeetingFundsSummaryQueryHandler } from '@application/queries/meetings/get-meeting-funds-summary.query-handler';
 import { RecordRevaluationUseCase } from '@application/use-cases/meetings/record-revaluation.use-case';
 import { GetDisbursementPlanPreviewQueryHandler } from '@application/queries/meetings/get-disbursement-plan-preview.query-handler';
 import { ExecuteDisbursementPlanUseCase } from '@application/use-cases/meetings/execute-disbursement-plan.use-case';
@@ -325,6 +326,33 @@ import {
       ) =>
         new GetDetailedMeetingSummaryQueryHandler(meetingRepo, summaryService),
       inject: [MEETING_REPOSITORY, MeetingSummaryService],
+    },
+    {
+      provide: GetMeetingFundsSummaryQueryHandler,
+      useFactory: (
+        meetingRepo: MeetingRepository,
+        loanRepo: LoanRepository,
+        stockRepo: StockRepository,
+        stockSubscriptionRepo: StockSubscriptionRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+        operationRepo: OperationRepository,
+      ) =>
+        new GetMeetingFundsSummaryQueryHandler(
+          meetingRepo,
+          loanRepo,
+          stockRepo,
+          stockSubscriptionRepo,
+          ledgerEntryRepo,
+          operationRepo,
+        ),
+      inject: [
+        MEETING_REPOSITORY,
+        LOAN_REPOSITORY,
+        STOCK_REPOSITORY,
+        STOCK_SUBSCRIPTION_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+        OPERATION_REPOSITORY,
+      ],
     },
     {
       provide: GetDisbursementPlanPreviewQueryHandler,
