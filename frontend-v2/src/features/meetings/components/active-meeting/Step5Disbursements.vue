@@ -333,6 +333,7 @@ import { meetingsApi, type DisbursementPlanItem, type DisbursementPlanPreview } 
 import { useActiveMeetingStore } from '../../stores/activeMeeting'
 import { formatCurrency, formatDate } from '@/shared/utils/formatters'
 import { getDefaultInterestRate } from '@/features/loans/constants/loan-rates'
+import { useToast } from '@/shared/composables/useToast'
 
 // Components
 import PrintReceiptModal from '@/shared/components/PrintReceiptModal.vue'
@@ -341,6 +342,7 @@ import StockWithdrawalModal from './StockWithdrawalModal.vue'
 import OtherDisbursementModal from './OtherDisbursementModal.vue'
 import type { MemberStockForWithdrawal } from './StockWithdrawalModal.vue'
 
+const toast = useToast()
 const store = useActiveMeetingStore()
 const router = useRouter()
 const members = ref<Member[]>([])
@@ -978,7 +980,7 @@ async function closeActiveMeeting() {
 }
 
 function saveDraft() {
-  alert('Borrador guardado exitosamente.')
+  toast.success('Borrador guardado exitosamente.')
 }
 
 // Initialization
