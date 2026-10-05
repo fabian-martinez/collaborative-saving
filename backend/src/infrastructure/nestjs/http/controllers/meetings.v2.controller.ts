@@ -32,6 +32,7 @@ import { GetMeetingQueryHandler } from '@application/queries/meetings/get-meetin
 import { GetActiveMeetingQueryHandler } from '@application/queries/meetings/get-active-meeting.query-handler';
 import { GetRevaluationQueryHandler } from '@application/queries/meetings/get-revaluation.query-handler';
 import { GetDetailedMeetingSummaryQueryHandler } from '@application/queries/meetings/get-detailed-meeting-summary.query-handler';
+import { GetMeetingFundsSummaryQueryHandler } from '@application/queries/meetings/get-meeting-funds-summary.query-handler';
 import { RecordRevaluationUseCase } from '@application/use-cases/meetings/record-revaluation.use-case';
 import { OpenMeetingHttpDto } from '../dto/open-meeting-http.dto';
 import { CloseMeetingHttpDto } from '../dto/close-meeting-http.dto';
@@ -40,6 +41,8 @@ import { OpenMeetingResponseHttpDto } from '../dto/open-meeting-response-http.dt
 import { OperationResponseHttpDto } from '../dto/operation-response-http.dto';
 import { DetailedMeetingSummaryHttpDto } from '../dto/detailed-meeting-summary-http.dto';
 import { DetailedMeetingSummaryDto } from '@application/dto/meetings/detailed-meeting-summary.dto';
+import { GetMeetingFundsSummaryHttpDto } from '../dto/get-meeting-funds-summary-http.dto';
+import { MeetingFundsSummaryDto } from '@application/dto/meetings/get-meeting-funds-summary.dto';
 import { OperationResponseDto } from '@application/dto/meetings/operation-response.dto';
 import { RevaluationResponseHttpDto } from '../dto/revaluation-response-http.dto';
 import { RevaluationResultDto } from '@application/dto/meetings/revaluation-result.dto';
@@ -82,6 +85,7 @@ export class MeetingsV2Controller {
     private readonly getDisbursementPlanPreviewQuery: GetDisbursementPlanPreviewQueryHandler,
     private readonly executeDisbursementPlanUseCase: ExecuteDisbursementPlanUseCase,
     private readonly getDetailedMeetingSummaryQuery: GetDetailedMeetingSummaryQueryHandler,
+    private readonly getMeetingFundsSummaryQuery: GetMeetingFundsSummaryQueryHandler,
   ) {}
 
   @Post()
@@ -258,6 +262,36 @@ export class MeetingsV2Controller {
   ): Promise<DetailedMeetingSummaryHttpDto> {
     const result = await this.getDetailedMeetingSummaryQuery.execute(id);
     return this.mapDetailedSummaryToHttp(result);
+  }
+
+  @Get(':id/funds-summary')
+  @Roles(MemberRole.ADMIN)
+  @ApiOperation({
+    summary: 'Get funds summary by loan and stock types for a meeting',
+    description:
+      'Returns aggregated balances of active loans by type, collections in the current meeting (principal and interest), and active stock capital by stock type.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The unique identifier of the meeting',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Funds summary retrieved successfully',
+    type: GetMeetingFundsSummaryHttpDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad request - Invalid UUID format',
+  })
+  @ApiNotFoundResponse({
+    description: 'Meeting not found',
+  })
+  async getFundsSummary(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<GetMeetingFundsSummaryHttpDto> {
+    const result = await this.getMeetingFundsSummaryQuery.execute(id);
+    return this.mapFundsSummaryToHttp(result);
   }
 
   @Get(':id')
@@ -552,6 +586,35 @@ export class MeetingsV2Controller {
         payments_up_to_date: dto.metrics.paymentsUpToDate,
         overdue_payments: dto.metrics.overduePayments,
       },
+    };
+  }
+
+  private mapFundsSummaryToHttp(
+    dto: MeetingFundsSummaryDto,
+  ): GetMeetingFundsSummaryHttpDto {
+    return {
+      meeting_id: dto.meetingId,
+      loans_by_type: dto.loansByType.map((l) => ({
+        loan_type: l.loanType,
+        loan_type_name: l.loanTypeName,
+        outstanding_balance: l.outstandingBalance,
+        collected_this_meeting: {
+          principal: l.collectedThisMeeting.principal,
+          interest: l.collectedThisMeeting.interest,
+          total: l.collectedThisMeeting.total,
+        },
+        active_count: l.activeCount,
+      })),
+      stocks_by_type: dto.stocksByType.map((s) => ({
+        stock_id: s.stockId,
+        stock_name: s.stockName,
+        stock_type: s.stockType,
+        is_guaranteed: s.isGuaranteed,
+        total_shares: s.totalShares,
+        share_value: s.shareValue,
+        total_value: s.totalValue,
+        active_subscriptions_count: s.activeSubscriptionsCount,
+      })),
     };
   }
 

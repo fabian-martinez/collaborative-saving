@@ -287,6 +287,12 @@ The changes primarily consist of minor refactoring in a test file to enhance moc
 
 ### Explanation
 The changes improve the handling of Firebase service account secrets within the GitHub Actions workflow, enhancing CI/CD robustness. This modification does not violate any of the project's architectural, domain, API naming, or dependency injection rules, as these rules are specific to the backend application codebase.
+## Review Session: 10/4/2026, 9:11:32 PM (Colombia)
+- **Branch:** `fix/issue-330-codecov-action-v5`
+- **Verdict:** ✅ **APPROVED**
+
+### Explanation
+The change updates the Codecov GitHub Action to v5, including necessary configuration for token handling and error tolerance. This is a standard and acceptable update for CI/CD infrastructure and does not violate any project rules regarding architecture, financial transactions, API conventions, or NestJS dependency injection.
 
 ### Issues / Suggested Improvements
 - *No architectural violations or issues found. Excellent work!*
@@ -299,6 +305,24 @@ The changes improve the handling of Firebase service account secrets within the 
 
 ### Explanation
 The provided Git Diff modifies a GitHub Actions workflow file, specifically improving how the `FIREBASE_SERVICE_ACCOUNT` secret is checked and utilized for conditional deployment steps. This is a positive change for the CI/CD pipeline, making secret validation more explicit and robust within the workflow. The changes do not touch any application source code or violate any of the strict architectural or coding rules.
+## Review Session: 10/4/2026, 9:48:58 PM (Colombia)
+- **Branch:** `fix/issue-334-deploy-frontend-step-output`
+- **Verdict:** ✅ **APPROVED**
+
+### Explanation
+The Git Diff introduces changes to the GitHub Actions workflow for frontend deployment. The modifications refactor the way the presence of the 'FIREBASE_SERVICE_ACCOUNT' secret is checked and utilized, improving the workflow's clarity and robustness. These changes are isolated to CI/CD configuration and do not impact the application's codebase or violate any of the project's strict architectural, accounting, API, or dependency injection rules.
+
+### Issues / Suggested Improvements
+- *No architectural violations or issues found. Excellent work!*
+
+---
+
+## Review Session: 10/5/2026, 8:32:15 AM (Colombia)
+- **Branch:** `fix/issue-336-frontend-v2-lockfile`
+- **Verdict:** ✅ **APPROVED**
+
+### Explanation
+The Git Diff focuses solely on frontend-v2 dependency updates (package.json and package-lock.json). The changes primarily involve internal dependency resolution for `tailwindcss` and a minor adjustment to a `minimatch` override. None of the strict project rules regarding backend architecture, financial transactions, API naming, or NestJS dependency injection are applicable to this frontend-only dependency update. The changes appear to be standard maintenance and do not introduce any violations.
 
 ### Issues / Suggested Improvements
 - *No architectural violations or issues found. Excellent work!*

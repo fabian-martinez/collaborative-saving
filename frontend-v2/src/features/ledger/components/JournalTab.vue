@@ -97,7 +97,9 @@ import { ACCOUNT_TYPE_LABELS, type AccountType } from '../constants/account-type
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import ErrorMessage from '@/shared/components/ErrorMessage.vue'
 import Pagination from '@/shared/components/Pagination.vue'
+import { useToast } from '@/shared/composables/useToast'
 
+const toast = useToast()
 const loading = ref(false)
 const error = ref<string | null>(null)
 const entries = ref<{ data: LedgerEntry[]; page: number; limit: number; total: number }>({
@@ -295,9 +297,10 @@ async function exportData() {
 
     const { exportToCSV } = await import('@/shared/utils/export')
     exportToCSV(exportData, `libro-diario-${new Date().toISOString().split('T')[0]}`)
+    toast.success('Libro diario exportado exitosamente')
   } catch (e) {
     console.error('Error al exportar libro diario:', e)
-    alert('Error al exportar libro diario')
+    toast.error('Error al exportar libro diario')
   }
 }
 

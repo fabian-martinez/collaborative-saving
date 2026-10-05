@@ -2,9 +2,11 @@
  * Utilidades para exportar datos a CSV
  */
 
+import { useToast } from '@/shared/composables/useToast'
+
 export function exportToCSV(data: Record<string, unknown>[], filename: string): void {
   if (data.length === 0) {
-    alert('No hay datos para exportar')
+    useToast().warning('No hay datos para exportar')
     return
   }
 
@@ -59,7 +61,7 @@ export function exportTableToCSV(
   filename: string
 ): void {
   if (data.length === 0) {
-    alert('No hay datos para exportar')
+    useToast().warning('No hay datos para exportar')
     return
   }
 
