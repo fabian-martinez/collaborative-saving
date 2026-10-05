@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { membersApi } from './members.api';
 import { meetingsApi } from './meetings.api';
 import { fundApi } from './fund.api';
+import { authApi } from './auth.api';
 import apiClient from './client';
 import { ApiException } from './types';
 
@@ -247,6 +248,38 @@ describe('API Services', () => {
 
       expect(getSpy).toHaveBeenCalledWith('/v2/dashboard/fund-summary');
       expect(result).toEqual(mockFundSummary);
+    });
+  });
+
+  describe('authApi', () => {
+    it('validateEmail should POST /v2/auth/validate-email', async () => {
+      const mockResponse = { exists: true, active: true };
+      const postSpy = vi.spyOn(apiClient, 'post').mockResolvedValue({ data: mockResponse });
+
+      const result = await authApi.validateEmail('socio@ejemplo.com');
+
+      expect(postSpy).toHaveBeenCalledWith('/v2/auth/validate-email', {
+        email: 'socio@ejemplo.com',
+      });
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('getMe should GET /v2/auth/me', async () => {
+      const mockProfile = {
+        id: 'member-1',
+        name: 'Carlos Martínez',
+        email: 'carlos@ejemplo.com',
+        role: 'member',
+        status: 'active',
+        identification_number: '123456789',
+        phone: '+573001234567',
+      };
+      const getSpy = vi.spyOn(apiClient, 'get').mockResolvedValue({ data: mockProfile });
+
+      const result = await authApi.getMe();
+
+      expect(getSpy).toHaveBeenCalledWith('/v2/auth/me');
+      expect(result).toEqual(mockProfile);
     });
   });
 });

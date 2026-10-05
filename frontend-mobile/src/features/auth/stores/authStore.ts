@@ -12,34 +12,48 @@ import {
   signOut,
   onAuthStateChanged,
   type User,
-  type ActionCodeSettings
+  type ActionCodeSettings,
 } from 'firebase/auth';
 import { auth } from '@/shared/firebase/config';
+import { authApi, type MemberProfile } from '@/api/auth.api';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = shallowRef<User | null>(null);
-  const memberProfile = ref<{
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-  } | null>({
-    id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-    name: 'Carlos Martínez',
-    email: 'carlos.socio@ejemplo.com',
-    role: 'member'
-  });
+  const memberProfile = ref<MemberProfile | null>(null);
   const loading = ref(true);
   const initialized = ref(false);
 
-  const isAuthenticated = computed(() => !!user.value);
+  const isAuthenticated = computed(() => !!user.value && !!memberProfile.value);
+
+  async function fetchProfile(): Promise<MemberProfile | null> {
+    try {
+      const profile = await authApi.getMe();
+      memberProfile.value = profile;
+      return profile;
+    } catch (error) {
+      console.error('[authStore] Error al cargar perfil del socio:', error);
+      memberProfile.value = null;
+      throw error;
+    }
+  }
 
   function init(): Promise<void> {
     return new Promise((resolve) => {
-      onAuthStateChanged(auth, (currentUser) => {
+      onAuthStateChanged(auth, async (currentUser) => {
+        loading.value = true;
         user.value = currentUser;
-        if (currentUser?.email && memberProfile.value) {
-          memberProfile.value.email = currentUser.email;
+        if (currentUser) {
+          try {
+            await fetchProfile();
+          } catch (error) {
+            console.error(
+              '[authStore] Falló la carga del perfil en auth state change:',
+              error,
+            );
+            await logout();
+          }
+        } else {
+          memberProfile.value = null;
         }
         loading.value = false;
         initialized.value = true;
@@ -53,7 +67,7 @@ export const useAuthStore = defineStore('auth', () => {
       loading.value = true;
       const actionCodeSettings: ActionCodeSettings = {
         url: `${window.location.origin}/login`,
-        handleCodeInApp: true
+        handleCodeInApp: true,
       };
       await sendSignInLinkToEmail(auth, email, actionCodeSettings);
       window.localStorage.setItem('emailForSignIn', email);
@@ -79,13 +93,14 @@ export const useAuthStore = defineStore('auth', () => {
       loading.value = true;
       const credential = await signInWithEmailLink(auth, email, url);
       user.value = credential.user;
-      if (credential.user?.email && memberProfile.value) {
-        memberProfile.value.email = credential.user.email;
-      }
+      await fetchProfile();
       window.localStorage.removeItem('emailForSignIn');
       return credential.user;
     } catch (error) {
-      console.error('[authStore] Error al completar inicio de sesión con enlace mágico:', error);
+      console.error(
+        '[authStore] Error al completar inicio de sesión con enlace mágico:',
+        error,
+      );
       throw error;
     } finally {
       loading.value = false;
@@ -95,11 +110,12 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout() {
     try {
       await signOut(auth);
-      user.value = null;
-      memberProfile.value = null;
     } catch (error) {
       console.error('[authStore] Error al cerrar sesión:', error);
       throw error;
+    } finally {
+      user.value = null;
+      memberProfile.value = null;
     }
   }
 
@@ -119,9 +135,10 @@ export const useAuthStore = defineStore('auth', () => {
     initialized,
     isAuthenticated,
     init,
+    fetchProfile,
     sendMagicLink,
     completeMagicLinkLogin,
     logout,
-    getToken
+    getToken,
   };
 });
