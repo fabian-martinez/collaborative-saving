@@ -8,7 +8,6 @@ import { CryptoService } from '../infrastructure/services/crypto/crypto.service'
 
 interface MemberRow {
   id: string;
-  name: string;
   email: string | null;
   identification_number: string | null;
   phone: string | null;
@@ -18,8 +17,9 @@ interface MemberRow {
   identification_number_hash: string | null;
 }
 
-async function migrate() {
+export async function migrate(customDbUrl?: string) {
   const targetDbUrl =
+    customDbUrl ||
     process.argv[2] ||
     process.env.TARGET_DB_URL ||
     process.env.DATABASE_URL ||
@@ -47,7 +47,7 @@ async function migrate() {
 
   try {
     const res = await client.query<MemberRow>(
-      `SELECT id, name, email, identification_number, phone, address, beneficiary, email_hash, identification_number_hash 
+      `SELECT id, email, identification_number, phone, address, beneficiary, email_hash, identification_number_hash 
        FROM public.members ORDER BY id;`,
     );
 
@@ -129,9 +129,7 @@ async function migrate() {
           ],
         );
         updatedCount++;
-        console.log(
-          `[PII-Migration] Encrypted & updated member: ${row.id} (${row.name})`,
-        );
+        console.log(`[PII-Migration] Encrypted & updated member: ${row.id}`);
       }
     }
 
@@ -153,7 +151,9 @@ async function migrate() {
   }
 }
 
-migrate().catch((err) => {
-  console.error('[PII-Migration] Error running migration:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  migrate().catch((err) => {
+    console.error('[PII-Migration] Error running migration:', err);
+    process.exit(1);
+  });
+}

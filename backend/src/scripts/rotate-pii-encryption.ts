@@ -11,7 +11,6 @@ import { CryptoService } from '../infrastructure/services/crypto/crypto.service'
 
 interface MemberRow {
   id: string;
-  name: string;
   email: string | null;
   identification_number: string | null;
   phone: string | null;
@@ -51,7 +50,7 @@ export async function rotatePiiEncryption(
 
   try {
     const res = await client.query<MemberRow>(
-      `SELECT id, name, email, identification_number, phone, address, beneficiary, email_hash, identification_number_hash 
+      `SELECT id, email, identification_number, phone, address, beneficiary, email_hash, identification_number_hash 
        FROM public.members ORDER BY id;`,
     );
 
@@ -118,7 +117,7 @@ export async function rotatePiiEncryption(
         ],
       );
       updatedCount++;
-      console.log(`[PII-Rotation] Re-encrypted member ${row.id} (${row.name})`);
+      console.log(`[PII-Rotation] Re-encrypted member ${row.id}`);
     }
 
     console.log(
@@ -127,7 +126,7 @@ export async function rotatePiiEncryption(
 
     // Verification step
     const verifyRes = await client.query<MemberRow>(
-      `SELECT id, name, email, identification_number, email_hash, identification_number_hash 
+      `SELECT id, email, identification_number, email_hash, identification_number_hash 
        FROM public.members ORDER BY id;`,
     );
 
