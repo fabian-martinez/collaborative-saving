@@ -109,8 +109,11 @@ async function processLogin(targetEmail: string, url: string) {
 
   try {
     await authStore.completeMagicLinkLogin(url, targetEmail);
-    const redirect = (route.query.redirect as string) || '/home';
-    router.push(redirect);
+    if (typeof window !== 'undefined') {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    const redirect = (route.query.redirect as string) || '/';
+    await router.replace(redirect);
   } catch (e: any) {
     if (
       e.status === 401 ||

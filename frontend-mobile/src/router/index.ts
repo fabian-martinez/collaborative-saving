@@ -3,7 +3,12 @@
  * All rights reserved.
  */
 
-import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
+import {
+  createRouter,
+  createWebHistory,
+  createMemoryHistory,
+  type RouteRecordRaw,
+} from 'vue-router';
 import HomeView from '@/features/home/views/HomeView.vue';
 import FundView from '@/features/fund/views/FundView.vue';
 import MembersView from '@/features/members/views/MembersView.vue';
@@ -15,46 +20,49 @@ import { useAuthStore } from '@/features/auth/stores/authStore';
 import { isSignInWithEmailLink } from 'firebase/auth';
 import { auth } from '@/shared/firebase/config';
 
-const routes: RouteRecordRaw[] = [
+export const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'login',
     component: LoginView,
-    meta: { layout: AuthLayout, public: true }
+    meta: { layout: AuthLayout, public: true },
   },
   {
     path: '/',
-    redirect: '/home'
+    redirect: '/home',
   },
   {
     path: '/home',
     name: 'home',
     component: HomeView,
-    meta: { layout: AppLayout }
+    meta: { layout: AppLayout, requiresAuth: true },
   },
   {
     path: '/fund',
     name: 'fund',
     component: FundView,
-    meta: { layout: AppLayout }
+    meta: { layout: AppLayout, requiresAuth: true },
   },
   {
     path: '/members',
     name: 'members',
     component: MembersView,
-    meta: { layout: AppLayout }
+    meta: { layout: AppLayout, requiresAuth: true },
   },
   {
     path: '/history',
     name: 'history',
     component: HistoryView,
-    meta: { layout: AppLayout }
-  }
+    meta: { layout: AppLayout, requiresAuth: true },
+  },
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
-  routes
+  history:
+    typeof window !== 'undefined'
+      ? createWebHistory()
+      : createMemoryHistory(),
+  routes,
 });
 
 router.beforeEach(async (to, _from, next) => {
@@ -65,7 +73,8 @@ router.beforeEach(async (to, _from, next) => {
 
   const isMagicLink =
     !!(to.query.apiKey && to.query.oobCode) ||
-    (typeof window !== 'undefined' && isSignInWithEmailLink(auth, window.location.href));
+    (typeof window !== 'undefined' &&
+      isSignInWithEmailLink(auth, window.location.href));
 
   if (to.name === 'login') {
     if (authStore.isAuthenticated && !isMagicLink) {
@@ -74,8 +83,8 @@ router.beforeEach(async (to, _from, next) => {
     return next();
   }
 
-  const isPublic = to.matched.some((record) => record.meta.public);
-  if (!isPublic && !authStore.isAuthenticated) {
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
+  if (requiresAuth && !authStore.isAuthenticated) {
     if (isMagicLink) {
       return next({ name: 'login', query: to.query });
     }
