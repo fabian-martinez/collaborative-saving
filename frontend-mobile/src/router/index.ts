@@ -9,13 +9,6 @@ import {
   createMemoryHistory,
   type RouteRecordRaw,
 } from 'vue-router';
-import HomeView from '@/features/home/views/HomeView.vue';
-import FundView from '@/features/fund/views/FundView.vue';
-import MembersView from '@/features/members/views/MembersView.vue';
-import HistoryView from '@/features/history/views/HistoryView.vue';
-import LoginView from '@/features/auth/views/LoginView.vue';
-import AppLayout from '@/layouts/AppLayout.vue';
-import AuthLayout from '@/layouts/AuthLayout.vue';
 import { useAuthStore } from '@/features/auth/stores/authStore';
 import { isSignInWithEmailLink } from 'firebase/auth';
 import { auth } from '@/shared/firebase/config';
@@ -24,8 +17,8 @@ export const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'login',
-    component: LoginView,
-    meta: { layout: AuthLayout, public: true },
+    component: () => import('@/features/auth/views/LoginView.vue'),
+    meta: { layout: 'auth', public: true },
   },
   {
     path: '/',
@@ -34,26 +27,26 @@ export const routes: RouteRecordRaw[] = [
   {
     path: '/home',
     name: 'home',
-    component: HomeView,
-    meta: { layout: AppLayout, requiresAuth: true },
+    component: () => import('@/features/home/views/HomeView.vue'),
+    meta: { requiresAuth: true },
   },
   {
     path: '/fund',
     name: 'fund',
-    component: FundView,
-    meta: { layout: AppLayout, requiresAuth: true },
+    component: () => import('@/features/fund/views/FundView.vue'),
+    meta: { requiresAuth: true },
   },
   {
     path: '/members',
     name: 'members',
-    component: MembersView,
-    meta: { layout: AppLayout, requiresAuth: true },
+    component: () => import('@/features/members/views/MembersView.vue'),
+    meta: { requiresAuth: true },
   },
   {
     path: '/history',
     name: 'history',
-    component: HistoryView,
-    meta: { layout: AppLayout, requiresAuth: true },
+    component: () => import('@/features/history/views/HistoryView.vue'),
+    meta: { requiresAuth: true },
   },
 ];
 
