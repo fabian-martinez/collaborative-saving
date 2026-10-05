@@ -105,9 +105,8 @@ function handlePay(loan: Loan) {
   emit('pay-loan', loan.id)
 }
 
-function handlePayWithStock(loan: Loan) {
+function handlePayWithStock(_loan: Loan) {
   // Navigate to stock payment form
-  console.log('Pay with stock:', loan)
 }
 
 function handleViewSchedule(loan: Loan) {
