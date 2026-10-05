@@ -303,6 +303,7 @@ import { useActiveMeetingStore } from '../../stores/activeMeeting'
 import { usePaymentCollection } from '../../composables/usePaymentCollection'
 import { useMemberSelection } from '../../composables/useMemberSelection'
 import { usePrintReceipt } from '@/shared/composables/usePrintReceipt'
+import { useToast } from '@/shared/composables/useToast'
 import { formatCurrency } from '@/shared/utils/formatters'
 import PaymentForm from './collection/PaymentForm.vue'
 import PaymentReceiptView from './collection/PaymentReceiptView.vue'
@@ -320,6 +321,7 @@ defineEmits<{
 }>()
 
 // 3. Composables y stores
+const toast = useToast()
 const store = useActiveMeetingStore()
 const paymentCollection = usePaymentCollection()
 const memberSelection = useMemberSelection(paymentCollection)
@@ -418,7 +420,7 @@ function goToNextStep() {
 }
 
 function saveDraft() {
-  alert('Borrador guardado localmente.')
+  toast.success('Borrador guardado localmente.')
 }
 
 // 7. Lifecycle hooks

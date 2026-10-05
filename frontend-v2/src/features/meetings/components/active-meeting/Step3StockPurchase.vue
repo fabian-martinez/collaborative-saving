@@ -342,6 +342,7 @@ import { useActiveMeetingStore } from '../../stores/activeMeeting'
 import { meetingsApi, type Operation } from '@/api/meetings.api'
 import { formatCurrency } from '@/shared/utils/formatters'
 import { usePrintReceipt } from '@/shared/composables/usePrintReceipt'
+import { useToast } from '@/shared/composables/useToast'
 import EditBuyStockModal from './EditBuyStockModal.vue'
 import CreateCdtModal from './CreateCdtModal.vue'
 import PrintReceiptModal from '@/shared/components/PrintReceiptModal.vue'
@@ -351,6 +352,7 @@ defineEmits<{
   completed: []
 }>()
 
+const toast = useToast()
 const store = useActiveMeetingStore()
 const members = ref<Member[]>([])
 const stocks = ref<Stock[]>([])
@@ -571,9 +573,9 @@ async function handleBuyModalSave(line: any) {
     
     await loadRegisteredOperations()
     await loadAccumulatedShares()
-    alert('Compra registrada exitosamente.')
+    toast.success('Compra registrada exitosamente.')
   } catch (e) {
-    alert(e instanceof Error ? e.message : 'Error al registrar la compra.')
+    toast.error(e instanceof Error ? e.message : 'Error al registrar la compra.')
   } finally {
     loading.value = false
   }
@@ -591,9 +593,9 @@ async function handleCdtModalSave(line: any) {
     
     await loadRegisteredOperations()
     await loadAccumulatedShares()
-    alert('CDT creado exitosamente.')
+    toast.success('CDT creado exitosamente.')
   } catch (e) {
-    alert(e instanceof Error ? e.message : 'Error al crear el CDT.')
+    toast.error(e instanceof Error ? e.message : 'Error al crear el CDT.')
   } finally {
     loading.value = false
   }
@@ -634,7 +636,7 @@ function viewReceiptForSingleOperation(op: Operation) {
 }
 
 function saveDraft() {
-  alert('Borrador guardado exitosamente.')
+  toast.success('Borrador guardado exitosamente.')
 }
 
 // Initialization
