@@ -220,7 +220,13 @@ export class MembersV2Controller {
   async create(
     @Body() body: CreateMemberHttpDto,
   ): Promise<MemberResponseHttpDto> {
-    const result = await this.createMemberUseCase.execute(body);
+    const { identification_number, ...rest } = body;
+    const result = await this.createMemberUseCase.execute({
+      ...rest,
+      ...(identification_number !== undefined && {
+        identificationNumber: identification_number,
+      }),
+    });
     return this.mapMemberToHttp(result);
   }
 
@@ -394,9 +400,13 @@ export class MembersV2Controller {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: UpdateMemberHttpDto,
   ): Promise<MemberResponseHttpDto> {
+    const { identification_number, ...rest } = body;
     const result = await this.updateMemberUseCase.execute({
-      ...body,
+      ...rest,
       memberId: id,
+      ...(identification_number !== undefined && {
+        identificationNumber: identification_number,
+      }),
     });
     return this.mapMemberToHttp(result);
   }

@@ -34,7 +34,7 @@ export class UpdateMemberHttpDto {
   })
   @IsOptional()
   @IsString()
-  identificationNumber?: string;
+  identification_number?: string;
 
   @ApiPropertyOptional({
     description: "The member's address",
