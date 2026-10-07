@@ -63,9 +63,15 @@ export interface StockSubscription {
 }
 
 export interface MemberPaymentEntry {
-  type: string;
+  id?: string;
+  type?: string;
+  account_type?: string;
   amount: number;
   description?: string;
+  loan_id?: string;
+  stock_id?: string;
+  mandatory_contribution_id?: string;
+  stock_subscription_id?: string;
 }
 
 export interface MemberPayment {

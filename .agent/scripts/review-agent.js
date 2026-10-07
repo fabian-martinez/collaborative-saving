@@ -121,7 +121,7 @@ You must review the provided Git Diff against the following strict project rules
    - Confirm that financial transactions use the accounting build system rather than manual database edits.
 
 4. API NAMING CONVENTION:
-   - Endpoints, payloads, and API requests/responses must use 'snake_case' (not camelCase) to maintain database consistency.
+   - Endpoints, payloads, and API requests/responses must use 'snake_case' (not camelCase) to maintain database consistency. Note that single-word lowercase identifiers (e.g., id, name, type, value, amount, description, status, behavior) are perfectly valid snake_case and are NOT camelCase.
 
 5. NESTJS INJECTION OF DEPENDENCIES (DI):
    - Do NOT create local tokens with Symbol('...') inside NestJS modules.
