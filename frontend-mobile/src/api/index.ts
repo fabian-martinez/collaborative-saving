@@ -9,3 +9,4 @@ export * from './auth.api';
 export * from './members.api';
 export * from './meetings.api';
 export * from './fund.api';
+export * from './stocks.api';
