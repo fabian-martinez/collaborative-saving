@@ -605,6 +605,28 @@ describe('MembersV2Controller', () => {
         'String error',
       );
     });
+
+    it('should map identification_number to identificationNumber when creating member', async () => {
+      const createDto = {
+        name: 'New Member',
+        email: 'new@example.com',
+        identification_number: '1234567890',
+      };
+
+      createMemberUseCaseExecuteSpy.mockResolvedValue({
+        ...mockMemberResponse,
+        identificationNumber: '1234567890',
+      });
+
+      const result = await controller.create(createDto);
+
+      expect(createMemberUseCaseExecuteSpy).toHaveBeenCalledWith({
+        name: 'New Member',
+        email: 'new@example.com',
+        identificationNumber: '1234567890',
+      });
+      expect(result.identification_number).toBe('1234567890');
+    });
   });
 
   describe('update', () => {
@@ -678,6 +700,57 @@ describe('MembersV2Controller', () => {
         name: 'Updated',
         email: 'updated@example.com',
       });
+    });
+
+    it('should map identification_number to identificationNumber when updating member', async () => {
+      const memberId = '550e8400-e29b-41d4-a716-446655440000';
+      const updateDto = {
+        identification_number: '987654321',
+      };
+
+      const updatedMember: MemberResponseDto = {
+        ...mockMemberResponse,
+        identificationNumber: '987654321',
+      };
+
+      updateMemberUseCaseExecuteSpy.mockResolvedValue(updatedMember);
+
+      const result = await controller.update(memberId, updateDto);
+
+      expect(updateMemberUseCaseExecuteSpy).toHaveBeenCalledWith({
+        memberId,
+        identificationNumber: '987654321',
+      });
+      expect(result.identification_number).toBe('987654321');
+    });
+
+    it('should update member with multiple fields including identification_number', async () => {
+      const memberId = '550e8400-e29b-41d4-a716-446655440000';
+      const updateDto = {
+        name: 'Updated Name',
+        identification_number: '987654321',
+        phone: '+57 300 999 8888',
+      };
+
+      const updatedMember: MemberResponseDto = {
+        ...mockMemberResponse,
+        name: 'Updated Name',
+        identificationNumber: '987654321',
+        phone: '+57 300 999 8888',
+      };
+
+      updateMemberUseCaseExecuteSpy.mockResolvedValue(updatedMember);
+
+      const result = await controller.update(memberId, updateDto);
+
+      expect(updateMemberUseCaseExecuteSpy).toHaveBeenCalledWith({
+        memberId,
+        name: 'Updated Name',
+        identificationNumber: '987654321',
+        phone: '+57 300 999 8888',
+      });
+      expect(result.name).toBe('Updated Name');
+      expect(result.identification_number).toBe('987654321');
     });
   });
 
