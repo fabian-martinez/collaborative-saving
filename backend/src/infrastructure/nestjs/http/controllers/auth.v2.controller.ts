@@ -82,8 +82,7 @@ export class AuthV2Controller {
     type: MemberResponseHttpDto,
   })
   @ApiUnauthorizedResponse({
-    description:
-      'Token de autenticación no válido, faltante o socio no activo',
+    description: 'Token de autenticación no válido, faltante o socio no activo',
   })
   async getMe(
     @CurrentUser() currentUser?: AuthenticatedUserDto,
