@@ -55,7 +55,8 @@ export class FirebaseAuthGuard implements CanActivate {
     request: Record<string, any>,
   ): string | undefined {
     const headers = request.headers as
-      Record<string, string | string[] | undefined> | undefined;
+      | Record<string, string | string[] | undefined>
+      | undefined;
     const authorization = headers?.authorization;
     if (!authorization || typeof authorization !== 'string') {
       return undefined;
