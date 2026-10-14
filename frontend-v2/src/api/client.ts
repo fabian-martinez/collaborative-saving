@@ -3,21 +3,27 @@ import { ApiException } from './types'
 import type { ApiError } from './types'
 import { useAuthStore } from '@/features/auth/stores/authStore'
 import { useToast } from '@/shared/composables/useToast'
+import { useServerStatusStore } from '@/shared/stores/serverStatus'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
-// Crear instancia de axios
+// Crear instancia de axios con timeout suficiente para tolerar cold starts en Render
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json'
   },
-  timeout: 30000
+  timeout: 60000
 })
 
 // Interceptor de request
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
+    // Notificar inicio de petición al monitor de estado del servidor
+    const skipStatus = Boolean(config.headers?.['X-Skip-Server-Status'])
+    const serverStatus = useServerStatusStore()
+    serverStatus.startRequest(skipStatus)
+
     // Inject auth token
     const authStore = useAuthStore()
     const token = await authStore.getToken()
@@ -35,6 +41,8 @@ apiClient.interceptors.request.use(
     return config
   },
   (error) => {
+    const serverStatus = useServerStatusStore()
+    serverStatus.endRequest()
     console.error('[API Request Error]', error)
     return Promise.reject(error)
   }
@@ -43,6 +51,10 @@ apiClient.interceptors.request.use(
 // Interceptor de response
 apiClient.interceptors.response.use(
   (response) => {
+    const skipStatus = Boolean(response.config?.headers?.['X-Skip-Server-Status'])
+    const serverStatus = useServerStatusStore()
+    serverStatus.endRequest(skipStatus)
+
     // Logging en desarrollo
     if (import.meta.env.DEV) {
       console.log(`[API Response] ${response.config.method?.toUpperCase()} ${response.config.url}`, {
@@ -53,6 +65,10 @@ apiClient.interceptors.response.use(
     return response
   },
   (error: AxiosError<ApiError>) => {
+    const skipStatus = Boolean(error.config?.headers?.['X-Skip-Server-Status'])
+    const serverStatus = useServerStatusStore()
+    serverStatus.endRequest(skipStatus)
+
     // Manejo centralizado de errores
     if (error.response) {
       // El servidor respondió con un código de error
