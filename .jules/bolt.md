@@ -52,3 +52,7 @@
 ## 2026-09-22 - Batch Saving Transaction Details in RecordLoanPaymentUseCase
 **Learning:** Sequential calls to `repository.save()` for multiple domain entities (e.g. interest and principal `LoanTransactionDetail`s) inside a use case trigger multiple individual SQL write operations and database roundtrips.
 **Action:** Collect entities into an array and persist them in a single batch call using `repository.saveMany(entities)` to perform a single batch INSERT/upsert operation.
+
+## 2026-10-05 - Concurrent execution of loan payments in RecordMonthlyPaymentsUseCase
+**Learning:** In `RecordMonthlyPaymentsUseCase`, sequential `for...of` loops executing independent sub-use cases (such as `recordLoanPaymentUseCase.execute`) cause sequential waiting and unnecessary latency.
+**Action:** Use `Promise.all(loanPayments.map(...))` to execute independent asynchronous sub-use case operations concurrently when state order independence is guaranteed.

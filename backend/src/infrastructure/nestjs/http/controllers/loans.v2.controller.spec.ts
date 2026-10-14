@@ -243,7 +243,11 @@ describe('LoansV2Controller', () => {
       const dto = {
         interest_rate: 0.06,
       };
-      const user = { id: 'admin-user-123', email: 'admin@example.com', role: 'admin' };
+      const user = {
+        id: 'admin-user-123',
+        email: 'admin@example.com',
+        role: 'admin',
+      };
 
       await controller.updateTerms('loan-id-1', dto, user);
 
@@ -586,7 +590,11 @@ describe('LoansV2Controller', () => {
       const dto = {
         new_approved_amount: 8000,
       };
-      const user = { id: 'admin-user-123', email: 'admin@example.com', role: 'admin' };
+      const user = {
+        id: 'admin-user-123',
+        email: 'admin@example.com',
+        role: 'admin',
+      };
 
       updateLoanApprovedAmountUseCaseExecuteSpy.mockResolvedValue(undefined);
 
