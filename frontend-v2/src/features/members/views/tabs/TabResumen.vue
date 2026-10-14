@@ -97,7 +97,12 @@
             No hay transacciones registradas
           </div>
           <div v-else class="space-y-4">
-            <div v-for="payment in recentPayments" :key="payment.operation_id" class="py-3 border-b border-base-300 last:border-b-0 flex justify-between items-start">
+            <div
+              v-for="payment in recentPayments"
+              :key="payment.operation_id"
+              class="py-3 border-b border-base-300 last:border-b-0 flex justify-between items-start cursor-pointer hover:bg-base-200/50 p-2 rounded transition-colors"
+              @click="$emit('view-detail', 'payments', payment.operation_id)"
+            >
               <div class="flex-1">
                 <div class="font-semibold text-base-content text-xs sm:text-sm break-words">{{ payment.type }}</div>
                 <div class="transaction-date text-sm text-base-content/70">{{ formatDate(payment.date) }}</div>

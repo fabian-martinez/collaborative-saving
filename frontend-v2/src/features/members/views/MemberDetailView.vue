@@ -186,6 +186,12 @@
       @transfer="handleTransfer"
       @use-for-payment="handleUseForPayment"
     />
+
+    <PaymentDetailModal
+      :visible="selectedPaymentId !== null"
+      :payment="selectedPayment"
+      @close="selectedPaymentId = null"
+    />
   </div>
 </template>
 
@@ -200,6 +206,7 @@ import Tabs from '@/shared/components/Tabs.vue'
 import type { Tab } from '@/shared/components/Tabs.vue'
 import RegisterPaymentModal from '../components/RegisterPaymentModal.vue'
 import StockSubscriptionDetail from '../components/StockSubscriptionDetail.vue'
+import PaymentDetailModal from '../components/PaymentDetailModal.vue'
 import TabResumen from './tabs/TabResumen.vue'
 import TabStocks from './tabs/TabStocks.vue'
 import TabLoans from './tabs/TabLoans.vue'
@@ -221,8 +228,14 @@ const activeTab = ref('resumen')
 
 const showRegisterPaymentModal = ref(false)
 const selectedSubscriptionId = ref<string | null>(null)
+const selectedPaymentId = ref<string | null>(null)
 const insuranceAmount = ref(0)
 const insuranceCapitalPayment = ref(0)
+
+const selectedPayment = computed(() => {
+  if (!selectedPaymentId.value) return null
+  return store.payments.find(p => p.operation_id === selectedPaymentId.value) || null
+})
 
 const tabs: Tab[] = [
   { id: 'resumen', label: 'Resumen Financiero' },
@@ -287,8 +300,16 @@ function handlePaymentSuccess() {
   ])
 }
 
-function handleViewDetail(_type: string, _id: string) {
-  // Navegar o mostrar detalles según el tipo
+function handleViewDetail(type: string, id: string) {
+  if (type === 'payments' && id !== 'all') {
+    handleViewPaymentDetail(id)
+  } else if (type === 'stocks' && id !== 'all') {
+    handleViewSubscription(id)
+  } else if (type === 'loans' && id !== 'all') {
+    handleViewLoan(id)
+  } else {
+    activeTab.value = type
+  }
 }
 
 function handleViewSubscription(subscriptionId: string) {
@@ -305,8 +326,9 @@ function handlePayLoan(_loanId: string) {
   showRegisterPaymentModal.value = true
 }
 
-function handleViewPaymentDetail(_paymentId: string) {
-  // TODO: Implementar vista de detalle de pago
+function handleViewPaymentDetail(paymentId: string) {
+  activeTab.value = 'payments'
+  selectedPaymentId.value = paymentId
 }
 
 function handleExchange(_subscription: any) {
