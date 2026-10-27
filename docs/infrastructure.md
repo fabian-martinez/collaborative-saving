@@ -98,8 +98,11 @@ Para desplegar vía contenedor:
 | `NODE_ENV` | `production` | No |
 | `PORT` | `3000` (o asignado automáticamente por el proveedor) | No |
 | `DATABASE_URL` | URI de conexión pooled de Neon (`postgresql://neondb_owner:...@...-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require`) | **Sí** |
-| `DATABASE_SSL` | `true` (habilita conexión segura TLS con `{ rejectUnauthorized: false }`) | No |
+| `DATABASE_SSL` | `true` (habilita conexión segura TLS con validación de certificado CA `{ rejectUnauthorized: true }`) | No |
+| `DATABASE_SSL_REJECT_UNAUTHORIZED` | `true` por defecto. Configurar en `false` únicamente si se utiliza un servidor PostgreSQL con certificado autofirmado. | No |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | String JSON de la clave privada de Firebase Admin en una sola línea (`{"type":"service_account",...}`) | **Sí** |
+| `APP_ENCRYPTION_KEY` | Clave maestra AES-256-GCM de 32 bytes (64 caracteres hex, 44 caracteres base64 o 32 bytes UTF-8) para cifrado de PII en reposo (obligatoria en producción). | **Sí** |
+| `APP_BLIND_INDEX_SALT` | Salt secreto (mínimo 16 caracteres) para el cálculo de blind indexes HMAC-SHA256 de campos sensibles (obligatorio en producción). | **Sí** |
 | `ALLOWED_ORIGINS` | Orígenes autorizados separados por coma (ej. `https://app.<tu-dominio>.com,https://<project-id>.web.app,http://localhost:5173`). Soporta comodines `*` (ej. `https://mobile-collaborative-saving--*.web.app` o `https://*.web.app`) para canales de preview en Pull Requests. | No |
 | `ENABLE_SWAGGER` | `false` (deshabilita la interfaz `/api` en producción para proteger esquemas y endpoints) | No |
 
