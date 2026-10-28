@@ -18,7 +18,7 @@ services:
       - key: ENABLE_SWAGGER
         value: "false"
       - key: ALLOWED_ORIGINS
-        value: https://collaborative-saving.web.app,https://mobile-collaborative-saving.web.app,https://mobile-collaborative-saving--*.web.app
+        value: https://collaborative-saving.fmartinez.net,https://mobile-collaborative-saving.fmartinez.net,https://collaborative-saving.web.app,https://mobile-collaborative-saving.web.app,https://collaborative-saving--*.web.app,https://mobile-collaborative-saving--*.web.app
       - key: DATABASE_URL
         sync: false
       - key: FIREBASE_SERVICE_ACCOUNT_JSON
