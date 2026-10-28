@@ -15,7 +15,11 @@
     "src/**/*.(t|j)s",
     "!src/**/*.spec.ts",
     "!src/**/*.interface.ts",
-    "!src/**/*.dto.ts"
+    "!src/**/*.dto.ts",
+    "!src/**/*.module.ts",
+    "!src/main.ts",
+    "!src/infrastructure/typeorm/migrations/**",
+    "!src/infrastructure/typeorm/data-source.ts"
   ],
   "coverageDirectory": "./coverage",
   "testTimeout": 10000,

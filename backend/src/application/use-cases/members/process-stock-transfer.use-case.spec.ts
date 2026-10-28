@@ -143,4 +143,82 @@ describe('ProcessStockTransferUseCase', () => {
       InvalidRequestError,
     );
   });
+
+  it('cubre validaciones de socio, reunión activa/cerrada, suscripción nueva y stock inexistente', async () => {
+    const { MemberNotFoundException } = await import(
+      '@application/exceptions/member-not-found.exception'
+    );
+    const { MeetingNotFoundException } = await import(
+      '@application/exceptions/meeting-not-found.exception'
+    );
+    const { StockNotFoundException } = await import(
+      '@application/exceptions/stock-not-found.exception'
+    );
+
+    // 1. Socio origen no existe
+    await expect(
+      useCase.execute({ ...baseDto, memberId: 'unknown-from' }),
+    ).rejects.toBeInstanceOf(MemberNotFoundException);
+
+    // 2. Socio destino no existe
+    await expect(
+      useCase.execute({ ...baseDto, toMemberId: 'unknown-to' }),
+    ).rejects.toBeInstanceOf(MemberNotFoundException);
+
+    // 3. Reunión específica no existe
+    meetingRepository.findById.mockResolvedValueOnce(null);
+    await expect(useCase.execute(baseDto)).rejects.toBeInstanceOf(
+      MeetingNotFoundException,
+    );
+
+    // 4. Sin meetingId y sin reunión activa
+    meetingRepository.findActive.mockResolvedValueOnce(null);
+    await expect(
+      useCase.execute({ ...baseDto, meetingId: undefined }),
+    ).rejects.toBeInstanceOf(MeetingNotFoundException);
+
+    // 5. Reunión cerrada
+    const closedMeeting = Meeting.create({ date: new Date('2024-08-01') });
+    closedMeeting.close();
+    meetingRepository.findById.mockResolvedValueOnce(closedMeeting);
+    await expect(useCase.execute(baseDto)).rejects.toBeInstanceOf(
+      InvalidRequestError,
+    );
+
+    // 6. Suscripción origen no pertenece al socio
+    stockSubscriptionRepository.findById.mockResolvedValueOnce(null);
+    await expect(useCase.execute(baseDto)).rejects.toBeInstanceOf(
+      InvalidRequestError,
+    );
+
+    // 7. Cantidad <= 0
+    await expect(
+      useCase.execute({ ...baseDto, quantity: 0 }),
+    ).rejects.toBeInstanceOf(InvalidRequestError);
+
+    // 8. Stock no existe
+    stockRepository.findById.mockResolvedValueOnce(null);
+    await expect(useCase.execute(baseDto)).rejects.toBeInstanceOf(
+      StockNotFoundException,
+    );
+
+    // 9. Suscripción destino nueva (no existente previamente) y usando reunión activa
+    const freshOrigin = StockSubscription.create({
+      memberId: fromMember.id,
+      stockId: stock.id,
+      quantity: 5,
+      purchaseDate: meeting.date,
+    });
+    stockSubscriptionRepository.findById.mockResolvedValueOnce(freshOrigin);
+    stockSubscriptionRepository.findByMemberAndStock.mockResolvedValueOnce(
+      null,
+    );
+    const result = await useCase.execute({
+      ...baseDto,
+      meetingId: undefined,
+      quantity: 1,
+      notes: 'Transferencia con nota',
+    });
+    expect(result.details.isNewSubscription).toBe(true);
+  });
 });

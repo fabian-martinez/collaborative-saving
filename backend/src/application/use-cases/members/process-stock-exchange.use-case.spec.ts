@@ -335,4 +335,150 @@ describe('ProcessStockExchangeUseCase', () => {
       InvalidRequestError,
     );
   });
+
+  it('cubre validaciones de casos borde y flujos alternativos (efectivo en contra, crédito corriente, suscripción existente)', async () => {
+    const { MemberNotFoundException } = await import(
+      '@application/exceptions/member-not-found.exception'
+    );
+    const { MeetingNotFoundException } = await import(
+      '@application/exceptions/meeting-not-found.exception'
+    );
+    const { StockNotFoundException } = await import(
+      '@application/exceptions/stock-not-found.exception'
+    );
+    const baseDto = createBaseDto();
+
+    // 1. Socio no existe
+    memberRepository.findById.mockResolvedValueOnce(null);
+    await expect(useCase.execute(baseDto)).rejects.toBeInstanceOf(
+      MemberNotFoundException,
+    );
+
+    // 2. Reunión por ID no existe
+    meetingRepository.findById.mockResolvedValueOnce(null);
+    await expect(useCase.execute(baseDto)).rejects.toBeInstanceOf(
+      MeetingNotFoundException,
+    );
+
+    // 3. Reunión activa no existe
+    meetingRepository.findActive.mockResolvedValueOnce(null);
+    await expect(
+      useCase.execute({ ...baseDto, meetingId: undefined }),
+    ).rejects.toBeInstanceOf(MeetingNotFoundException);
+
+    // 4. Reunión cerrada
+    const closedMeeting = Meeting.create({ date: new Date('2024-08-01') });
+    closedMeeting.close();
+    meetingRepository.findById.mockResolvedValueOnce(closedMeeting);
+    await expect(useCase.execute(baseDto)).rejects.toBeInstanceOf(
+      InvalidRequestError,
+    );
+
+    // 5. Suscripción origen inválida
+    stockSubscriptionRepository.findById.mockResolvedValueOnce(null);
+    await expect(useCase.execute(baseDto)).rejects.toBeInstanceOf(
+      InvalidRequestError,
+    );
+
+    // 6. fromQuantity <= 0 y toQuantity <= 0
+    await expect(
+      useCase.execute({ ...baseDto, fromQuantity: 0 }),
+    ).rejects.toBeInstanceOf(InvalidRequestError);
+    await expect(
+      useCase.execute({ ...baseDto, toQuantity: 0 }),
+    ).rejects.toBeInstanceOf(InvalidRequestError);
+
+    // 7. fromStock o toStock no existen
+    stockRepository.findById.mockResolvedValueOnce(null);
+    await expect(useCase.execute(baseDto)).rejects.toBeInstanceOf(
+      StockNotFoundException,
+    );
+    stockRepository.findById
+      .mockResolvedValueOnce(originStock)
+      .mockResolvedValueOnce(null);
+    await expect(useCase.execute(baseDto)).rejects.toBeInstanceOf(
+      StockNotFoundException,
+    );
+
+    // 8. credit sin targetLoanId
+    await expect(
+      useCase.execute({
+        ...baseDto,
+        differenceHandling: 'credit',
+        targetLoanId: undefined,
+      }),
+    ).rejects.toBeInstanceOf(InvalidRequestError);
+
+    // 9. credit con diferencia a favor pero usando new_action_loan
+    await expect(
+      useCase.execute({
+        ...baseDto,
+        fromQuantity: 2,
+        toQuantity: 1,
+        differenceHandling: 'credit',
+        targetLoanId: 'new_action_loan',
+      }),
+    ).rejects.toBeInstanceOf(InvalidRequestError);
+
+    // 10. credit con diferencia en contra y targetLoanId inválido (no new_action_loan ni new_current_loan)
+    await expect(
+      useCase.execute({
+        ...baseDto,
+        fromQuantity: 1,
+        toQuantity: 2,
+        differenceHandling: 'credit',
+        targetLoanId: 'existing-loan',
+      }),
+    ).rejects.toBeInstanceOf(InvalidRequestError);
+
+    // 11. credit con new_current_loan y suscripción destino existente
+    const existingDestSub = StockSubscription.create({
+      memberId: member.id,
+      stockId: destinationStock.id,
+      quantity: 2,
+      purchaseDate: meeting.date,
+    });
+    stockSubscriptionRepository.findByMemberAndStock.mockResolvedValueOnce(
+      existingDestSub,
+    );
+    await useCase.execute({
+      ...baseDto,
+      meetingId: undefined,
+      fromQuantity: 1,
+      toQuantity: 2,
+      differenceHandling: 'credit',
+      targetLoanId: 'new_current_loan',
+    });
+    expect(existingDestSub.quantity).toBe(4);
+    expect(createLoanExecuteSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ loanType: 'corriente' }),
+    );
+
+    // 12. cash con diferencia en contra (socio paga en efectivo)
+    const freshOriginSub = StockSubscription.create({
+      memberId: member.id,
+      stockId: originStock.id,
+      quantity: 5,
+      purchaseDate: meeting.date,
+    });
+    stockSubscriptionRepository.findById.mockResolvedValueOnce(freshOriginSub);
+    await useCase.execute({
+      ...baseDto,
+      fromSubscriptionId: freshOriginSub.id,
+      fromQuantity: 1,
+      toQuantity: 2,
+      differenceHandling: 'cash',
+    });
+    expect(recordOperationExecuteSpy).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        entries: expect.arrayContaining([
+          expect.objectContaining({
+            accountType: CASH_ACCOUNT,
+            amount: 600000,
+          }),
+        ]),
+      }),
+    );
+  });
 });
