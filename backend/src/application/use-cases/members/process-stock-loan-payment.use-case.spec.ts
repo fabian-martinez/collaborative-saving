@@ -202,4 +202,68 @@ describe('ProcessStockLoanPaymentUseCase', () => {
       }),
     );
   });
+
+  it('cubre validaciones de socio, reunión activa/cerrada, suscripción, cantidad y stock', async () => {
+    const { MemberNotFoundException } = await import(
+      '@application/exceptions/member-not-found.exception'
+    );
+    const { MeetingNotFoundException } = await import(
+      '@application/exceptions/meeting-not-found.exception'
+    );
+    const { StockNotFoundException } = await import(
+      '@application/exceptions/stock-not-found.exception'
+    );
+    const baseDto = createBaseDto();
+
+    // 1. Socio no existe
+    memberRepository.findById.mockResolvedValueOnce(null);
+    await expect(useCase.execute(baseDto)).rejects.toBeInstanceOf(
+      MemberNotFoundException,
+    );
+
+    // 2. Reunión específica no existe
+    meetingRepository.findById.mockResolvedValueOnce(null);
+    await expect(useCase.execute(baseDto)).rejects.toBeInstanceOf(
+      MeetingNotFoundException,
+    );
+
+    // 3. Sin meetingId y sin reunión activa
+    meetingRepository.findActive.mockResolvedValueOnce(null);
+    await expect(
+      useCase.execute({ ...baseDto, meetingId: undefined }),
+    ).rejects.toBeInstanceOf(MeetingNotFoundException);
+
+    // 4. Reunión cerrada
+    const closedMeeting = Meeting.create({ date: new Date('2024-08-01') });
+    closedMeeting.close();
+    meetingRepository.findById.mockResolvedValueOnce(closedMeeting);
+    await expect(useCase.execute(baseDto)).rejects.toBeInstanceOf(
+      InvalidRequestError,
+    );
+
+    // 5. Suscripción no pertenece al socio
+    stockSubscriptionRepository.findById.mockResolvedValueOnce(null);
+    await expect(useCase.execute(baseDto)).rejects.toBeInstanceOf(
+      InvalidRequestError,
+    );
+
+    // 6. Cantidad <= 0
+    await expect(
+      useCase.execute({ ...baseDto, quantity: 0 }),
+    ).rejects.toBeInstanceOf(InvalidRequestError);
+
+    // 7. Stock no existe
+    stockRepository.findById.mockResolvedValueOnce(null);
+    await expect(useCase.execute(baseDto)).rejects.toBeInstanceOf(
+      StockNotFoundException,
+    );
+
+    // 8. Ejecución usando reunión activa por defecto y notas personalizadas
+    const result = await useCase.execute({
+      ...baseDto,
+      meetingId: undefined,
+      notes: 'Nota personalizada',
+    });
+    expect(result.operationId).toBe('loan-payment-operation');
+  });
 });

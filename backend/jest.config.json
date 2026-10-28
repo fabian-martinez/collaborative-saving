@@ -15,7 +15,11 @@
     "src/**/*.(t|j)s",
     "!src/**/*.spec.ts",
     "!src/**/*.interface.ts",
-    "!src/**/*.dto.ts"
+    "!src/**/*.dto.ts",
+    "!src/**/*.module.ts",
+    "!src/main.ts",
+    "!src/infrastructure/typeorm/migrations/**",
+    "!src/infrastructure/typeorm/data-source.ts"
   ],
   "coverageDirectory": "./coverage",
   "testTimeout": 10000,
@@ -25,6 +29,12 @@
       "functions": 80,
       "lines": 80,
       "statements": 80
+    },
+    "./src/application/": {
+      "branches": 80,
+      "functions": 90,
+      "lines": 90,
+      "statements": 90
     }
   }
 }

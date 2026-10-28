@@ -698,5 +698,140 @@ describe('RecordLoanPaymentUseCase', () => {
         }),
       );
     });
+
+    it('should handle only forcedPrincipalAmount andonly forcedInterestAmount, plus default descriptions for stock/equity/interest-only/principal-only', async () => {
+      // 1. Only forcedPrincipalAmount
+      const loan1 = createMockLoan({ outstandingBalance: 5000 });
+      loanFindByIdSpy.mockResolvedValueOnce(loan1);
+      loanSaveSpy.mockResolvedValueOnce(loan1);
+
+      const res1 = await useCase.execute({
+        loanId: loan1.id,
+        meetingId: mockMeetingId,
+        totalPaymentAmount: 1000,
+        forcedPrincipalAmount: 800,
+      });
+      expect(res1.principalPaid).toBe(800);
+      expect(res1.interestPaid).toBe(200);
+
+      // 2. Only forcedInterestAmount
+      const loan2 = createMockLoan({ outstandingBalance: 5000 });
+      loanFindByIdSpy.mockResolvedValueOnce(loan2);
+      loanSaveSpy.mockResolvedValueOnce(loan2);
+
+      const res2 = await useCase.execute({
+        loanId: loan2.id,
+        meetingId: mockMeetingId,
+        totalPaymentAmount: 1000,
+        forcedInterestAmount: 250,
+      });
+      expect(res2.interestPaid).toBe(250);
+      expect(res2.principalPaid).toBe(750);
+
+      // 3. Stock payment without custom notes and without sourceAccount
+      const loan3 = createMockLoan({ outstandingBalance: 5000 });
+      loanFindByIdSpy.mockResolvedValueOnce(loan3);
+      loanSaveSpy.mockResolvedValueOnce(loan3);
+
+      await useCase.execute({
+        loanId: loan3.id,
+        meetingId: mockMeetingId,
+        totalPaymentAmount: 500,
+        forcedInterestAmount: 0,
+        forcedPrincipalAmount: 500,
+        paymentMethod: 'stock',
+      });
+      expect(recordOperationExecuteSpy).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          description: 'Pago de crédito con acciones: 500.00',
+        }),
+      );
+
+      // 4. Cash principal-only without notes
+      const loan4 = createMockLoan({
+        outstandingBalance: 5000,
+        interestRate: 0,
+      });
+      loanFindByIdSpy.mockResolvedValueOnce(loan4);
+      loanSaveSpy.mockResolvedValueOnce(loan4);
+
+      await useCase.execute({
+        loanId: loan4.id,
+        meetingId: mockMeetingId,
+        totalPaymentAmount: 500,
+      });
+      expect(recordOperationExecuteSpy).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          description: 'Pago de capital de préstamo: 500.00',
+        }),
+      );
+
+      // 5. Full payoff with forcedInterestAmount
+      const loan5 = createMockLoan({ outstandingBalance: 2000 });
+      loanFindByIdSpy.mockResolvedValueOnce(loan5);
+      loanSaveSpy.mockResolvedValueOnce(loan5);
+
+      const res5 = await useCase.execute({
+        loanId: loan5.id,
+        meetingId: mockMeetingId,
+        totalPaymentAmount: 0,
+        isFullPayoff: true,
+        forcedInterestAmount: 50,
+      });
+      expect(res5.principalPaid).toBe(2000);
+      expect(res5.interestPaid).toBe(50);
+    });
+
+    it('should release and consolidate financed stock subscriptions when loan is fully paid', async () => {
+      const { StockSubscription } = await import(
+        '@domain/entities/stock-subscription.entity'
+      );
+      const mockLoan = createMockLoan({
+        outstandingBalance: 1000,
+        interestRate: 0,
+      });
+      loanFindByIdSpy.mockResolvedValue(mockLoan);
+      loanSaveSpy.mockResolvedValue(mockLoan);
+
+      const financedSub1 = StockSubscription.create({
+        memberId: mockMemberId,
+        stockId: 'stock-1',
+        quantity: 2,
+        financingLoanId: mockLoan.id,
+      });
+      const financedSub2 = StockSubscription.create({
+        memberId: mockMemberId,
+        stockId: 'stock-2',
+        quantity: 3,
+        financingLoanId: mockLoan.id,
+      });
+      const existingFreeSub1 = StockSubscription.create({
+        memberId: mockMemberId,
+        stockId: 'stock-1',
+        quantity: 5,
+      });
+
+      stockSubscriptionRepository.findFreeOfFinancing = jest
+        .fn()
+        .mockResolvedValue([existingFreeSub1]);
+      jest
+        .spyOn(stockSubscriptionRepository, 'findByFinancingLoan')
+        .mockResolvedValue([financedSub1, financedSub2]);
+      const saveManySubsSpy = jest
+        .spyOn(stockSubscriptionRepository, 'saveMany')
+        .mockResolvedValue([]);
+
+      await useCase.execute({
+        loanId: mockLoan.id,
+        meetingId: mockMeetingId,
+        totalPaymentAmount: 1000,
+        isFullPayoff: true,
+      });
+
+      expect(saveManySubsSpy).toHaveBeenCalledTimes(1);
+      expect(existingFreeSub1.quantity).toBe(7); // 5 + 2 consolidated
+      expect(financedSub1.isActive()).toBe(false);
+      expect(financedSub2.financingLoanId).toBeNull();
+    });
   });
 });

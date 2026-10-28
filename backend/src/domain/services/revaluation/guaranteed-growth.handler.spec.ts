@@ -285,4 +285,106 @@ describe('GuaranteedGrowthHandler', () => {
     expect(result.updatedResult.assigned[guaranteedStock1.id]).toBeCloseTo(25);
     expect(result.updatedResult.assigned[guaranteedStock2.id]).toBeCloseTo(15);
   });
+
+  it('should return 0 assigned when guaranteed stocks have 0 active shares or 0 required growth', () => {
+    // ARRANGE
+    const guaranteedStock = Stock.create({
+      type: 'guaranteed',
+      value: 100,
+      monthlyContribution: 10,
+      isGuaranteed: true,
+      guaranteedYield: 0.05,
+    });
+    const context: DistributionContext = {
+      totalInterest: 1000,
+      totalStockContributions: 5000,
+      interestAvailableForDistribution: 1000,
+      totalRequiredGuaranteedGrowth: 0,
+      agilePriorityInterest: 500,
+      stocks: [guaranteedStock],
+      subscriptions: [],
+      ledgerEntries: [],
+    };
+    const partialResult: DistributionResult = {
+      assigned: {},
+      remaining: 1000,
+    };
+
+    // ACT
+    const result = handler.handle(1000, context, partialResult);
+
+    // ASSERT
+    expect(result.assigned).toBe(0);
+    expect(result.remaining).toBe(1000);
+  });
+
+  it('should prioritize CDT stocks first (both full and partial coverage) before other guaranteed stocks', () => {
+    // ARRANGE
+    const cdtStock1 = Stock.create({
+      type: 'CDT-90',
+      value: 1000,
+      monthlyContribution: 0,
+      isGuaranteed: true,
+      guaranteedYield: 0.02, // 20 per share
+    });
+    const cdtStock2 = Stock.create({
+      type: 'CDT-180',
+      value: 1000,
+      monthlyContribution: 0,
+      isGuaranteed: true,
+      guaranteedYield: 0.03, // 30 per share
+    });
+    const cdtZeroSub = Stock.create({
+      type: 'CDT-360',
+      value: 1000,
+      monthlyContribution: 0,
+      isGuaranteed: true,
+      guaranteedYield: 0.04,
+    });
+    const otherGuaranteedZeroSub = Stock.create({
+      type: 'guaranteed-empty',
+      value: 100,
+      monthlyContribution: 10,
+      isGuaranteed: true,
+      guaranteedYield: 0.05,
+    });
+
+    // cdtStock1 requires 20 * 2 = 40
+    // cdtStock2 requires 30 * 2 = 60
+    // agilePriorityInterest = 50 -> cdtStock1 gets 40, cdtStock2 gets remaining 10
+    const context: DistributionContext = {
+      totalInterest: 1000,
+      totalStockContributions: 5000,
+      interestAvailableForDistribution: 1000,
+      totalRequiredGuaranteedGrowth: 100,
+      agilePriorityInterest: 50,
+      stocks: [cdtStock1, cdtStock2, cdtZeroSub, otherGuaranteedZeroSub],
+      subscriptions: [
+        StockSubscription.create({
+          memberId: 'm1',
+          stockId: cdtStock1.id,
+          quantity: 2,
+        }),
+        StockSubscription.create({
+          memberId: 'm2',
+          stockId: cdtStock2.id,
+          quantity: 2,
+        }),
+      ],
+      ledgerEntries: [],
+    };
+    const partialResult: DistributionResult = {
+      assigned: {},
+      remaining: 1000,
+    };
+
+    // ACT
+    const result = handler.handle(1000, context, partialResult);
+
+    // ASSERT
+    expect(result.assigned).toBe(50);
+    expect(result.updatedResult.assigned[cdtStock1.id]).toBe(40);
+    expect(result.updatedResult.assigned[cdtStock2.id]).toBe(10);
+    expect(result.remaining).toBe(950);
+  });
 });
