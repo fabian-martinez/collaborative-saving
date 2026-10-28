@@ -22,7 +22,10 @@ import { AuthV2Module } from './infrastructure/nestjs/http/modules/auth-v2.modul
 import { FirebaseAuthGuard } from './infrastructure/nestjs/auth/guards/firebase-auth.guard';
 import { RolesGuard } from './infrastructure/nestjs/auth/guards/roles.guard';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { validateEnvConfig } from './infrastructure/config/env.validation';
+import {
+  resolveDatabaseSslConfig,
+  validateEnvConfig,
+} from './infrastructure/config/env.validation';
 
 @Module({
   imports: [
@@ -44,17 +47,17 @@ import { validateEnvConfig } from './infrastructure/config/env.validation';
           configService.get<string>('DATABASE_TEST_URL') ||
           configService.get<string>('DATABASE_URL') ||
           '';
-        const isSsl =
-          configService.get<string>('DATABASE_SSL') === 'true' ||
-          dbUrl.includes('neon.tech') ||
-          dbUrl.includes('sslmode=require');
 
         return {
           type: 'postgres',
           url: dbUrl,
           autoLoadEntities: true,
           synchronize: false,
-          ssl: isSsl ? { rejectUnauthorized: false } : false,
+          ssl: resolveDatabaseSslConfig(
+            dbUrl,
+            configService.get<string>('DATABASE_SSL'),
+            configService.get<string>('DATABASE_SSL_REJECT_UNAUTHORIZED'),
+          ),
         };
       },
     }),

@@ -13,6 +13,15 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
 
+  // Trust the first hop reverse proxy (Render / Cloud Run / Nginx) so @nestjs/throttler reads the real client IP
+  const httpAdapter = app.getHttpAdapter();
+  const expressInstance = httpAdapter?.getInstance?.() as
+    | { set?: (setting: string, val: unknown) => void }
+    | undefined;
+  if (expressInstance && typeof expressInstance.set === 'function') {
+    expressInstance.set('trust proxy', 1);
+  }
+
   const isProduction = process.env.NODE_ENV === 'production';
 
   // Use Helmet for security headers, configuring CSP to allow Swagger UI and strict HSTS

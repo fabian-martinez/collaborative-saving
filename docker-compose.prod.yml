@@ -9,12 +9,16 @@ services:
     ports:
       - "3000:3000"
     environment:
+      - NODE_ENV=production
       - PORT=3000
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/restored_db_feb21
       - DATABASE_SSL=false
+      - ENABLE_SWAGGER=false
       - ALLOWED_ORIGINS=http://localhost:8080,http://localhost:5173
-      # Reemplaza con tu JSON string de Firebase Admin en producción
+      # Reemplaza con tu JSON string de Firebase Admin y llaves criptográficas en producción
       - FIREBASE_SERVICE_ACCOUNT_JSON=
+      - APP_ENCRYPTION_KEY=
+      - APP_BLIND_INDEX_SALT=
     depends_on:
       - db
     restart: always
@@ -50,7 +54,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata_prod:/var/lib/postgresql/data
     restart: always

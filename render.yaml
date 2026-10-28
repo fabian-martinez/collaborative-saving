@@ -18,8 +18,12 @@ services:
       - key: ENABLE_SWAGGER
         value: "false"
       - key: ALLOWED_ORIGINS
-        value: http://localhost:5173,https://collaborative-saving.pages.dev,https://collaborative-saving.vercel.app
+        value: https://collaborative-saving.web.app,https://mobile-collaborative-saving.web.app,https://mobile-collaborative-saving--*.web.app
       - key: DATABASE_URL
         sync: false
       - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: APP_ENCRYPTION_KEY
+        sync: false
+      - key: APP_BLIND_INDEX_SALT
         sync: false

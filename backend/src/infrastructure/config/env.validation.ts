@@ -33,6 +33,30 @@ export function parseEncryptionKey(rawKey: string): Buffer {
   );
 }
 
+/**
+ * Resolves PostgreSQL SSL configuration.
+ * Enables TLS verification (rejectUnauthorized: true) by default when SSL is enabled,
+ * unless DATABASE_SSL_REJECT_UNAUTHORIZED is explicitly set to 'false' (e.g., self-signed local certs).
+ */
+export function resolveDatabaseSslConfig(
+  dbUrl = '',
+  databaseSslEnv?: string,
+  rejectUnauthorizedEnv?: string,
+): boolean | { rejectUnauthorized: boolean } {
+  const isSsl =
+    databaseSslEnv === 'true' ||
+    dbUrl.includes('neon.tech') ||
+    dbUrl.includes('sslmode=require');
+
+  if (!isSsl) {
+    return false;
+  }
+
+  return {
+    rejectUnauthorized: rejectUnauthorizedEnv !== 'false',
+  };
+}
+
 export function validateEnvConfig(
   config: Record<string, unknown>,
 ): Record<string, unknown> {
