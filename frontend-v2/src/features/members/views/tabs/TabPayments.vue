@@ -25,38 +25,6 @@
         </template>
       </DataTable>
     </div>
-
-    <!-- Modal de Detalle de Pago -->
-    <Modal :show="selectedPaymentId !== null" title="Detalle de Pago" @close="selectedPaymentId = null">
-      <div v-if="selectedPayment">
-        <div class="payment-detail-header">
-          <div class="detail-row">
-            <span class="label">Operación ID:</span>
-            <span class="value font-mono">{{ selectedPayment.operation_id }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">Fecha:</span>
-            <span class="value">{{ formatDate(selectedPayment.date) }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">Tipo:</span>
-            <span class="value">{{ selectedPayment.type }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">Total:</span>
-            <span class="value font-mono font-bold">{{ formatCurrency(selectedPayment.total_amount) }}</span>
-          </div>
-        </div>
-        <div class="payment-entries mt-4">
-          <h4 class="entries-title">Asientos Contables</h4>
-          <DataTable
-            :data="selectedPayment.entries"
-            :columns="entryColumns"
-            empty-message="No hay asientos registrados"
-          />
-        </div>
-      </div>
-    </Modal>
   </div>
 </template>
 
@@ -64,8 +32,6 @@
 import { ref, computed } from 'vue'
 import FilterBar, { type FilterConfig } from '@/shared/components/FilterBar.vue'
 import DataTable from '@/shared/components/DataTable.vue'
-import Modal from '@/shared/components/Modal.vue'
-import { formatCurrency, formatDate } from '@/shared/utils/formatters'
 import type { useMemberDetailStore } from '@/features/members/stores/memberDetail'
 
 interface Column {
@@ -84,7 +50,6 @@ const emit = defineEmits<{
 }>()
 
 const filters = ref<Record<string, unknown>>({})
-const selectedPaymentId = ref<string | null>(null)
 
 const filterConfig: FilterConfig = {
   type: true,
@@ -110,12 +75,6 @@ const paymentColumns: Column[] = [
   { key: 'meeting_id', label: 'Reunión' }
 ]
 
-const entryColumns: Column[] = [
-  { key: 'type', label: 'Tipo' },
-  { key: 'amount', label: 'Monto', format: 'currency' },
-  { key: 'description', label: 'Descripción' }
-]
-
 const filteredPayments = computed(() => {
   let result = props.store.payments
 
@@ -139,11 +98,6 @@ const filteredPayments = computed(() => {
   return result
 })
 
-const selectedPayment = computed(() => {
-  if (!selectedPaymentId.value) return null
-  return props.store.payments.find(p => p.operation_id === selectedPaymentId.value)
-})
-
 function handleFiltersUpdate(newFilters: Record<string, unknown>) {
   filters.value = newFilters
   // Recargar pagos con los filtros aplicados
@@ -156,7 +110,6 @@ function handleFiltersUpdate(newFilters: Record<string, unknown>) {
 }
 
 function viewPaymentDetail(paymentId: string) {
-  selectedPaymentId.value = paymentId
   emit('view-payment-detail', paymentId)
 }
 </script>

@@ -150,29 +150,24 @@ export class RecordMonthlyPaymentsUseCase {
     }
 
     // 7. Process loan payments using RecordLoanPaymentUseCase (delegated to loans module)
-    const loanPaymentResults: Array<{
-      loanId: string;
-      operationId: string;
-      interestPaid: number;
-      principalPaid: number;
-    }> = [];
+    const loanPaymentResults = await Promise.all(
+      loanPayments.map(async (loanPayment) => {
+        const result = await this.recordLoanPaymentUseCase.execute({
+          loanId: loanPayment.referenceId!,
+          meetingId: activeMeeting.id,
+          totalPaymentAmount: loanPayment.amount,
+          notes: loanPayment.description,
+          isFullPayoff: loanPayment.isFullPayoff,
+        });
 
-    for (const loanPayment of loanPayments) {
-      const result = await this.recordLoanPaymentUseCase.execute({
-        loanId: loanPayment.referenceId!,
-        meetingId: activeMeeting.id,
-        totalPaymentAmount: loanPayment.amount,
-        notes: loanPayment.description,
-        isFullPayoff: loanPayment.isFullPayoff,
-      });
-
-      loanPaymentResults.push({
-        loanId: result.loanId,
-        operationId: result.operationId,
-        interestPaid: result.interestPaid,
-        principalPaid: result.principalPaid,
-      });
-    }
+        return {
+          loanId: result.loanId,
+          operationId: result.operationId,
+          interestPaid: result.interestPaid,
+          principalPaid: result.principalPaid,
+        };
+      }),
+    );
 
     // 8. Process other payments and map to ledger entries
     const allEntries: RecordOperationDto['entries'] = [];

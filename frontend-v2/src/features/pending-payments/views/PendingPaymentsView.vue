@@ -87,23 +87,28 @@
               {{ payment.notes || '-' }}
             </td>
             <td class="text-right flex justify-end gap-2">
-              <button 
-                class="btn btn-sm btn-ghost btn-square" 
-                @click="openEditModal(payment)"
-                title="Editar"
-                aria-label="Editar pago"
+              <span class="tooltip tooltip-left" data-tip="Editar">
+                <button
+                  class="btn btn-sm btn-ghost btn-square"
+                  @click="openEditModal(payment)"
+                  aria-label="Editar pago"
+                >
+                  <Edit class="w-4 h-4 text-primary" />
+                </button>
+              </span>
+              <span
+                class="tooltip tooltip-left"
+                :data-tip="payment.status === 'paid' ? 'No se puede eliminar un pago pagado' : 'Eliminar'"
               >
-                <Edit class="w-4 h-4 text-primary" />
-              </button>
-              <button 
-                class="btn btn-sm btn-ghost btn-square" 
-                @click="confirmDelete(payment)"
-                :disabled="payment.status === 'paid'"
-                title="Eliminar"
-                aria-label="Eliminar pago"
-              >
-                <Trash class="w-4 h-4 text-error" />
-              </button>
+                <button
+                  class="btn btn-sm btn-ghost btn-square"
+                  @click="confirmDelete(payment)"
+                  :disabled="payment.status === 'paid'"
+                  aria-label="Eliminar pago"
+                >
+                  <Trash class="w-4 h-4 text-error" />
+                </button>
+              </span>
             </td>
           </tr>
         </tbody>

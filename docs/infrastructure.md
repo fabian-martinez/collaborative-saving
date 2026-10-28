@@ -73,7 +73,7 @@ Si prefieres crearlo manualmente:
    - **Build Command:** `npm ci --include=dev && npm run build`
    - **Start Command:** `npm run start:prod`
    - **Instance Type:** `Free`
-   - **Health Check Path:** `/`
+   - **Health Check Path:** `/health`
 
 #### Opción B: Despliegue en Google Cloud Run
 Para desplegar vía contenedor:
@@ -90,6 +90,25 @@ Para desplegar vía contenedor:
      --allow-unauthenticated \
      --port 3000
    ```
+
+#### Monitoreo Keep-Alive y Prevención de Cold Starts en Render
+
+En el plan gratuito de Render, las instancias web se suspenden automáticamente tras **15 minutos de inactividad** (sin tráfico HTTP entrante), lo que ocasiona arranques en frío (*cold starts*) de 30 a 90 segundos al reanudar el servicio.
+
+Para prevenir la suspensión sin agotar la cuota mensual gratuita de Render:
+
+1. **Endpoint de Salud Ultraligero:**
+   - La API expone `GET /health` (`@Public()`), el cual responde en menos de 100ms con `{ "status": "ok", "uptime": ..., "timestamp": ... }` sin consultar la base de datos de Neon ni consumir el pool de conexiones.
+2. **Configuración del Monitor de Ping Periódico:**
+   - Configura un monitor externo gratuito (ej. [UptimeRobot](https://uptimerobot.com/), [BetterStack](https://betterstack.com/) o [Cron-job.org](https://cron-job.org/)).
+   - **URL:** `https://<TU-BACKEND-URL>/health`
+   - **Método:** `GET`
+   - **Frecuencia:** Cada 10 a 14 minutos (ej. cada 12 minutos, antes del límite de 15 minutos de inactividad).
+3. **Control y Optimización de Cuota Gratuita (750 h/mes):**
+   - Render otorga 750 horas de cómputo mensuales en su nivel gratuito.
+   - Un servicio activo 24/7 consume ~744 horas/mes, dejando muy poco margen para re-despliegues o picos.
+   - Se debe programar el monitor para enviar pings únicamente durante la **ventana horaria activa** (ej. de **07:00 a 23:00 COT**, 16 horas al día).
+   - Consumo estimado: 16 horas/día × 31 días = **~496 horas/mes** (~66% de la cuota disponible), permitiendo que el backend repose durante la madrugada y garantizando disponibilidad inmediata durante la jornada operativa.
 
 #### Matriz de Variables de Entorno de Producción
 
@@ -116,15 +135,18 @@ Para desplegar vía contenedor:
 Una vez desplegada la instancia, valida su funcionamiento y seguridad:
 
 ```bash
-# 1. Health Check público (debe responder 200 OK con 'Hello World!')
+# 1. Health Check ultraligero para Keep-Alive (debe responder 200 OK en <100ms)
+curl -i https://<TU-BACKEND-URL>/health
+
+# 2. Endpoint raíz de saludo (debe responder 200 OK con 'Hello World!')
 curl -i https://<TU-BACKEND-URL>/
 
-# 2. Validación de correo (público con rate-limiting, debe responder 200 OK)
+# 3. Validación de correo (público con rate-limiting, debe responder 200 OK)
 curl -i -X POST https://<TU-BACKEND-URL>/v2/auth/validate-email \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@collaborativesaving.com"}'
 
-# 3. Verificación de seguridad en rutas protegidas (DEBE responder 401 Unauthorized)
+# 4. Verificación de seguridad en rutas protegidas (DEBE responder 401 Unauthorized)
 curl -i https://<TU-BACKEND-URL>/members
 ```
 
