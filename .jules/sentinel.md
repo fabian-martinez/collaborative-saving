@@ -42,3 +42,7 @@
 **Vulnerability:** Moderate severity vulnerability in typeorm versions 0.1.12 - 0.3.28 where SQL Injection is possible in UpdateQueryBuilder/SoftDeleteQueryBuilder orderBy (MySQL/MariaDB).
 **Learning:** Typeorm vulnerabilities in older versions should be patched via version bump, which can happen through transitive dependencies or direct.
 **Prevention:** Regularly audit backend dependencies using `npm audit` and bump the direct `typeorm` dependency to `>=0.3.29` or use `overrides` for nested dependencies to resolve these SQLi risks without needing major architectural refactors.
+## 2026-10-31 - [Fix SQL injection via @IsEnum with string array]
+**Vulnerability:** The `orderBy` query parameter in DTOs was using `@IsEnum(['ASC', 'DESC'])` instead of `@IsIn(['ASC', 'DESC'])`. This allows malicious strings to bypass validation because `@IsEnum` is designed to work with TypeScript enums, not string arrays.
+**Learning:** `class-validator`'s `@IsEnum` decorator does not correctly validate against string arrays. When the field is passed directly to `QueryBuilder.orderBy()`, it becomes a SQL Injection vector.
+**Prevention:** Always use `@IsIn()` for validating against an array of strings, or define a proper TypeScript enum and use it with `@IsEnum()`.
