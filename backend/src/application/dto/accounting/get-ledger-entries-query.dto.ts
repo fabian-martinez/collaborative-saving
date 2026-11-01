@@ -5,6 +5,7 @@ import {
   IsInt,
   Min,
   IsDateString,
+  IsIn,
 } from 'class-validator';
 import {
   AccountType,
@@ -39,6 +40,6 @@ export class GetLedgerEntriesQueryDto {
   limit?: number = 10;
 
   @IsOptional()
-  @IsEnum(['ASC', 'DESC'])
+  @IsIn(['ASC', 'DESC'])
   orderBy?: 'ASC' | 'DESC' = 'DESC';
 }

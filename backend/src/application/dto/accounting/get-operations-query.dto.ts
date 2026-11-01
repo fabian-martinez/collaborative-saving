@@ -5,6 +5,7 @@ import {
   IsInt,
   Min,
   IsDateString,
+  IsIn,
 } from 'class-validator';
 import { OperationType } from '@domain/enums/operation-type.enum';
 
@@ -40,6 +41,6 @@ export class GetOperationsQueryDto {
   limit?: number = 10;
 
   @IsOptional()
-  @IsEnum(['ASC', 'DESC'])
+  @IsIn(['ASC', 'DESC'])
   orderBy?: 'ASC' | 'DESC' = 'DESC';
 }
