@@ -164,4 +164,9 @@ export class TypeOrmLoanTransactionDetailRepository implements LoanTransactionDe
     );
     return saved.map((e) => LoanTransactionDetailMapper.toDomain(e));
   }
+
+  async deleteByOperation(operationId: string): Promise<void> {
+    const repo = this.getRepository();
+    await repo.delete({ operationId });
+  }
 }

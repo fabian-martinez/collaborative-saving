@@ -218,6 +218,39 @@ export class Loan {
     }
   }
 
+  /**
+   * Reverts a previously recorded payment, restoring outstanding balance
+   * and switching status back from PAID to ACTIVE when balance > 0.
+   * Note: Does not automatically undo stock_subscription consolidations
+   * triggered when a loan was fully paid off.
+   */
+  revertPayment(principalPaid: number, interestPaid: number): void {
+    if (principalPaid < 0 || interestPaid < 0) {
+      throw new Error('Reverted payment amounts must be >= 0');
+    }
+    if (
+      this._status !== LoanStatus.ACTIVE &&
+      this._status !== LoanStatus.PAID &&
+      this._status !== LoanStatus.PENDING
+    ) {
+      throw new Error(
+        'Can only revert payments for active, paid, or pending loans',
+      );
+    }
+
+    const newBalance = Number(
+      (this._outstandingBalance + principalPaid).toFixed(2),
+    );
+
+    this._outstandingBalance = newBalance;
+
+    if (this._status === LoanStatus.PAID && this._outstandingBalance > 0) {
+      this._status = LoanStatus.ACTIVE;
+    }
+
+    this.validateInvariants();
+  }
+
   markAsDefaulted(): void {
     if (this._status !== LoanStatus.ACTIVE) {
       throw new Error('Only active loans can be marked as defaulted');

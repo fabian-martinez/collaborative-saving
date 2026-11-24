@@ -303,4 +303,9 @@ export class TypeOrmLedgerEntryRepository implements LedgerEntryRepository {
 
     return accountsData;
   }
+
+  async deleteByOperation(operationId: string): Promise<void> {
+    const repo = this.getRepository();
+    await repo.delete({ operationId });
+  }
 }

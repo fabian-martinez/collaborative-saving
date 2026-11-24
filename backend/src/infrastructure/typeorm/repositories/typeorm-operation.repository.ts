@@ -218,4 +218,9 @@ export class TypeOrmOperationRepository implements OperationRepository {
 
     return savedOperation;
   }
+
+  async delete(id: string): Promise<void> {
+    const repo = this.getRepository();
+    await repo.delete({ id });
+  }
 }

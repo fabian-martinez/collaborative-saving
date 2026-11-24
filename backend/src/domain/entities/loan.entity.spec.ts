@@ -597,4 +597,78 @@ describe('Loan Entity', () => {
       expect(loan.monthlyPaymentAmount).toBe(850);
     });
   });
+
+  describe('revertPayment', () => {
+    const createLoanForRevert = (
+      outstandingBalance: number,
+      status: LoanStatus = LoanStatus.ACTIVE,
+    ) =>
+      Loan.fromPersistence({
+        id: 'loan-1',
+        member_id: 'member-1',
+        loan_type: 'corriente',
+        approved_amount: 1000,
+        disbursed_amount: 1000,
+        interest_rate: 0.02,
+        monthly_payment_amount: 100,
+        term: 10,
+        outstanding_balance: outstandingBalance,
+        status,
+        creation_date: new Date(),
+      });
+
+    it('should restore outstandingBalance on partial payment while keeping ACTIVE status', () => {
+      const loan = createLoanForRevert(600, LoanStatus.ACTIVE);
+
+      loan.revertPayment(200, 16);
+
+      expect(loan.outstandingBalance).toBe(800);
+      expect(loan.status).toBe(LoanStatus.ACTIVE);
+    });
+
+    it('should transition status from PAID back to ACTIVE when outstandingBalance becomes > 0', () => {
+      const loan = createLoanForRevert(0, LoanStatus.PAID);
+
+      loan.revertPayment(250, 5);
+
+      expect(loan.outstandingBalance).toBe(250);
+      expect(loan.status).toBe(LoanStatus.ACTIVE);
+    });
+
+    it('should handle interest-only payment reversal without altering balance or status', () => {
+      const loan = createLoanForRevert(500, LoanStatus.ACTIVE);
+
+      loan.revertPayment(0, 10);
+
+      expect(loan.outstandingBalance).toBe(500);
+      expect(loan.status).toBe(LoanStatus.ACTIVE);
+    });
+
+    it('should throw if principalPaid or interestPaid is negative', () => {
+      const loan = createLoanForRevert(500, LoanStatus.ACTIVE);
+
+      expect(() => loan.revertPayment(-10, 0)).toThrow(
+        'Reverted payment amounts must be >= 0',
+      );
+      expect(() => loan.revertPayment(0, -5)).toThrow(
+        'Reverted payment amounts must be >= 0',
+      );
+    });
+
+    it('should throw if loan is DEFAULTED', () => {
+      const loan = createLoanForRevert(500, LoanStatus.DEFAULTED);
+
+      expect(() => loan.revertPayment(100, 10)).toThrow(
+        'Can only revert payments for active, paid, or pending loans',
+      );
+    });
+
+    it('should throw if restored balance exceeds disbursedAmount', () => {
+      const loan = createLoanForRevert(900, LoanStatus.ACTIVE);
+
+      expect(() => loan.revertPayment(200, 0)).toThrow(
+        'Outstanding balance cannot exceed disbursed amount',
+      );
+    });
+  });
 });
