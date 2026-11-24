@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { RouterLink, useRoute } from 'vue-router'
+import { computed } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { 
   Home, 
   User, 
@@ -10,17 +11,19 @@ import {
   Book, 
   InfoCircle, 
   Folder,
+  Eye,
   NavArrowLeft,
   LogOut,
 } from 'iconoir-vue/regular'
 import { useSidebar } from '@/shared/composables/useSidebar'
 import { useAuthStore } from '@/features/auth/stores/authStore'
-import { useRouter } from 'vue-router'
 
 const route = useRoute()
 const { isCollapsed, isMobileOpen, toggleCollapse, closeMobile } = useSidebar()
+const authStore = useAuthStore()
+const router = useRouter()
 
-const menuSections = [
+const menuSections = computed(() => [
   {
     title: 'Principal',
     items: [
@@ -43,10 +46,11 @@ const menuSections = [
     items: [
       { name: 'Info del Fondo', to: '/fund-info', icon: InfoCircle },
       { name: 'Documentos', to: '/documents', icon: Folder },
+      ...(authStore.isAdmin ? [{ name: 'Auditoría', to: '/audit', icon: Eye }] : []),
       { name: 'Configuración', to: '/settings', icon: Settings },
     ],
   },
-]
+])
 
 // Mock data para próxima reunión - esto vendrá del store después
 const nextMeeting = {
@@ -54,9 +58,6 @@ const nextMeeting = {
   date: '15 Enero, 2024',
   title: 'Reunión #24'
 }
-
-const authStore = useAuthStore()
-const router = useRouter()
 
 async function handleLogout() {
   await authStore.logout()

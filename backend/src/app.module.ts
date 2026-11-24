@@ -15,6 +15,7 @@ import { DashboardV2Module } from './infrastructure/nestjs/http/modules/dashboar
 import { SettingsV2Module } from './infrastructure/nestjs/http/modules/settings-v2.module';
 import { EventBusModule } from './infrastructure/services/event-bus/event-bus.module';
 import { TransactionManagerModule } from './infrastructure/services/transaction-manager/transaction-manager.module';
+import { AuditModule } from './infrastructure/services/audit/audit.module';
 import { CryptoModule } from './infrastructure/services/crypto/crypto.module';
 import { FirebaseAdminModule } from './infrastructure/services/firebase-admin/firebase-admin.module';
 import { AuthModule } from './infrastructure/services/auth/auth.module';
@@ -61,6 +62,7 @@ import { validateEnvConfig } from './infrastructure/config/env.validation';
     CryptoModule,
     EventBusModule,
     TransactionManagerModule,
+    AuditModule,
     FirebaseAdminModule,
     AuthModule,
     AuthV2Module,
