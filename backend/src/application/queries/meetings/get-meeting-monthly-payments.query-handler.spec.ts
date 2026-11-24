@@ -52,6 +52,7 @@ describe('GetMeetingMonthlyPaymentsQueryHandler', () => {
       saveMany: jest.fn(),
       sumByAccountType: jest.fn(),
       getAccountsSummary: jest.fn(),
+      deleteByOperation: jest.fn(),
     };
 
     paymentMapperService = {
