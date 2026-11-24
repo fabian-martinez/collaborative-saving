@@ -16,18 +16,42 @@ import {
   type ActionCodeSettings
 } from 'firebase/auth';
 import { auth } from '@/shared/firebase/config';
+import { authApi, type AuthenticatedMemberProfile } from '@/api/auth.api';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = shallowRef<User | null>(null);
+  const memberProfile = ref<AuthenticatedMemberProfile | null>(null);
   const loading = ref(true);
   const initialized = ref(false);
 
   const isAuthenticated = computed(() => !!user.value);
+  const isAdmin = computed(() => memberProfile.value?.role === 'admin');
+
+  async function loadMemberProfile() {
+    if (!user.value) {
+      memberProfile.value = null;
+      return null;
+    }
+    try {
+      const profile = await authApi.getMe();
+      memberProfile.value = profile;
+      return profile;
+    } catch (error) {
+      console.error('Failed to load authenticated member profile:', error);
+      memberProfile.value = null;
+      return null;
+    }
+  }
 
   function init() {
     return new Promise<void>((resolve) => {
-      onAuthStateChanged(auth, (currentUser) => {
+      onAuthStateChanged(auth, async (currentUser) => {
         user.value = currentUser;
+        if (currentUser) {
+          await loadMemberProfile();
+        } else {
+          memberProfile.value = null;
+        }
         loading.value = false;
         initialized.value = true;
         resolve();
@@ -40,6 +64,7 @@ export const useAuthStore = defineStore('auth', () => {
       loading.value = true;
       const credential = await signInWithEmailAndPassword(auth, email, pass);
       user.value = credential.user;
+      await loadMemberProfile();
       return credential.user;
     } catch (error) {
       console.error('Login error:', error);
@@ -77,6 +102,7 @@ export const useAuthStore = defineStore('auth', () => {
       const credential = await signInWithEmailLink(auth, email, url);
       user.value = credential.user;
       window.localStorage.removeItem('emailForSignIn');
+      await loadMemberProfile();
       return credential.user;
     } catch (error) {
       console.error('Complete magic link login error:', error);
@@ -88,6 +114,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await signOut(auth);
       user.value = null;
+      memberProfile.value = null;
     } catch (error) {
       console.error('Logout error:', error);
       throw error;
@@ -105,9 +132,12 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     user,
+    memberProfile,
     loading,
     initialized,
     isAuthenticated,
+    isAdmin,
+    loadMemberProfile,
     init,
     login,
     sendMagicLink,
