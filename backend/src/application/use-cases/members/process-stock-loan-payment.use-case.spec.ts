@@ -204,15 +204,12 @@ describe('ProcessStockLoanPaymentUseCase', () => {
   });
 
   it('cubre validaciones de socio, reunión activa/cerrada, suscripción, cantidad y stock', async () => {
-    const { MemberNotFoundException } = await import(
-      '@application/exceptions/member-not-found.exception'
-    );
-    const { MeetingNotFoundException } = await import(
-      '@application/exceptions/meeting-not-found.exception'
-    );
-    const { StockNotFoundException } = await import(
-      '@application/exceptions/stock-not-found.exception'
-    );
+    const { MemberNotFoundException } =
+      await import('@application/exceptions/member-not-found.exception');
+    const { MeetingNotFoundException } =
+      await import('@application/exceptions/meeting-not-found.exception');
+    const { StockNotFoundException } =
+      await import('@application/exceptions/stock-not-found.exception');
     const baseDto = createBaseDto();
 
     // 1. Socio no existe

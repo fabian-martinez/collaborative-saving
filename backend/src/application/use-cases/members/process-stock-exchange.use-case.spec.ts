@@ -337,15 +337,12 @@ describe('ProcessStockExchangeUseCase', () => {
   });
 
   it('cubre validaciones de casos borde y flujos alternativos (efectivo en contra, crédito corriente, suscripción existente)', async () => {
-    const { MemberNotFoundException } = await import(
-      '@application/exceptions/member-not-found.exception'
-    );
-    const { MeetingNotFoundException } = await import(
-      '@application/exceptions/meeting-not-found.exception'
-    );
-    const { StockNotFoundException } = await import(
-      '@application/exceptions/stock-not-found.exception'
-    );
+    const { MemberNotFoundException } =
+      await import('@application/exceptions/member-not-found.exception');
+    const { MeetingNotFoundException } =
+      await import('@application/exceptions/meeting-not-found.exception');
+    const { StockNotFoundException } =
+      await import('@application/exceptions/stock-not-found.exception');
     const baseDto = createBaseDto();
 
     // 1. Socio no existe

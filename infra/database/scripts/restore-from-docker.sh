@@ -60,9 +60,9 @@ echo -e "\n${YELLOW}🚀 Paso 4: Migrando datos desde Docker a la base remota...
 docker exec "$DOCKER_CONTAINER" pg_dump -U "$DOCKER_USER" -d "$DOCKER_DB" --no-owner --no-privileges | psql "$TARGET_URL" -v ON_ERROR_STOP=1 > /dev/null
 echo -e "${GREEN}✅ Datos y esquema restaurados con éxito.${NC}"
 
-# 5. Aplicar migraciones posteriores al volcado
-echo -e "\n${YELLOW}🔧 Paso 5: Aplicando migraciones incrementales pendientes con runner atómico...${NC}"
-bash "${SCRIPT_DIR}/migrate.sh" up "$TARGET_URL"
+# 5. Aplicar migraciones pendientes con TypeORM
+echo -e "\n${YELLOW}🔧 Paso 5: Aplicando migraciones pendientes con TypeORM...${NC}"
+DATABASE_URL="$TARGET_URL" npm --prefix "${SCRIPT_DIR}/../../../backend" run typeorm:migration:run
 echo -e "${GREEN}✅ Migraciones sincronizadas con éxito.${NC}"
 
 # 6. Resumen de filas en destino
@@ -82,7 +82,7 @@ UNION ALL SELECT 'mandatory_contributions', count(*) FROM public.mandatory_contr
 UNION ALL SELECT 'stock_subscriptions', count(*) FROM public.stock_subscriptions
 UNION ALL SELECT 'pending_member_payments', count(*) FROM public.pending_member_payments
 UNION ALL SELECT 'stock_value_history', count(*) FROM public.stock_value_history
-UNION ALL SELECT 'schema_migrations', count(*) FROM public.schema_migrations
+UNION ALL SELECT 'migrations', count(*) FROM public.migrations
 ORDER BY 1;
 "
 

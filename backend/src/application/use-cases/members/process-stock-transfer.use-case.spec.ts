@@ -145,15 +145,12 @@ describe('ProcessStockTransferUseCase', () => {
   });
 
   it('cubre validaciones de socio, reunión activa/cerrada, suscripción nueva y stock inexistente', async () => {
-    const { MemberNotFoundException } = await import(
-      '@application/exceptions/member-not-found.exception'
-    );
-    const { MeetingNotFoundException } = await import(
-      '@application/exceptions/meeting-not-found.exception'
-    );
-    const { StockNotFoundException } = await import(
-      '@application/exceptions/stock-not-found.exception'
-    );
+    const { MemberNotFoundException } =
+      await import('@application/exceptions/member-not-found.exception');
+    const { MeetingNotFoundException } =
+      await import('@application/exceptions/meeting-not-found.exception');
+    const { StockNotFoundException } =
+      await import('@application/exceptions/stock-not-found.exception');
 
     // 1. Socio origen no existe
     await expect(
