@@ -5,6 +5,7 @@ import { OpenMeetingUseCase } from '@application/use-cases/meetings/open-meeting
 import { CloseMeetingUseCase } from '@application/use-cases/meetings/close-meeting.use-case';
 import { GetDisbursementPlanPreviewQueryHandler } from '@application/queries/meetings/get-disbursement-plan-preview.query-handler';
 import { ExecuteDisbursementPlanUseCase } from '@application/use-cases/meetings/execute-disbursement-plan.use-case';
+import { UndoMonthlyPaymentUseCase } from '@application/use-cases/meetings/undo-monthly-payment.use-case';
 import { GetMeetingMonthlyPaymentsQueryHandler } from '@application/queries/meetings/get-meeting-monthly-payments.query-handler';
 import { GetMeetingPurchasesQueryHandler } from '@application/queries/meetings/get-meeting-purchases.query-handler';
 import { GetMeetingStockTransfersQueryHandler } from '@application/queries/meetings/get-meeting-stock-transfers.query-handler';
@@ -46,6 +47,7 @@ describe('MeetingsV2Controller', () => {
   let recordRevaluationUseCase: jest.Mocked<RecordRevaluationUseCase>;
   let getDisbursementPlanPreviewQuery: jest.Mocked<GetDisbursementPlanPreviewQueryHandler>;
   let executeDisbursementPlanUseCase: jest.Mocked<ExecuteDisbursementPlanUseCase>;
+  let undoMonthlyPaymentUseCase: jest.Mocked<UndoMonthlyPaymentUseCase>;
 
   let openMeetingUseCaseExecuteSpy: jest.SpyInstance;
   let closeMeetingUseCaseExecuteSpy: jest.SpyInstance;
@@ -62,6 +64,7 @@ describe('MeetingsV2Controller', () => {
   let recordRevaluationUseCaseExecuteSpy: jest.SpyInstance;
   let getDisbursementPlanPreviewQueryExecuteSpy: jest.SpyInstance;
   let executeDisbursementPlanUseCaseExecuteSpy: jest.SpyInstance;
+  let undoMonthlyPaymentUseCaseExecuteSpy: jest.SpyInstance;
 
   const mockOpenMeetingResponse: MeetingResponseDto = {
     id: '550e8400-e29b-41d4-a716-446655440000',
@@ -179,6 +182,12 @@ describe('MeetingsV2Controller', () => {
             execute: jest.fn(),
           },
         },
+        {
+          provide: UndoMonthlyPaymentUseCase,
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -213,6 +222,7 @@ describe('MeetingsV2Controller', () => {
       GetDisbursementPlanPreviewQueryHandler,
     );
     executeDisbursementPlanUseCase = module.get(ExecuteDisbursementPlanUseCase);
+    undoMonthlyPaymentUseCase = module.get(UndoMonthlyPaymentUseCase);
 
     openMeetingUseCaseExecuteSpy = jest.spyOn(openMeetingUseCase, 'execute');
     closeMeetingUseCaseExecuteSpy = jest.spyOn(closeMeetingUseCase, 'execute');
@@ -1639,6 +1649,62 @@ describe('MeetingsV2Controller', () => {
       await expect(controller.getFundsSummary(meetingId)).rejects.toThrow(
         'Failed to get funds summary',
       );
+    });
+  });
+
+  describe('undoOperation', () => {
+    const meetingId = '550e8400-e29b-41d4-a716-446655440000';
+    const operationId = '660e8400-e29b-41d4-a716-446655440001';
+    const currentUser = {
+      id: 'user-1',
+      email: 'admin@example.com',
+      role: 'admin',
+    };
+
+    it('should undo operation and return snake_case response', async () => {
+      undoMonthlyPaymentUseCaseExecuteSpy = jest
+        .spyOn(undoMonthlyPaymentUseCase, 'execute')
+        .mockResolvedValue({
+          success: true,
+          operationId,
+          message: 'Operación anulada exitosamente',
+        });
+
+      const result = await controller.undoOperation(
+        meetingId,
+        operationId,
+        { reason: 'Cobro duplicado' },
+        currentUser,
+      );
+
+      expect(undoMonthlyPaymentUseCaseExecuteSpy).toHaveBeenCalledWith({
+        meetingId,
+        operationId,
+        reason: 'Cobro duplicado',
+        performedBy: currentUser,
+      });
+      expect(result).toEqual({
+        success: true,
+        operation_id: operationId,
+        message: 'Operación anulada exitosamente',
+      });
+    });
+
+    it('should propagate BusinessRuleError when revaluation already executed', async () => {
+      undoMonthlyPaymentUseCaseExecuteSpy = jest
+        .spyOn(undoMonthlyPaymentUseCase, 'execute')
+        .mockRejectedValue(
+          new BusinessRuleError('Revalorización ya confirmada'),
+        );
+
+      await expect(
+        controller.undoOperation(
+          meetingId,
+          operationId,
+          { reason: 'Error' },
+          currentUser,
+        ),
+      ).rejects.toThrow(BusinessRuleError);
     });
   });
 });

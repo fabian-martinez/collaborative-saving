@@ -8,8 +8,15 @@ import {
   Query,
   ParseUUIDPipe,
   Logger,
+  HttpCode,
+  HttpStatus,
+  UsePipes,
+  ValidationPipe,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Roles } from '../../auth/decorators/roles.decorator';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { AuthenticatedUserDto } from '@application/queries/auth/get-authenticated-user.query';
 import { MemberRole } from '@domain/enums/member-role.enum';
 import {
   ApiTags,
@@ -19,6 +26,7 @@ import {
   ApiBody,
   ApiNotFoundResponse,
   ApiBadRequestResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { OpenMeetingUseCase } from '@application/use-cases/meetings/open-meeting.use-case';
 import { CloseMeetingUseCase } from '@application/use-cases/meetings/close-meeting.use-case';
@@ -63,6 +71,9 @@ import {
   DisbursementPlanItemHttpDto,
   DisbursementTypeHttp,
 } from '../dto/meetings/disbursement-plan-item-http.dto';
+import { UndoMonthlyPaymentUseCase } from '@application/use-cases/meetings/undo-monthly-payment.use-case';
+import { UndoOperationHttpDto } from '../dto/meetings/undo-operation-http.dto';
+import { UndoOperationResponseHttpDto } from '../dto/meetings/undo-operation-response-http.dto';
 
 @ApiTags('Meetings V2')
 @Controller('v2/meetings')
@@ -86,6 +97,7 @@ export class MeetingsV2Controller {
     private readonly executeDisbursementPlanUseCase: ExecuteDisbursementPlanUseCase,
     private readonly getDetailedMeetingSummaryQuery: GetDetailedMeetingSummaryQueryHandler,
     private readonly getMeetingFundsSummaryQuery: GetMeetingFundsSummaryQueryHandler,
+    private readonly undoMonthlyPaymentUseCase: UndoMonthlyPaymentUseCase,
   ) {}
 
   @Post()
@@ -974,6 +986,61 @@ export class MeetingsV2Controller {
       processed_items: dto.processedItems,
       total_disbursed: dto.totalDisbursed,
       total_requested: dto.totalRequested,
+    };
+  }
+
+  @Post(':id/operations/:operationId/undo')
+  @HttpCode(HttpStatus.OK)
+  @Roles(MemberRole.ADMIN)
+  @ApiBearerAuth()
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  @ApiOperation({
+    summary: 'Undo a Step 1 collection operation in an active meeting',
+    description:
+      'Physically deletes a monthly payment or loan payment operation and its ledger entries, restores affected loan balances, and records an audit log entry.',
+  })
+  @ApiParam({ name: 'id', description: 'Meeting UUID' })
+  @ApiParam({ name: 'operationId', description: 'Operation UUID to undo' })
+  @ApiBody({ type: UndoOperationHttpDto, required: false })
+  @ApiResponse({ status: 200, type: UndoOperationResponseHttpDto })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Meeting closed, revaluation already executed, or negative CASH balance',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Admin role required',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Meeting or operation not found',
+  })
+  async undoOperation(
+    @Param('id', ParseUUIDPipe) meetingId: string,
+    @Param('operationId', ParseUUIDPipe) operationId: string,
+    @Body() body?: UndoOperationHttpDto,
+    @CurrentUser() currentUser?: AuthenticatedUserDto,
+  ): Promise<UndoOperationResponseHttpDto> {
+    if (!currentUser) {
+      throw new UnauthorizedException('Usuario no autenticado');
+    }
+
+    const result = await this.undoMonthlyPaymentUseCase.execute({
+      meetingId,
+      operationId,
+      reason: body?.reason,
+      performedBy: {
+        id: currentUser.id,
+        email: currentUser.email,
+        role: currentUser.role,
+      },
+    });
+
+    return {
+      success: result.success,
+      operation_id: result.operationId,
+      message: result.message,
     };
   }
 }

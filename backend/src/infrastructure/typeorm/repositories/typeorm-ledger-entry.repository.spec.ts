@@ -607,4 +607,17 @@ describe('TypeOrmLedgerEntryRepository', () => {
       );
     });
   });
+
+  describe('deleteByOperation', () => {
+    it('should delete ledger entries by operationId', async () => {
+      const deleteMock = jest.fn().mockResolvedValue({ affected: 2, raw: [] });
+      typeOrmRepo.delete = deleteMock;
+
+      await repository.deleteByOperation('op-123');
+
+      expect(deleteMock).toHaveBeenCalledWith({
+        operationId: 'op-123',
+      });
+    });
+  });
 });

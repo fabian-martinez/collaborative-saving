@@ -51,4 +51,5 @@ export interface OperationRepository {
       description?: string | null;
     }>,
   ): Promise<Operation>;
+  delete(id: string): Promise<void>;
 }

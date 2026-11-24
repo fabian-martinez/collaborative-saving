@@ -35,6 +35,7 @@ describe('GetLoanTransactionsQueryHandler', () => {
       findByOperationIds: jest.fn(),
       save: jest.fn(),
       saveMany: jest.fn(),
+      deleteByOperation: jest.fn(),
     };
 
     queryHandler = new GetLoanTransactionsQueryHandler(

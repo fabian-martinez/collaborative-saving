@@ -29,6 +29,7 @@ import { GetMeetingFundsSummaryQueryHandler } from '@application/queries/meeting
 import { RecordRevaluationUseCase } from '@application/use-cases/meetings/record-revaluation.use-case';
 import { GetDisbursementPlanPreviewQueryHandler } from '@application/queries/meetings/get-disbursement-plan-preview.query-handler';
 import { ExecuteDisbursementPlanUseCase } from '@application/use-cases/meetings/execute-disbursement-plan.use-case';
+import { UndoMonthlyPaymentUseCase } from '@application/use-cases/meetings/undo-monthly-payment.use-case';
 import { ProcessLoanDisbursementUseCase } from '@application/use-cases/meetings/process-loan-disbursement.use-case';
 import { ProcessStockWithdrawalDisbursementUseCase } from '@application/use-cases/meetings/process-stock-withdrawal-disbursement.use-case';
 import { ProcessDividendDisbursementUseCase } from '@application/use-cases/meetings/process-dividend-disbursement.use-case';
@@ -61,6 +62,7 @@ import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pendi
 import { TransactionManager } from '@domain/ports/services/transaction-manager.port';
 import { MemberRepository } from '@domain/ports/repositories/member-repository.port';
 import { LoanTransactionDetailRepository } from '@domain/ports/repositories/loan-transaction-detail-repository.port';
+import { AuditLogRepository } from '@domain/ports/repositories/audit-log-repository.port';
 
 import {
   MEETING_REPOSITORY,
@@ -74,6 +76,7 @@ import {
   TRANSACTION_MANAGER,
   MEMBER_REPOSITORY,
   LOAN_TRANSACTION_DETAIL_REPOSITORY,
+  AUDIT_LOG_REPOSITORY,
 } from '@domain/constants/injection-tokens';
 
 @Module({
@@ -578,6 +581,36 @@ import {
         ProcessStockWithdrawalDisbursementUseCase,
         ProcessDividendDisbursementUseCase,
         RecordOperationUseCase,
+      ],
+    },
+    {
+      provide: UndoMonthlyPaymentUseCase,
+      useFactory: (
+        meetingRepo: MeetingRepository,
+        operationRepo: OperationRepository,
+        ledgerEntryRepo: LedgerEntryRepository,
+        loanRepo: LoanRepository,
+        loanTxDetailRepo: LoanTransactionDetailRepository,
+        auditLogRepo: AuditLogRepository,
+        transactionManager: TransactionManager,
+      ) =>
+        new UndoMonthlyPaymentUseCase(
+          meetingRepo,
+          operationRepo,
+          ledgerEntryRepo,
+          loanRepo,
+          loanTxDetailRepo,
+          auditLogRepo,
+          transactionManager,
+        ),
+      inject: [
+        MEETING_REPOSITORY,
+        OPERATION_REPOSITORY,
+        LEDGER_ENTRY_REPOSITORY,
+        LOAN_REPOSITORY,
+        LOAN_TRANSACTION_DETAIL_REPOSITORY,
+        AUDIT_LOG_REPOSITORY,
+        TRANSACTION_MANAGER,
       ],
     },
     // Services

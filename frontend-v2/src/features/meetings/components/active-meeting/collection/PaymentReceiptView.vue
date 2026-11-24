@@ -10,27 +10,38 @@
           {{ memberName }}
         </p>
       </div>
-      <button
-        @click="$emit('open-print-modal')"
-        class="btn btn-outline btn-secondary btn-xs ml-4 rounded font-semibold"
-        title="Vista previa e imprimir recibo"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-3.5 w-3.5 mr-1"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+      <div class="flex items-center gap-2 ml-4 no-print">
+        <button
+          v-if="canUndo"
+          type="button"
+          @click="$emit('undo-all')"
+          class="btn btn-outline btn-error btn-xs rounded font-semibold"
+          title="Anular cobro de este socio"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-          />
-        </svg>
-        Imprimir
-      </button>
+          Anular Cobro
+        </button>
+        <button
+          @click="$emit('open-print-modal')"
+          class="btn btn-outline btn-secondary btn-xs rounded font-semibold"
+          title="Vista previa e imprimir recibo"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-3.5 w-3.5 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+            />
+          </svg>
+          Imprimir
+        </button>
+      </div>
     </div>
     <div class="print-header print-only">
       <h2 class="text-base font-bold text-center mb-1">{{ title }}</h2>
@@ -83,15 +94,18 @@ withDefaults(defineProps<{
   title?: string
   totalLabel?: string
   receiptId?: string
+  canUndo?: boolean
 }>(), {
   title: 'Detalle del Pago',
   totalLabel: 'Total Pagado:',
-  receiptId: 'payment-receipt-print'
+  receiptId: 'payment-receipt-print',
+  canUndo: false
 })
 
 // Emits
 defineEmits<{
   'open-print-modal': []
+  'undo-all': []
 }>()
 </script>
 

@@ -91,6 +91,7 @@ describe('GetMemberDuesForActiveMeetingQueryHandler', () => {
       findByOperationIds: jest.fn(),
       save: jest.fn(),
       saveMany: jest.fn(),
+      deleteByOperation: jest.fn(),
     };
 
     stockRepository = {

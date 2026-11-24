@@ -551,54 +551,72 @@ export function usePaymentCollection() {
       // Usar el endpoint optimizado de reunión para identificar miembros con pagos
       const operations = await meetingsApi.getMeetingPayments(meetingId)
 
-      // Extraer los member_id únicos y calcular totales por miembro
+      // Extraer los member_id únicos, operation_ids y calcular totales por miembro
       const uniqueMemberIds = new Set<string>()
       const paymentsByMember = new Map<string, number>()
+      const operationIdsByMember = new Map<string, string[]>()
 
       operations.forEach((op: Operation) => {
         if (op.member_id) {
           uniqueMemberIds.add(op.member_id)
-          // Sumar total_amount por miembro
           const currentTotal = paymentsByMember.get(op.member_id) || 0
           paymentsByMember.set(op.member_id, currentTotal + (op.total_amount || 0))
+
+          const opId = op.id || (op as unknown as { operation_id?: string }).operation_id
+          if (opId) {
+            const list = operationIdsByMember.get(op.member_id) || []
+            list.push(opId)
+            operationIdsByMember.set(op.member_id, list)
+          }
         }
       })
 
       // Actualizar paidMemberIds con los IDs únicos
       paidMemberIds.value = Array.from(uniqueMemberIds)
+      paidMemberOperationIds.value = operationIdsByMember
 
       // Mantener paidMemberOperations vacío inicialmente
       // Se llenará cuando se seleccione un miembro específico
       paidMemberOperations.value = new Map<string, any[]>()
 
-      // Actualizar completedPayments con los totales desde el endpoint
-      // Crear un mapa de nombres de miembros para búsqueda rápida
+      // Reconstruir completedPayments limpiamente para reflejar anulaciones
       const memberMap = new Map<string, string>()
       members.forEach((member) => {
         memberMap.set(member.id, member.name)
       })
 
-      // Actualizar o agregar completedPayments basado en los totales del endpoint
+      const rebuiltPayments: Array<{ memberName: string; amount: number }> = []
       paymentsByMember.forEach((totalAmount, memberId) => {
         const memberName = memberMap.get(memberId)
         if (memberName) {
-          const existingIndex = completedPayments.value.findIndex(
-            (p) => p.memberName === memberName
-          )
-          if (existingIndex >= 0) {
-            // Actualizar el monto existente
-            completedPayments.value[existingIndex].amount = totalAmount
-          } else {
-            // Agregar nuevo pago
-            completedPayments.value.push({
-              memberName,
-              amount: totalAmount,
-            })
-          }
+          rebuiltPayments.push({
+            memberName,
+            amount: totalAmount,
+          })
         }
       })
+      completedPayments.value = rebuiltPayments
     } catch (error) {
       console.error('Error fetching meeting payments', error)
+    }
+  }
+
+  const isUndoing = ref(false)
+  const paidMemberOperationIds = ref<Map<string, string[]>>(new Map())
+
+  async function undoMeetingOperations(
+    meetingId: string,
+    operationIds: string[],
+    reason: string
+  ): Promise<void> {
+    if (!meetingId || operationIds.length === 0) return
+    isUndoing.value = true
+    try {
+      for (const operationId of operationIds) {
+        await meetingsApi.undoMeetingOperation(meetingId, operationId, reason)
+      }
+    } finally {
+      isUndoing.value = false
     }
   }
 
@@ -618,8 +636,10 @@ export function usePaymentCollection() {
     completedPayments,
     paidMemberIds,
     paidMemberOperations,
+    paidMemberOperationIds,
     loadingDues,
     isSubmitting,
+    isUndoing,
     error,
     // Modals state
     isLoanModalOpen,
@@ -652,6 +672,7 @@ export function usePaymentCollection() {
     loadMemberDues,
     handlePayment,
     fetchMeetingPayments,
+    undoMeetingOperations,
     reset,
   }
 }

@@ -116,16 +116,32 @@
                     <span class="font-bold text-xs text-emerald-600">{{ formatCurrency(getMemberCollected(member.name)) }}</span>
                   </td>
                   <td class="py-2.5 px-3 text-right">
-                    <div class="tooltip tooltip-left" :data-tip="paymentCollection.isMemberPaid(member.id) ? 'Ver Recibo' : (selectedMemberValue?.id === member.id ? 'Editando...' : 'Registrar Pago')">
-                      <button 
-                        @click="handleSelectMember(member)"
-                        class="btn btn-sm btn-square animate-none"
-                        :class="paymentCollection.isMemberPaid(member.id) ? 'btn-ghost text-teal-700 bg-transparent hover:bg-base-200' : (selectedMemberValue?.id === member.id ? 'btn-neutral' : 'btn-primary')"
+                    <div class="inline-flex items-center justify-end gap-1">
+                      <div
+                        v-if="paymentCollection.isMemberPaid(member.id) && isAdmin"
+                        class="tooltip tooltip-left"
+                        data-tip="Anular Cobro"
                       >
-                        <span v-if="selectedMemberValue?.id === member.id && !paymentCollection.isMemberPaid(member.id)" class="loading loading-spinner loading-xs"></span>
-                        <Printer v-else-if="paymentCollection.isMemberPaid(member.id)" class="h-4 w-4" />
-                        <Wallet v-else class="h-4 w-4" />
-                      </button>
+                        <button
+                          type="button"
+                          @click="openUndoModalForMember(member)"
+                          class="btn btn-sm btn-square btn-ghost text-error hover:bg-error/10 animate-none"
+                          aria-label="Anular Cobro"
+                        >
+                          <Trash class="h-4 w-4" />
+                        </button>
+                      </div>
+                      <div class="tooltip tooltip-left" :data-tip="paymentCollection.isMemberPaid(member.id) ? 'Ver Recibo' : (selectedMemberValue?.id === member.id ? 'Editando...' : 'Registrar Pago')">
+                        <button 
+                          @click="handleSelectMember(member)"
+                          class="btn btn-sm btn-square animate-none"
+                          :class="paymentCollection.isMemberPaid(member.id) ? 'btn-ghost text-teal-700 bg-transparent hover:bg-base-200' : (selectedMemberValue?.id === member.id ? 'btn-neutral' : 'btn-primary')"
+                        >
+                          <span v-if="selectedMemberValue?.id === member.id && !paymentCollection.isMemberPaid(member.id)" class="loading loading-spinner loading-xs"></span>
+                          <Printer v-else-if="paymentCollection.isMemberPaid(member.id)" class="h-4 w-4" />
+                          <Wallet v-else class="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -159,6 +175,15 @@
           @close="() => paymentCollection.isNoveltyModalOpen.value = false"
           @save="paymentCollection.handleNoveltySave"
         />
+        <UndoPaymentModal
+          :visible="isUndoModalOpen"
+          :member-name="undoTarget?.memberName || ''"
+          :total-amount="undoTarget?.totalAmount || 0"
+          :operation-count="undoTarget?.operationIds.length || 0"
+          :is-submitting="paymentCollection.isUndoing.value"
+          @close="closeUndoModal"
+          @confirm="handleConfirmUndo"
+        />
       </div>
 
       <!-- Panel Derecho (Sidebar de Resumen / Formulario / Recibo) - 5 Columnas -->
@@ -184,7 +209,9 @@
             :print-date="memberSelection.printDate.value"
             :viewed-operations="memberSelection.viewedOperations.value || []"
             :viewed-total="memberSelection.viewedTotal.value"
+            :can-undo="isAdmin"
             @open-print-modal="printReceipt.openPrintModal"
+            @undo-all="openUndoModalForSelectedMember"
           />
           
           <!-- Payment Form View -->
@@ -298,7 +325,8 @@
 <script setup lang="ts">
 // 1. Imports
 import { ref, computed, onMounted, watch } from 'vue'
-import { WarningTriangle, NavArrowLeft, Printer, Search, InfoCircle, Wallet } from 'iconoir-vue/regular'
+import { WarningTriangle, NavArrowLeft, Printer, Search, InfoCircle, Wallet, Trash } from 'iconoir-vue/regular'
+import { useAuthStore } from '@/features/auth/stores/authStore'
 import { useActiveMeetingStore } from '../../stores/activeMeeting'
 import { usePaymentCollection } from '../../composables/usePaymentCollection'
 import { useMemberSelection } from '../../composables/useMemberSelection'
@@ -312,6 +340,7 @@ import EditLoanPaymentModal from './EditLoanPaymentModal.vue'
 import EditFineModal from './EditFineModal.vue'
 import NoveltyModal from './NoveltyModal.vue'
 import PrintAllDraftsModal from './collection/PrintAllDraftsModal.vue'
+import UndoPaymentModal from './collection/UndoPaymentModal.vue'
 // Estilos de impresión importados
 import './Step1Collection.print.css'
 
@@ -322,6 +351,8 @@ defineEmits<{
 
 // 3. Composables y stores
 const toast = useToast()
+const authStore = useAuthStore()
+const isAdmin = computed(() => authStore.isAdmin)
 const store = useActiveMeetingStore()
 const paymentCollection = usePaymentCollection()
 const memberSelection = useMemberSelection(paymentCollection)
@@ -337,6 +368,13 @@ const printFormReceipt = usePrintReceipt(
 
 // 4. Reactive state
 const isPrintAllModalOpen = ref(false)
+const isUndoModalOpen = ref(false)
+const undoTarget = ref<{
+  memberId: string
+  memberName: string
+  totalAmount: number
+  operationIds: string[]
+} | null>(null)
 const searchQuery = ref('')
 const statusFilter = ref<'all' | 'pending' | 'paid'>('all')
 
@@ -421,6 +459,79 @@ function goToNextStep() {
 
 function saveDraft() {
   toast.success('Borrador guardado localmente.')
+}
+
+function openUndoModalForMember(member: { id: string; name: string }) {
+  const operationIds = paymentCollection.paidMemberOperationIds.value.get(member.id) || []
+  if (operationIds.length === 0) {
+    toast.error('No se encontraron operaciones para anular.')
+    return
+  }
+  undoTarget.value = {
+    memberId: member.id,
+    memberName: member.name,
+    totalAmount: getMemberCollected(member.name),
+    operationIds
+  }
+  isUndoModalOpen.value = true
+}
+
+function openUndoModalForSelectedMember() {
+  const member = selectedMemberValue.value
+  if (!member) return
+  const viewedOps = memberSelection.viewedOperations.value || []
+  const operationIds = viewedOps
+    .map((op: { id?: string; operation_id?: string }) => op.id || op.operation_id)
+    .filter((id): id is string => Boolean(id))
+
+  if (operationIds.length === 0) {
+    openUndoModalForMember(member)
+    return
+  }
+
+  undoTarget.value = {
+    memberId: member.id,
+    memberName: member.name,
+    totalAmount: memberSelection.viewedTotal.value,
+    operationIds
+  }
+  isUndoModalOpen.value = true
+}
+
+function closeUndoModal() {
+  if (paymentCollection.isUndoing.value) return
+  isUndoModalOpen.value = false
+  undoTarget.value = null
+}
+
+async function handleConfirmUndo(reason: string) {
+  if (!store.meetingId || !undoTarget.value) return
+
+  try {
+    await paymentCollection.undoMeetingOperations(
+      store.meetingId,
+      undoTarget.value.operationIds,
+      reason
+    )
+
+    if (selectedMemberValue.value?.id === undoTarget.value.memberId) {
+      memberSelection.clearSelection()
+    }
+
+    await paymentCollection.fetchMeetingPayments(
+      store.meetingId,
+      memberSelection.members.value
+    )
+    await store.refreshActiveMeeting()
+
+    isUndoModalOpen.value = false
+    undoTarget.value = null
+    toast.success('Cobro anulado exitosamente.')
+  } catch (error) {
+    toast.error(
+      error instanceof Error ? error.message : 'No se pudo anular el cobro.'
+    )
+  }
 }
 
 // 7. Lifecycle hooks

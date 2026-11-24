@@ -25,4 +25,5 @@ export interface LoanTransactionDetailRepository {
   saveMany(
     transactions: LoanTransactionDetail[],
   ): Promise<LoanTransactionDetail[]>;
+  deleteByOperation(operationId: string): Promise<void>;
 }

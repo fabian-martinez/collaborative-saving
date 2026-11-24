@@ -258,6 +258,22 @@ export const meetingsApi = {
       data
     )
     return response.data
+  },
+
+  async undoMeetingOperation(
+    meetingId: string,
+    operationId: string,
+    reason?: string
+  ): Promise<{ success: boolean; operation_id: string; message: string }> {
+    const response = await apiClient.post<{
+      success: boolean
+      operation_id: string
+      message: string
+    }>(
+      `/v2/meetings/${meetingId}/operations/${operationId}/undo`,
+      reason ? { reason } : {}
+    )
+    return response.data
   }
 }
 

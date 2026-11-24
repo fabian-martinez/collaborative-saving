@@ -813,4 +813,15 @@ describe('TypeOrmOperationRepository', () => {
       );
     });
   });
+
+  describe('delete', () => {
+    it('should delete operation by id', async () => {
+      const deleteMock = jest.fn().mockResolvedValue({ affected: 1, raw: [] });
+      typeOrmRepo.delete = deleteMock;
+
+      await repository.delete('op-123');
+
+      expect(deleteMock).toHaveBeenCalledWith({ id: 'op-123' });
+    });
+  });
 });

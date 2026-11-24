@@ -36,6 +36,7 @@ describe('GetOperationsQueryHandler', () => {
       saveMany: jest.fn(),
       sumByAccountType: jest.fn(),
       getAccountsSummary: jest.fn(),
+      deleteByOperation: jest.fn(),
     };
 
     queryHandler = new GetOperationsQueryHandler(

@@ -66,4 +66,5 @@ export interface LedgerEntryRepository {
     filters: AccountsSummaryFilters,
     entriesLimit: number,
   ): Promise<AccountSummaryData[]>;
+  deleteByOperation(operationId: string): Promise<void>;
 }

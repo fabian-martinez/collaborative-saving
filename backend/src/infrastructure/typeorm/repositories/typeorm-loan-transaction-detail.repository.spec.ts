@@ -352,4 +352,17 @@ describe('TypeOrmLoanTransactionDetailRepository', () => {
       expect(result).toEqual([]);
     });
   });
+
+  describe('deleteByOperation', () => {
+    it('should delete loan transaction details by operationId', async () => {
+      const deleteMock = jest.fn().mockResolvedValue({ affected: 2, raw: [] });
+      typeOrmRepo.delete = deleteMock;
+
+      await repository.deleteByOperation('op-123');
+
+      expect(deleteMock).toHaveBeenCalledWith({
+        operationId: 'op-123',
+      });
+    });
+  });
 });
