@@ -126,8 +126,8 @@ Para prevenir la suspensión sin agotar la cuota mensual gratuita de Render:
 | `ENABLE_SWAGGER` | `false` (deshabilita la interfaz `/api` en producción para proteger esquemas y endpoints) | No |
 
 #### Ciclo de Vida y Migraciones en Producción
-1. **Migraciones de Esquema SQL:** Las tablas maestras y modificaciones estructuradas se registran en `public.schema_migrations` y se gestionan con `./deploy-schema.sh` o `npm run db:migrate`.
-2. **Migraciones TypeORM de Arranque:** Al arrancar el servicio en producción (`npm run start:prod`), se ejecuta automáticamente `typeorm:migration:run:prod` para aplicar cualquier migración pendiente de TypeORM (ej. ajustes de redondeo contable) antes de que NestJS empiece a recibir tráfico.
+1. **Sistema Único de Migraciones (TypeORM):** Todas las migraciones de esquema y datos residen en `backend/src/infrastructure/typeorm/migrations/` y se registran en la tabla `migrations`.
+2. **Ejecución Automática en Arranque:** Al arrancar el servicio en producción (`npm run start:prod`), se ejecuta automáticamente `typeorm:migration:run:prod` para aplicar cualquier migración pendiente antes de que NestJS empiece a recibir tráfico.
 3. **Escucha en `0.0.0.0`:** La API escucha en todas las interfaces para permitir que el reverse proxy del proveedor enrute las peticiones externas.
 
 #### Verificación y Pruebas Post-Despliegue
@@ -260,8 +260,7 @@ Se utilizan los logs estructurados de NestJS y la consola de monitoreo de Neon /
 ### Estructura de Carpetas
 
 - **Ubicación:** `infra/database/`
-- `migrations/`: Scripts SQL incrementales para cambios en el esquema.
-- `scripts/`: Scripts de utilidad (seed, reseteo, cálculos puntuales).
+- `scripts/`: Scripts de utilidad (seed, reseteo, cálculos puntuales, restauración).
 - `backups/` (opcional/ignorado): Volcados de datos.
 
 ### Gestión de Backups
@@ -288,26 +287,18 @@ unset PGPASSWORD
 ### Automatización de Backups
 Se recomienda configurar una tarea programada (cron job) en el servidor de base de datos o mediante un GitHub Action que realice el `pg_dump` semanalmente y lo almacene en un almacenamiento seguro (S3, Google Drive, etc.).
 
-### Sistema de Migraciones y Versionamiento (`schema_migrations`)
+### Sistema de Migraciones y Versionamiento (TypeORM)
 
-El versionamiento y trazabilidad de los cambios en la base de datos se gestiona automáticamente mediante la tabla `public.schema_migrations`:
-
-```sql
-CREATE TABLE IF NOT EXISTS public.schema_migrations (
-    version VARCHAR(255) PRIMARY KEY,
-    applied_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-    execution_time_ms INTEGER,
-    checksum VARCHAR(64)
-);
-```
+El versionamiento y trazabilidad de todos los cambios en la base de datos se gestiona de forma unificada mediante TypeORM (`backend/src/infrastructure/typeorm/migrations/`), registrando cada migración aplicada en la tabla `public.migrations`.
 
 #### Comandos Disponibles
 
 | Comando | Descripción |
 |---|---|
-| `npm run db:status` o `./deploy-schema.sh --status` | Muestra el estado de cada migración (aplicada o pendiente), fecha, duración y checksum. |
-| `npm run db:migrate` o `./deploy-schema.sh` | Aplica todas las migraciones pendientes en una transacción atómica por archivo. |
-| `npm run db:baseline` o `./deploy-schema.sh --baseline` | Registra las migraciones existentes sin ejecutarlas (para sincronizar bases de datos ya existentes). |
+| `npm run db:status` | Muestra el estado de cada migración TypeORM (aplicada o pendiente). |
+| `npm run db:migrate` | Aplica todas las migraciones pendientes en desarrollo/local. |
+| `cd backend && npm run typeorm:migration:run:prod` | Ejecuta migraciones compiladas en producción (invocado automáticamente por `npm run start:prod`). |
+| `cd backend && npm run typeorm:migration:revert` | Revierte la última migración aplicada. |
 
 También es posible ejecutar directamente el runner con una URL personalizada:
 ```bash

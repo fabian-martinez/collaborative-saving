@@ -783,9 +783,8 @@ describe('RecordLoanPaymentUseCase', () => {
     });
 
     it('should release and consolidate financed stock subscriptions when loan is fully paid', async () => {
-      const { StockSubscription } = await import(
-        '@domain/entities/stock-subscription.entity'
-      );
+      const { StockSubscription } =
+        await import('@domain/entities/stock-subscription.entity');
       const mockLoan = createMockLoan({
         outstandingBalance: 1000,
         interestRate: 0,
