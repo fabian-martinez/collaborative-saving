@@ -289,3 +289,37 @@ describe('TabLoansAndSchedule filtering', () => {
     expect(text).toContain('Ver detalle →')
   })
 })
+
+describe('LoanBreakdownModal principal-only monthly payment', () => {
+  it('treats monthly_payment_amount as principal only and adds interest on top', async () => {
+    const { default: LoanBreakdownModal } = await import(
+      '@/features/members/components/LoanBreakdownModal.vue'
+    )
+    const wrapper = mount(LoanBreakdownModal, {
+      props: {
+        visible: true,
+        loan: {
+          id: 'l-1',
+          member_id: 'm-1',
+          loan_type: 'corriente',
+          approved_amount: 1000000,
+          disbursed_amount: 1000000,
+          outstanding_balance: 500000,
+          monthly_payment_amount: 100000,
+          interest_rate: 2,
+          term: 10,
+          status: 'active',
+          creation_date: '2026-01-01'
+        },
+        projectedPayments: []
+      }
+    })
+
+    const text = wrapper.text()
+    expect(text).toContain('Cuota (Solo Capital)')
+    // principal = 100,000; interest = 500,000 * 2% = 10,000; total = 110,000
+    expect(text).toContain('100.000')
+    expect(text).toContain('10.000')
+    expect(text).toContain('110.000')
+  })
+})

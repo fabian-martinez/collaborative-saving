@@ -21,7 +21,7 @@
             <p class="font-bold font-mono text-sm mt-0.5">{{ formatCurrency(loan.outstanding_balance) }}</p>
           </div>
           <div>
-            <span class="text-base-content/60">Cuota Mensual</span>
+            <span class="text-base-content/60">Cuota (Solo Capital)</span>
             <p class="font-bold font-mono text-sm mt-0.5">{{ formatCurrency(loan.monthly_payment_amount) }}</p>
           </div>
           <div>
@@ -53,7 +53,7 @@
               </p>
             </div>
             <div class="bg-base-200/50 rounded-lg p-3">
-              <span class="text-base-content/60">Total Cuota</span>
+              <span class="text-base-content/60">Total a Pagar (Capital + Interés)</span>
               <p class="text-base font-bold font-mono text-base-content mt-0.5">
                 {{ formatCurrency(nextBreakdown.total) }}
               </p>
@@ -138,15 +138,14 @@ const nextBreakdown = computed(() => {
   if (!props.loan) {
     return { principal: 0, interest: 0, total: 0 }
   }
-  const estimatedInterest = Math.round(
+  const principal = props.loan.monthly_payment_amount
+  const interest = Math.round(
     props.loan.outstanding_balance * (props.loan.interest_rate / 100)
   )
-  const total = props.loan.monthly_payment_amount
-  const principal = Math.max(0, total - estimatedInterest)
   return {
     principal,
-    interest: estimatedInterest,
-    total
+    interest,
+    total: principal + interest
   }
 })
 </script>
