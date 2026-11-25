@@ -1,37 +1,43 @@
 <template>
-  <Modal :show="visible" title="Detalle de Pago" @close="$emit('close')">
-    <div v-if="payment">
-      <div class="payment-detail-header">
-        <div class="detail-row">
-          <span class="label">Operación ID:</span>
-          <span class="value font-mono">{{ payment.operation_id }}</span>
+  <Modal :show="visible" title="Detalle de Pago" max-width="max-w-xl" @close="$emit('close')">
+    <div v-if="payment" class="space-y-5">
+      <div class="bg-base-200 rounded-lg p-3 sm:p-4 divide-y divide-base-300">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 py-2.5 first:pt-0 last:pb-0">
+          <span class="text-xs sm:text-sm font-semibold text-base-content/70">Operación ID:</span>
+          <span class="font-mono text-xs sm:text-sm text-base-content break-all sm:text-right">{{ payment.operation_id }}</span>
         </div>
-        <div class="detail-row">
-          <span class="label">Fecha:</span>
-          <span class="value">{{ formatDate(payment.date) }}</span>
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 py-2.5 first:pt-0 last:pb-0">
+          <span class="text-xs sm:text-sm font-semibold text-base-content/70">Fecha:</span>
+          <span class="text-sm sm:text-base text-base-content">{{ formatDate(payment.date) }}</span>
         </div>
-        <div class="detail-row">
-          <span class="label">Tipo:</span>
-          <span class="value">{{ payment.type }}</span>
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 py-2.5 first:pt-0 last:pb-0">
+          <span class="text-xs sm:text-sm font-semibold text-base-content/70">Tipo:</span>
+          <span class="text-sm sm:text-base text-base-content">{{ payment.type }}</span>
         </div>
-        <div class="detail-row">
-          <span class="label">Total:</span>
-          <span class="value font-mono font-bold">{{ formatCurrency(payment.total_amount) }}</span>
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 py-2.5 first:pt-0 last:pb-0">
+          <span class="text-xs sm:text-sm font-semibold text-base-content/70">Total:</span>
+          <span class="font-mono font-bold text-sm sm:text-base text-base-content">{{ formatCurrency(displayTotal) }}</span>
         </div>
       </div>
-      <div class="payment-entries mt-4">
-        <h4 class="entries-title">Asientos Contables</h4>
+
+      <div>
+        <h4 class="text-base sm:text-lg font-semibold text-base-content mb-3">Asientos Contables</h4>
         <DataTable
           :data="payment.entries"
           :columns="entryColumns"
           empty-message="No hay asientos registrados"
-        />
+        >
+          <template #cell-account_type="{ item }">
+            <span class="font-mono text-xs">{{ item.account_type || item.type || '-' }}</span>
+          </template>
+        </DataTable>
       </div>
     </div>
   </Modal>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import Modal from '@/shared/components/Modal.vue'
 import DataTable from '@/shared/components/DataTable.vue'
 import { formatCurrency, formatDate } from '@/shared/utils/formatters'
@@ -43,7 +49,7 @@ interface Column {
   format?: 'currency' | 'date' | 'datetime' | 'number' | 'percentage'
 }
 
-defineProps<{
+const props = defineProps<{
   visible: boolean
   payment: MemberPayment | null
 }>()
@@ -52,93 +58,17 @@ defineEmits<{
   close: []
 }>()
 
+const displayTotal = computed(() => {
+  if (!props.payment) return 0
+  if (props.payment.total_amount > 0) return props.payment.total_amount
+  return (props.payment.entries ?? [])
+    .filter(entry => entry.amount > 0)
+    .reduce((sum, entry) => sum + entry.amount, 0)
+})
+
 const entryColumns: Column[] = [
-  { key: 'type', label: 'Tipo' },
+  { key: 'account_type', label: 'Cuenta' },
   { key: 'amount', label: 'Monto', format: 'currency' },
   { key: 'description', label: 'Descripción' }
 ]
 </script>
-
-<style scoped>
-.payment-detail-header {
-  padding: 0.75rem;
-  background: #f9fafb;
-  border-radius: 8px;
-}
-
-@media (min-width: 640px) {
-  .payment-detail-header {
-    padding: 1rem;
-  }
-}
-
-.payment-detail-header > * + * {
-  margin-top: 1rem;
-}
-
-.detail-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-@media (min-width: 640px) {
-  .detail-row {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0;
-  }
-}
-
-.detail-row:last-child {
-  border-bottom: none;
-}
-
-.label {
-  font-weight: 600;
-  color: #6b7280;
-  font-size: 0.75rem;
-}
-
-@media (min-width: 640px) {
-  .label {
-    font-size: 0.875rem;
-  }
-}
-
-.value {
-  color: #1f2937;
-  font-size: 0.875rem;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  text-align: right;
-}
-
-@media (min-width: 640px) {
-  .value {
-    font-size: 1rem;
-    text-align: left;
-  }
-}
-
-.payment-entries {
-  margin-top: 1.5rem;
-}
-
-.entries-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 1rem;
-  word-wrap: break-word;
-}
-
-@media (min-width: 640px) {
-  .entries-title {
-    font-size: 1.125rem;
-  }
-}
-</style>

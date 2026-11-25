@@ -26,8 +26,12 @@ export class MemberPaymentMapper {
   ): MemberPaymentResponseDto {
     const entryDtos = entries.map((entry) => this.toEntryDto(entry));
 
-    const totalAmount =
+    const cashTotal =
       paymentMapperService.calculatePaymentTotalAmount(entries);
+    const totalAmount =
+      cashTotal > 0
+        ? cashTotal
+        : paymentMapperService.calculateStockOperationTotalAmount(entries);
     const paymentType = paymentMapperService.mapOperationTypeToPaymentType(
       operation.type,
     );
