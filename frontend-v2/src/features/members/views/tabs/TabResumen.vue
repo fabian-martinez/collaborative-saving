@@ -1,117 +1,185 @@
 <template>
   <div class="py-4 w-full max-w-full min-w-0 overflow-x-hidden">
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full max-w-full min-w-0 overflow-x-hidden">
-      <!-- Resumen de Acciones -->
-      <div class="card bg-base-100 shadow-lg">
-        <div class="card-body">
-          <h3 class="card-title">Resumen de Acciones</h3>
-          <LoadingSpinner :loading="store.loadingSubscriptions" message="Cargando acciones..." />
-          <div v-if="!store.loadingSubscriptions && store.stockSubscriptions.length === 0" class="text-center py-8 text-base-content/60">
-            No hay acciones registradas
-          </div>
-          <div v-if="!store.loadingSubscriptions && store.stockSubscriptions.length > 0" class="space-y-4">
-            <div v-for="sub in activeSubscriptions" :key="sub.id" class="py-3 border-b border-base-300 last:border-b-0">
-              <div class="flex justify-between items-center">
-                <div class="font-semibold text-base-content text-sm sm:text-base break-words">{{ sub.stock_type }}</div>
-                <div class="text-base-content/70 text-xs sm:text-sm">{{ sub.quantity }} unidades</div>
-              </div>
-            </div>
-            <div class="mt-4 pt-4 border-t-2 border-base-300 text-center text-base sm:text-lg">
-              <strong>Total: {{ formatCurrency(store.totalInStocks) }}</strong>
-            </div>
-            <button class="btn btn-sm btn-link mt-2" @click="$emit('view-detail', 'stocks', 'all')">
-              Ver Detalle →
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 w-full max-w-full min-w-0">
+      <!-- Préstamos Activos (7 cols) -->
+      <div class="md:col-span-7 card bg-base-200/60 border border-base-300">
+        <div class="card-body p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-base-content">Préstamos Activos</h3>
+            <button
+              class="btn btn-xs btn-link no-underline"
+              @click="$emit('view-detail', 'loans-schedule', 'all')"
+            >
+              Ver cronograma →
             </button>
           </div>
-        </div>
-      </div>
 
-      <!-- Préstamos Activos -->
-      <div class="card bg-base-100 shadow-lg">
-        <div class="card-body">
-          <h3 class="card-title">Préstamos Activos</h3>
           <LoadingSpinner :loading="store.loadingLoans" message="Cargando préstamos..." />
-          <div v-if="!store.loadingLoans && store.activeLoans.length === 0" class="text-center py-8 text-base-content/60">
+
+          <div
+            v-if="!store.loadingLoans && store.activeLoans.length === 0"
+            class="text-center py-6 text-xs text-base-content/60"
+          >
             No hay préstamos activos
           </div>
-          <div v-if="!store.loadingLoans && store.activeLoans.length > 0" class="space-y-4">
-            <div v-for="loan in store.activeLoans.slice(0, 3)" :key="loan.id" class="py-3 border-b border-base-300 last:border-b-0">
-              <div class="flex justify-between items-center mb-2">
-                <span class="font-semibold text-base-content text-sm sm:text-base break-words">{{ loan.loan_type }}</span>
-                <span class="badge badge-sm badge-success">Activo</span>
-              </div>
-              <div class="mb-2">
-                <div class="flex justify-between items-center mb-1 text-xs text-base-content/70">
-                  <span>Saldo: {{ formatCurrency(loan.outstanding_balance) }}</span>
-                  <span>{{ Math.round(((loan.approved_amount - loan.outstanding_balance) / loan.approved_amount) * 100) }}%</span>
+
+          <div v-else class="space-y-3">
+            <div
+              v-for="loan in store.activeLoans.slice(0, 3)"
+              :key="loan.id"
+              class="bg-base-100 border border-base-300 rounded-lg p-3 space-y-2"
+            >
+              <div class="flex items-center justify-between gap-2 text-xs">
+                <span class="font-semibold text-base-content break-words">{{ loan.loan_type }}</span>
+                <div class="flex items-center gap-2 shrink-0">
+                  <span class="text-success font-medium">{{ getPaidPercentage(loan) }}% pagado</span>
+                  <button
+                    class="btn btn-xs btn-ghost text-primary"
+                    @click="$emit('edit-loan', loan)"
+                  >
+                    Editar
+                  </button>
                 </div>
-                <progress 
-                  class="progress progress-success w-full" 
-                  :value="loan.approved_amount - loan.outstanding_balance" 
-                  :max="loan.approved_amount"
-                ></progress>
               </div>
-                <div class="mt-2 flex justify-between">
-                <span class="text-sm text-base-content/70">Próximo pago: {{ formatCurrency(loan.monthly_payment_amount) }}</span>
+              <progress
+                class="progress progress-success w-full h-1.5"
+                :value="Math.max(0, loan.approved_amount - loan.outstanding_balance)"
+                :max="loan.approved_amount || 1"
+              ></progress>
+              <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+                <span class="text-base-content/70">
+                  Saldo: <strong class="text-base-content">{{ formatCurrency(loan.outstanding_balance) }}</strong>
+                </span>
+                <div class="flex items-center gap-2">
+                  <span class="text-[11px] text-base-content/60">
+                    Próx. cuota: {{ formatCurrency(loan.monthly_payment_amount) }}
+                    <template v-if="nextDueDateLabel"> ({{ nextDueDateLabel }})</template>
+                  </span>
+                  <button
+                    class="btn btn-xs btn-link no-underline px-1 text-[11px]"
+                    @click="$emit('view-loan-detail', loan)"
+                  >
+                    Ver detalle →
+                  </button>
+                </div>
               </div>
             </div>
-            <button v-if="store.activeLoans.length > 3" class="btn btn-sm btn-link mt-2" @click="$emit('view-detail', 'loans', 'all')">
-              Ver Todos ({{ store.activeLoans.length }}) →
+
+            <button
+              v-if="store.activeLoans.length > 3"
+              class="btn btn-xs btn-link no-underline"
+              @click="$emit('view-detail', 'loans-schedule', 'all')"
+            >
+              Ver todos ({{ store.activeLoans.length }}) →
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Cuotas Pendientes -->
-      <div class="card bg-base-100 shadow-lg">
-        <div class="card-body">
-          <h3 class="card-title">Cuotas Pendientes</h3>
-          <div v-if="store.dues.length === 0" class="text-center py-8 text-base-content/60">
+      <!-- Exigible Hoy (5 cols) -->
+      <div class="md:col-span-5 card bg-base-200/60 border border-base-300">
+        <div class="card-body p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-base-content">Exigible Hoy</h3>
+            <button
+              class="btn btn-xs btn-link no-underline font-mono"
+              @click="$emit('view-detail', 'stocks-dues', 'all')"
+            >
+              {{ formatCurrency(store.totalPendingDues) }} →
+            </button>
+          </div>
+
+          <div v-if="store.dues.length === 0" class="text-center py-6 text-xs text-base-content/60">
             No hay cuotas pendientes
           </div>
-          <div v-else class="space-y-4">
-            <div class="space-y-4">
-              <div v-for="due in store.dues.slice(0, 5)" :key="due.reference_id || due.description" class="py-3 border-b border-base-300 last:border-b-0">
-                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-1">
-                  <div class="text-xs sm:text-sm text-base-content/80 flex-1 break-words">{{ due.description }}</div>
-                  <span :class="['badge', 'badge-sm', `badge-${getDueVariant(due.type)}`]">{{ due.type }}</span>
-                </div>
-                <div class="font-semibold text-base-content text-sm sm:text-base ml-2 sm:ml-4 font-mono break-words">{{ formatCurrency(due.amount) }}</div>
+
+          <div v-else class="space-y-2 text-xs">
+            <div
+              v-for="due in store.dues.slice(0, 4)"
+              :key="due.reference_id || due.description"
+              class="bg-base-100 border border-base-300 rounded-lg p-2.5 flex items-center justify-between gap-2"
+            >
+              <div class="min-w-0">
+                <p class="font-medium text-base-content truncate">{{ due.description }}</p>
+                <span :class="['text-xs', due.type === 'stock_fee' ? 'text-warning' : 'text-base-content/60']">
+                  {{ formatDueOrPaymentType(due.type) }}
+                </span>
               </div>
+              <span class="font-semibold font-mono shrink-0">{{ formatCurrency(due.amount) }}</span>
             </div>
-            <div class="mt-4 pt-4 border-t-2 border-base-300 text-center text-lg">
-              <strong>Total Pendiente: {{ formatCurrency(store.totalPendingDues) }}</strong>
-            </div>
-            <button class="btn btn-sm btn-primary mt-2" @click="$emit('view-detail', 'dues', 'all')">
-              Ver Todas →
-            </button>
           </div>
         </div>
       </div>
 
-      <!-- Últimas Transacciones -->
-      <div class="card bg-base-100 shadow-lg">
-        <div class="card-body">
-          <h3 class="card-title">Últimas Transacciones</h3>
-          <div v-if="store.payments.length === 0" class="text-center py-8 text-base-content/60">
-            No hay transacciones registradas
+      <!-- Portafolio de Acciones (5 cols) -->
+      <div class="md:col-span-5 card bg-base-200/60 border border-base-300">
+        <div class="card-body p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-base-content">Portafolio de Acciones</h3>
+            <button
+              class="btn btn-xs btn-link no-underline"
+              @click="$emit('view-detail', 'stocks-dues', 'all')"
+            >
+              Gestionar →
+            </button>
           </div>
-          <div v-else class="space-y-4">
+
+          <LoadingSpinner :loading="store.loadingSubscriptions" message="Cargando acciones..." />
+
+          <div
+            v-if="!store.loadingSubscriptions && activeSubscriptions.length === 0"
+            class="text-center py-4 text-xs text-base-content/60"
+          >
+            No hay acciones registradas
+          </div>
+
+          <div v-else class="space-y-2.5 text-xs">
+            <div
+              v-for="sub in activeSubscriptions"
+              :key="sub.id"
+              class="flex justify-between items-center"
+            >
+              <span class="text-base-content">{{ sub.stock_type }}</span>
+              <span class="font-medium font-mono">{{ sub.quantity }} {{ sub.quantity === 1 ? 'unidad' : 'unidades' }}</span>
+            </div>
+            <div class="border-t border-base-300 pt-2 flex justify-between items-center font-semibold">
+              <span>Total invertido</span>
+              <span class="font-mono">{{ formatCurrency(store.totalInStocks) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Últimos Movimientos (7 cols) -->
+      <div class="md:col-span-7 card bg-base-200/60 border border-base-300">
+        <div class="card-body p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-base-content">Últimos Movimientos</h3>
+            <button
+              class="btn btn-xs btn-link no-underline"
+              @click="$emit('view-detail', 'movements', 'all')"
+            >
+              Ver historial →
+            </button>
+          </div>
+
+          <div v-if="recentPayments.length === 0" class="text-center py-4 text-xs text-base-content/60">
+            No hay movimientos registrados
+          </div>
+
+          <div v-else class="divide-y divide-base-300 text-xs">
             <div
               v-for="payment in recentPayments"
               :key="payment.operation_id"
-              class="py-3 border-b border-base-300 last:border-b-0 flex justify-between items-start cursor-pointer hover:bg-base-200/50 p-2 rounded transition-colors"
-              @click="$emit('view-detail', 'payments', payment.operation_id)"
+              class="py-2 flex items-center justify-between cursor-pointer hover:bg-base-100/60 px-1 rounded transition-colors"
+              @click="$emit('view-detail', 'movements', payment.operation_id)"
             >
-              <div class="flex-1">
-                <div class="font-semibold text-base-content text-xs sm:text-sm break-words">{{ payment.type }}</div>
-                <div class="transaction-date text-sm text-base-content/70">{{ formatDate(payment.date) }}</div>
+              <div>
+                <p class="font-medium text-base-content">{{ formatDueOrPaymentType(payment.type) }}</p>
+                <p class="text-base-content/60">{{ formatDate(payment.date) }}</p>
               </div>
-              <div class="font-semibold text-base-content text-sm sm:text-base font-mono break-words">{{ formatCurrency(payment.total_amount) }}</div>
+              <span class="font-semibold font-mono">{{ formatCurrency(payment.total_amount) }}</span>
             </div>
-            <button class="btn btn-sm btn-link mt-2" @click="$emit('view-detail', 'payments', 'all')">
-              Ver Historial Completo →
-            </button>
           </div>
         </div>
       </div>
@@ -123,7 +191,8 @@
 import { computed } from 'vue'
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import { formatCurrency, formatDate } from '@/shared/utils/formatters'
-import type { Member } from '@/api/members.api'
+import { formatDueOrPaymentType } from '@/features/members/utils/memberLabels'
+import type { Loan, Member } from '@/api/members.api'
 import type { useMemberDetailStore } from '@/features/members/stores/memberDetail'
 
 const props = defineProps<{
@@ -133,6 +202,8 @@ const props = defineProps<{
 
 defineEmits<{
   'view-detail': [type: string, id: string]
+  'edit-loan': [loan: Loan]
+  'view-loan-detail': [loan: Loan]
 }>()
 
 const activeSubscriptions = computed(() => {
@@ -142,21 +213,18 @@ const activeSubscriptions = computed(() => {
 const recentPayments = computed(() => {
   return [...props.store.payments]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5)
+    .slice(0, 4)
 })
 
-function getDueVariant(type: string): string {
-  const variants: Record<string, string> = {
-    mandatory_contribution: 'info',
-    stock_fee: 'warning',
-    loan_payment: 'error',
-    insurance: 'neutral',
-    fee: 'warning'
-  }
-  return variants[type] || 'neutral'
+const nextDueDateLabel = computed(() => {
+  return props.store.nextDueInfo.date ? formatDate(props.store.nextDueInfo.date) : ''
+})
+
+function getPaidPercentage(loan: Loan): number {
+  if (!loan.approved_amount || loan.approved_amount <= 0) return 0
+  return Math.max(
+    0,
+    Math.min(100, Math.round(((loan.approved_amount - loan.outstanding_balance) / loan.approved_amount) * 100))
+  )
 }
 </script>
-
-
-
-
