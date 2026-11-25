@@ -57,7 +57,9 @@ export interface MemberDue {
 }
 
 export interface MemberPaymentEntry {
-  type: string
+  id?: string
+  account_type?: string
+  type?: string
   amount: number
   description?: string
 }

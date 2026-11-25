@@ -1,6 +1,6 @@
 <template>
   <dialog v-if="show" class="modal" :class="{ 'modal-open': show }" @click.self="$emit('close')">
-    <div class="modal-box w-full max-w-full min-w-0" @click.stop>
+    <div :class="['modal-box w-11/12 min-w-0', maxWidth]" @click.stop>
       <form method="dialog">
         <button @click="$emit('close')" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" aria-label="Cerrar modal">✕</button>
       </form>
@@ -21,10 +21,13 @@
 <script setup lang="ts">
 import { watch, onUnmounted } from 'vue'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   show: boolean
   title: string
-}>()
+  maxWidth?: string
+}>(), {
+  maxWidth: 'max-w-2xl'
+})
 
 const emit = defineEmits<{
   close: []

@@ -300,5 +300,71 @@ describe('GetMemberPaymentsQueryHandler', () => {
         paymentMapperService.calculatePaymentTotalAmount.mock.calls[0][0],
       ).toEqual([entry1, entry2, entry3]);
     });
+
+    it('should fall back to positive entry sum when cash inflow total is 0 (e.g. dividend disbursement)', async () => {
+      // ARRANGE
+      const member = Member.fromPersistence({
+        id: memberId,
+        name: 'Test Member',
+        email: 'test@example.com',
+        status: 'active',
+        role: 'member',
+        registrationDate: new Date(),
+      });
+
+      memberRepository.findById.mockResolvedValue(member);
+
+      const operation = Operation.fromPersistence({
+        id: 'op-div-1',
+        memberId: memberId,
+        meetingId: meetingId,
+        type: OperationType.DIVIDEND_PAYMENT,
+        date: new Date('2026-11-21'),
+        description: 'Entrega de dividendos',
+      });
+
+      const entry1 = LedgerEntry.fromPersistence({
+        id: 'entry-div-1',
+        operation_id: 'op-div-1',
+        account_type: CASH_ACCOUNT,
+        amount: -928854,
+        created_at: new Date(),
+        description: 'Entrega de dividendos',
+      });
+
+      const entry2 = LedgerEntry.fromPersistence({
+        id: 'entry-div-2',
+        operation_id: 'op-div-1',
+        account_type: 'DIVIDEND_EXPENSE',
+        amount: 928854,
+        created_at: new Date(),
+        description: 'Entrega de dividendos',
+      });
+
+      operationRepository.findByMember.mockResolvedValue([operation]);
+      ledgerEntryRepository.findByOperations.mockResolvedValue([
+        entry1,
+        entry2,
+      ]);
+      paymentMapperService.mapOperationTypeToPaymentType.mockReturnValue(
+        PaymentType.FEE,
+      );
+      paymentMapperService.calculatePaymentTotalAmount.mockReturnValue(0);
+      paymentMapperService.calculateStockOperationTotalAmount.mockReturnValue(
+        928854,
+      );
+
+      // ACT
+      const result = await queryHandler.execute(memberId, {
+        paymentType: undefined,
+      });
+
+      // ASSERT
+      expect(result[0].totalAmount).toBe(928854);
+      expect(
+        paymentMapperService.calculateStockOperationTotalAmount.mock
+          .calls[0][0],
+      ).toEqual([entry1, entry2]);
+    });
   });
 });
