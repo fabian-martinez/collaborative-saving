@@ -37,6 +37,7 @@ describe('GetDashboardMetricsQueryHandler', () => {
     } as unknown as jest.Mocked<StockSubscriptionRepository>;
 
     stockRepository = {
+      findAll: jest.fn(),
       findByIds: jest.fn(),
     } as unknown as jest.Mocked<StockRepository>;
 
@@ -95,7 +96,7 @@ describe('GetDashboardMetricsQueryHandler', () => {
     ]);
 
     // Stocks mock
-    stockRepository.findByIds.mockResolvedValue([
+    stockRepository.findAll.mockResolvedValue([
       { id: 'stock-1', value: 100 } as Stock,
       { id: 'stock-2', value: 200 } as Stock,
     ]);

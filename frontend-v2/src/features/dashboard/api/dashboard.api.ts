@@ -55,10 +55,18 @@ export interface RecentActivity {
   member_name: string
 }
 
+export interface PortfolioByLoanType {
+  loan_type: string
+  name: string
+  count: number
+  total_amount: number
+}
+
 export interface PortfolioStatus {
   up_to_date: number
   overdue: number
   written_off: number
+  by_type: PortfolioByLoanType[]
 }
 
 export const dashboardApi = {
