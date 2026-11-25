@@ -17,7 +17,7 @@ export class GetRecentActivityQueryHandler {
     const paginatedOperations =
       await this.operationRepository.findWithPagination(
         {},
-        { page: 1, limit: 10 },
+        { page: 1, limit: 5 },
         'DESC',
       );
 

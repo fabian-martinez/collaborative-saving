@@ -62,7 +62,7 @@ describe('GetRecentActivityQueryHandler', () => {
     expect(result).toEqual([]);
     expect(operationRepository.findWithPagination).toHaveBeenCalledWith(
       {},
-      { page: 1, limit: 10 },
+      { page: 1, limit: 5 },
       'DESC',
     );
   });

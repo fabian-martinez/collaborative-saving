@@ -116,6 +116,20 @@ describe('DashboardV2Controller', () => {
         upToDate: 10,
         overdue: 2,
         writtenOff: 1,
+        byType: [
+          {
+            loanType: 'corriente',
+            name: 'Corriente',
+            count: 8,
+            totalAmount: 15000000,
+          },
+          {
+            loanType: 'agil',
+            name: 'Ágil',
+            count: 4,
+            totalAmount: 5000000,
+          },
+        ],
       };
       getPortfolioStatusQuery.execute.mockResolvedValue(mockResult);
 
@@ -128,6 +142,20 @@ describe('DashboardV2Controller', () => {
         up_to_date: 10,
         overdue: 2,
         written_off: 1,
+        by_type: [
+          {
+            loan_type: 'corriente',
+            name: 'Corriente',
+            count: 8,
+            total_amount: 15000000,
+          },
+          {
+            loan_type: 'agil',
+            name: 'Ágil',
+            count: 4,
+            total_amount: 5000000,
+          },
+        ],
       });
     });
   });

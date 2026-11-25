@@ -11,11 +11,13 @@ import { StocksV2Module } from './stocks-v2.module';
 import { LoansV2Module } from './loans-v2.module';
 import { PendingPaymentsV2Module } from './pending-payments-v2.module';
 import { MembersV2Module } from './members-v2.module';
+import { SettingsV2Module } from './settings-v2.module';
 import {
   MEMBER_REPOSITORY,
   STOCK_SUBSCRIPTION_REPOSITORY,
   STOCK_REPOSITORY,
   LOAN_REPOSITORY,
+  LOAN_TYPE_REPOSITORY,
   PENDING_MEMBER_PAYMENT_REPOSITORY,
   MEETING_REPOSITORY,
   OPERATION_REPOSITORY,
@@ -25,6 +27,7 @@ import { MemberRepository } from '@domain/ports/repositories/member-repository.p
 import { StockSubscriptionRepository } from '@domain/ports/repositories/stock-subscription-repository.port';
 import { StockRepository } from '@domain/ports/repositories/stock-repository.port';
 import { LoanRepository } from '@domain/ports/repositories/loan-repository.port';
+import { LoanTypeRepository } from '@domain/ports/repositories/loan-type-repository.port';
 import { PendingMemberPaymentRepository } from '@domain/ports/repositories/pending-member-payment-repository.port';
 import { MeetingRepository } from '@domain/ports/repositories/meeting-repository.port';
 import { OperationRepository } from '@domain/ports/repositories/operation-repository.port';
@@ -38,6 +41,7 @@ import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-r
     LoansV2Module,
     PendingPaymentsV2Module,
     MembersV2Module,
+    SettingsV2Module,
   ],
   controllers: [DashboardV2Controller],
   providers: [
@@ -54,8 +58,18 @@ import { LedgerEntryRepository } from '@domain/ports/repositories/ledger-entry-r
       useFactory: (
         loanRepo: LoanRepository,
         pendingPaymentRepo: PendingMemberPaymentRepository,
-      ) => new GetPortfolioStatusQueryHandler(loanRepo, pendingPaymentRepo),
-      inject: [LOAN_REPOSITORY, PENDING_MEMBER_PAYMENT_REPOSITORY],
+        loanTypeRepo: LoanTypeRepository,
+      ) =>
+        new GetPortfolioStatusQueryHandler(
+          loanRepo,
+          pendingPaymentRepo,
+          loanTypeRepo,
+        ),
+      inject: [
+        LOAN_REPOSITORY,
+        PENDING_MEMBER_PAYMENT_REPOSITORY,
+        LOAN_TYPE_REPOSITORY,
+      ],
     },
     {
       provide: GetDashboardMetricsQueryHandler,

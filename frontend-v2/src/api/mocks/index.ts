@@ -1128,7 +1128,12 @@ export const mockApi = {
     return {
       up_to_date: 85,
       overdue: 10,
-      written_off: 5
+      written_off: 5,
+      by_type: [
+        { loan_type: 'corriente', name: 'Corriente', count: 10, total_amount: 15000000 },
+        { loan_type: 'agil', name: 'Ágil', count: 5, total_amount: 5000000 },
+        { loan_type: 'prioritario', name: 'Prioritario', count: 3, total_amount: 4500000 }
+      ]
     }
   },
 

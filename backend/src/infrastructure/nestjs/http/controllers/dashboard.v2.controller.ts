@@ -120,6 +120,12 @@ export class DashboardV2Controller {
       up_to_date: result.upToDate,
       overdue: result.overdue,
       written_off: result.writtenOff,
+      by_type: result.byType.map((item) => ({
+        loan_type: item.loanType,
+        name: item.name,
+        count: item.count,
+        total_amount: item.totalAmount,
+      })),
     };
   }
 

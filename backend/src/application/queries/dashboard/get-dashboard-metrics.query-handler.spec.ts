@@ -37,6 +37,7 @@ describe('GetDashboardMetricsQueryHandler', () => {
     } as unknown as jest.Mocked<StockSubscriptionRepository>;
 
     stockRepository = {
+      findAll: jest.fn(),
       findByIds: jest.fn(),
     } as unknown as jest.Mocked<StockRepository>;
 
@@ -95,7 +96,7 @@ describe('GetDashboardMetricsQueryHandler', () => {
     ]);
 
     // Stocks mock
-    stockRepository.findByIds.mockResolvedValue([
+    stockRepository.findAll.mockResolvedValue([
       { id: 'stock-1', value: 100 } as Stock,
       { id: 'stock-2', value: 200 } as Stock,
     ]);
@@ -184,5 +185,27 @@ describe('GetDashboardMetricsQueryHandler', () => {
     });
 
     expect(calculateSummarySpy).toHaveBeenCalledWith('m2');
+  });
+
+  it('should handle empty stocks list without querying subscriptions', async () => {
+    memberRepository.findActive.mockResolvedValue([]);
+    stockRepository.findAll.mockResolvedValue([]);
+    loanRepository.findAll.mockResolvedValue([]);
+    pendingMemberPaymentRepository.findWithFilters.mockResolvedValue([]);
+    meetingRepository.findAll.mockResolvedValue([]);
+
+    const findByStocksSpy = jest.spyOn(
+      stockSubscriptionRepository,
+      'findByStocks',
+    );
+
+    const result = await handler.execute();
+
+    expect(findByStocksSpy).not.toHaveBeenCalled();
+    expect(result.totalStocks).toEqual({
+      count: 0,
+      value: 0,
+      changePercent: 0,
+    });
   });
 });

@@ -48,14 +48,16 @@ export class GetDashboardMetricsQueryHandler {
       (m: Member) => m.status === 'active',
     ).length;
 
+    const allStocks: Stock[] = await this.stockRepository.findAll();
+    const allStockIds = allStocks.map((s) => s.id);
     const subscriptions: StockSubscription[] =
-      await this.stockSubscriptionRepository.findByStocks([]);
+      allStockIds.length > 0
+        ? await this.stockSubscriptionRepository.findByStocks(allStockIds)
+        : [];
     const activeSubscriptions = subscriptions.filter(
       (s: StockSubscription) => s.status === 'active',
     );
-    const stockIds = [...new Set(activeSubscriptions.map((s) => s.stockId))];
-    const stocks: Stock[] = await this.stockRepository.findByIds(stockIds);
-    const stockMap = new Map<string, Stock>(stocks.map((s) => [s.id, s]));
+    const stockMap = new Map<string, Stock>(allStocks.map((s) => [s.id, s]));
 
     const stocksCount = activeSubscriptions.reduce(
       (acc: number, s: StockSubscription): number => acc + s.quantity,
