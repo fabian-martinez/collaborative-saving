@@ -15,6 +15,30 @@ import {
   type GetMemberStockModificationsQuery,
   type GetPaymentScheduleQuery
 } from '@/api/members.api'
+import {
+  ledgerApi,
+  type LedgerEntry
+} from '@/api/ledger.api'
+import {
+  addOneMonth,
+  formatAccountType,
+  isCreditNormalAccount
+} from '../utils/memberLabels'
+
+export interface MemberAccountSummary {
+  accountType: string
+  accountName: string
+  balance: number
+  entriesCount: number
+  lastDate: string | Date | null
+  entries: LedgerEntry[]
+}
+
+export interface NextDueInfo {
+  amount: number
+  date: string | Date | null
+  loanType: string | null
+}
 
 export const useMemberDetailStore = defineStore('memberDetail', () => {
   const member = ref<Member | null>(null)
@@ -28,6 +52,7 @@ export const useMemberDetailStore = defineStore('memberDetail', () => {
   const stockLoanPayments = ref<StockLoanPaymentResponse[]>([])
   const paymentSchedule = ref<PaymentSchedule | null>(null)
   const insurance = ref<{ insurance_amount: number } | null>(null)
+  const ledgerEntries = ref<LedgerEntry[]>([])
   
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -40,6 +65,7 @@ export const useMemberDetailStore = defineStore('memberDetail', () => {
   const loadingStockLoanPayments = ref(false)
   const loadingPaymentSchedule = ref(false)
   const loadingInsurance = ref(false)
+  const loadingLedger = ref(false)
   
   // Cálculos derivados
   // Total en acciones se calcula sumando el total_value de las purchases activas
@@ -73,6 +99,116 @@ export const useMemberDetailStore = defineStore('memberDetail', () => {
     }, 0)
     return isNaN(total) || !isFinite(total) ? 0 : total
   })
+
+  const totalStockUnits = computed(() => {
+    return stockSubscriptions.value
+      .filter(sub => sub.status === 'active')
+      .reduce((sum, sub) => sum + (sub.quantity || 0), 0)
+  })
+
+  const lastPaymentDate = computed<string | Date | null>(() => {
+    if (payments.value.length === 0) return null
+    const sorted = [...payments.value].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    )
+    return sorted[0]?.date ?? null
+  })
+
+  const nextDueInfo = computed<NextDueInfo>(() => {
+    const primaryLoan = activeLoans.value[0] || null
+    const dateFromLastPayment = lastPaymentDate.value
+      ? addOneMonth(lastPaymentDate.value)
+      : null
+
+    if (paymentSchedule.value?.summary?.next_payment_date) {
+      return {
+        amount:
+          paymentSchedule.value.summary.next_payment_amount ||
+          primaryLoan?.monthly_payment_amount ||
+          0,
+        date:
+          dateFromLastPayment ??
+          paymentSchedule.value.summary.next_payment_date,
+        loanType: primaryLoan?.loan_type ?? null
+      }
+    }
+
+    return {
+      amount: primaryLoan?.monthly_payment_amount ?? 0,
+      date: dateFromLastPayment,
+      loanType: primaryLoan?.loan_type ?? null
+    }
+  })
+
+  const accumulatedInsurance = computed(() => {
+    return ledgerEntries.value
+      .filter(entry => entry.account_type === 'INSURANCE_INCOME')
+      .reduce((sum, entry) => {
+        const val = typeof entry.amount === 'number' ? entry.amount : parseFloat(String(entry.amount || 0))
+        return sum + (isNaN(val) ? 0 : -val)
+      }, 0)
+  })
+
+  const memberAccountsSummary = computed<MemberAccountSummary[]>(() => {
+    const grouped = new Map<string, LedgerEntry[]>()
+    for (const entry of ledgerEntries.value) {
+      const list = grouped.get(entry.account_type) ?? []
+      list.push(entry)
+      grouped.set(entry.account_type, list)
+    }
+
+    const result: MemberAccountSummary[] = []
+    for (const [accountType, entries] of grouped.entries()) {
+      const sortedEntries = [...entries].sort(
+        (a, b) =>
+          new Date(b.operation_date || b.created_at).getTime() -
+          new Date(a.operation_date || a.created_at).getTime()
+      )
+      const rawSum = sortedEntries.reduce((sum, e) => {
+        const val = typeof e.amount === 'number' ? e.amount : parseFloat(String(e.amount || 0))
+        return sum + (isNaN(val) ? 0 : val)
+      }, 0)
+      const balance = isCreditNormalAccount(accountType) ? -rawSum : rawSum
+      const firstEntry = sortedEntries[0]
+      result.push({
+        accountType,
+        accountName: formatAccountType(accountType),
+        balance,
+        entriesCount: sortedEntries.length,
+        lastDate: firstEntry ? firstEntry.operation_date || firstEntry.created_at : null,
+        entries: sortedEntries
+      })
+    }
+
+    return result.sort((a, b) => {
+      if (a.accountType === 'INSURANCE_INCOME') return -1
+      if (b.accountType === 'INSURANCE_INCOME') return 1
+      return a.accountName.localeCompare(b.accountName)
+    })
+  })
+
+  function getSubscriptionFinancials(sub: StockSubscription): {
+    subscriptionValue: number
+    currentFee: number
+  } {
+    const matchingPurchases = purchases.value.filter(
+      p => p.stock_subscription_id === sub.id
+    )
+    const subscriptionValue = matchingPurchases.reduce(
+      (sum, p) => sum + (p.total_value || 0),
+      0
+    )
+
+    const matchingDue = dues.value.find(
+      d =>
+        d.type === 'stock_fee' &&
+        (d.reference_id === sub.id ||
+          d.description.toLowerCase().includes(sub.stock_type.toLowerCase()))
+    )
+    const currentFee = matchingDue ? Number(matchingDue.amount) || 0 : 0
+
+    return { subscriptionValue, currentFee }
+  }
 
   async function fetchMember(id: string) {
     loading.value = true
@@ -198,6 +334,23 @@ export const useMemberDetailStore = defineStore('memberDetail', () => {
     }
   }
 
+  async function fetchMemberLedgerEntries(memberId: string) {
+    loadingLedger.value = true
+    try {
+      const response = await ledgerApi.getLedgerEntries({
+        member_id: memberId,
+        limit: 500,
+        order_by: 'DESC'
+      })
+      ledgerEntries.value = response.data || []
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Error al cargar cuentas del socio'
+      throw e
+    } finally {
+      loadingLedger.value = false
+    }
+  }
+
   function reset() {
     member.value = null
     dues.value = []
@@ -210,6 +363,7 @@ export const useMemberDetailStore = defineStore('memberDetail', () => {
     stockLoanPayments.value = []
     paymentSchedule.value = null
     insurance.value = null
+    ledgerEntries.value = []
     error.value = null
   }
 
@@ -226,6 +380,7 @@ export const useMemberDetailStore = defineStore('memberDetail', () => {
     stockLoanPayments,
     paymentSchedule,
     insurance,
+    ledgerEntries,
     loading,
     error,
     loadingLoans,
@@ -235,13 +390,20 @@ export const useMemberDetailStore = defineStore('memberDetail', () => {
     loadingStockLoanPayments,
     loadingPaymentSchedule,
     loadingInsurance,
+    loadingLedger,
     // Computed
     totalInStocks,
+    totalStockUnits,
     activeLoans,
     activeLoansCount,
     activeLoansTotalAmount,
     totalPendingDues,
+    lastPaymentDate,
+    nextDueInfo,
+    accumulatedInsurance,
+    memberAccountsSummary,
     // Functions
+    getSubscriptionFinancials,
     fetchMember,
     fetchDues,
     fetchPayments,
@@ -253,6 +415,7 @@ export const useMemberDetailStore = defineStore('memberDetail', () => {
     fetchStockLoanPayments,
     fetchPaymentSchedule,
     fetchInsurance,
+    fetchMemberLedgerEntries,
     reset
   }
 })
