@@ -161,10 +161,10 @@ export class TypeOrmLedgerEntryRepository implements LedgerEntryRepository {
     // Get total count before pagination
     const total = await qb.getCount();
 
-    // Apply pagination and ordering
+    // Apply pagination and ordering (use TypeORM property path so DISTINCT subqueries with joins alias it)
     const skip = (pagination.page - 1) * pagination.limit;
     qb.skip(skip).take(pagination.limit);
-    qb.orderBy('ledger_entry.created_at', orderBy);
+    qb.orderBy('ledger_entry.createdAt', orderBy);
 
     const entities = await qb.getMany();
     const data = entities.map((e) => LedgerEntryMapper.toDomain(e));
