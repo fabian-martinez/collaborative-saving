@@ -470,7 +470,7 @@ describe('TypeOrmLedgerEntryRepository', () => {
       expect(mockQueryBuilder.skip).toHaveBeenCalledWith(0);
       expect(mockQueryBuilder.take).toHaveBeenCalledWith(10);
       expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
-        'ledger_entry.created_at',
+        'ledger_entry.createdAt',
         'DESC',
       );
     });
@@ -602,7 +602,7 @@ describe('TypeOrmLedgerEntryRepository', () => {
       expect(mockQueryBuilder.skip).toHaveBeenCalledWith(10); // (3-1) * 5
       expect(mockQueryBuilder.take).toHaveBeenCalledWith(5);
       expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
-        'ledger_entry.created_at',
+        'ledger_entry.createdAt',
         'ASC',
       );
     });
