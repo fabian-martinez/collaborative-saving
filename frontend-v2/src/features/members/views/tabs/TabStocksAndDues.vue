@@ -23,8 +23,7 @@
       <div
         v-for="sub in activeSubscriptions"
         :key="sub.id"
-        class="bg-base-200/60 border border-base-300 rounded-xl p-4 space-y-3 text-xs cursor-pointer hover:border-primary/50 transition-colors"
-        @click="$emit('view-subscription', sub.id)"
+        class="bg-base-200/60 border border-base-300 rounded-xl p-4 space-y-3 text-xs"
       >
         <div class="flex justify-between items-start gap-2">
           <div>
@@ -64,10 +63,6 @@ import type { useMemberDetailStore } from '@/features/members/stores/memberDetai
 const props = defineProps<{
   memberId: string
   store: ReturnType<typeof useMemberDetailStore>
-}>()
-
-defineEmits<{
-  'view-subscription': [subscriptionId: string]
 }>()
 
 const activeSubscriptions = computed(() => {

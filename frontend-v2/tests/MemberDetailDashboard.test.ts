@@ -199,7 +199,6 @@ describe('MemberDetailView redesigned layout', () => {
       global: {
         stubs: {
           RegisterPaymentModal: true,
-          StockSubscriptionDetail: true,
           PaymentDetailModal: true,
           EditLoanTermsModal: true,
           LoanBreakdownModal: true,

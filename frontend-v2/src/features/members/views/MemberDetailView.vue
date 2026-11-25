@@ -205,7 +205,6 @@
                   <TabStocksAndDues
                     :member-id="memberId"
                     :store="store"
-                    @view-subscription="handleViewSubscription"
                   />
                 </template>
 
@@ -238,13 +237,6 @@
       :meeting-id="activeMeetingId || undefined"
       @close="showRegisterPaymentModal = false"
       @success="handlePaymentSuccess"
-    />
-
-    <StockSubscriptionDetail
-      :visible="selectedSubscriptionId !== null"
-      :member-id="memberId"
-      :subscription-id="selectedSubscriptionId"
-      @close="selectedSubscriptionId = null"
     />
 
     <PaymentDetailModal
@@ -295,7 +287,6 @@ import ErrorMessage from '@/shared/components/ErrorMessage.vue'
 import Tabs from '@/shared/components/Tabs.vue'
 import type { Tab } from '@/shared/components/Tabs.vue'
 import RegisterPaymentModal from '../components/RegisterPaymentModal.vue'
-import StockSubscriptionDetail from '../components/StockSubscriptionDetail.vue'
 import PaymentDetailModal from '../components/PaymentDetailModal.vue'
 import EditLoanTermsModal from '../components/EditLoanTermsModal.vue'
 import LoanBreakdownModal from '../components/LoanBreakdownModal.vue'
@@ -320,7 +311,6 @@ const activeTab = ref('resumen')
 
 const showRegisterPaymentModal = ref(false)
 const showEditMemberModal = ref(false)
-const selectedSubscriptionId = ref<string | null>(null)
 const selectedPaymentId = ref<string | null>(null)
 const editingLoan = ref<Loan | null>(null)
 const detailLoan = ref<Loan | null>(null)
@@ -420,15 +410,9 @@ async function handleUpdateMember(data: CreateMemberRequest) {
 function handleViewDetail(type: string, id: string) {
   if (type === 'movements' && id !== 'all') {
     handleViewPaymentDetail(id)
-  } else if (type === 'stocks-dues' && id !== 'all') {
-    handleViewSubscription(id)
   } else {
     activeTab.value = type
   }
-}
-
-function handleViewSubscription(subscriptionId: string) {
-  selectedSubscriptionId.value = subscriptionId
 }
 
 function handleViewPaymentDetail(paymentId: string) {
