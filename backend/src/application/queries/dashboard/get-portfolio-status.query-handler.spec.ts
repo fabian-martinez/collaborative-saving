@@ -139,4 +139,46 @@ describe('GetPortfolioStatusQueryHandler', () => {
     expect(result.writtenOff).toBe(0);
     expect(result.byType).toEqual([]);
   });
+
+  it('should fallback to capitalized code or "otro" when loanTypeRepository is omitted or type is unknown', async () => {
+    const handlerWithoutLoanTypeRepo = new GetPortfolioStatusQueryHandler(
+      loanRepository,
+      pendingMemberPaymentRepository,
+    );
+
+    const mockLoans: Partial<Loan>[] = [
+      {
+        id: 'loan-1',
+        status: LoanStatus.ACTIVE,
+        loanType: 'especial',
+        outstandingBalance: 400000,
+      },
+      {
+        id: 'loan-2',
+        status: LoanStatus.ACTIVE,
+        loanType: '',
+        outstandingBalance: 100000,
+      },
+    ];
+
+    loanRepository.findAll.mockResolvedValue(mockLoans as Loan[]);
+    pendingMemberPaymentRepository.findWithFilters.mockResolvedValue([]);
+
+    const result = await handlerWithoutLoanTypeRepo.execute();
+
+    expect(result.byType).toEqual([
+      {
+        loanType: 'especial',
+        name: 'Especial',
+        count: 1,
+        totalAmount: 400000,
+      },
+      {
+        loanType: 'otro',
+        name: 'Otro',
+        count: 1,
+        totalAmount: 100000,
+      },
+    ]);
+  });
 });
