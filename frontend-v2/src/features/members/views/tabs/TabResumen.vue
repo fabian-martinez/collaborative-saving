@@ -46,14 +46,22 @@
                 :value="Math.max(0, loan.approved_amount - loan.outstanding_balance)"
                 :max="loan.approved_amount || 1"
               ></progress>
-              <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-base-content/70 font-mono">
-                <span>
+              <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+                <span class="text-base-content/70">
                   Saldo: <strong class="text-base-content">{{ formatCurrency(loan.outstanding_balance) }}</strong>
                 </span>
-                <span>
-                  Próx. cuota: {{ formatCurrency(loan.monthly_payment_amount) }}
-                  <template v-if="nextDueDateLabel"> ({{ nextDueDateLabel }})</template>
-                </span>
+                <div class="flex items-center gap-2">
+                  <span class="text-[11px] text-base-content/60">
+                    Próx. cuota: {{ formatCurrency(loan.monthly_payment_amount) }}
+                    <template v-if="nextDueDateLabel"> ({{ nextDueDateLabel }})</template>
+                  </span>
+                  <button
+                    class="btn btn-xs btn-link no-underline px-1 text-[11px]"
+                    @click="$emit('view-loan-detail', loan)"
+                  >
+                    Ver detalle →
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -195,6 +203,7 @@ const props = defineProps<{
 defineEmits<{
   'view-detail': [type: string, id: string]
   'edit-loan': [loan: Loan]
+  'view-loan-detail': [loan: Loan]
 }>()
 
 const activeSubscriptions = computed(() => {

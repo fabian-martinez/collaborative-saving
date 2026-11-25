@@ -157,7 +157,7 @@ describe('useMemberDetailStore dashboard metrics', () => {
     expect((store.nextDueInfo.date as Date).getMonth()).toBe(11)
 
     const financials = store.getSubscriptionFinancials(store.stockSubscriptions[0])
-    expect(financials.subscriptionValue).toBe(1050000)
+    expect(financials.subscriptionValue).toBe(50000)
     expect(financials.currentFee).toBe(1050000)
   })
 })
@@ -201,7 +201,10 @@ describe('MemberDetailView redesigned layout', () => {
           RegisterPaymentModal: true,
           StockSubscriptionDetail: true,
           PaymentDetailModal: true,
-          EditLoanTermsModal: true
+          EditLoanTermsModal: true,
+          LoanBreakdownModal: true,
+          MemberForm: true,
+          Modal: true
         }
       }
     })
@@ -210,14 +213,79 @@ describe('MemberDetailView redesigned layout', () => {
 
     const text = wrapper.text()
     expect(text).toContain('SUAREZ FERNANDO')
+    expect(text).toContain('Editar')
     expect(text).toContain('Seguro Acumulado')
     expect(text).not.toContain('Recalcular')
     expect(text).not.toContain('+ Registrar Pago')
     expect(text).not.toContain('+ Nuevo Préstamo')
     expect(text).toContain('Resumen')
     expect(text).toContain('Préstamos y Cronograma')
-    expect(text).toContain('Acciones y Obligaciones')
+    expect(text).toContain('Acciones')
     expect(text).toContain('Cuentas')
     expect(text).toContain('Movimientos')
+  })
+})
+
+describe('TabLoansAndSchedule filtering', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('shows only active loans by default and groups filter buttons by loan_type', async () => {
+    const { default: TabLoansAndSchedule } = await import(
+      '@/features/members/views/tabs/TabLoansAndSchedule.vue'
+    )
+    const store = useMemberDetailStore()
+    store.loans = [
+      {
+        id: 'l-1',
+        member_id: 'm-1',
+        loan_type: 'accion',
+        approved_amount: 100000,
+        disbursed_amount: 100000,
+        outstanding_balance: 50000,
+        monthly_payment_amount: 10000,
+        interest_rate: 1,
+        term: 10,
+        status: 'active',
+        creation_date: '2026-01-01'
+      },
+      {
+        id: 'l-2',
+        member_id: 'm-1',
+        loan_type: 'accion',
+        approved_amount: 200000,
+        disbursed_amount: 200000,
+        outstanding_balance: 150000,
+        monthly_payment_amount: 20000,
+        interest_rate: 1,
+        term: 10,
+        status: 'active',
+        creation_date: '2026-02-01'
+      },
+      {
+        id: 'l-3',
+        member_id: 'm-1',
+        loan_type: 'corriente',
+        approved_amount: 300000,
+        disbursed_amount: 300000,
+        outstanding_balance: 0,
+        monthly_payment_amount: 30000,
+        interest_rate: 1.5,
+        term: 10,
+        status: 'closed',
+        creation_date: '2025-01-01'
+      }
+    ]
+
+    const wrapper = mount(TabLoansAndSchedule, {
+      props: { memberId: 'm-1', store }
+    })
+
+    const text = wrapper.text()
+    expect(text).toContain('Todos (2)')
+    expect(text).toContain('accion (2)')
+    expect(text).not.toContain('corriente')
+    expect(text).toContain('Ver detalle →')
   })
 })

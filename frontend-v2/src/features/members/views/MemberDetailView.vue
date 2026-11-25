@@ -44,7 +44,15 @@
               </div>
 
               <div class="border-t border-base-300 pt-4 space-y-3 text-xs">
-                <span class="font-semibold text-base-content block">Información Personal</span>
+                <div class="flex items-center justify-between">
+                  <span class="font-semibold text-base-content">Información Personal</span>
+                  <button
+                    class="btn btn-xs btn-link no-underline px-0"
+                    @click="showEditMemberModal = true"
+                  >
+                    Editar
+                  </button>
+                </div>
                 <dl class="space-y-2.5">
                   <div>
                     <dt class="text-base-content/60">Email</dt>
@@ -180,6 +188,7 @@
                     :store="store"
                     @view-detail="handleViewDetail"
                     @edit-loan="handleEditLoan"
+                    @view-loan-detail="handleViewLoanBreakdown"
                   />
                 </template>
 
@@ -188,6 +197,7 @@
                     :member-id="memberId"
                     :store="store"
                     @edit-loan="handleEditLoan"
+                    @view-loan-detail="handleViewLoanBreakdown"
                   />
                 </template>
 
@@ -249,6 +259,29 @@
       @close="editingLoan = null"
       @saved="handleLoanEdited"
     />
+
+    <LoanBreakdownModal
+      :visible="detailLoan !== null"
+      :loan="detailLoan"
+      :projected-payments="store.paymentSchedule?.projected_payments || []"
+      @close="detailLoan = null"
+    />
+
+    <Modal :show="showEditMemberModal" title="Editar Socio" @close="showEditMemberModal = false">
+      <MemberForm
+        v-if="store.member"
+        :initial-data="{
+          name: store.member.name,
+          email: store.member.email,
+          identification_number: store.member.identification_number,
+          phone: store.member.phone,
+          address: store.member.address,
+          beneficiary: store.member.beneficiary
+        }"
+        @submit="handleUpdateMember"
+        @cancel="showEditMemberModal = false"
+      />
+    </Modal>
   </div>
 </template>
 
@@ -265,13 +298,16 @@ import RegisterPaymentModal from '../components/RegisterPaymentModal.vue'
 import StockSubscriptionDetail from '../components/StockSubscriptionDetail.vue'
 import PaymentDetailModal from '../components/PaymentDetailModal.vue'
 import EditLoanTermsModal from '../components/EditLoanTermsModal.vue'
+import LoanBreakdownModal from '../components/LoanBreakdownModal.vue'
+import MemberForm from '../components/MemberForm.vue'
+import Modal from '@/shared/components/Modal.vue'
 import TabResumen from './tabs/TabResumen.vue'
 import TabLoansAndSchedule from './tabs/TabLoansAndSchedule.vue'
 import TabStocksAndDues from './tabs/TabStocksAndDues.vue'
 import TabMemberAccounts from './tabs/TabMemberAccounts.vue'
 import TabMovements from './tabs/TabMovements.vue'
 import { formatDate, formatCurrency } from '@/shared/utils/formatters'
-import type { Loan } from '@/api/members.api'
+import { membersApi, type CreateMemberRequest, type Loan } from '@/api/members.api'
 
 const route = useRoute()
 const store = useMemberDetailStore()
@@ -283,9 +319,11 @@ const activeMeetingId = computed(() => activeMeetingStore.meetingId)
 const activeTab = ref('resumen')
 
 const showRegisterPaymentModal = ref(false)
+const showEditMemberModal = ref(false)
 const selectedSubscriptionId = ref<string | null>(null)
 const selectedPaymentId = ref<string | null>(null)
 const editingLoan = ref<Loan | null>(null)
+const detailLoan = ref<Loan | null>(null)
 
 const selectedPayment = computed(() => {
   if (!selectedPaymentId.value) return null
@@ -299,7 +337,7 @@ const activeSubscriptionsCount = computed(() => {
 const tabs = computed<Tab[]>(() => [
   { id: 'resumen', label: 'Resumen' },
   { id: 'loans-schedule', label: `Préstamos y Cronograma (${store.activeLoansCount})` },
-  { id: 'stocks-dues', label: 'Acciones y Obligaciones' },
+  { id: 'stocks-dues', label: 'Acciones' },
   { id: 'accounts', label: 'Cuentas' },
   { id: 'movements', label: 'Movimientos' }
 ])
@@ -356,6 +394,27 @@ function handleLoanEdited() {
 
 function handleEditLoan(loan: Loan) {
   editingLoan.value = loan
+}
+
+function handleViewLoanBreakdown(loan: Loan) {
+  detailLoan.value = loan
+  if (!store.paymentSchedule && memberId.value) {
+    store.fetchPaymentSchedule(memberId.value, { months: 12 }).catch(() => {})
+  }
+}
+
+async function handleUpdateMember(data: CreateMemberRequest) {
+  if (!memberId.value) return
+  await membersApi.updateMember(memberId.value, {
+    name: data.name,
+    email: data.email,
+    identification_number: data.identification_number,
+    phone: data.phone,
+    address: data.address,
+    beneficiary: data.beneficiary
+  })
+  showEditMemberModal.value = false
+  await store.fetchMember(memberId.value)
 }
 
 function handleViewDetail(type: string, id: string) {

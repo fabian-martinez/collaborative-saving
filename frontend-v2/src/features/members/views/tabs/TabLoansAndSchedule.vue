@@ -1,22 +1,30 @@
 <template>
   <div class="py-4 space-y-5 w-full max-w-full min-w-0 overflow-x-hidden">
-    <!-- Filtros por préstamo -->
+    <!-- Filtros: Estado (Activos por defecto) + Tipo de préstamo agrupado -->
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="flex flex-wrap gap-1.5 text-xs">
-        <button
-          :class="['btn btn-xs', selectedLoanId === 'all' ? 'btn-primary' : 'btn-ghost border border-base-300']"
-          @click="selectedLoanId = 'all'"
-        >
-          Todos ({{ store.loans.length }})
-        </button>
-        <button
-          v-for="loan in store.activeLoans"
-          :key="loan.id"
-          :class="['btn btn-xs', selectedLoanId === loan.id ? 'btn-primary' : 'btn-ghost border border-base-300']"
-          @click="selectedLoanId = loan.id"
-        >
-          {{ loan.loan_type }}
-        </button>
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <div class="flex flex-wrap gap-1.5">
+          <button
+            :class="['btn btn-xs', selectedLoanType === 'all' ? 'btn-primary' : 'btn-ghost border border-base-300']"
+            @click="selectedLoanType = 'all'"
+          >
+            Todos ({{ statusFilteredLoans.length }})
+          </button>
+          <button
+            v-for="typeGroup in availableLoanTypes"
+            :key="typeGroup.type"
+            :class="['btn btn-xs', selectedLoanType === typeGroup.type ? 'btn-primary' : 'btn-ghost border border-base-300']"
+            @click="selectedLoanType = typeGroup.type"
+          >
+            {{ typeGroup.type }} ({{ typeGroup.count }})
+          </button>
+        </div>
+
+        <select v-model="statusFilter" class="select select-bordered select-xs">
+          <option value="active">Solo activos</option>
+          <option value="closed">Cerrados / Pagados</option>
+          <option value="all">Todos los estados</option>
+        </select>
       </div>
 
       <span class="text-xs text-base-content/70 font-mono">
@@ -27,7 +35,7 @@
     <LoadingSpinner :loading="store.loadingLoans" message="Cargando préstamos..." />
 
     <div v-if="!store.loadingLoans && displayedLoans.length === 0" class="text-center py-8 text-base-content/60 text-sm">
-      No hay préstamos registrados
+      No hay préstamos para el filtro seleccionado
     </div>
 
     <!-- Tarjetas de Préstamos -->
@@ -39,8 +47,10 @@
       >
         <div class="flex justify-between items-center gap-2">
           <span class="font-semibold text-base-content">{{ loan.loan_type }}</span>
-          <div class="flex items-center gap-2">
-            <span class="text-success font-medium">{{ getPaidPercentage(loan) }}%</span>
+          <div class="flex items-center gap-1.5">
+            <span :class="['font-medium', loan.status === 'active' ? 'text-success' : 'text-base-content/60']">
+              {{ loan.status === 'active' ? `${getPaidPercentage(loan)}%` : 'Cerrado' }}
+            </span>
             <button
               class="btn btn-xs btn-ghost border border-base-300 text-primary"
               @click="$emit('edit-loan', loan)"
@@ -60,10 +70,18 @@
           :max="loan.approved_amount || 1"
         ></progress>
 
-        <p class="text-base-content/70 font-mono">
-          Próx. cuota: {{ formatCurrency(loan.monthly_payment_amount) }}
-          <template v-if="nextDueDateLabel"> ({{ nextDueDateLabel }})</template>
-        </p>
+        <div class="flex items-center justify-between gap-2 pt-0.5">
+          <p class="text-[11px] text-base-content/60 font-mono">
+            Próx. cuota: {{ formatCurrency(loan.monthly_payment_amount) }}
+            <template v-if="nextDueDateLabel"> ({{ nextDueDateLabel }})</template>
+          </p>
+          <button
+            class="btn btn-xs btn-link no-underline px-1 text-[11px]"
+            @click="$emit('view-loan-detail', loan)"
+          >
+            Ver detalle →
+          </button>
+        </div>
       </div>
     </div>
 
@@ -111,7 +129,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import LoadingSpinner from '@/shared/components/LoadingSpinner.vue'
 import { formatCurrency, formatDate } from '@/shared/utils/formatters'
 import type { Loan } from '@/api/members.api'
@@ -124,13 +142,35 @@ const props = defineProps<{
 
 defineEmits<{
   'edit-loan': [loan: Loan]
+  'view-loan-detail': [loan: Loan]
 }>()
 
-const selectedLoanId = ref<string>('all')
+const statusFilter = ref<'active' | 'closed' | 'all'>('active')
+const selectedLoanType = ref<string>('all')
+
+const statusFilteredLoans = computed(() => {
+  if (statusFilter.value === 'all') return props.store.loans
+  if (statusFilter.value === 'active') {
+    return props.store.loans.filter(l => l.status === 'active')
+  }
+  return props.store.loans.filter(l => l.status !== 'active')
+})
+
+const availableLoanTypes = computed(() => {
+  const counts = new Map<string, number>()
+  for (const loan of statusFilteredLoans.value) {
+    counts.set(loan.loan_type, (counts.get(loan.loan_type) || 0) + 1)
+  }
+  return Array.from(counts.entries()).map(([type, count]) => ({ type, count }))
+})
+
+watch(statusFilter, () => {
+  selectedLoanType.value = 'all'
+})
 
 const displayedLoans = computed(() => {
-  if (selectedLoanId.value === 'all') return props.store.loans
-  return props.store.loans.filter(l => l.id === selectedLoanId.value)
+  if (selectedLoanType.value === 'all') return statusFilteredLoans.value
+  return statusFilteredLoans.value.filter(l => l.loan_type === selectedLoanType.value)
 })
 
 const nextDueDateLabel = computed(() => {
@@ -139,11 +179,10 @@ const nextDueDateLabel = computed(() => {
 
 const filteredProjectedPayments = computed(() => {
   const projected = props.store.paymentSchedule?.projected_payments || []
-  const list =
-    selectedLoanId.value === 'all'
-      ? projected
-      : projected.filter(item => item.loan_id === selectedLoanId.value)
-  return list.slice(0, 12)
+  const allowedIds = new Set(displayedLoans.value.map(l => l.id))
+  return projected
+    .filter(item => !item.loan_id || allowedIds.has(item.loan_id))
+    .slice(0, 12)
 })
 
 function getPaidPercentage(loan: Loan): number {

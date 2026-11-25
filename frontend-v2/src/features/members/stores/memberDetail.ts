@@ -194,18 +194,22 @@ export const useMemberDetailStore = defineStore('memberDetail', () => {
     const matchingPurchases = purchases.value.filter(
       p => p.stock_subscription_id === sub.id
     )
-    const subscriptionValue = matchingPurchases.reduce(
-      (sum, p) => sum + (p.total_value || 0),
-      0
-    )
-
     const matchingDue = dues.value.find(
       d =>
         d.type === 'stock_fee' &&
         (d.reference_id === sub.id ||
           d.description.toLowerCase().includes(sub.stock_type.toLowerCase()))
     )
-    const currentFee = matchingDue ? Number(matchingDue.amount) || 0 : 0
+
+    const firstPurchase = matchingPurchases[0]
+    const quantity = sub.quantity || 0
+    const unitValue =
+      firstPurchase?.unit_value ||
+      (firstPurchase && quantity > 0 ? firstPurchase.total_value / quantity : 0) ||
+      (matchingDue && quantity > 0 ? Number(matchingDue.amount) / quantity : 0)
+
+    const subscriptionValue = unitValue
+    const currentFee = unitValue * quantity
 
     return { subscriptionValue, currentFee }
   }
